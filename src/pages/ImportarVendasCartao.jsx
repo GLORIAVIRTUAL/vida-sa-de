@@ -115,28 +115,29 @@ export default function ImportarVendasCartao() {
           continue;
         }
 
-        // NOVO FORMATO baseado na planilha do usuário:
-        // 0: TITULAR (indica se é "TITULAR" ou "DEPENDENTE")
+        // FORMATO DA PLANILHA:
+        // 0: TITULAR/DEPENDENTE
         // 1: MODCAR (código)
         // 2: NOME
         // 3: CPF
         // 4: RG
-        // 5: NASCIMEN (data nascimento)
-        // 6: SE (sexo)
+        // 5: NASCIMENTO
+        // 6: SEXO
         // 7: TELEFONE
         // 8: EMAIL
-        // 9: DATA VI (data venda)
+        // 9: DATA VENDA
         // 10: CEP
-        // 11: NDIR (endereço)
-        // 12: NUM
-        // 13: COMPLE
-        // 14: BAIRRO
-        // 15: CIDADE
-        // 16: ES (estado)
-        // 17: PLANO
-        // 18: FORMA PA
-        // 19: VALOR
-        // 20: VENCIMEN
+        // 11: TIPO LOGRADOURO (RUA, AV, etc)
+        // 12: LOGRADOURO (nome da rua)
+        // 13: NUMERO
+        // 14: COMPLEMENTO (vazio na maioria)
+        // 15: BAIRRO
+        // 16: CIDADE
+        // 17: ESTADO
+        // 18: PLANO
+        // 19: FORMA PGTO
+        // 20: VALOR
+        // 21: VALIDADE
 
         const tipoRegistro = (colunas[0] || '').toUpperCase();
         const codigoCartao = colunas[1] || '';
@@ -149,14 +150,16 @@ export default function ImportarVendasCartao() {
         const email = colunas[8] || '';
         const dataVenda = parseData(colunas[9]);
         const cep = colunas[10] || '';
-        const logradouro = colunas[11] || '';
-        const numero = colunas[12] || '';
-        const complemento = colunas[13] || '';
-        const bairro = colunas[14] || '';
-        const cidade = colunas[15] || '';
-        const estado = colunas[16] || '';
-        const plano = colunas[17] || '';
-        const formaPagamento = colunas[18] || '';
+        const tipoLogradouro = colunas[11] || '';
+        const nomeLogradouro = colunas[12] || '';
+        const logradouro = tipoLogradouro && nomeLogradouro ? `${tipoLogradouro} ${nomeLogradouro}` : (tipoLogradouro || nomeLogradouro);
+        const numero = colunas[13] || '';
+        const complemento = colunas[14] || '';
+        const bairro = colunas[15] || '';
+        const cidade = colunas[16] || '';
+        const estado = colunas[17] || '';
+        const plano = colunas[18] || '';
+        const formaPagamento = colunas[19] || '';
         const valorRaw = colunas[20] || '';
         const validadeRaw = colunas[21] || '';
         
