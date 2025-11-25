@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -270,10 +269,21 @@ export default function VendaCartaoPage() {
             </div>
           </div>
           
-          <Button onClick={handleAbrirFormulario} size="lg" className="bg-teal-600 hover:bg-teal-700">
-            <PlusCircle className="w-5 h-5 mr-2" />
-            Nova Venda
-          </Button>
+          <div className="flex gap-3">
+            <Button onClick={handleAbrirFormulario} size="lg" className="bg-teal-600 hover:bg-teal-700">
+              <PlusCircle className="w-5 h-5 mr-2" />
+              Nova Venda
+            </Button>
+            <Button 
+              variant="outline" 
+              size="lg"
+              onClick={() => window.location.href = '/ImportarVendasCartao'}
+              className="border-teal-600 text-teal-600 hover:bg-teal-50"
+            >
+              <Upload className="w-5 h-5 mr-2" />
+              Importar Planilha
+            </Button>
+          </div>
         </div>
 
         {/* Filtros */}
