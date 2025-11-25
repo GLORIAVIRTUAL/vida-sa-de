@@ -450,15 +450,17 @@ export default function ImportarVendasCartao() {
 
                             {venda.dependentes.length > 0 && (
                               <div className="mt-2 p-2 bg-gray-50 rounded">
-                                <div className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
+                                <div className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                                   <Users className="w-4 h-4" />
                                   {venda.dependentes.length} Dependente(s):
                                 </div>
-                                <div className="flex flex-wrap gap-2">
+                                <div className="space-y-1">
                                   {venda.dependentes.map((dep, depIndex) => (
-                                    <Badge key={depIndex} variant="outline" className="bg-white">
-                                      {dep.nome}
-                                    </Badge>
+                                    <div key={depIndex} className="flex flex-wrap items-center gap-3 text-sm bg-white p-2 rounded border">
+                                      <span className="font-medium">{dep.nome}</span>
+                                      {dep.cpf && <span className="text-gray-500">CPF: {dep.cpf}</span>}
+                                      {dep.data_nascimento && <span className="text-gray-500">Nasc: {dep.data_nascimento}</span>}
+                                    </div>
                                   ))}
                                 </div>
                               </div>
