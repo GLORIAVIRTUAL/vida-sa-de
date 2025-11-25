@@ -1,0 +1,592 @@
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Upload, FileSpreadsheet, Loader2, CheckCircle2, AlertCircle, Users, CreditCard, Trash2 } from "lucide-react";
+import { VendaCartao, Paciente, CategoriaPreco } from "@/entities/all";
+import { useToast } from "@/components/ui/use-toast";
+import { format, addYears, parse } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
+
+export default function ImportarVendasCartao() {
+  const { toast } = useToast();
+  const [dados, setDados] = useState('');
+  const [vendasProcessadas, setVendasProcessadas] = useState([]);
+  const [importando, setImportando] = useState(false);
+  const [resultado, setResultado] = useState(null);
+  const [etapa, setEtapa] = useState('colar'); // 'colar', 'revisar', 'importar', 'concluido'
+
+  // Função para parsear data em vários formatos
+  const parseData = (dataStr) => {
+    if (!dataStr || dataStr.trim() === '') return null;
+    
+    const str = dataStr.trim();
+    
+    // Tentar formato DD/MM/YYYY
+    if (str.includes('/')) {
+      const partes = str.split('/');
+      if (partes.length === 3) {
+        const [dia, mes, ano] = partes;
+        const anoCompleto = ano.length === 2 ? `20${ano}` : ano;
+        return `${anoCompleto}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
+      }
+    }
+    
+    // Tentar formato YYYY-MM-DD
+    if (str.includes('-') && str.length >= 10) {
+      return str.substring(0, 10);
+    }
+    
+    return null;
+  };
+
+  // Função para limpar e formatar CPF
+  const formatarCPF = (cpf) => {
+    if (!cpf) return '';
+    return cpf.toString().replace(/\D/g, '');
+  };
+
+  // Função para determinar o tipo de plano baseado no valor e quantidade de dependentes
+  const determinarTipoPlano = (valor, formaPagamento, qtdDependentes) => {
+    const valorNum = parseFloat(valor) || 0;
+    const ehParcelado = formaPagamento?.toLowerCase().includes('crédito') || 
+                        formaPagamento?.toLowerCase().includes('credito') ||
+                        formaPagamento?.toLowerCase().includes('parcelado');
+    
+    if (qtdDependentes === 0) {
+      return ehParcelado ? 'Individual Parcelado' : 'Individual à Vista';
+    } else if (qtdDependentes <= 4) {
+      return ehParcelado ? 'Familiar Parcelado' : 'Familiar à Vista';
+    } else {
+      return ehParcelado ? 'Grupo Parcelado' : 'Grupo à Vista';
+    }
+  };
+
+  // Função para normalizar forma de pagamento
+  const normalizarFormaPagamento = (forma) => {
+    if (!forma) return 'Dinheiro';
+    const f = forma.toLowerCase().trim();
+    
+    if (f.includes('pix')) return 'PIX';
+    if (f.includes('débito') || f.includes('debito')) return 'Cartão Débito';
+    if (f.includes('crédito') || f.includes('credito')) return 'Cartão Crédito';
+    if (f.includes('transferência') || f.includes('transferencia')) return 'Transferência';
+    if (f.includes('dinheiro')) return 'Dinheiro';
+    
+    return 'Dinheiro';
+  };
+
+  // Função principal para processar os dados colados
+  const processarDados = () => {
+    if (!dados.trim()) {
+      toast({
+        title: "Erro",
+        description: "Cole os dados da planilha primeiro",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const linhas = dados.trim().split('\n').filter(l => l.trim());
+      const vendas = [];
+      let vendaAtual = null;
+
+      console.log(`📊 Processando ${linhas.length} linhas...`);
+
+      for (let i = 0; i < linhas.length; i++) {
+        const linha = linhas[i];
+        // Dividir por TAB (padrão de colar do Excel/Sheets)
+        const colunas = linha.split('\t').map(c => c.trim());
+        
+        // Pular linha de cabeçalho
+        if (i === 0 && (colunas[0]?.toLowerCase().includes('nome') || colunas[0]?.toLowerCase().includes('titular'))) {
+          console.log('⏭️ Pulando linha de cabeçalho');
+          continue;
+        }
+
+        // Se não tiver colunas suficientes, pular
+        if (colunas.length < 3) {
+          console.log(`⏭️ Linha ${i + 1} ignorada: poucas colunas`);
+          continue;
+        }
+
+        // Colunas esperadas:
+        // 0: NOME TITULAR
+        // 1: CPF
+        // 2: RG
+        // 3: DATA NASCIMENTO
+        // 4: SEXO
+        // 5: EMAIL
+        // 6: TELEFONE
+        // 7: DATA VENDA
+        // 8: CEP
+        // 9: LOGRADOURO
+        // 10: NUMERO
+        // 11: COMPLEMENTO
+        // 12: BAIRRO
+        // 13: CIDADE
+        // 14: ESTADO
+        // 15: PLANO
+        // 16: FORMA PAGAMENTO
+        // 17: VALOR
+        // 18: VENCIMENTO
+
+        const nome = colunas[0] || '';
+        const cpf = formatarCPF(colunas[1]);
+        const rg = colunas[2] || '';
+        const dataNascimento = parseData(colunas[3]);
+        const sexo = colunas[4] || '';
+        const email = colunas[5] || '';
+        const telefone = colunas[6] || '';
+        const dataVenda = parseData(colunas[7]);
+        const cep = colunas[8] || '';
+        const logradouro = colunas[9] || '';
+        const numero = colunas[10] || '';
+        const complemento = colunas[11] || '';
+        const bairro = colunas[12] || '';
+        const cidade = colunas[13] || '';
+        const estado = colunas[14] || '';
+        const plano = colunas[15] || '';
+        const formaPagamento = colunas[16] || '';
+        const valor = colunas[17] || '';
+        const vencimento = parseData(colunas[18]);
+
+        // Verificar se é um TITULAR (tem data de venda e valor)
+        const ehTitular = dataVenda && valor && parseFloat(valor.replace(',', '.').replace(/[^\d.-]/g, '')) > 0;
+
+        if (ehTitular) {
+          // Salvar venda anterior se existir
+          if (vendaAtual) {
+            vendas.push(vendaAtual);
+          }
+
+          // Criar nova venda
+          const valorNumerico = parseFloat(valor.replace(',', '.').replace(/[^\d.-]/g, '')) || 0;
+          
+          vendaAtual = {
+            titular: {
+              nome: nome,
+              cpf: cpf,
+              rg: rg,
+              data_nascimento: dataNascimento,
+              sexo: sexo,
+              email: email,
+              telefone: telefone,
+              endereco: {
+                cep: cep,
+                logradouro: logradouro,
+                numero: numero,
+                complemento: complemento,
+                bairro: bairro,
+                cidade: cidade,
+                estado: estado
+              }
+            },
+            dependentes: [],
+            data_venda: dataVenda,
+            validade_cartao: vencimento,
+            plano_original: plano,
+            forma_pagamento: normalizarFormaPagamento(formaPagamento),
+            valor_total: valorNumerico,
+            status: 'Ativo'
+          };
+
+          console.log(`👤 Titular encontrado: ${nome} - R$ ${valorNumerico}`);
+
+        } else if (vendaAtual && nome) {
+          // É um DEPENDENTE do titular atual
+          vendaAtual.dependentes.push({
+            nome: nome,
+            cpf: cpf,
+            rg: rg,
+            data_nascimento: dataNascimento,
+            sexo: sexo
+          });
+
+          console.log(`   👶 Dependente: ${nome}`);
+        }
+      }
+
+      // Adicionar última venda
+      if (vendaAtual) {
+        vendas.push(vendaAtual);
+      }
+
+      // Determinar tipo de plano para cada venda
+      vendas.forEach(venda => {
+        venda.tipo_plano = determinarTipoPlano(
+          venda.valor_total,
+          venda.forma_pagamento,
+          venda.dependentes.length
+        );
+        venda.quantidade_cartoes = 1 + venda.dependentes.length;
+        venda.valor_cartoes = venda.quantidade_cartoes * 5;
+      });
+
+      console.log(`✅ Total de vendas processadas: ${vendas.length}`);
+      
+      setVendasProcessadas(vendas);
+      setEtapa('revisar');
+
+      toast({
+        title: "Dados processados!",
+        description: `${vendas.length} venda(s) identificada(s) com ${vendas.reduce((acc, v) => acc + v.dependentes.length, 0)} dependente(s)`,
+      });
+
+    } catch (error) {
+      console.error('❌ Erro ao processar:', error);
+      toast({
+        title: "Erro ao processar dados",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Função para importar as vendas no sistema
+  const importarVendas = async () => {
+    setImportando(true);
+    setEtapa('importar');
+    
+    const resultadoImport = {
+      sucesso: 0,
+      erros: [],
+      detalhes: []
+    };
+
+    try {
+      // Buscar categoria "Cartão Mais Vida"
+      const categorias = await CategoriaPreco.list();
+      const categoriaCartao = categorias.find(c => 
+        c.nome.toLowerCase().includes('cartão') && 
+        c.nome.toLowerCase().includes('mais') &&
+        c.nome.toLowerCase().includes('vida')
+      ) || categorias.find(c => c.nome.toLowerCase().includes('cartão'));
+
+      if (!categoriaCartao) {
+        throw new Error('Categoria "Cartão Mais Vida" não encontrada.');
+      }
+
+      for (let i = 0; i < vendasProcessadas.length; i++) {
+        const venda = vendasProcessadas[i];
+        
+        try {
+          console.log(`📝 Importando venda ${i + 1}/${vendasProcessadas.length}: ${venda.titular.nome}`);
+
+          // 1. Criar paciente titular
+          const pacienteTitular = await Paciente.create({
+            nome: venda.titular.nome,
+            cpf: venda.titular.cpf,
+            rg: venda.titular.rg,
+            data_nascimento: venda.titular.data_nascimento,
+            telefone: venda.titular.telefone,
+            email: venda.titular.email,
+            endereco: venda.titular.endereco,
+            convenio: categoriaCartao.nome,
+            observacoes: `Importado - Cliente do Cartão Mais Vida - ${venda.tipo_plano}`
+          });
+
+          // 2. Criar pacientes dependentes
+          const dependentesIds = [];
+          for (const dep of venda.dependentes) {
+            const pacienteDep = await Paciente.create({
+              nome: dep.nome,
+              cpf: dep.cpf,
+              rg: dep.rg,
+              data_nascimento: dep.data_nascimento,
+              telefone: venda.titular.telefone,
+              endereco: venda.titular.endereco,
+              convenio: categoriaCartao.nome,
+              observacoes: `Importado - Dependente de ${venda.titular.nome}`
+            });
+            dependentesIds.push(pacienteDep.id);
+          }
+
+          // 3. Criar venda do cartão
+          const numeroVenda = `CMV-IMP-${Date.now()}-${i}`;
+          
+          await VendaCartao.create({
+            numero_venda: numeroVenda,
+            tipo_plano: venda.tipo_plano,
+            titular: venda.titular,
+            dependentes: venda.dependentes,
+            paciente_titular_id: pacienteTitular.id,
+            pacientes_dependentes_ids: dependentesIds,
+            quantidade_cartoes: venda.quantidade_cartoes,
+            valor_cartoes: venda.valor_cartoes,
+            valor_plano: venda.valor_total - venda.valor_cartoes,
+            valor_total: venda.valor_total,
+            forma_pagamento: venda.forma_pagamento,
+            numero_parcelas: 1,
+            valor_parcela: venda.valor_total,
+            data_venda: venda.data_venda || format(new Date(), 'yyyy-MM-dd'),
+            validade_cartao: venda.validade_cartao || format(addYears(new Date(), 1), 'yyyy-MM-dd'),
+            status: venda.status,
+            observacoes: `Importado em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm")} | Plano original: ${venda.plano_original || 'N/A'}`
+          });
+
+          resultadoImport.sucesso++;
+          resultadoImport.detalhes.push({
+            nome: venda.titular.nome,
+            status: 'sucesso',
+            dependentes: venda.dependentes.length
+          });
+
+        } catch (error) {
+          console.error(`❌ Erro na venda ${venda.titular.nome}:`, error);
+          resultadoImport.erros.push({
+            nome: venda.titular.nome,
+            erro: error.message
+          });
+          resultadoImport.detalhes.push({
+            nome: venda.titular.nome,
+            status: 'erro',
+            erro: error.message
+          });
+        }
+      }
+
+      setResultado(resultadoImport);
+      setEtapa('concluido');
+
+      toast({
+        title: "Importação concluída!",
+        description: `${resultadoImport.sucesso} venda(s) importada(s) com sucesso`,
+      });
+
+    } catch (error) {
+      console.error('❌ Erro geral:', error);
+      toast({
+        title: "Erro na importação",
+        description: error.message,
+        variant: "destructive"
+      });
+      setEtapa('revisar');
+    } finally {
+      setImportando(false);
+    }
+  };
+
+  const removerVenda = (index) => {
+    setVendasProcessadas(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const reiniciar = () => {
+    setDados('');
+    setVendasProcessadas([]);
+    setResultado(null);
+    setEtapa('colar');
+  };
+
+  return (
+    <ProtectedRoute requiredRole={["admin"]}>
+      <div className="p-6 bg-gray-50 min-h-screen">
+        <div className="max-w-6xl mx-auto">
+          {/* Header */}
+          <div className="mb-6">
+            <div className="flex items-center gap-3 mb-2">
+              <FileSpreadsheet className="w-8 h-8 text-teal-600" />
+              <h1 className="text-3xl font-bold text-gray-900">Importar Vendas do Cartão Mais Vida</h1>
+            </div>
+            <p className="text-gray-600">
+              Cole os dados da planilha Excel/Google Sheets para importar vendas com titulares e dependentes
+            </p>
+          </div>
+
+          {/* Indicador de Etapas */}
+          <div className="flex items-center gap-4 mb-6">
+            <div className={`flex items-center gap-2 px-4 py-2 rounded-full ${etapa === 'colar' ? 'bg-teal-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
+              <span className="font-semibold">1</span> Colar Dados
+            </div>
+            <div className="w-8 h-0.5 bg-gray-300" />
+            <div className={`flex items-center gap-2 px-4 py-2 rounded-full ${etapa === 'revisar' ? 'bg-teal-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
+              <span className="font-semibold">2</span> Revisar
+            </div>
+            <div className="w-8 h-0.5 bg-gray-300" />
+            <div className={`flex items-center gap-2 px-4 py-2 rounded-full ${etapa === 'importar' || etapa === 'concluido' ? 'bg-teal-600 text-white' : 'bg-gray-200 text-gray-600'}`}>
+              <span className="font-semibold">3</span> Importar
+            </div>
+          </div>
+
+          {/* Etapa 1: Colar Dados */}
+          {etapa === 'colar' && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Cole os dados da planilha</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Alert className="bg-blue-50 border-blue-200">
+                  <AlertCircle className="w-4 h-4 text-blue-600" />
+                  <AlertDescription className="text-blue-800">
+                    <strong>Formato esperado das colunas (separadas por TAB):</strong><br />
+                    NOME | CPF | RG | DATA NASCIMENTO | SEXO | EMAIL | TELEFONE | DATA VENDA | CEP | LOGRADOURO | NUMERO | COMPLEMENTO | BAIRRO | CIDADE | ESTADO | PLANO | FORMA PAGAMENTO | VALOR | VENCIMENTO
+                    <br /><br />
+                    <strong>💡 Dica:</strong> Os dependentes devem estar nas linhas abaixo do titular (sem data de venda/valor).
+                  </AlertDescription>
+                </Alert>
+
+                <Textarea
+                  value={dados}
+                  onChange={(e) => setDados(e.target.value)}
+                  placeholder="Cole aqui os dados copiados da planilha (Ctrl+V)..."
+                  className="min-h-[300px] font-mono text-sm"
+                />
+
+                <div className="flex justify-end gap-2">
+                  <Button
+                    onClick={processarDados}
+                    disabled={!dados.trim()}
+                    className="bg-teal-600 hover:bg-teal-700"
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    Processar Dados
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Etapa 2: Revisar */}
+          {etapa === 'revisar' && (
+            <div className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <div className="flex justify-between items-center">
+                    <CardTitle>Revisão das Vendas ({vendasProcessadas.length})</CardTitle>
+                    <Button variant="outline" onClick={() => setEtapa('colar')}>
+                      Voltar
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {vendasProcessadas.map((venda, index) => (
+                      <div key={index} className="border rounded-lg p-4 bg-white">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <CreditCard className="w-5 h-5 text-teal-600" />
+                              <span className="font-semibold text-lg">{venda.titular.nome}</span>
+                              <Badge className="bg-green-100 text-green-800">
+                                {venda.tipo_plano}
+                              </Badge>
+                              <Badge variant="outline">
+                                R$ {venda.valor_total.toFixed(2)}
+                              </Badge>
+                            </div>
+
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm text-gray-600 mb-2">
+                              <div><strong>CPF:</strong> {venda.titular.cpf || 'N/A'}</div>
+                              <div><strong>Telefone:</strong> {venda.titular.telefone || 'N/A'}</div>
+                              <div><strong>Data Venda:</strong> {venda.data_venda || 'N/A'}</div>
+                              <div><strong>Validade:</strong> {venda.validade_cartao || 'N/A'}</div>
+                            </div>
+
+                            {venda.dependentes.length > 0 && (
+                              <div className="mt-2 p-2 bg-gray-50 rounded">
+                                <div className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
+                                  <Users className="w-4 h-4" />
+                                  {venda.dependentes.length} Dependente(s):
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                  {venda.dependentes.map((dep, depIndex) => (
+                                    <Badge key={depIndex} variant="outline" className="bg-white">
+                                      {dep.nome}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removerVenda(index)}
+                            className="text-red-500 hover:bg-red-50"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={reiniciar}>
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={importarVendas}
+                  disabled={vendasProcessadas.length === 0}
+                  className="bg-teal-600 hover:bg-teal-700"
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  Importar {vendasProcessadas.length} Venda(s)
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Etapa 3: Importando */}
+          {etapa === 'importar' && (
+            <Card>
+              <CardContent className="py-16 text-center">
+                <Loader2 className="w-16 h-16 mx-auto mb-4 text-teal-600 animate-spin" />
+                <h2 className="text-2xl font-semibold text-gray-900 mb-2">Importando Vendas...</h2>
+                <p className="text-gray-600">Por favor, aguarde. Isso pode levar alguns minutos.</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Etapa 4: Concluído */}
+          {etapa === 'concluido' && resultado && (
+            <div className="space-y-4">
+              <Card className="border-green-200 bg-green-50">
+                <CardContent className="py-8 text-center">
+                  <CheckCircle2 className="w-16 h-16 mx-auto mb-4 text-green-600" />
+                  <h2 className="text-2xl font-semibold text-green-800 mb-2">Importação Concluída!</h2>
+                  <p className="text-green-700">
+                    {resultado.sucesso} de {vendasProcessadas.length} venda(s) importada(s) com sucesso
+                  </p>
+                </CardContent>
+              </Card>
+
+              {resultado.erros.length > 0 && (
+                <Alert className="border-red-200 bg-red-50">
+                  <AlertCircle className="w-4 h-4 text-red-600" />
+                  <AlertDescription className="text-red-800">
+                    <strong>{resultado.erros.length} erro(s):</strong>
+                    <ul className="list-disc list-inside mt-2">
+                      {resultado.erros.map((erro, i) => (
+                        <li key={i}>{erro.nome}: {erro.erro}</li>
+                      ))}
+                    </ul>
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              <div className="flex justify-center gap-4">
+                <Button variant="outline" onClick={reiniciar}>
+                  Nova Importação
+                </Button>
+                <Button
+                  onClick={() => window.location.href = '/VendaCartao'}
+                  className="bg-teal-600 hover:bg-teal-700"
+                >
+                  Ver Vendas
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </ProtectedRoute>
+  );
+}

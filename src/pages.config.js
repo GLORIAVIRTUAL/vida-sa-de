@@ -17,6 +17,7 @@ import VerificacaoAssinatura from './pages/VerificacaoAssinatura';
 import AuditoriaSeguranca from './pages/AuditoriaSeguranca';
 import ImportadorDados from './pages/ImportadorDados';
 import VendaCartao from './pages/VendaCartao';
+import ImportarVendasCartao from './pages/ImportarVendasCartao';
 import __Layout from './Layout.jsx';
 
 
@@ -40,6 +41,7 @@ export const PAGES = {
     "AuditoriaSeguranca": AuditoriaSeguranca,
     "ImportadorDados": ImportadorDados,
     "VendaCartao": VendaCartao,
+    "ImportarVendasCartao": ImportarVendasCartao,
 }
 
 export const pagesConfig = {
