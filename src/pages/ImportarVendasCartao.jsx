@@ -10,6 +10,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { format, addYears, parse } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import { base44 } from "@/api/base44Client";
 
 export default function ImportarVendasCartao() {
   const { toast } = useToast();
