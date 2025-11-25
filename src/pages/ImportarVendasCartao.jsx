@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Upload, FileSpreadsheet, Loader2, CheckCircle2, AlertCircle, Users, CreditCard, Trash2 } from "lucide-react";
-import { VendaCartao, Paciente, CategoriaPreco } from "@/entities/all";
+import { VendaCartao } from "@/entities/all";
 import { useToast } from "@/components/ui/use-toast";
 import { format, addYears, parse } from "date-fns";
 import { ptBR } from "date-fns/locale";
