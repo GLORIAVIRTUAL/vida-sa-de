@@ -176,12 +176,8 @@ export default function ImportarVendasCartao() {
           if (vendaAtual) {
             vendas.push(vendaAtual);
           }
-
-          // Criar nova venda - limpar valor removendo R$, espaços e convertendo vírgula
-          const valorLimpo = (valor || '0').toString().replace('R$', '').replace(/\s/g, '').replace(',', '.').replace(/[^\d.-]/g, '');
-          const valorNumerico = parseFloat(valorLimpo) || 0;
           
-          console.log(`💰 Valor processado: "${valor}" -> "${valorLimpo}" -> ${valorNumerico}`);
+          console.log(`💰 Valor processado: ${valor}, Validade: ${validade}`);
           
           vendaAtual = {
             titular: {
@@ -204,15 +200,15 @@ export default function ImportarVendasCartao() {
             },
             dependentes: [],
             data_venda: dataVenda,
-            validade_cartao: vencimento,
+            validade_cartao: validade,
             plano_original: plano,
             forma_pagamento: normalizarFormaPagamento(formaPagamento),
-            valor_total: valorNumerico,
+            valor_total: valor,
             status: 'Ativo',
             codigo_cartao: codigoCartao
           };
 
-          console.log(`👤 Titular encontrado: ${nome} - R$ ${valorNumerico}`);
+          console.log(`👤 Titular encontrado: ${nome} - R$ ${valor} - Validade: ${validade}`);
 
         } else if (ehDependente && vendaAtual && nome) {
           // É um DEPENDENTE do titular atual
