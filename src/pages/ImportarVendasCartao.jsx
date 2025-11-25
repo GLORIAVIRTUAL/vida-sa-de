@@ -248,115 +248,31 @@ export default function ImportarVendasCartao() {
     }
   };
 
-  // Função para importar as vendas no sistema
+  // Função para importar as vendas no sistema via backend
   const importarVendas = async () => {
     setImportando(true);
     setEtapa('importar');
-    
-    const resultadoImport = {
-      sucesso: 0,
-      erros: [],
-      detalhes: []
-    };
 
     try {
-      // Buscar categoria "Cartão Mais Vida"
-      const categorias = await CategoriaPreco.list();
-      const categoriaCartao = categorias.find(c => 
-        c.nome.toLowerCase().includes('cartão') && 
-        c.nome.toLowerCase().includes('mais') &&
-        c.nome.toLowerCase().includes('vida')
-      ) || categorias.find(c => c.nome.toLowerCase().includes('cartão'));
+      console.log(`📤 Enviando ${vendasProcessadas.length} vendas para o backend...`);
+      
+      // Chamar função backend para processar em lotes
+      const response = await base44.functions.invoke('importarVendasCartao', {
+        vendas: vendasProcessadas
+      });
 
-      if (!categoriaCartao) {
-        throw new Error('Categoria "Cartão Mais Vida" não encontrada.');
+      console.log('📥 Resposta do backend:', response);
+
+      if (response.data.error) {
+        throw new Error(response.data.error);
       }
 
-      for (let i = 0; i < vendasProcessadas.length; i++) {
-        const venda = vendasProcessadas[i];
-        
-        try {
-          console.log(`📝 Importando venda ${i + 1}/${vendasProcessadas.length}: ${venda.titular.nome}`);
-
-          // 1. Criar paciente titular
-          const pacienteTitular = await Paciente.create({
-            nome: venda.titular.nome,
-            cpf: venda.titular.cpf,
-            rg: venda.titular.rg,
-            data_nascimento: venda.titular.data_nascimento,
-            telefone: venda.titular.telefone,
-            email: venda.titular.email,
-            endereco: venda.titular.endereco,
-            convenio: categoriaCartao.nome,
-            observacoes: `Importado - Cliente do Cartão Mais Vida - ${venda.tipo_plano}`
-          });
-
-          // 2. Criar pacientes dependentes
-          const dependentesIds = [];
-          for (const dep of venda.dependentes) {
-            const pacienteDep = await Paciente.create({
-              nome: dep.nome,
-              cpf: dep.cpf,
-              rg: dep.rg,
-              data_nascimento: dep.data_nascimento,
-              telefone: venda.titular.telefone,
-              endereco: venda.titular.endereco,
-              convenio: categoriaCartao.nome,
-              observacoes: `Importado - Dependente de ${venda.titular.nome}`
-            });
-            dependentesIds.push(pacienteDep.id);
-          }
-
-          // 3. Criar venda do cartão
-          const numeroVenda = `CMV-IMP-${Date.now()}-${i}`;
-          
-          await VendaCartao.create({
-            numero_venda: numeroVenda,
-            tipo_plano: venda.tipo_plano,
-            titular: venda.titular,
-            dependentes: venda.dependentes,
-            paciente_titular_id: pacienteTitular.id,
-            pacientes_dependentes_ids: dependentesIds,
-            quantidade_cartoes: venda.quantidade_cartoes,
-            valor_cartoes: venda.valor_cartoes,
-            valor_plano: venda.valor_total - venda.valor_cartoes,
-            valor_total: venda.valor_total,
-            forma_pagamento: venda.forma_pagamento,
-            numero_parcelas: 1,
-            valor_parcela: venda.valor_total,
-            data_venda: venda.data_venda || format(new Date(), 'yyyy-MM-dd'),
-            validade_cartao: venda.validade_cartao || format(addYears(new Date(), 1), 'yyyy-MM-dd'),
-            status: venda.status,
-            observacoes: `Importado em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm")} | Plano original: ${venda.plano_original || 'N/A'}`
-          });
-
-          resultadoImport.sucesso++;
-          resultadoImport.detalhes.push({
-            nome: venda.titular.nome,
-            status: 'sucesso',
-            dependentes: venda.dependentes.length
-          });
-
-        } catch (error) {
-          console.error(`❌ Erro na venda ${venda.titular.nome}:`, error);
-          resultadoImport.erros.push({
-            nome: venda.titular.nome,
-            erro: error.message
-          });
-          resultadoImport.detalhes.push({
-            nome: venda.titular.nome,
-            status: 'erro',
-            erro: error.message
-          });
-        }
-      }
-
-      setResultado(resultadoImport);
+      setResultado(response.data);
       setEtapa('concluido');
 
       toast({
         title: "Importação concluída!",
-        description: `${resultadoImport.sucesso} venda(s) importada(s) com sucesso`,
+        description: `${response.data.sucesso} de ${response.data.total} venda(s) importada(s) com sucesso`,
       });
 
     } catch (error) {
