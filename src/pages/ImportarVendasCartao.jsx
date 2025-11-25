@@ -157,11 +157,15 @@ export default function ImportarVendasCartao() {
         const estado = colunas[16] || '';
         const plano = colunas[17] || '';
         const formaPagamento = colunas[18] || '';
-        const valor = colunas[19] || '';
-        const vencimento = parseData(colunas[20]);
+        const valorRaw = colunas[20] || '';
+        const validadeRaw = colunas[21] || '';
         
-        console.log(`Linha ${i}: tipoRegistro="${tipoRegistro}", nome="${nome}", valor="${valor}" (col19="${colunas[19]}"), vencimento="${vencimento}" (col20="${colunas[20]}")`);
-        console.log(`  Todas colunas: ${colunas.join(' | ')}`);
+        // Limpar valor: remover "R$", espaços, e converter vírgula para ponto
+        const valorLimpo = valorRaw.replace('R$', '').replace(/\s/g, '').replace(',', '.').replace(/[^\d.-]/g, '');
+        const valor = parseFloat(valorLimpo) || 0;
+        const validade = parseData(validadeRaw);
+        
+        console.log(`Linha ${i}: valorRaw="${valorRaw}" -> valor=${valor}, validadeRaw="${validadeRaw}" -> validade=${validade}`);
 
         // Verificar se é TITULAR pela coluna 0
         const ehTitular = tipoRegistro.includes('TITULAR');
