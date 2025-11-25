@@ -433,6 +433,20 @@ export default function ImportarVendasCartao() {
                               <div><strong>Validade:</strong> {venda.validade_cartao || 'N/A'}</div>
                             </div>
 
+                            {venda.titular.endereco && (venda.titular.endereco.logradouro || venda.titular.endereco.cidade) && (
+                              <div className="text-sm text-gray-600 mb-2">
+                                <strong>Endereço:</strong> {[
+                                  venda.titular.endereco.logradouro,
+                                  venda.titular.endereco.numero && `nº ${venda.titular.endereco.numero}`,
+                                  venda.titular.endereco.complemento,
+                                  venda.titular.endereco.bairro,
+                                  venda.titular.endereco.cidade,
+                                  venda.titular.endereco.estado,
+                                  venda.titular.endereco.cep && `CEP: ${venda.titular.endereco.cep}`
+                                ].filter(Boolean).join(', ')}
+                              </div>
+                            )}
+
                             {venda.dependentes.length > 0 && (
                               <div className="mt-2 p-2 bg-gray-50 rounded">
                                 <div className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
