@@ -157,8 +157,23 @@ export default function ImportarVendasCartao() {
         const estado = colunas[16] || '';
         const plano = colunas[17] || '';
         const formaPagamento = colunas[18] || '';
-        const valor = colunas[19] || '';
-        const vencimento = parseData(colunas[20]);
+        const valorRaw = colunas[19] || colunas[20] || '';
+        const vencimentoRaw = colunas[20] || colunas[21] || '';
+        
+        // Tentar identificar qual é valor e qual é vencimento
+        // Valor é numérico, vencimento é data
+        let valor = '';
+        let vencimento = null;
+        
+        if (valorRaw && !isNaN(parseFloat(valorRaw.replace(',', '.').replace(/[^\d.-]/g, '')))) {
+          valor = valorRaw;
+          vencimento = parseData(vencimentoRaw);
+        } else if (vencimentoRaw && !isNaN(parseFloat(vencimentoRaw.replace(',', '.').replace(/[^\d.-]/g, '')))) {
+          valor = vencimentoRaw;
+          vencimento = parseData(valorRaw);
+        }
+        
+        console.log(`Linha ${i}: valor="${valor}", valorRaw="${valorRaw}"`);
 
         // Verificar se é TITULAR pela coluna 0
         const ehTitular = tipoRegistro.includes('TITULAR');
