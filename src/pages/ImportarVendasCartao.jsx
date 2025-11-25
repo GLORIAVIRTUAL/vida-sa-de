@@ -356,9 +356,9 @@ export default function ImportarVendasCartao() {
                   <AlertCircle className="w-4 h-4 text-blue-600" />
                   <AlertDescription className="text-blue-800">
                     <strong>Formato esperado das colunas (separadas por TAB):</strong><br />
-                    NOME | CPF | RG | DATA NASCIMENTO | SEXO | EMAIL | TELEFONE | DATA VENDA | CEP | LOGRADOURO | NUMERO | COMPLEMENTO | BAIRRO | CIDADE | ESTADO | PLANO | FORMA PAGAMENTO | VALOR | VENCIMENTO
+                    TITULAR/DEPENDENTE | MODCAR | NOME | CPF | RG | NASCIMENTO | SEXO | TELEFONE | EMAIL | DATA VENDA | CEP | ENDEREÇO | NUM | COMPL | BAIRRO | CIDADE | ESTADO | PLANO | FORMA PGTO | VALOR | VENCIMENTO
                     <br /><br />
-                    <strong>💡 Dica:</strong> Os dependentes devem estar nas linhas abaixo do titular (sem data de venda/valor).
+                    <strong>💡 Dica:</strong> A coluna 1 deve indicar "TITULAR" ou "DEPENDENTE" para cada linha.
                   </AlertDescription>
                 </Alert>
 
