@@ -1,0 +1,396 @@
+
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Calendar, Clock, User, CheckCircle, XCircle, ArrowUpCircle, DollarSign, FileText, Edit, MessageSquare, Repeat, Trash2 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { Agendamento } from "@/entities/all";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+import { safeApiCall } from "@/components/shared/apiThrottle";
+import EnviarNotificacao from './EnviarNotificacao';
+import ConfirmacaoExclusao from '../shared/ConfirmacaoExclusao';
+import { useToast } from "@/components/ui/use-toast";
+import FormularioPaciente from '../pacientes/FormularioPaciente';
+
+const statusColors = {
+  "Agendado": "bg-blue-100 text-blue-800 border-blue-200",
+  "Pago": "bg-teal-100 text-teal-800 border-teal-200",
+  "Em Atendimento": "bg-yellow-100 text-yellow-800 border-yellow-200",
+  "Finalizado": "bg-emerald-100 text-emerald-800 border-emerald-200",
+  "Cancelado": "bg-red-100 text-red-800 border-red-200",
+  "Não Compareceu": "bg-gray-100 text-gray-800 border-gray-200"
+};
+
+export default function VisualizacaoDiaria({ agendamentos, medicos, pacientes, onEditarAgendamento, loading, dia, onUpdate, periodo }) {
+  const [atualizandoStatus, setAtualizandoStatus] = useState(null);
+  const [notificacaoAberta, setNotificacaoAberta] = useState(false);
+  const [agendamentoSelecionado, setAgendamentoSelecionado] = useState(null);
+  const [confirmacaoExclusaoAberta, setConfirmacaoExclusaoAberta] = useState(false);
+  const [agendamentoParaExcluir, setAgendamentoParaExcluir] = useState(null);
+  const [excluindo, setExcluindo] = useState(false);
+  const [formularioPacienteAberto, setFormularioPacienteAberto] = useState(false);
+  const [pacienteParaEditar, setPacienteParaEditar] = useState(null);
+  const { toast } = useToast();
+
+  const getNomePaciente = (pacienteId) => {
+    if (!pacienteId) return "Paciente não informado";
+    const paciente = pacientes.find(p => p.id === pacienteId);
+    if (paciente) return paciente.nome;
+    return "Paciente não encontrado";
+  };
+
+  const getNomeMedico = (medicoId) => {
+    const medico = medicos.find(m => m.id === medicoId);
+    return medico ? `Dr(a). ${medico.nome}` : "Médico não encontrado";
+  };
+
+  const atualizarStatus = async (agendamentoId, novoStatus) => {
+    try {
+      setAtualizandoStatus(agendamentoId);
+      await safeApiCall(() => 
+        Agendamento.update(agendamentoId, { 
+          status: novoStatus,
+          ...(novoStatus === "Em Atendimento" && { data_inicio_atendimento: new Date().toISOString() }),
+          ...(novoStatus === "Finalizado" && { data_fim_atendimento: new Date().toISOString() })
+        })
+      );
+      onUpdate();
+    } catch (error) {
+      console.error("Erro ao atualizar status:", error);
+    } finally {
+      setAtualizandoStatus(null);
+    }
+  };
+
+  const handleAbrirPaciente = (pacienteId) => {
+    const paciente = pacientes.find(p => p.id === pacienteId);
+    if (paciente) {
+      setPacienteParaEditar(paciente);
+      setFormularioPacienteAberto(true);
+    }
+  };
+
+  const handleSalvarPaciente = async (data) => {
+    try {
+      const { Paciente } = await import('@/entities/all');
+      await safeApiCall(() => Paciente.update(pacienteParaEditar.id, data));
+      
+      toast({
+        title: "Paciente atualizado!",
+        description: "Os dados do paciente foram salvos com sucesso.",
+      });
+      
+      setFormularioPacienteAberto(false);
+      setPacienteParaEditar(null);
+      onUpdate(); // Recarregar os dados
+    } catch (error) {
+      console.error("Erro ao salvar paciente:", error);
+      toast({
+        title: "Erro ao salvar",
+        description: error.message || "Não foi possível salvar os dados do paciente.",
+        variant: "destructive"
+      });
+      throw error;
+    }
+  };
+
+  const handleEnviarNotificacao = (agendamento) => {
+    setAgendamentoSelecionado(agendamento);
+    setNotificacaoAberta(true);
+  };
+
+  const handleFecharNotificacao = () => {
+    setNotificacaoAberta(false);
+    setAgendamentoSelecionado(null);
+  };
+
+  const handleAbrirConfirmacaoExclusao = (agendamento) => {
+    setAgendamentoParaExcluir(agendamento);
+    setConfirmacaoExclusaoAberta(true);
+  };
+
+  const handleExcluirAgendamento = async () => {
+    if (!agendamentoParaExcluir) return;
+    
+    setExcluindo(true);
+    try {
+      await safeApiCall(() => Agendamento.delete(agendamentoParaExcluir.id));
+      
+      toast({
+        title: "Agendamento excluído!",
+        description: "O agendamento foi removido do sistema com sucesso.",
+      });
+      
+      setConfirmacaoExclusaoAberta(false);
+      setAgendamentoParaExcluir(null);
+      onUpdate();
+    } catch (error) {
+      console.error("Erro ao excluir agendamento:", error);
+      toast({
+        title: "Erro ao excluir",
+        description: error.message || "Não foi possível excluir o agendamento.",
+        variant: "destructive"
+      });
+    } finally {
+      setExcluindo(false);
+    }
+  };
+
+  return (
+    <>
+      <Card className="shadow-lg">
+        <CardHeader className="border-b">
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <Calendar className="w-5 h-5 text-blue-600" />
+                {periodo === 'dia' ? 'Agendamentos do Dia' : 
+                 periodo === 'semana' ? 'Agendamentos da Semana' : 
+                 'Agendamentos do Mês'}
+              </CardTitle>
+              {periodo === 'dia' && dia && (
+                <p className="text-gray-600">
+                  {format(dia, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                </p>
+              )}
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-4">
+          {loading ? (
+            <div className="space-y-4">
+              {Array(4).fill(0).map((_, i) => (
+                <div key={i} className="p-4 border rounded-lg">
+                  <div className="flex justify-between items-start mb-2">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-6 w-20 rounded-full" />
+                  </div>
+                  <Skeleton className="h-3 w-24 mb-1" />
+                  <Skeleton className="h-3 w-28" />
+                </div>
+              ))}
+            </div>
+          ) : agendamentos.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <Calendar className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+              <p>Nenhum agendamento encontrado</p>
+            </div>
+          ) : (
+            <div className="space-y-3 max-h-[600px] overflow-y-auto">
+              {agendamentos
+                .sort((a, b) => {
+                  const dateA = new Date(`${a.data_agendamento}T${a.horario || '00:00'}`);
+                  const dateB = new Date(`${b.data_agendamento}T${b.horario || '00:00'}`);
+                  return dateA - dateB;
+                })
+                .map((agendamento) => (
+                  <div key={agendamento.id} className="p-4 border rounded-lg hover:shadow-md transition-shadow bg-white">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2 flex-wrap">
+                          {/* NOVO: Mostrar data quando não for visualização diária */}
+                          {periodo !== 'dia' && (
+                            <span className="text-sm font-semibold text-blue-700 bg-blue-50 px-2 py-1 rounded">
+                              {format(new Date(agendamento.data_agendamento + 'T00:00:00'), "EEE, dd/MM", { locale: ptBR })}
+                            </span>
+                          )}
+                          <Clock className="w-4 h-4 text-gray-500" />
+                          <span className="font-semibold text-lg">{agendamento.horario || 'Sem horário'}</span>
+                          <Badge className={`${statusColors[agendamento.status]} border`}>
+                            {agendamento.status}
+                          </Badge>
+                          {agendamento.is_reserva && (
+                            <Badge className="bg-orange-100 text-orange-700 border-orange-300">
+                              🔖 Reserva de Horário
+                            </Badge>
+                          )}
+                          {agendamento.is_encaixe && (
+                            <Badge className="bg-orange-100 text-orange-700 border-orange-300">
+                              🔄 Encaixe
+                            </Badge>
+                          )}
+                          {agendamento.is_recorrente && ( 
+                            <Badge className="bg-purple-100 text-purple-700 border-purple-300">
+                              <Repeat className="w-3 h-3 mr-1" />
+                              Recorrente
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEnviarNotificacao(agendamento)}
+                          title="Enviar notificação WhatsApp/SMS"
+                          className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                        >
+                          <MessageSquare className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onEditarAgendamento(agendamento)}
+                          title="Editar agendamento"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleAbrirConfirmacaoExclusao(agendamento)}
+                          title="Excluir agendamento"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-1 ml-7">
+                      {agendamento.is_reserva ? (
+                        <>
+                          <p className="flex items-center gap-2 text-sm font-medium text-orange-700">
+                            🔖 Horário Reservado - Aguardando dados do paciente
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            {agendamento.medico_id ? getNomeMedico(agendamento.medico_id) + ' • ' : ''}
+                            {agendamento.tipo_servico}
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="flex items-center gap-2 text-sm">
+                            <User className="w-4 h-4 text-gray-400" />
+                            <button
+                              onClick={() => handleAbrirPaciente(agendamento.paciente_id)}
+                              className="font-medium text-blue-600 hover:text-blue-800 hover:underline cursor-pointer transition-colors"
+                              title="Clique para editar o cadastro do paciente"
+                            >
+                              {getNomePaciente(agendamento.paciente_id)}
+                            </button>
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            {getNomeMedico(agendamento.medico_id)} • {agendamento.tipo_servico}
+                          </p>
+                        </>
+                      )}
+                      {agendamento.observacoes && (
+                        <p className="text-xs text-gray-500 mt-2">
+                          {agendamento.observacoes}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Botões de ação baseados no status */}
+                    <div className="flex gap-2 mt-3 ml-7">
+                      {agendamento.is_reserva && (
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => onEditarAgendamento(agendamento)}
+                          className="text-orange-600 hover:bg-orange-50 border-orange-300"
+                        >
+                          <Edit className="w-3 h-3 mr-1" />
+                          Completar Dados da Reserva
+                        </Button>
+                      )}
+                      
+                      {!agendamento.is_reserva && agendamento.status === "Agendado" && (
+                        <>
+                          <Link to={createPageUrl('ordem-servico')} state={{ agendamento }}>
+                            <Button size="sm" variant="outline" className="text-green-600 hover:bg-green-50">
+                              <DollarSign className="w-3 h-3 mr-1" />
+                              Check-in / Pagar
+                            </Button>
+                          </Link>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => atualizarStatus(agendamento.id, "Cancelado")}
+                            disabled={atualizandoStatus === agendamento.id}
+                            className="text-red-600 hover:bg-red-50"
+                          >
+                            <XCircle className="w-3 h-3 mr-1" />
+                            Cancelar
+                          </Button>
+                        </>
+                      )}
+                      
+                      {!agendamento.is_reserva && agendamento.status === "Pago" && (
+                        <Link to={createPageUrl('ordem-servico')} state={{ agendamento }}>
+                          <Button size="sm" variant="outline" className="text-blue-600 hover:bg-blue-50">
+                            <FileText className="w-3 h-3 mr-1" />
+                            Editar OS
+                          </Button>
+                        </Link>
+                      )}
+                      
+                      {!agendamento.is_reserva && (agendamento.status === "Em Atendimento" || agendamento.status === "Finalizado") && (
+                        <Link to={createPageUrl('ordem-servico')} state={{ agendamento }}>
+                          <Button size="sm" variant="outline" className="text-blue-600 hover:bg-blue-50">
+                            <FileText className="w-3 h-3 mr-1" />
+                            Editar OS
+                          </Button>
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {agendamentoSelecionado && (
+        <EnviarNotificacao
+          agendamento={agendamentoSelecionado}
+          paciente={pacientes.find(p => p.id === agendamentoSelecionado.paciente_id)}
+          medico={medicos.find(m => m.id === agendamentoSelecionado.medico_id)}
+          aberto={notificacaoAberta}
+          onFechar={handleFecharNotificacao}
+        />
+      )}
+
+      {agendamentoParaExcluir && (
+        <ConfirmacaoExclusao
+          aberto={confirmacaoExclusaoAberta}
+          onFechar={() => {
+            setConfirmacaoExclusaoAberta(false);
+            setAgendamentoParaExcluir(null);
+          }}
+          onConfirmar={handleExcluirAgendamento}
+          titulo="Excluir Agendamento"
+          mensagem={
+            <div>
+              <p className="mb-2">Tem certeza que deseja excluir este agendamento?</p>
+              <div className="bg-gray-50 p-3 rounded-md text-sm space-y-1">
+                <p><strong>Paciente:</strong> {getNomePaciente(agendamentoParaExcluir.paciente_id)}</p>
+                <p><strong>Médico:</strong> {getNomeMedico(agendamentoParaExcluir.medico_id)}</p>
+                <p><strong>Data:</strong> {format(new Date(agendamentoParaExcluir.data_agendamento + 'T00:00:00'), "dd/MM/yyyy", { locale: ptBR })}</p>
+                <p><strong>Horário:</strong> {agendamentoParaExcluir.horario}</p>
+              </div>
+              <p className="mt-3 text-red-600 font-semibold">⚠️ Esta ação não pode ser desfeita!</p>
+            </div>
+          }
+          carregando={excluindo}
+        />
+      )}
+
+      {formularioPacienteAberto && pacienteParaEditar && (
+        <FormularioPaciente
+          paciente={pacienteParaEditar}
+          onSalvar={handleSalvarPaciente}
+          onCancelar={() => {
+            setFormularioPacienteAberto(false);
+            setPacienteParaEditar(null);
+          }}
+        />
+      )}
+    </>
+  );
+}
