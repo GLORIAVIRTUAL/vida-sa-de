@@ -426,9 +426,10 @@ export default function ImportarVendasCartao() {
                               </Badge>
                             </div>
 
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm text-gray-600 mb-2">
+                            <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-sm text-gray-600 mb-2">
                               <div><strong>CPF:</strong> {venda.titular.cpf || 'N/A'}</div>
                               <div><strong>Telefone:</strong> {venda.titular.telefone || 'N/A'}</div>
+                              <div><strong>Email:</strong> {venda.titular.email || 'N/A'}</div>
                               <div><strong>Data Venda:</strong> {venda.data_venda || 'N/A'}</div>
                               <div><strong>Validade:</strong> {venda.validade_cartao || 'N/A'}</div>
                             </div>
