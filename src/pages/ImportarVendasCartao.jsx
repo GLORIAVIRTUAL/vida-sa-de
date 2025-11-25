@@ -104,7 +104,7 @@ export default function ImportarVendasCartao() {
         const colunas = linha.split('\t').map(c => c.trim());
         
         // Pular linha de cabeçalho
-        if (i === 0 && (colunas[0]?.toLowerCase().includes('nome') || colunas[0]?.toLowerCase().includes('titular'))) {
+        if (i === 0 && (colunas[0]?.toLowerCase().includes('titular') || colunas[1]?.toLowerCase().includes('codigo'))) {
           console.log('⏭️ Pulando linha de cabeçalho');
           continue;
         }
@@ -115,58 +115,63 @@ export default function ImportarVendasCartao() {
           continue;
         }
 
-        // Colunas esperadas:
-        // 0: NOME TITULAR
-        // 1: CPF
-        // 2: RG
-        // 3: DATA NASCIMENTO
-        // 4: SEXO
-        // 5: EMAIL
-        // 6: TELEFONE
-        // 7: DATA VENDA
-        // 8: CEP
-        // 9: LOGRADOURO
-        // 10: NUMERO
-        // 11: COMPLEMENTO
-        // 12: BAIRRO
-        // 13: CIDADE
-        // 14: ESTADO
-        // 15: PLANO
-        // 16: FORMA PAGAMENTO
-        // 17: VALOR
-        // 18: VENCIMENTO
+        // NOVO FORMATO baseado na planilha do usuário:
+        // 0: TITULAR (indica se é "TITULAR" ou "DEPENDENTE")
+        // 1: MODCAR (código)
+        // 2: NOME
+        // 3: CPF
+        // 4: RG
+        // 5: NASCIMEN (data nascimento)
+        // 6: SE (sexo)
+        // 7: TELEFONE
+        // 8: EMAIL
+        // 9: DATA VI (data venda)
+        // 10: CEP
+        // 11: NDIR (endereço)
+        // 12: NUM
+        // 13: COMPLE
+        // 14: BAIRRO
+        // 15: CIDADE
+        // 16: ES (estado)
+        // 17: PLANO
+        // 18: FORMA PA
+        // 19: VALOR
+        // 20: VENCIMEN
 
-        const nome = colunas[0] || '';
-        const cpf = formatarCPF(colunas[1]);
-        const rg = colunas[2] || '';
-        const dataNascimento = parseData(colunas[3]);
-        const sexo = colunas[4] || '';
-        const email = colunas[5] || '';
-        const telefone = colunas[6] || '';
-        const dataVenda = parseData(colunas[7]);
-        const cep = colunas[8] || '';
-        const logradouro = colunas[9] || '';
-        const numero = colunas[10] || '';
-        const complemento = colunas[11] || '';
-        const bairro = colunas[12] || '';
-        const cidade = colunas[13] || '';
-        const estado = colunas[14] || '';
-        const plano = colunas[15] || '';
-        const formaPagamento = colunas[16] || '';
-        const valor = colunas[17] || '';
-        const vencimento = parseData(colunas[18]);
+        const tipoRegistro = (colunas[0] || '').toUpperCase();
+        const codigoCartao = colunas[1] || '';
+        const nome = colunas[2] || '';
+        const cpf = formatarCPF(colunas[3]);
+        const rg = colunas[4] || '';
+        const dataNascimento = parseData(colunas[5]);
+        const sexo = colunas[6] || '';
+        const telefone = colunas[7] || '';
+        const email = colunas[8] || '';
+        const dataVenda = parseData(colunas[9]);
+        const cep = colunas[10] || '';
+        const logradouro = colunas[11] || '';
+        const numero = colunas[12] || '';
+        const complemento = colunas[13] || '';
+        const bairro = colunas[14] || '';
+        const cidade = colunas[15] || '';
+        const estado = colunas[16] || '';
+        const plano = colunas[17] || '';
+        const formaPagamento = colunas[18] || '';
+        const valor = colunas[19] || '';
+        const vencimento = parseData(colunas[20]);
 
-        // Verificar se é um TITULAR (tem data de venda e valor)
-        const ehTitular = dataVenda && valor && parseFloat(valor.replace(',', '.').replace(/[^\d.-]/g, '')) > 0;
+        // Verificar se é TITULAR pela coluna 0
+        const ehTitular = tipoRegistro.includes('TITULAR');
+        const ehDependente = tipoRegistro.includes('DEPENDENTE');
 
-        if (ehTitular) {
+        if (ehTitular && nome) {
           // Salvar venda anterior se existir
           if (vendaAtual) {
             vendas.push(vendaAtual);
           }
 
           // Criar nova venda
-          const valorNumerico = parseFloat(valor.replace(',', '.').replace(/[^\d.-]/g, '')) || 0;
+          const valorNumerico = parseFloat((valor || '0').replace(',', '.').replace(/[^\d.-]/g, '')) || 0;
           
           vendaAtual = {
             titular: {
@@ -193,12 +198,13 @@ export default function ImportarVendasCartao() {
             plano_original: plano,
             forma_pagamento: normalizarFormaPagamento(formaPagamento),
             valor_total: valorNumerico,
-            status: 'Ativo'
+            status: 'Ativo',
+            codigo_cartao: codigoCartao
           };
 
           console.log(`👤 Titular encontrado: ${nome} - R$ ${valorNumerico}`);
 
-        } else if (vendaAtual && nome) {
+        } else if (ehDependente && vendaAtual && nome) {
           // É um DEPENDENTE do titular atual
           vendaAtual.dependentes.push({
             nome: nome,
@@ -219,11 +225,21 @@ export default function ImportarVendasCartao() {
 
       // Determinar tipo de plano para cada venda
       vendas.forEach(venda => {
-        venda.tipo_plano = determinarTipoPlano(
-          venda.valor_total,
-          venda.forma_pagamento,
-          venda.dependentes.length
-        );
+        // Se tem plano original, usar ele para determinar tipo
+        if (venda.plano_original) {
+          const planoLower = venda.plano_original.toLowerCase();
+          if (planoLower.includes('individual')) {
+            venda.tipo_plano = planoLower.includes('parcelado') ? 'Individual Parcelado' : 'Individual à Vista';
+          } else if (planoLower.includes('familiar')) {
+            venda.tipo_plano = planoLower.includes('parcelado') ? 'Familiar Parcelado' : 'Familiar à Vista';
+          } else if (planoLower.includes('grupo')) {
+            venda.tipo_plano = planoLower.includes('parcelado') ? 'Grupo Parcelado' : 'Grupo à Vista';
+          } else {
+            venda.tipo_plano = determinarTipoPlano(venda.valor_total, venda.forma_pagamento, venda.dependentes.length);
+          }
+        } else {
+          venda.tipo_plano = determinarTipoPlano(venda.valor_total, venda.forma_pagamento, venda.dependentes.length);
+        }
         venda.quantidade_cartoes = 1 + venda.dependentes.length;
         venda.valor_cartoes = venda.quantidade_cartoes * 5;
       });
