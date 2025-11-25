@@ -185,8 +185,11 @@ export default function ImportarVendasCartao() {
             vendas.push(vendaAtual);
           }
 
-          // Criar nova venda
-          const valorNumerico = parseFloat((valor || '0').replace(',', '.').replace(/[^\d.-]/g, '')) || 0;
+          // Criar nova venda - limpar valor removendo R$, espaços e convertendo vírgula
+          const valorLimpo = (valor || '0').toString().replace('R$', '').replace(/\s/g, '').replace(',', '.').replace(/[^\d.-]/g, '');
+          const valorNumerico = parseFloat(valorLimpo) || 0;
+          
+          console.log(`💰 Valor processado: "${valor}" -> "${valorLimpo}" -> ${valorNumerico}`);
           
           vendaAtual = {
             titular: {
