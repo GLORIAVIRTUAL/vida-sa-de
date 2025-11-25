@@ -160,7 +160,8 @@ export default function ImportarVendasCartao() {
         const valor = colunas[19] || '';
         const vencimento = parseData(colunas[20]);
         
-        console.log(`Linha ${i}: valor="${valor}", vencimento="${colunas[20]}"`);
+        console.log(`Linha ${i}: tipoRegistro="${tipoRegistro}", nome="${nome}", valor="${valor}" (col19="${colunas[19]}"), vencimento="${vencimento}" (col20="${colunas[20]}")`);
+        console.log(`  Todas colunas: ${colunas.join(' | ')}`);
 
         // Verificar se é TITULAR pela coluna 0
         const ehTitular = tipoRegistro.includes('TITULAR');
