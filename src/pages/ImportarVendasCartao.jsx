@@ -103,8 +103,9 @@ export default function ImportarVendasCartao() {
         // Dividir por TAB (padrão de colar do Excel/Sheets)
         const colunas = linha.split('\t').map(c => c.trim());
         
-        // Pular linha de cabeçalho
-        if (i === 0 && (colunas[0]?.toLowerCase().includes('titular') || colunas[1]?.toLowerCase().includes('codigo'))) {
+        // Pular linha de cabeçalho SOMENTE se a coluna 0 for literalmente "TITULAR/DEPENDENTE" ou similar (não apenas "TITULAR")
+        const col0Lower = (colunas[0] || '').toLowerCase();
+        if (i === 0 && (col0Lower.includes('titular/dependente') || col0Lower === 'tipo' || colunas[1]?.toLowerCase() === 'modcar' || colunas[1]?.toLowerCase() === 'codigo')) {
           console.log('⏭️ Pulando linha de cabeçalho');
           continue;
         }
