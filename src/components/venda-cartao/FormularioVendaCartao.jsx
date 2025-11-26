@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -45,6 +44,7 @@ export default function FormularioVendaCartao({ venda, onClose, onSave }) { // N
       cpf: '',
       data_nascimento: '',
       telefone: '',
+      email: '',
       endereco: {
         cep: '',
         logradouro: '',
@@ -71,6 +71,7 @@ export default function FormularioVendaCartao({ venda, onClose, onSave }) { // N
       cpf: '',
       data_nascimento: '',
       telefone: '',
+      email: '',
       endereco: {
         cep: '',
         logradouro: '',
@@ -644,6 +645,17 @@ export default function FormularioVendaCartao({ venda, onClose, onSave }) { // N
                     value={formData.titular.telefone}
                     onChange={(e) => handleTitularChange('telefone', e.target.value)}
                     placeholder="(00) 00000-0000"
+                  />
+                </div>
+
+                <div className="col-span-2">
+                  <Label htmlFor="titular_email">Email</Label>
+                  <Input
+                    id="titular_email"
+                    type="email"
+                    value={formData.titular.email || ''}
+                    onChange={(e) => handleTitularChange('email', e.target.value)}
+                    placeholder="email@exemplo.com"
                   />
                 </div>
               </div>
