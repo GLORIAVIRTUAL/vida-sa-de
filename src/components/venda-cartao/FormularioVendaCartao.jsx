@@ -63,6 +63,8 @@ export default function FormularioVendaCartao({ venda, onClose, onSave }) { // N
     forma_pagamento: venda.forma_pagamento || 'Dinheiro',
     numero_parcelas: venda.numero_parcelas || 1,
     valor_parcela: venda.valor_parcela || CUSTO_CARTAO_FISICO,
+    data_venda: venda.data_venda || '',
+    validade_cartao: venda.validade_cartao || '',
     observacoes: venda.observacoes || ''
   } : {
     tipo_plano: '',
@@ -316,6 +318,8 @@ export default function FormularioVendaCartao({ venda, onClose, onSave }) { // N
           forma_pagamento: formData.forma_pagamento,
           numero_parcelas: parseInt(formData.numero_parcelas),
           valor_parcela: parseFloat(formData.valor_parcela),
+          data_venda: formData.data_venda,
+          validade_cartao: formData.validade_cartao,
           observacoes: formData.observacoes
         }));
 
@@ -590,6 +594,30 @@ export default function FormularioVendaCartao({ venda, onClose, onSave }) { // N
                         value={`R$ ${formData.valor_parcela.toFixed(2).replace('.', ',')}`}
                         disabled
                         className="bg-gray-100 font-semibold"
+                      />
+                    </div>
+                  </>
+                )}
+
+                {/* Campos de Data - apenas para edição */}
+                {venda && (
+                  <>
+                    <div>
+                      <Label htmlFor="data_venda">Data da Venda</Label>
+                      <Input
+                        id="data_venda"
+                        type="date"
+                        value={formData.data_venda}
+                        onChange={(e) => handleChange('data_venda', e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="validade_cartao">Validade do Cartão</Label>
+                      <Input
+                        id="validade_cartao"
+                        type="date"
+                        value={formData.validade_cartao}
+                        onChange={(e) => handleChange('validade_cartao', e.target.value)}
                       />
                     </div>
                   </>
