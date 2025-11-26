@@ -237,12 +237,16 @@ export default function ImportarVendasCartao() {
         // Se tem plano original, usar ele para determinar tipo
         if (venda.plano_original) {
           const planoLower = venda.plano_original.toLowerCase();
-          if (planoLower.includes('individual')) {
-            venda.tipo_plano = planoLower.includes('parcelado') ? 'Individual Parcelado' : 'Individual à Vista';
-          } else if (planoLower.includes('familiar')) {
-            venda.tipo_plano = planoLower.includes('parcelado') ? 'Familiar Parcelado' : 'Familiar à Vista';
-          } else if (planoLower.includes('grupo')) {
-            venda.tipo_plano = planoLower.includes('parcelado') ? 'Grupo Parcelado' : 'Grupo à Vista';
+          const ehParcelado = venda.forma_pagamento?.toLowerCase().includes('crédito') || 
+                              venda.forma_pagamento?.toLowerCase().includes('credito') ||
+                              planoLower.includes('parcelado');
+          
+          if (planoLower.includes('individual') || planoLower.includes('1)') || planoLower.includes('(1')) {
+            venda.tipo_plano = ehParcelado ? 'Individual Parcelado' : 'Individual à Vista';
+          } else if (planoLower.includes('familiar') || planoLower.includes('2-5') || planoLower.includes('(2')) {
+            venda.tipo_plano = ehParcelado ? 'Familiar Parcelado' : 'Familiar à Vista';
+          } else if (planoLower.includes('grupo') || planoLower.includes('6-10') || planoLower.includes('(6')) {
+            venda.tipo_plano = ehParcelado ? 'Grupo Parcelado' : 'Grupo à Vista';
           } else {
             venda.tipo_plano = determinarTipoPlano(venda.valor_total, venda.forma_pagamento, venda.dependentes.length);
           }
