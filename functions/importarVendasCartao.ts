@@ -120,33 +120,24 @@ Deno.serve(async (req) => {
             dependentes: (venda.dependentes || []).length
           };
 
+          // Pequena pausa entre cada venda para evitar rate limit
+          await new Promise(resolve => setTimeout(resolve, 300));
+
         } catch (error) {
           console.error(`❌ Erro na venda ${index}: ${venda.titular.nome}:`, error.message);
-          return {
+          resultado.detalhes.push({
             index,
             nome: venda.titular.nome,
             status: 'erro',
             erro: error.message
-          };
-        }
-      });
-
-      // Aguardar todas as promessas do lote
-      const resultadosLote = await Promise.all(promises);
-      
-      // Processar resultados
-      for (const res of resultadosLote) {
-        resultado.detalhes.push(res);
-        if (res.status === 'sucesso') {
-          resultado.sucesso++;
-        } else {
-          resultado.erros.push({ nome: res.nome, erro: res.erro });
+          });
+          resultado.erros.push({ nome: venda.titular.nome, erro: error.message });
         }
       }
 
-      // Pequena pausa entre lotes para não sobrecarregar
+      // Pausa maior entre lotes
       if (i + BATCH_SIZE < vendas.length) {
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
     }
 
