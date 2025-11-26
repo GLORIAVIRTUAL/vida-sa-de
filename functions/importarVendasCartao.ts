@@ -113,12 +113,13 @@ Deno.serve(async (req) => {
             observacoes: `Importado em ${new Date().toLocaleString('pt-BR')} | Plano original: ${venda.plano_original || 'N/A'}`
           });
 
-          return {
+          resultado.detalhes.push({
             index,
             nome: venda.titular.nome,
             status: 'sucesso',
             dependentes: (venda.dependentes || []).length
-          };
+          });
+          resultado.sucesso++;
 
           // Pequena pausa entre cada venda para evitar rate limit
           await new Promise(resolve => setTimeout(resolve, 300));
