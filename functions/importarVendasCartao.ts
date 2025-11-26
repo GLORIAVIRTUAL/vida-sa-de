@@ -43,15 +43,16 @@ Deno.serve(async (req) => {
       detalhes: []
     };
 
-    // Processar vendas em lotes de 10 para evitar sobrecarga
-    const BATCH_SIZE = 10;
+    // Processar vendas em lotes menores para evitar rate limit
+    const BATCH_SIZE = 3;
     
     for (let i = 0; i < vendas.length; i += BATCH_SIZE) {
       const lote = vendas.slice(i, i + BATCH_SIZE);
       console.log(`📦 Processando lote ${Math.floor(i/BATCH_SIZE) + 1}/${Math.ceil(vendas.length/BATCH_SIZE)}`);
 
-      // Processar cada venda do lote
-      const promises = lote.map(async (venda, loteIndex) => {
+      // Processar cada venda do lote SEQUENCIALMENTE para evitar rate limit
+      for (let loteIndex = 0; loteIndex < lote.length; loteIndex++) {
+        const venda = lote[loteIndex];
         const index = i + loteIndex;
         
         try {
