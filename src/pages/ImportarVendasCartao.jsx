@@ -115,16 +115,16 @@ export default function ImportarVendasCartao() {
           continue;
         }
 
-        // FORMATO DA PLANILHA:
+        // FORMATO DA PLANILHA (SEM EMAIL):
         // 0: TITULAR/DEPENDENTE
         // 1: MODCAR (código)
         // 2: NOME
         // 3: CPF
-        // 4: RG
+        // 4: (vazio/RG)
         // 5: NASCIMENTO
         // 6: SEXO
         // 7: TELEFONE
-        // 8: EMAIL
+        // 8: (vazio)
         // 9: DATA VENDA
         // 10: CEP
         // 11: TIPO LOGRADOURO (RUA, AV, etc)
@@ -139,6 +139,9 @@ export default function ImportarVendasCartao() {
         // 20: VALOR
         // 21: VALIDADE
 
+        // Debug: mostrar colunas para análise
+        console.log(`📋 Linha ${i}: ${colunas.length} colunas`, colunas.slice(0, 5));
+
         const tipoRegistro = (colunas[0] || '').toUpperCase();
         const codigoCartao = colunas[1] || '';
         const nome = colunas[2] || '';
@@ -147,7 +150,7 @@ export default function ImportarVendasCartao() {
         const dataNascimento = parseData(colunas[5]);
         const sexo = colunas[6] || '';
         const telefone = colunas[7] || '';
-        const email = colunas[8] || '';
+        const email = ''; // Email removido - coluna não existe mais
         const dataVenda = parseData(colunas[9]);
         const cep = colunas[10] || '';
         const tipoLogradouro = colunas[11] || '';
