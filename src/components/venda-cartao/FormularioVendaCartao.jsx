@@ -306,6 +306,24 @@ export default function FormularioVendaCartao({ venda, onClose, onSave }) { // N
       if (venda) {
         console.log('✏️ Atualizando venda existente:', venda.id);
         
+        // Verificar se a validade foi alterada e atualizar status
+        let novoStatus = venda.status;
+        if (formData.validade_cartao) {
+          const hoje = new Date();
+          hoje.setHours(0, 0, 0, 0);
+          const novaValidade = new Date(formData.validade_cartao);
+          novaValidade.setHours(0, 0, 0, 0);
+          
+          // Se a nova validade é no futuro e o status era Vencido, mudar para Ativo
+          if (novaValidade >= hoje && venda.status === 'Vencido') {
+            novoStatus = 'Ativo';
+          }
+          // Se a nova validade é no passado, marcar como Vencido
+          else if (novaValidade < hoje && venda.status !== 'Cancelado') {
+            novoStatus = 'Vencido';
+          }
+        }
+
         // Atualizar a venda
         await safeApiCall(() => VendaCartao.update(venda.id, {
           tipo_plano: formData.tipo_plano,
@@ -320,6 +338,7 @@ export default function FormularioVendaCartao({ venda, onClose, onSave }) { // N
           valor_parcela: parseFloat(formData.valor_parcela),
           data_venda: formData.data_venda,
           validade_cartao: formData.validade_cartao,
+          status: novoStatus,
           observacoes: formData.observacoes
         }));
 
