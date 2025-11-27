@@ -706,41 +706,76 @@ export default function FormularioMedico({ medico, open, onClose, onUpdate }) {
                   {/* Valor padrão para convênios */}
                   <div className="bg-gray-50 p-3 rounded-lg mb-4">
                     {formData.tipo_repasse === 'percentual' ? (
-                      <div>
-                        <Label htmlFor="percentual_repasse_convenio" className="text-sm">
-                          Percentual Padrão Convênios (%)
-                        </Label>
-                        <Input
-                          id="percentual_repasse_convenio"
-                          type="number"
-                          min="0"
-                          max="100"
-                          step="0.01"
-                          value={formData.percentual_repasse_convenio}
-                          onChange={(e) => handleInputChange('percentual_repasse_convenio', e.target.value)}
-                          placeholder="0"
-                          className="mt-1"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="percentual_repasse_convenio" className="text-sm">
+                            Consulta Convênio (%) - Padrão
+                          </Label>
+                          <Input
+                            id="percentual_repasse_convenio"
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.01"
+                            value={formData.percentual_repasse_convenio}
+                            onChange={(e) => handleInputChange('percentual_repasse_convenio', e.target.value)}
+                            placeholder="0"
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="percentual_repasse_procedimento_convenio" className="text-sm">
+                            Procedimento Convênio (%) - Padrão
+                          </Label>
+                          <Input
+                            id="percentual_repasse_procedimento_convenio"
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.01"
+                            value={formData.percentual_repasse_procedimento_convenio}
+                            onChange={(e) => handleInputChange('percentual_repasse_procedimento_convenio', e.target.value)}
+                            placeholder="0"
+                            className="mt-1"
+                          />
+                        </div>
+                        <p className="text-xs text-gray-500 col-span-2">
                           Usado quando não há configuração específica para o convênio
                         </p>
                       </div>
                     ) : (
-                      <div>
-                        <Label htmlFor="valor_repasse_fixo_convenio" className="text-sm">
-                          Valor Fixo Padrão Convênios (R$)
-                        </Label>
-                        <Input
-                          id="valor_repasse_fixo_convenio"
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={formData.valor_repasse_fixo_convenio}
-                          onChange={(e) => handleInputChange('valor_repasse_fixo_convenio', e.target.value)}
-                          placeholder="0.00"
-                          className="mt-1"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="valor_repasse_fixo_convenio" className="text-sm">
+                            Consulta Convênio (R$) - Padrão
+                          </Label>
+                          <Input
+                            id="valor_repasse_fixo_convenio"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={formData.valor_repasse_fixo_convenio}
+                            onChange={(e) => handleInputChange('valor_repasse_fixo_convenio', e.target.value)}
+                            placeholder="0.00"
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="valor_repasse_fixo_procedimento_convenio" className="text-sm">
+                            Procedimento Convênio (R$) - Padrão
+                          </Label>
+                          <Input
+                            id="valor_repasse_fixo_procedimento_convenio"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={formData.valor_repasse_fixo_procedimento_convenio}
+                            onChange={(e) => handleInputChange('valor_repasse_fixo_procedimento_convenio', e.target.value)}
+                            placeholder="0.00"
+                            className="mt-1"
+                          />
+                        </div>
+                        <p className="text-xs text-gray-500 col-span-2">
                           Usado quando não há configuração específica para o convênio
                         </p>
                       </div>
