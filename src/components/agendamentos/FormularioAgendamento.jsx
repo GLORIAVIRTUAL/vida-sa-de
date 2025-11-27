@@ -2734,6 +2734,7 @@ export default function FormularioAgendamento({ agendamento, agendamentosDoDia, 
                     <SelectItem value="PIX">PIX</SelectItem>
                     <SelectItem value="Transferência">Transferência Bancária</SelectItem>
                     <SelectItem value="Convênio">Convênio</SelectItem>
+                    <SelectItem value="Múltiplas Formas">Múltiplas Formas</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
