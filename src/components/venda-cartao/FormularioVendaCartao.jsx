@@ -196,7 +196,7 @@ export default function FormularioVendaCartao({ venda, onClose, onSave }) { // N
       return;
     }
     
-    const novosDependentes = [...formData.dependentes, { nome: '', cpf: '', data_nascimento: '' }];
+    const novosDependentes = [...formData.dependentes, { nome: '', cpf: '', data_nascimento: '', telefone: '' }];
     const novaQuantidadeCartoes = 1 + novosDependentes.length; // Titular + novos dependentes
     const novoValorTotal = calcularValorTotal(formData.valor_plano, novaQuantidadeCartoes);
     const parcelas = formData.numero_parcelas > 0 ? formData.numero_parcelas : 1;
@@ -830,7 +830,7 @@ export default function FormularioVendaCartao({ venda, onClose, onSave }) { // N
                             <Trash2 className="w-4 h-4 text-red-500" />
                           </Button>
                         </div>
-                        <div className="grid grid-cols-3 gap-4">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                           <div>
                             <Label>Nome Completo</Label>
                             <Input
@@ -853,6 +853,14 @@ export default function FormularioVendaCartao({ venda, onClose, onSave }) { // N
                               type="date"
                               value={dep.data_nascimento}
                               onChange={(e) => handleDependenteChange(index, 'data_nascimento', e.target.value)}
+                            />
+                          </div>
+                          <div>
+                            <Label>Telefone</Label>
+                            <Input
+                              value={dep.telefone || ''}
+                              onChange={(e) => handleDependenteChange(index, 'telefone', e.target.value)}
+                              placeholder="(00) 00000-0000"
                             />
                           </div>
                         </div>
