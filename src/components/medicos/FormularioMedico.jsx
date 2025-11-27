@@ -66,6 +66,7 @@ export default function FormularioMedico({ medico, open, onClose, onUpdate }) {
   useEffect(() => {
     if (open) {
       carregarUsuarios();
+      carregarCategorias();
       
       if (medico) {
         console.log('📝 Carregando dados do médico para edição:', medico);
@@ -77,11 +78,12 @@ export default function FormularioMedico({ medico, open, onClose, onUpdate }) {
           telefone: medico.telefone || '',
           email: medico.email || '',
           foto_url: medico.foto_url || '',
-          tipo_repasse: medico.tipo_repasse || 'percentual', // Load new field
+          tipo_repasse: medico.tipo_repasse || 'percentual',
           percentual_repasse: medico.percentual_repasse || 0,
           percentual_repasse_convenio: medico.percentual_repasse_convenio || 0,
-          valor_repasse_fixo: medico.valor_repasse_fixo || 0, // Load new field
-          valor_repasse_fixo_convenio: medico.valor_repasse_fixo_convenio || 0, // Load new field
+          valor_repasse_fixo: medico.valor_repasse_fixo || 0,
+          valor_repasse_fixo_convenio: medico.valor_repasse_fixo_convenio || 0,
+          repasses_por_categoria: medico.repasses_por_categoria || [],
           tempo_consulta_minutos: medico.tempo_consulta_minutos || 30,
           horarios_atendimento: medico.horarios_atendimento || [],
           status: medico.status || 'Ativo',
@@ -89,7 +91,6 @@ export default function FormularioMedico({ medico, open, onClose, onUpdate }) {
           limite_ordem_chegada: medico.limite_ordem_chegada || 1,
         });
       } else {
-        // Limpar formulário para novo médico
         setFormData({
           user_id: '',
           nome: '',
@@ -98,11 +99,12 @@ export default function FormularioMedico({ medico, open, onClose, onUpdate }) {
           telefone: '',
           email: '',
           foto_url: '',
-          tipo_repasse: 'percentual', // Default for new medico
+          tipo_repasse: 'percentual',
           percentual_repasse: 0,
           percentual_repasse_convenio: 0,
-          valor_repasse_fixo: 0, // Default for new medico
-          valor_repasse_fixo_convenio: 0, // Default for new medico
+          valor_repasse_fixo: 0,
+          valor_repasse_fixo_convenio: 0,
+          repasses_por_categoria: [],
           tempo_consulta_minutos: 30,
           horarios_atendimento: [],
           status: 'Ativo',
