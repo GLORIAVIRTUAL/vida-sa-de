@@ -24,11 +24,22 @@ const statusPagamentoColors = {
   "Cancelado": "bg-red-100 text-red-800"
 };
 
-export default function DetalhesOS({ os, pacienteNome, medicoNome, open, onClose }) {
+const normalizeString = (str) => {
+  if (!str) return '';
+  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
+};
+
+export default function DetalhesOS({ os, pacienteNome, medicoNome, categoriaNome, open, onClose }) {
   if (!os) return null;
 
-  // Calcular imposto (10%)
-  const valorImposto = os.valor_final * 0.10;
+  // Verificar se a categoria é isenta de imposto (Particular ou Cartão Mais Vida)
+  const categoriaNormalizada = normalizeString(categoriaNome);
+  const isParticular = categoriaNormalizada === 'PARTICULAR';
+  const isCartaoMaisVida = categoriaNormalizada.includes('CARTAO') && categoriaNormalizada.includes('MAIS') && categoriaNormalizada.includes('VIDA');
+  const isentoImposto = isParticular || isCartaoMaisVida;
+
+  // Calcular imposto (10%) apenas para categorias não isentas
+  const valorImposto = isentoImposto ? 0 : os.valor_final * 0.10;
   const valorAposImposto = os.valor_final - valorImposto;
 
   const dataExecucao = os.data_execucao ? new Date(os.data_execucao + 'T00:00:00') : null;
