@@ -42,11 +42,12 @@ export default function FormularioMedico({ medico, open, onClose, onUpdate }) {
     telefone: '',
     email: '',
     foto_url: '',
-    tipo_repasse: 'percentual', // New field
+    tipo_repasse: 'percentual',
     percentual_repasse: 0,
     percentual_repasse_convenio: 0,
-    valor_repasse_fixo: 0, // New field
-    valor_repasse_fixo_convenio: 0, // New field
+    valor_repasse_fixo: 0,
+    valor_repasse_fixo_convenio: 0,
+    repasses_por_categoria: [],
     tempo_consulta_minutos: 30,
     horarios_atendimento: [],
     status: 'Ativo',
@@ -58,6 +59,7 @@ export default function FormularioMedico({ medico, open, onClose, onUpdate }) {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [usuarios, setUsuarios] = useState([]);
+  const [categorias, setCategorias] = useState([]);
   const [loadingUsuarios, setLoadingUsuarios] = useState(true);
   const [uploadingFoto, setUploadingFoto] = useState(false);
 
