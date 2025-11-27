@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
@@ -34,325 +33,342 @@ export default function DetalhesOS({ os, pacienteNome, medicoNome, open, onClose
 
   const dataExecucao = os.data_execucao ? new Date(os.data_execucao + 'T00:00:00') : null;
 
-  const handleImprimir = () => {
-    const dataAtual = format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
+  // Função para converter número em valor por extenso
+  const valorPorExtenso = (valor) => {
+    const unidades = ['', 'um', 'dois', 'três', 'quatro', 'cinco', 'seis', 'sete', 'oito', 'nove'];
+    const especiais = ['dez', 'onze', 'doze', 'treze', 'quatorze', 'quinze', 'dezesseis', 'dezessete', 'dezoito', 'dezenove'];
+    const dezenas = ['', '', 'vinte', 'trinta', 'quarenta', 'cinquenta', 'sessenta', 'setenta', 'oitenta', 'noventa'];
+    const centenas = ['', 'cento', 'duzentos', 'trezentos', 'quatrocentos', 'quinhentos', 'seiscentos', 'setecentos', 'oitocentos', 'novecentos'];
+
+    if (valor === 0) return 'zero reais';
+    if (valor === 100) return 'cem reais';
+
+    const partes = valor.toFixed(2).split('.');
+    const inteiro = parseInt(partes[0]);
+    const centavos = parseInt(partes[1]);
+
+    let extenso = '';
+
+    if (inteiro > 0) {
+      if (inteiro >= 1000) {
+        const milhares = Math.floor(inteiro / 1000);
+        if (milhares === 1) {
+          extenso += 'mil';
+        } else {
+          extenso += unidades[milhares] + ' mil';
+        }
+        const resto = inteiro % 1000;
+        if (resto > 0) extenso += ' ';
+      }
+
+      const resto = inteiro % 1000;
+      if (resto >= 100) {
+        if (resto === 100) {
+          extenso += 'cem';
+        } else {
+          extenso += centenas[Math.floor(resto / 100)];
+          if (resto % 100 > 0) extenso += ' e ';
+        }
+      }
+
+      const dezena = resto % 100;
+      if (dezena >= 10 && dezena <= 19) {
+        extenso += especiais[dezena - 10];
+      } else if (dezena >= 20) {
+        extenso += dezenas[Math.floor(dezena / 10)];
+        if (dezena % 10 > 0) extenso += ' e ' + unidades[dezena % 10];
+      } else if (dezena > 0) {
+        extenso += unidades[dezena];
+      }
+
+      extenso += inteiro === 1 ? ' real' : ' reais';
+    }
+
+    if (centavos > 0) {
+      if (inteiro > 0) extenso += ' e ';
+      if (centavos >= 10 && centavos <= 19) {
+        extenso += especiais[centavos - 10];
+      } else if (centavos >= 20) {
+        extenso += dezenas[Math.floor(centavos / 10)];
+        if (centavos % 10 > 0) extenso += ' e ' + unidades[centavos % 10];
+      } else {
+        extenso += unidades[centavos];
+      }
+      extenso += centavos === 1 ? ' centavo' : ' centavos';
+    }
+
+    return extenso.charAt(0).toUpperCase() + extenso.slice(1);
+  };
+
+  const handleImprimirRecibo = () => {
+    const dataAtual = format(new Date(), "dd/MM/yyyy", { locale: ptBR });
+    const numeroRecibo = os.numero_os || os.id?.substring(0, 6).toUpperCase();
+    const valorFormatado = os.valor_final?.toFixed(2).replace('.', ',') || '0,00';
+    const valorExtenso = valorPorExtenso(os.valor_final || 0);
     
+    // Descrição do serviço
+    let descricaoServico = `${dataExecucao ? format(dataExecucao, "dd/MM/yyyy", { locale: ptBR }) : dataAtual} - ${os.tipo_servico}`;
+    if (os.itens && os.itens.length > 0) {
+      descricaoServico += ` - R$ ${valorFormatado}`;
+    } else {
+      descricaoServico += ` - R$ ${valorFormatado}`;
+    }
+
+    // Info de pagamento
+    let infoPagamento = os.forma_pagamento || 'Dinheiro';
+    if (os.parcelas && os.parcelas > 1) {
+      infoPagamento += `: R$ ${valorFormatado}`;
+      infoPagamento += `<br/>- Parcelamentos: ${os.parcelas}x`;
+    } else {
+      infoPagamento += `: R$ ${valorFormatado}`;
+    }
+
     const htmlContent = `
       <!DOCTYPE html>
       <html>
       <head>
         <meta charset="utf-8">
-        <title>Ordem de Serviço - ${os.numero_os || os.id}</title>
+        <title>Recibo ${numeroRecibo}</title>
         <style>
           @media print {
-            @page { margin: 1cm; }
-            body { margin: 0; }
-            .no-print { display: none; }
+            @page { 
+              size: A4; 
+              margin: 10mm; 
+            }
+            body { 
+              margin: 0; 
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+          }
+          * {
+            box-sizing: border-box;
           }
           body { 
             font-family: Arial, sans-serif; 
-            margin: 20px;
+            margin: 0;
+            padding: 10px;
             color: #333;
-            line-height: 1.6;
+            font-size: 11px;
           }
-          .header { 
+          .container {
+            display: flex;
+            gap: 15px;
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+          }
+          /* Canhoto - lado esquerdo */
+          .canhoto {
+            width: 30%;
+            border: 2px solid #333;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 280px;
+          }
+          .canhoto-header {
+            margin-bottom: 15px;
+          }
+          .canhoto-row {
+            display: flex;
+            margin-bottom: 8px;
+          }
+          .canhoto-label {
+            font-weight: bold;
+            width: 60px;
+          }
+          .canhoto-value {
+            flex: 1;
+          }
+          .canhoto-nome {
+            margin: 15px 0;
+            font-size: 10px;
+          }
+          .canhoto-referente {
+            margin: 15px 0;
+            font-size: 10px;
+            border-top: 1px solid #ccc;
+            padding-top: 10px;
+          }
+          .canhoto-recibo-num {
+            margin-top: auto;
+            font-weight: bold;
+          }
+
+          /* Recibo principal - lado direito */
+          .recibo {
+            width: 70%;
+            border: 2px solid #333;
+            padding: 15px;
+            min-height: 280px;
+            display: flex;
+            flex-direction: column;
+          }
+          .recibo-header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            border-bottom: 3px solid #3b82f6;
-            padding-bottom: 20px;
-            margin-bottom: 30px;
+            align-items: flex-start;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #ddd;
           }
           .logo-section {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 10px;
           }
-          .logo { 
-            width: 80px; 
-            height: 80px;
+          .logo {
+            width: 50px;
+            height: 50px;
             object-fit: contain;
           }
-          .clinic-info {
-            flex: 1;
-          }
-          .clinic-name { 
-            font-size: 24px; 
-            font-weight: bold; 
-            color: #3b82f6;
-            margin: 0;
-          }
-          .clinic-details {
+          .clinic-name {
             font-size: 12px;
-            color: #666;
-            margin-top: 5px;
-          }
-          .os-number {
-            text-align: right;
-          }
-          .os-number-label {
-            font-size: 12px;
-            color: #666;
-            margin: 0;
-          }
-          .os-number-value {
-            font-size: 28px;
             font-weight: bold;
-            color: #3b82f6;
-            margin: 5px 0;
+            color: #0d9488;
           }
-          .os-title { 
-            font-size: 22px; 
-            font-weight: bold; 
-            text-align: center;
-            margin: 30px 0 20px 0;
-            color: #1f2937;
-          }
-          .section {
-            margin: 25px 0;
-            padding: 15px;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            background-color: #f9fafb;
-          }
-          .section-title {
+          .recibo-numero {
+            text-align: right;
             font-size: 16px;
             font-weight: bold;
-            color: #3b82f6;
-            margin: 0 0 15px 0;
-            padding-bottom: 8px;
-            border-bottom: 2px solid #3b82f6;
           }
-          .info-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid #e5e7eb;
-          }
-          .info-row:last-child {
-            border-bottom: none;
-          }
-          .info-label {
-            font-weight: 600;
-            color: #4b5563;
-            flex: 0 0 40%;
-          }
-          .info-value {
-            color: #1f2937;
+          .recibo-body {
             flex: 1;
-            text-align: right;
           }
-          .status-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 600;
-          }
-          .status-pago {
-            background-color: #d1fae5;
-            color: #065f46;
-          }
-          .status-pendente {
-            background-color: #fef3c7;
-            color: #92400e;
-          }
-          .status-cancelado {
-            background-color: #fee2e2;
-            color: #991b1b;
-          }
-          .totals-section {
-            margin: 30px 0;
-            padding: 20px;
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            border-radius: 8px;
-            color: white;
-          }
-          .total-row {
+          .recibo-linha {
             display: flex;
-            justify-content: space-between;
-            padding: 10px 0;
-            font-size: 16px;
+            margin-bottom: 12px;
+            align-items: baseline;
           }
-          .total-final {
-            font-size: 24px;
+          .recibo-label {
             font-weight: bold;
-            border-top: 2px solid rgba(255,255,255,0.3);
-            padding-top: 15px;
-            margin-top: 10px;
+            min-width: 100px;
           }
-          .items-table {
-            width: 100%;
-            border-collapse: collapse;
+          .recibo-valor {
+            flex: 1;
+            border-bottom: 1px solid #333;
+            padding-bottom: 2px;
+            margin-left: 5px;
+          }
+          .recibo-referente {
             margin: 15px 0;
           }
-          .items-table th {
-            background-color: #3b82f6;
-            color: white;
-            padding: 12px;
-            text-align: left;
-            font-weight: 600;
+          .recibo-recebido {
+            background: #f5f5f5;
+            padding: 10px;
+            border: 1px solid #ddd;
+            margin: 15px 0;
           }
-          .items-table td {
-            padding: 10px 12px;
-            border-bottom: 1px solid #e5e7eb;
-          }
-          .items-table tr:nth-child(even) {
-            background-color: #f9fafb;
-          }
-          .footer {
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 2px solid #e5e7eb;
-            text-align: center;
-            font-size: 11px;
-            color: #6b7280;
-          }
-          .observacoes {
-            background-color: #fffbeb;
-            border-left: 4px solid #f59e0b;
-            padding: 15px;
-            margin: 20px 0;
-            border-radius: 4px;
-          }
-          .observacoes-title {
+          .recibo-recebido-title {
             font-weight: bold;
-            color: #92400e;
-            margin-bottom: 8px;
+            margin-bottom: 5px;
+          }
+          .recibo-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-top: auto;
+            padding-top: 15px;
+            border-top: 1px solid #ddd;
+          }
+          .recibo-endereco {
+            font-size: 10px;
+            color: #666;
+          }
+          .recibo-assinatura {
+            text-align: center;
+          }
+          .recibo-assinatura-linha {
+            border-top: 1px solid #333;
+            width: 180px;
+            margin-bottom: 5px;
+          }
+          .recibo-assinatura-texto {
+            font-size: 10px;
+            font-weight: bold;
           }
         </style>
       </head>
       <body>
-        <div class="header">
-          <div class="logo-section">
-            <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68b9fe84de5d54897629e61a/a0f6566fe_ImagemdoWhatsAppde2025-08-31s094100_18581e21.jpg" alt="Logo" class="logo" />
-            <div class="clinic-info">
-              <h1 class="clinic-name">CENTRO VIDA SAÚDE</h1>
-              <div class="clinic-details">
-                Endereço da Clínica • Telefone: (XX) XXXX-XXXX<br/>
-                CNPJ: XX.XXX.XXX/XXXX-XX
+        <div class="container">
+          <!-- CANHOTO -->
+          <div class="canhoto">
+            <div>
+              <div class="canhoto-header">
+                <div class="canhoto-row">
+                  <span class="canhoto-label">Data:</span>
+                  <span class="canhoto-value">${dataExecucao ? format(dataExecucao, "dd/MM/yyyy", { locale: ptBR }) : dataAtual}</span>
+                </div>
+                <div class="canhoto-row">
+                  <span class="canhoto-label">Valor:</span>
+                  <span class="canhoto-value">${valorFormatado}</span>
+                </div>
+              </div>
+              
+              <div class="canhoto-nome">
+                <strong>Nome:</strong><br/>
+                ${pacienteNome}
+              </div>
+              
+              <div class="canhoto-referente">
+                <strong>Referente:</strong><br/>
+                ${descricaoServico}
+              </div>
+            </div>
+            
+            <div class="canhoto-recibo-num">
+              Recibo: ${numeroRecibo}
+            </div>
+          </div>
+
+          <!-- RECIBO PRINCIPAL -->
+          <div class="recibo">
+            <div class="recibo-header">
+              <div class="logo-section">
+                <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68b9fe84de5d54897629e61a/a0f6566fe_ImagemdoWhatsAppde2025-08-31s094100_18581e21.jpg" alt="Logo" class="logo" />
+                <div class="clinic-name">Centro<br/>Vida Saúde</div>
+              </div>
+              <div class="recibo-numero">
+                Recibo ${numeroRecibo} - R$ ${valorFormatado}
+              </div>
+            </div>
+
+            <div class="recibo-body">
+              <div class="recibo-linha">
+                <span class="recibo-label">Recebemos de</span>
+                <span class="recibo-valor">${pacienteNome}</span>
+              </div>
+              
+              <div class="recibo-linha">
+                <span class="recibo-label">a importância de</span>
+                <span class="recibo-valor">(${valorExtenso})</span>
+              </div>
+
+              <div class="recibo-referente">
+                <strong>Referente a</strong><br/>
+                ${descricaoServico}
+              </div>
+
+              <div class="recibo-recebido">
+                <div class="recibo-recebido-title">Recebido:</div>
+                <div>${infoPagamento}</div>
+              </div>
+            </div>
+
+            <div class="recibo-footer">
+              <div class="recibo-endereco">
+                Centro Vida Saúde<br/>
+                Av. Tristão Monteiro, Zona nova, Tramandaí
+              </div>
+              <div class="recibo-assinatura">
+                <div>Tramandaí, ${dataAtual}</div>
+                <div class="recibo-assinatura-linha"></div>
+                <div class="recibo-assinatura-texto">Local / Data / Assinatura</div>
               </div>
             </div>
           </div>
-          <div class="os-number">
-            <p class="os-number-label">Ordem de Serviço</p>
-            <p class="os-number-value">#${os.numero_os || os.id?.substring(0, 8)}</p>
-            <p class="os-number-label">${dataAtual}</p>
-          </div>
-        </div>
-
-        <h2 class="os-title">ORDEM DE SERVIÇO</h2>
-
-        <div class="section">
-          <h3 class="section-title">Informações do Paciente</h3>
-          <div class="info-row">
-            <span class="info-label">Nome:</span>
-            <span class="info-value">${pacienteNome}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">Data de Execução:</span>
-            <span class="info-value">${dataExecucao ? format(dataExecucao, "dd/MM/yyyy", { locale: ptBR }) : 'N/A'}</span>
-          </div>
-        </div>
-
-        <div class="section">
-          <h3 class="section-title">Informações do Atendimento</h3>
-          <div class="info-row">
-            <span class="info-label">Profissional:</span>
-            <span class="info-value">${medicoNome}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">Tipo de Serviço:</span>
-            <span class="info-value">${os.tipo_servico}</span>
-          </div>
-        </div>
-
-        ${os.itens && os.itens.length > 0 ? `
-        <div class="section">
-          <h3 class="section-title">Itens do Serviço</h3>
-          <table class="items-table">
-            <thead>
-              <tr>
-                <th>Descrição</th>
-                <th style="text-align: center;">Qtd</th>
-                <th style="text-align: right;">Valor Unit.</th>
-                <th style="text-align: right;">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${os.itens.map(item => `
-                <tr>
-                  <td>${item.descricao}</td>
-                  <td style="text-align: center;">${item.quantidade}</td>
-                  <td style="text-align: right;">R$ ${item.valor_unitario?.toFixed(2) || '0.00'}</td>
-                  <td style="text-align: right;">R$ ${item.valor_total?.toFixed(2) || '0.00'}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
-        ` : ''}
-
-        <div class="totals-section">
-          <div class="total-row">
-            <span>Valor Total:</span>
-            <span>R$ ${os.valor_total?.toFixed(2) || '0.00'}</span>
-          </div>
-          ${os.desconto && os.desconto > 0 ? `
-          <div class="total-row">
-            <span>Desconto:</span>
-            <span>- R$ ${os.desconto.toFixed(2)}</span>
-          </div>
-          ` : ''}
-          ${os.juros && os.juros > 0 ? `
-          <div class="total-row">
-            <span>Juros:</span>
-            <span>+ R$ ${os.juros.toFixed(2)}</span>
-          </div>
-          ` : ''}
-          <div class="total-row total-final">
-            <span>VALOR FINAL:</span>
-            <span>R$ ${os.valor_final?.toFixed(2) || '0.00'}</span>
-          </div>
-        </div>
-
-        <div class="section">
-          <h3 class="section-title">Informações de Pagamento</h3>
-          <div class="info-row">
-            <span class="info-label">Forma de Pagamento:</span>
-            <span class="info-value">${os.forma_pagamento}</span>
-          </div>
-          ${os.parcelas && os.parcelas > 1 ? `
-          <div class="info-row">
-            <span class="info-label">Parcelas:</span>
-            <span class="info-value">${os.parcelas}x de R$ ${(os.valor_final / os.parcelas).toFixed(2)}</span>
-          </div>
-          ` : ''}
-          ${os.bandeira_cartao ? `
-          <div class="info-row">
-            <span class="info-label">Bandeira do Cartão:</span>
-            <span class="info-value">${os.bandeira_cartao}</span>
-          </div>
-          ` : ''}
-          <div class="info-row">
-            <span class="info-label">Status do Pagamento:</span>
-            <span class="info-value">
-              <span class="status-badge status-${os.status_pagamento.toLowerCase()}">${os.status_pagamento}</span>
-            </span>
-          </div>
-        </div>
-
-        ${os.observacoes ? `
-        <div class="observacoes">
-          <div class="observacoes-title">Observações:</div>
-          <div>${os.observacoes}</div>
-        </div>
-        ` : ''}
-
-        <div class="footer">
-          <p><strong>CENTRO VIDA SAÚDE</strong></p>
-          <p>Sistema desenvolvido por Glória Virtual - Soluções com Inteligência Artificial</p>
-          <p>gloriavirtual.com | CNPJ: 51.424.200/0001-02</p>
         </div>
       </body>
       </html>
@@ -378,11 +394,11 @@ export default function DetalhesOS({ os, pacienteNome, medicoNome, open, onClose
             <Button
               variant="outline"
               size="sm"
-              onClick={handleImprimir}
+              onClick={handleImprimirRecibo}
               className="gap-2"
             >
               <Printer className="w-4 h-4" />
-              Imprimir OS
+              Imprimir Recibo
             </Button>
           </div>
         </DialogHeader>
