@@ -791,18 +791,20 @@ export default function FormularioMedico({ medico, open, onClose, onUpdate }) {
                       const valorAtual = repasseCategoria?.valor || '';
                       const tipoRepasseCategoria = repasseCategoria?.tipo_repasse || formData.tipo_repasse;
 
+                      const valorProcedimento = repasseCategoria?.valor_procedimento || '';
+
                       return (
                         <div 
                           key={categoria.id} 
-                          className="flex items-center gap-3 p-3 border rounded-lg bg-white hover:bg-gray-50"
+                          className="p-3 border rounded-lg bg-white hover:bg-gray-50"
                         >
-                          <div className="flex-1">
-                            <Label className="font-medium text-gray-800">{categoria.nome}</Label>
-                            {categoria.descricao && (
-                              <p className="text-xs text-gray-500">{categoria.descricao}</p>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center justify-between mb-2">
+                            <div>
+                              <Label className="font-medium text-gray-800">{categoria.nome}</Label>
+                              {categoria.descricao && (
+                                <p className="text-xs text-gray-500">{categoria.descricao}</p>
+                              )}
+                            </div>
                             <Select
                               value={tipoRepasseCategoria}
                               onValueChange={(value) => {
@@ -811,7 +813,7 @@ export default function FormularioMedico({ medico, open, onClose, onUpdate }) {
                                 if (index >= 0) {
                                   novosRepasses[index] = { ...novosRepasses[index], tipo_repasse: value };
                                 } else {
-                                  novosRepasses.push({ categoria_id: categoria.id, tipo_repasse: value, valor: 0 });
+                                  novosRepasses.push({ categoria_id: categoria.id, tipo_repasse: value, valor: 0, valor_procedimento: 0 });
                                 }
                                 handleInputChange('repasses_por_categoria', novosRepasses);
                               }}
@@ -824,33 +826,70 @@ export default function FormularioMedico({ medico, open, onClose, onUpdate }) {
                                 <SelectItem value="valor_fixo">R$</SelectItem>
                               </SelectContent>
                             </Select>
-                            <Input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              max={tipoRepasseCategoria === 'percentual' ? 100 : undefined}
-                              value={valorAtual}
-                              onChange={(e) => {
-                                const valor = parseFloat(e.target.value) || 0;
-                                const novosRepasses = [...(formData.repasses_por_categoria || [])];
-                                const index = novosRepasses.findIndex(r => r.categoria_id === categoria.id);
-                                if (index >= 0) {
-                                  novosRepasses[index] = { ...novosRepasses[index], valor };
-                                } else {
-                                  novosRepasses.push({ 
-                                    categoria_id: categoria.id, 
-                                    tipo_repasse: tipoRepasseCategoria, 
-                                    valor 
-                                  });
-                                }
-                                handleInputChange('repasses_por_categoria', novosRepasses);
-                              }}
-                              placeholder={tipoRepasseCategoria === 'percentual' ? '0' : '0.00'}
-                              className="w-24"
-                            />
-                            <span className="text-sm text-gray-500 w-8">
-                              {tipoRepasseCategoria === 'percentual' ? '%' : 'R$'}
-                            </span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-gray-500 w-20">Consulta:</span>
+                              <Input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                max={tipoRepasseCategoria === 'percentual' ? 100 : undefined}
+                                value={valorAtual}
+                                onChange={(e) => {
+                                  const valor = parseFloat(e.target.value) || 0;
+                                  const novosRepasses = [...(formData.repasses_por_categoria || [])];
+                                  const index = novosRepasses.findIndex(r => r.categoria_id === categoria.id);
+                                  if (index >= 0) {
+                                    novosRepasses[index] = { ...novosRepasses[index], valor };
+                                  } else {
+                                    novosRepasses.push({ 
+                                      categoria_id: categoria.id, 
+                                      tipo_repasse: tipoRepasseCategoria, 
+                                      valor,
+                                      valor_procedimento: 0
+                                    });
+                                  }
+                                  handleInputChange('repasses_por_categoria', novosRepasses);
+                                }}
+                                placeholder="0"
+                                className="w-20"
+                              />
+                              <span className="text-xs text-gray-500">
+                                {tipoRepasseCategoria === 'percentual' ? '%' : 'R$'}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-gray-500 w-24">Procedimento:</span>
+                              <Input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                max={tipoRepasseCategoria === 'percentual' ? 100 : undefined}
+                                value={valorProcedimento}
+                                onChange={(e) => {
+                                  const valor_procedimento = parseFloat(e.target.value) || 0;
+                                  const novosRepasses = [...(formData.repasses_por_categoria || [])];
+                                  const index = novosRepasses.findIndex(r => r.categoria_id === categoria.id);
+                                  if (index >= 0) {
+                                    novosRepasses[index] = { ...novosRepasses[index], valor_procedimento };
+                                  } else {
+                                    novosRepasses.push({ 
+                                      categoria_id: categoria.id, 
+                                      tipo_repasse: tipoRepasseCategoria, 
+                                      valor: 0,
+                                      valor_procedimento
+                                    });
+                                  }
+                                  handleInputChange('repasses_por_categoria', novosRepasses);
+                                }}
+                                placeholder="0"
+                                className="w-20"
+                              />
+                              <span className="text-xs text-gray-500">
+                                {tipoRepasseCategoria === 'percentual' ? '%' : 'R$'}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       );
