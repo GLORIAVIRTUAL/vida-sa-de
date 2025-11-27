@@ -958,6 +958,12 @@ export default function FormularioAgendamento({ agendamento, agendamentosDoDia, 
         return;
       }
 
+      if (formData.tipo_servico === 'Múltiplos Serviços' && (!formData.itens_servico || formData.itens_servico.length === 0)) {
+        toast({ title: "Erro", description: "Adicione ao menos um serviço", variant: "destructive" });
+        setSalvando(false);
+        return;
+      }
+
       // Validação para campos de recorrência se is_recorrente for true
       if (formData.is_recorrente && (!formData.recorrencia_tipo || !formData.recorrencia_data_fim)) {
         toast({
