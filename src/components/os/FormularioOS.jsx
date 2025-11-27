@@ -148,22 +148,21 @@ export default function FormularioOS({
     if (medico && valorTotal > 0) {
       const categoriaNome = categorias?.find(c => c.id === agendamento.categoria_preco_id)?.nome || '';
       const categoriaNormalizada = normalizeString(categoriaNome);
-      
+
       const isParticular = categoriaNormalizada === 'PARTICULAR';
       const isCartaoMaisVida = categoriaNormalizada.includes('CARTAO') && categoriaNormalizada.includes('MAIS') && categoriaNormalizada.includes('VIDA');
-      
+
       // Categorias isentas de imposto: Particular e Cartão Mais Vida
       const isentoImposto = isParticular || isCartaoMaisVida;
-      
+
       const percentual = isParticular
         ? (medico.percentual_repasse || 0)
         : (medico.percentual_repasse_convenio || medico.percentual_repasse || 0);
-      
+
       if (percentual > 0) {
         const bruto = valorTotal * (percentual / 100);
-        // Aplicar imposto de 10% apenas para categorias NÃO isentas (convênios/prefeituras)
-        const imposto = isentoImposto ? 0 : bruto * 0.10;
-        repasseMedico = bruto - imposto;
+        // NÃO aplicar imposto de 10% para Particular e Cartão Mais Vida
+        repasseMedico = isentoImposto ? bruto : bruto * 0.90;
       }
     }
 
