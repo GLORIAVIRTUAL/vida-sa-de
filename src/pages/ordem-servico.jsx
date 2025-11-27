@@ -375,6 +375,7 @@ export default function OrdemDeServico() {
             categoriaNome={detalhesData.categoria?.nome || ''}
             open={true}
             onClose={handleFecharDetalhes}
+            onUpdate={handleAtualizarOS}
           />
         )}
       </div>
