@@ -130,6 +130,13 @@ export default function FormularioAgendamento({ agendamento, agendamentosDoDia, 
   });
   const [salvandoPacienteRapido, setSalvandoPacienteRapido] = useState(false);
 
+  // Estados para seleção de serviços adicionais em múltiplos serviços
+  const [servicoParaAdicionar, setServicoParaAdicionar] = useState({ tipo: '', id: '', medicoId: '' });
+  
+  // NOVO: Estado para horários disponíveis do médico selecionado em múltiplos serviços
+  const [horariosMultiplosServicos, setHorariosMultiplosServicos] = useState([]);
+  const [loadingHorariosMultiplos, setLoadingHorariosMultiplos] = useState(false);
+
   // Função para buscar preço da consulta baseado no médico e categoria
   const buscarPrecoConsulta = useCallback((medicoId, categoriaId) => {
     if (!medicoId || !categoriaId) return 0;
