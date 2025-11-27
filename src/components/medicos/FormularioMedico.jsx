@@ -627,7 +627,7 @@ export default function FormularioMedico({ medico, open, onClose, onUpdate }) {
                 {formData.tipo_repasse === 'percentual' ? (
                   <div className="grid md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="percentual_repasse">Repasse Consulta Particular (%)</Label>
+                      <Label htmlFor="percentual_repasse">Repasse Particular (%)</Label>
                       <Input
                         id="percentual_repasse"
                         type="number"
@@ -639,30 +639,32 @@ export default function FormularioMedico({ medico, open, onClose, onUpdate }) {
                         placeholder="0"
                       />
                       <p className="text-xs text-gray-500 mt-1">
-                        Para consultas particulares
+                        Para atendimentos particulares
                       </p>
                     </div>
-                    <div>
-                      <Label htmlFor="percentual_repasse_procedimento">Repasse Procedimento Particular (%)</Label>
-                      <Input
-                        id="percentual_repasse_procedimento"
-                        type="number"
-                        min="0"
-                        max="100"
-                        step="0.01"
-                        value={formData.percentual_repasse_procedimento}
-                        onChange={(e) => handleInputChange('percentual_repasse_procedimento', e.target.value)}
-                        placeholder="0"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        Para procedimentos particulares
-                      </p>
-                    </div>
+                    {['Clínico Geral', 'Otorrinolaringologia'].includes(formData.especialidade) && (
+                      <div>
+                        <Label htmlFor="percentual_repasse_procedimento">Repasse Procedimento Particular (%)</Label>
+                        <Input
+                          id="percentual_repasse_procedimento"
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.01"
+                          value={formData.percentual_repasse_procedimento}
+                          onChange={(e) => handleInputChange('percentual_repasse_procedimento', e.target.value)}
+                          placeholder="0"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Para procedimentos particulares
+                        </p>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="grid md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="valor_repasse_fixo">Repasse Consulta Particular (R$)</Label>
+                      <Label htmlFor="valor_repasse_fixo">Repasse Particular (R$)</Label>
                       <Input
                         id="valor_repasse_fixo"
                         type="number"
@@ -673,24 +675,26 @@ export default function FormularioMedico({ medico, open, onClose, onUpdate }) {
                         placeholder="0.00"
                       />
                       <p className="text-xs text-gray-500 mt-1">
-                        Valor fixo por consulta particular
+                        Valor fixo por atendimento particular
                       </p>
                     </div>
-                    <div>
-                      <Label htmlFor="valor_repasse_fixo_procedimento">Repasse Procedimento Particular (R$)</Label>
-                      <Input
-                        id="valor_repasse_fixo_procedimento"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={formData.valor_repasse_fixo_procedimento}
-                        onChange={(e) => handleInputChange('valor_repasse_fixo_procedimento', e.target.value)}
-                        placeholder="0.00"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        Valor fixo por procedimento particular
-                      </p>
-                    </div>
+                    {['Clínico Geral', 'Otorrinolaringologia'].includes(formData.especialidade) && (
+                      <div>
+                        <Label htmlFor="valor_repasse_fixo_procedimento">Repasse Procedimento Particular (R$)</Label>
+                        <Input
+                          id="valor_repasse_fixo_procedimento"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={formData.valor_repasse_fixo_procedimento}
+                          onChange={(e) => handleInputChange('valor_repasse_fixo_procedimento', e.target.value)}
+                          placeholder="0.00"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Valor fixo por procedimento particular
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -709,7 +713,7 @@ export default function FormularioMedico({ medico, open, onClose, onUpdate }) {
                       <div className="grid md:grid-cols-2 gap-4">
                         <div>
                           <Label htmlFor="percentual_repasse_convenio" className="text-sm">
-                            Consulta Convênio (%) - Padrão
+                            Convênio (%) - Padrão
                           </Label>
                           <Input
                             id="percentual_repasse_convenio"
@@ -723,22 +727,24 @@ export default function FormularioMedico({ medico, open, onClose, onUpdate }) {
                             className="mt-1"
                           />
                         </div>
-                        <div>
-                          <Label htmlFor="percentual_repasse_procedimento_convenio" className="text-sm">
-                            Procedimento Convênio (%) - Padrão
-                          </Label>
-                          <Input
-                            id="percentual_repasse_procedimento_convenio"
-                            type="number"
-                            min="0"
-                            max="100"
-                            step="0.01"
-                            value={formData.percentual_repasse_procedimento_convenio}
-                            onChange={(e) => handleInputChange('percentual_repasse_procedimento_convenio', e.target.value)}
-                            placeholder="0"
-                            className="mt-1"
-                          />
-                        </div>
+                        {['Clínico Geral', 'Otorrinolaringologia'].includes(formData.especialidade) && (
+                          <div>
+                            <Label htmlFor="percentual_repasse_procedimento_convenio" className="text-sm">
+                              Procedimento Convênio (%) - Padrão
+                            </Label>
+                            <Input
+                              id="percentual_repasse_procedimento_convenio"
+                              type="number"
+                              min="0"
+                              max="100"
+                              step="0.01"
+                              value={formData.percentual_repasse_procedimento_convenio}
+                              onChange={(e) => handleInputChange('percentual_repasse_procedimento_convenio', e.target.value)}
+                              placeholder="0"
+                              className="mt-1"
+                            />
+                          </div>
+                        )}
                         <p className="text-xs text-gray-500 col-span-2">
                           Usado quando não há configuração específica para o convênio
                         </p>
@@ -747,7 +753,7 @@ export default function FormularioMedico({ medico, open, onClose, onUpdate }) {
                       <div className="grid md:grid-cols-2 gap-4">
                         <div>
                           <Label htmlFor="valor_repasse_fixo_convenio" className="text-sm">
-                            Consulta Convênio (R$) - Padrão
+                            Convênio (R$) - Padrão
                           </Label>
                           <Input
                             id="valor_repasse_fixo_convenio"
@@ -760,21 +766,23 @@ export default function FormularioMedico({ medico, open, onClose, onUpdate }) {
                             className="mt-1"
                           />
                         </div>
-                        <div>
-                          <Label htmlFor="valor_repasse_fixo_procedimento_convenio" className="text-sm">
-                            Procedimento Convênio (R$) - Padrão
-                          </Label>
-                          <Input
-                            id="valor_repasse_fixo_procedimento_convenio"
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={formData.valor_repasse_fixo_procedimento_convenio}
-                            onChange={(e) => handleInputChange('valor_repasse_fixo_procedimento_convenio', e.target.value)}
-                            placeholder="0.00"
-                            className="mt-1"
-                          />
-                        </div>
+                        {['Clínico Geral', 'Otorrinolaringologia'].includes(formData.especialidade) && (
+                          <div>
+                            <Label htmlFor="valor_repasse_fixo_procedimento_convenio" className="text-sm">
+                              Procedimento Convênio (R$) - Padrão
+                            </Label>
+                            <Input
+                              id="valor_repasse_fixo_procedimento_convenio"
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={formData.valor_repasse_fixo_procedimento_convenio}
+                              onChange={(e) => handleInputChange('valor_repasse_fixo_procedimento_convenio', e.target.value)}
+                              placeholder="0.00"
+                              className="mt-1"
+                            />
+                          </div>
+                        )}
                         <p className="text-xs text-gray-500 col-span-2">
                           Usado quando não há configuração específica para o convênio
                         </p>
@@ -792,19 +800,20 @@ export default function FormularioMedico({ medico, open, onClose, onUpdate }) {
                       const tipoRepasseCategoria = repasseCategoria?.tipo_repasse || formData.tipo_repasse;
 
                       const valorProcedimento = repasseCategoria?.valor_procedimento || '';
+                      const mostrarProcedimento = ['Clínico Geral', 'Otorrinolaringologia'].includes(formData.especialidade);
 
                       return (
                         <div 
                           key={categoria.id} 
-                          className="p-3 border rounded-lg bg-white hover:bg-gray-50"
+                          className="flex items-center gap-3 p-3 border rounded-lg bg-white hover:bg-gray-50"
                         >
-                          <div className="flex items-center justify-between mb-2">
-                            <div>
-                              <Label className="font-medium text-gray-800">{categoria.nome}</Label>
-                              {categoria.descricao && (
-                                <p className="text-xs text-gray-500">{categoria.descricao}</p>
-                              )}
-                            </div>
+                          <div className="flex-1">
+                            <Label className="font-medium text-gray-800">{categoria.nome}</Label>
+                            {categoria.descricao && (
+                              <p className="text-xs text-gray-500">{categoria.descricao}</p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
                             <Select
                               value={tipoRepasseCategoria}
                               onValueChange={(value) => {
@@ -818,7 +827,7 @@ export default function FormularioMedico({ medico, open, onClose, onUpdate }) {
                                 handleInputChange('repasses_por_categoria', novosRepasses);
                               }}
                             >
-                              <SelectTrigger className="w-28">
+                              <SelectTrigger className="w-20">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
@@ -826,70 +835,68 @@ export default function FormularioMedico({ medico, open, onClose, onUpdate }) {
                                 <SelectItem value="valor_fixo">R$</SelectItem>
                               </SelectContent>
                             </Select>
-                          </div>
-                          <div className="grid grid-cols-2 gap-3">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs text-gray-500 w-20">Consulta:</span>
-                              <Input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                max={tipoRepasseCategoria === 'percentual' ? 100 : undefined}
-                                value={valorAtual}
-                                onChange={(e) => {
-                                  const valor = parseFloat(e.target.value) || 0;
-                                  const novosRepasses = [...(formData.repasses_por_categoria || [])];
-                                  const index = novosRepasses.findIndex(r => r.categoria_id === categoria.id);
-                                  if (index >= 0) {
-                                    novosRepasses[index] = { ...novosRepasses[index], valor };
-                                  } else {
-                                    novosRepasses.push({ 
-                                      categoria_id: categoria.id, 
-                                      tipo_repasse: tipoRepasseCategoria, 
-                                      valor,
-                                      valor_procedimento: 0
-                                    });
-                                  }
-                                  handleInputChange('repasses_por_categoria', novosRepasses);
-                                }}
-                                placeholder="0"
-                                className="w-20"
-                              />
-                              <span className="text-xs text-gray-500">
-                                {tipoRepasseCategoria === 'percentual' ? '%' : 'R$'}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs text-gray-500 w-24">Procedimento:</span>
-                              <Input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                max={tipoRepasseCategoria === 'percentual' ? 100 : undefined}
-                                value={valorProcedimento}
-                                onChange={(e) => {
-                                  const valor_procedimento = parseFloat(e.target.value) || 0;
-                                  const novosRepasses = [...(formData.repasses_por_categoria || [])];
-                                  const index = novosRepasses.findIndex(r => r.categoria_id === categoria.id);
-                                  if (index >= 0) {
-                                    novosRepasses[index] = { ...novosRepasses[index], valor_procedimento };
-                                  } else {
-                                    novosRepasses.push({ 
-                                      categoria_id: categoria.id, 
-                                      tipo_repasse: tipoRepasseCategoria, 
-                                      valor: 0,
-                                      valor_procedimento
-                                    });
-                                  }
-                                  handleInputChange('repasses_por_categoria', novosRepasses);
-                                }}
-                                placeholder="0"
-                                className="w-20"
-                              />
-                              <span className="text-xs text-gray-500">
-                                {tipoRepasseCategoria === 'percentual' ? '%' : 'R$'}
-                              </span>
-                            </div>
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              max={tipoRepasseCategoria === 'percentual' ? 100 : undefined}
+                              value={valorAtual}
+                              onChange={(e) => {
+                                const valor = parseFloat(e.target.value) || 0;
+                                const novosRepasses = [...(formData.repasses_por_categoria || [])];
+                                const index = novosRepasses.findIndex(r => r.categoria_id === categoria.id);
+                                if (index >= 0) {
+                                  novosRepasses[index] = { ...novosRepasses[index], valor };
+                                } else {
+                                  novosRepasses.push({ 
+                                    categoria_id: categoria.id, 
+                                    tipo_repasse: tipoRepasseCategoria, 
+                                    valor,
+                                    valor_procedimento: 0
+                                  });
+                                }
+                                handleInputChange('repasses_por_categoria', novosRepasses);
+                              }}
+                              placeholder="0"
+                              className="w-20"
+                            />
+                            <span className="text-xs text-gray-500 w-6">
+                              {tipoRepasseCategoria === 'percentual' ? '%' : 'R$'}
+                            </span>
+                            {mostrarProcedimento && (
+                              <>
+                                <span className="text-xs text-gray-400 mx-1">|</span>
+                                <span className="text-xs text-gray-500">Proc:</span>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  max={tipoRepasseCategoria === 'percentual' ? 100 : undefined}
+                                  value={valorProcedimento}
+                                  onChange={(e) => {
+                                    const valor_procedimento = parseFloat(e.target.value) || 0;
+                                    const novosRepasses = [...(formData.repasses_por_categoria || [])];
+                                    const index = novosRepasses.findIndex(r => r.categoria_id === categoria.id);
+                                    if (index >= 0) {
+                                      novosRepasses[index] = { ...novosRepasses[index], valor_procedimento };
+                                    } else {
+                                      novosRepasses.push({ 
+                                        categoria_id: categoria.id, 
+                                        tipo_repasse: tipoRepasseCategoria, 
+                                        valor: 0,
+                                        valor_procedimento
+                                      });
+                                    }
+                                    handleInputChange('repasses_por_categoria', novosRepasses);
+                                  }}
+                                  placeholder="0"
+                                  className="w-20"
+                                />
+                                <span className="text-xs text-gray-500 w-6">
+                                  {tipoRepasseCategoria === 'percentual' ? '%' : 'R$'}
+                                </span>
+                              </>
+                            )}
                           </div>
                         </div>
                       );
