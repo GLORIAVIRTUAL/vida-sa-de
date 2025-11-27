@@ -609,76 +609,174 @@ export default function FormularioMedico({ medico, open, onClose, onUpdate }) {
                 </div>
 
                 {formData.tipo_repasse === 'percentual' ? (
-                  <>
-                    <div>
-                      <Label htmlFor="percentual_repasse">Percentual Repasse Particular (%)</Label>
-                      <Input
-                        id="percentual_repasse"
-                        type="number"
-                        min="0"
-                        max="100"
-                        step="0.01"
-                        value={formData.percentual_repasse}
-                        onChange={(e) => handleInputChange('percentual_repasse', e.target.value)}
-                        placeholder="0"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        Percentual que o médico recebe em atendimentos particulares
-                      </p>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="percentual_repasse_convenio">Percentual Repasse Convênio (%)</Label>
-                      <Input
-                        id="percentual_repasse_convenio"
-                        type="number"
-                        min="0"
-                        max="100"
-                        step="0.01"
-                        value={formData.percentual_repasse_convenio}
-                        onChange={(e) => handleInputChange('percentual_repasse_convenio', e.target.value)}
-                        placeholder="0"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        Percentual que o médico recebe em atendimentos de convênio/plano
-                      </p>
-                    </div>
-                  </>
+                  <div>
+                    <Label htmlFor="percentual_repasse">Percentual Repasse Particular (%)</Label>
+                    <Input
+                      id="percentual_repasse"
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      value={formData.percentual_repasse}
+                      onChange={(e) => handleInputChange('percentual_repasse', e.target.value)}
+                      placeholder="0"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Percentual que o médico recebe em atendimentos particulares
+                    </p>
+                  </div>
                 ) : (
-                  <>
-                    <div>
-                      <Label htmlFor="valor_repasse_fixo">Valor Repasse Particular (R$)</Label>
-                      <Input
-                        id="valor_repasse_fixo"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={formData.valor_repasse_fixo}
-                        onChange={(e) => handleInputChange('valor_repasse_fixo', e.target.value)}
-                        placeholder="0.00"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        Valor fixo que o médico recebe por atendimento particular (ex: R$ 60,00)
-                      </p>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="valor_repasse_fixo_convenio">Valor Repasse Convênio (R$)</Label>
-                      <Input
-                        id="valor_repasse_fixo_convenio"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={formData.valor_repasse_fixo_convenio}
-                        onChange={(e) => handleInputChange('valor_repasse_fixo_convenio', e.target.value)}
-                        placeholder="0.00"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        Valor fixo que o médico recebe por atendimento de convênio/plano (ex: R$ 40,00)
-                      </p>
-                    </div>
-                  </>
+                  <div>
+                    <Label htmlFor="valor_repasse_fixo">Valor Repasse Particular (R$)</Label>
+                    <Input
+                      id="valor_repasse_fixo"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={formData.valor_repasse_fixo}
+                      onChange={(e) => handleInputChange('valor_repasse_fixo', e.target.value)}
+                      placeholder="0.00"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Valor fixo que o médico recebe por atendimento particular (ex: R$ 60,00)
+                    </p>
+                  </div>
                 )}
+
+                <Separator className="my-4" />
+
+                {/* Repasse por Convênio/Categoria */}
+                <div>
+                  <h4 className="font-semibold text-gray-800 mb-3">Repasse por Convênio/Categoria</h4>
+                  <p className="text-xs text-gray-500 mb-4">
+                    Configure o repasse específico para cada convênio. Se não configurado, será usado o valor padrão abaixo.
+                  </p>
+
+                  {/* Valor padrão para convênios */}
+                  <div className="bg-gray-50 p-3 rounded-lg mb-4">
+                    {formData.tipo_repasse === 'percentual' ? (
+                      <div>
+                        <Label htmlFor="percentual_repasse_convenio" className="text-sm">
+                          Percentual Padrão Convênios (%)
+                        </Label>
+                        <Input
+                          id="percentual_repasse_convenio"
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.01"
+                          value={formData.percentual_repasse_convenio}
+                          onChange={(e) => handleInputChange('percentual_repasse_convenio', e.target.value)}
+                          placeholder="0"
+                          className="mt-1"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Usado quando não há configuração específica para o convênio
+                        </p>
+                      </div>
+                    ) : (
+                      <div>
+                        <Label htmlFor="valor_repasse_fixo_convenio" className="text-sm">
+                          Valor Fixo Padrão Convênios (R$)
+                        </Label>
+                        <Input
+                          id="valor_repasse_fixo_convenio"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={formData.valor_repasse_fixo_convenio}
+                          onChange={(e) => handleInputChange('valor_repasse_fixo_convenio', e.target.value)}
+                          placeholder="0.00"
+                          className="mt-1"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Usado quando não há configuração específica para o convênio
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Lista de categorias/convênios */}
+                  <div className="space-y-3">
+                    {categorias.map((categoria) => {
+                      const repasseCategoria = formData.repasses_por_categoria?.find(
+                        r => r.categoria_id === categoria.id
+                      );
+                      const valorAtual = repasseCategoria?.valor || '';
+                      const tipoRepasseCategoria = repasseCategoria?.tipo_repasse || formData.tipo_repasse;
+
+                      return (
+                        <div 
+                          key={categoria.id} 
+                          className="flex items-center gap-3 p-3 border rounded-lg bg-white hover:bg-gray-50"
+                        >
+                          <div className="flex-1">
+                            <Label className="font-medium text-gray-800">{categoria.nome}</Label>
+                            {categoria.descricao && (
+                              <p className="text-xs text-gray-500">{categoria.descricao}</p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Select
+                              value={tipoRepasseCategoria}
+                              onValueChange={(value) => {
+                                const novosRepasses = [...(formData.repasses_por_categoria || [])];
+                                const index = novosRepasses.findIndex(r => r.categoria_id === categoria.id);
+                                if (index >= 0) {
+                                  novosRepasses[index] = { ...novosRepasses[index], tipo_repasse: value };
+                                } else {
+                                  novosRepasses.push({ categoria_id: categoria.id, tipo_repasse: value, valor: 0 });
+                                }
+                                handleInputChange('repasses_por_categoria', novosRepasses);
+                              }}
+                            >
+                              <SelectTrigger className="w-28">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="percentual">%</SelectItem>
+                                <SelectItem value="valor_fixo">R$</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              max={tipoRepasseCategoria === 'percentual' ? 100 : undefined}
+                              value={valorAtual}
+                              onChange={(e) => {
+                                const valor = parseFloat(e.target.value) || 0;
+                                const novosRepasses = [...(formData.repasses_por_categoria || [])];
+                                const index = novosRepasses.findIndex(r => r.categoria_id === categoria.id);
+                                if (index >= 0) {
+                                  novosRepasses[index] = { ...novosRepasses[index], valor };
+                                } else {
+                                  novosRepasses.push({ 
+                                    categoria_id: categoria.id, 
+                                    tipo_repasse: tipoRepasseCategoria, 
+                                    valor 
+                                  });
+                                }
+                                handleInputChange('repasses_por_categoria', novosRepasses);
+                              }}
+                              placeholder={tipoRepasseCategoria === 'percentual' ? '0' : '0.00'}
+                              className="w-24"
+                            />
+                            <span className="text-sm text-gray-500 w-8">
+                              {tipoRepasseCategoria === 'percentual' ? '%' : 'R$'}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {categorias.length === 0 && (
+                      <div className="text-center py-4 text-gray-500 text-sm">
+                        Nenhum convênio cadastrado. Cadastre categorias de preço primeiro.
+                      </div>
+                    )}
+                  </div>
+                </div>
 
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
                   <h4 className="font-semibold text-blue-900 mb-2">💡 Exemplo de Cálculo</h4>
@@ -686,13 +784,13 @@ export default function FormularioMedico({ medico, open, onClose, onUpdate }) {
                     <div className="text-sm text-blue-800 space-y-1">
                       <p>• Consulta particular de R$ 150,00 com {parseFloat(formData.percentual_repasse || 0)}% de repasse</p>
                       <p className="font-semibold">→ Médico recebe: R$ {(150 * (parseFloat(formData.percentual_repasse || 0) / 100)).toFixed(2)}</p>
-                      <p>• Consulta convênio de R$ 100,00 com {parseFloat(formData.percentual_repasse_convenio || 0)}% de repasse</p>
+                      <p>• Consulta convênio de R$ 100,00 com {parseFloat(formData.percentual_repasse_convenio || 0)}% de repasse (padrão)</p>
                       <p className="font-semibold">→ Médico recebe: R$ {(100 * (parseFloat(formData.percentual_repasse_convenio || 0) / 100)).toFixed(2)}</p>
                     </div>
                   ) : (
                     <div className="text-sm text-blue-800 space-y-1">
                       <p>• Qualquer consulta particular: Médico recebe R$ {parseFloat(formData.valor_repasse_fixo || 0).toFixed(2)}</p>
-                      <p>• Qualquer consulta convênio: Médico recebe R$ {parseFloat(formData.valor_repasse_fixo_convenio || 0).toFixed(2)}</p>
+                      <p>• Qualquer consulta convênio (padrão): Médico recebe R$ {parseFloat(formData.valor_repasse_fixo_convenio || 0).toFixed(2)}</p>
                     </div>
                   )}
                 </div>
