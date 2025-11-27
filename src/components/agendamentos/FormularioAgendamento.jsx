@@ -1323,13 +1323,6 @@ export default function FormularioAgendamento({ agendamento, agendamentosDoDia, 
     setFormData(prev => ({ ...prev, valor_total: total.toFixed(2).toString() }));
   };
 
-  // Estados para seleção de serviços adicionais
-  const [servicoParaAdicionar, setServicoParaAdicionar] = useState({ tipo: '', id: '', medicoId: '' });
-  
-  // NOVO: Estado para horários disponíveis do médico selecionado em múltiplos serviços
-  const [horariosMultiplosServicos, setHorariosMultiplosServicos] = useState([]);
-  const [loadingHorariosMultiplos, setLoadingHorariosMultiplos] = useState(false);
-
   // Funções para controlar o redimensionamento da lista de exames
   const handleMouseDownResize = (e) => {
     e.preventDefault(); // Prevent text selection
