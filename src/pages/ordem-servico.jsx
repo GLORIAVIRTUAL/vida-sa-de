@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Agendamento, Paciente, Medico, Lancamento, Procedimento, Exame, CategoriaPreco } from "@/entities/all";
@@ -267,9 +266,10 @@ export default function OrdemDeServico() {
     const paciente = pacientes.find(p => p.id === osSelecionada.paciente_id);
     const medico = medicos.find(m => m.id === osSelecionada.medico_id);
     const agendamento = agendamentos.find(a => a.id === osSelecionada.agendamento_id);
+    const categoria = categorias.find(c => c.id === osSelecionada.categoria_preco_id);
 
-    return { paciente, medico, agendamento };
-  }, [osSelecionada, pacientes, medicos, agendamentos]);
+    return { paciente, medico, agendamento, categoria };
+  }, [osSelecionada, pacientes, medicos, agendamentos, categorias]);
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
