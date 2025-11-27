@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -10,10 +9,10 @@ import { Procedimento, TabelaPreco } from '@/entities/all'; // TabelaPreco is al
 import { Loader2 } from 'lucide-react';
 
 const especialidades = [
-  "Cardiologia", "Clínico Geral", "Dermatologia", "Endocrinologia", "Fisioterapeuta",
+  "Cardiologia", "Clínico Geral", "Dermatologia", "Eletrocardiograma", "Endocrinologia", "Fisioterapeuta",
   "Gastroenterologia", "Geral", "Ginecologia", "Hidroginástica", "Hidroterapia",
   "Massoterapia", "Neurologia", "Nutricionista", "Odontologia", "Oftalmologia",
-  "Ortopedia", "Otorrinolaringologia", "Pediatria", "Pilates", "Pneumologia",
+  "Optometrista", "Ortopedia", "Otorrinolaringologia", "Pediatria", "Pilates", "Pneumologia",
   "Psicologia", "Psicopedagoga", "Psiquiatria", "Quiropraxia", "Traumatologia", "Urologia"
 ];
 
