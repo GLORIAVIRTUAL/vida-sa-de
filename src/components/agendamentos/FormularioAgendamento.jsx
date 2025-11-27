@@ -386,6 +386,7 @@ export default function FormularioAgendamento({ agendamento, agendamentosDoDia, 
           data_agendamento: agendamento.data_agendamento ? format(new Date(agendamento.data_agendamento + 'T00:00:00'), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
           horario: agendamento.horario || '',
           tipo_servico: agendamento.tipo_servico || 'Consulta',
+          itens_servico: agendamento.itens_servico || [],
           is_encaixe: agendamento.is_encaixe || false,
           is_recorrente: agendamento.is_recorrente || false,
           recorrencia_tipo: agendamento.recorrencia_tipo || '',
@@ -398,6 +399,11 @@ export default function FormularioAgendamento({ agendamento, agendamentosDoDia, 
           status: agendamento.status || 'Agendado',
           observacoes: agendamento.observacoes || ''
         };
+        
+        // Ativar modo múltiplos serviços se já tiver itens
+        if (agendamento.itens_servico && agendamento.itens_servico.length > 0) {
+          setModoMultiplosServicos(true);
+        }
 
         if (agendamento.paciente_id) {
           try {
