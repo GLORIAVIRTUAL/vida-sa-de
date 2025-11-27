@@ -2212,21 +2212,50 @@ export default function FormularioAgendamento({ agendamento, agendamentosDoDia, 
                     </Select>
 
                     {servicoParaAdicionar.tipo === 'Consulta' && (
-                      <Select 
-                        value={servicoParaAdicionar.medicoId}
-                        onValueChange={(v) => setServicoParaAdicionar(prev => ({ ...prev, medicoId: v }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione o médico" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {medicos.map(m => (
-                            <SelectItem key={m.id} value={m.id}>
-                              Dr(a). {m.nome} - {m.especialidade}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <>
+                        <Select 
+                          value={servicoParaAdicionar.medicoId}
+                          onValueChange={(v) => setServicoParaAdicionar(prev => ({ ...prev, medicoId: v }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione o médico" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {medicos.map(m => (
+                              <SelectItem key={m.id} value={m.id}>
+                                Dr(a). {m.nome} - {m.especialidade}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        
+                        {/* Mostrar horários disponíveis do médico */}
+                        {servicoParaAdicionar.medicoId && (
+                          <div className="md:col-span-3 mt-2">
+                            {loadingHorariosMultiplos ? (
+                              <div className="flex items-center gap-2 text-sm text-gray-500">
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                Carregando horários...
+                              </div>
+                            ) : horariosMultiplosServicos.length > 0 ? (
+                              <div className="p-2 bg-green-50 border border-green-200 rounded text-sm">
+                                <span className="text-green-700 font-medium">
+                                  ✅ {horariosMultiplosServicos.length} horário(s) disponível(is) para este médico na data selecionada
+                                </span>
+                                <p className="text-xs text-green-600 mt-1">
+                                  Horários: {horariosMultiplosServicos.slice(0, 8).join(', ')}{horariosMultiplosServicos.length > 8 ? '...' : ''}
+                                </p>
+                              </div>
+                            ) : (
+                              <div className="p-2 bg-amber-50 border border-amber-200 rounded text-sm">
+                                <span className="text-amber-700 font-medium">
+                                  ⚠️ Este médico não possui horários disponíveis para {formData.data_agendamento ? format(new Date(formData.data_agendamento + 'T00:00:00'), "dd/MM/yyyy", { locale: ptBR }) : 'a data selecionada'}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </>
                     )}
 
                     {servicoParaAdicionar.tipo === 'Procedimento' && (
