@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Agendamento, Medico, Paciente, Procedimento, Exame, Notification, CategoriaPreco, TabelaPreco } from "@/entities/all";
 import { Button } from "@/components/ui/button";
@@ -616,7 +615,9 @@ export default function Agendamentos() {
           ) : (
             <VisualizacaoCalendario
               agendamentos={Array.isArray(agendamentosCalendario) ? agendamentosCalendario : []} // Use filtered list for calendar
-              medicos={Array.isArray(medicos) ? medicos : []}
+              medicos={filtroMedicoCalendario !== "todos" 
+                ? medicos.filter(m => m.id === filtroMedicoCalendario) 
+                : (Array.isArray(medicos) ? medicos : [])}
               pacientes={Array.isArray(pacientes) ? pacientes : []}
               loading={loading}
               onUpdate={carregarDados}
