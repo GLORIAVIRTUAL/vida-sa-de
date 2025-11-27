@@ -121,6 +121,10 @@ export default function FormularioAgendamento({ agendamento, agendamentosDoDia, 
   // NOVO: Estado para busca de procedimentos
   const [buscaProcedimento, setBuscaProcedimento] = useState('');
 
+  // NOVO: Estados para múltiplas formas de pagamento
+  const [pagamento1, setPagamento1] = useState({ forma: '', valor: '' });
+  const [pagamento2, setPagamento2] = useState({ forma: '', valor: '' });
+
   // NOVO: Estado para cadastro rápido de paciente
   const [cadastroRapidoAberto, setCadastroRapidoAberto] = useState(false);
   const [novoPacienteRapido, setNovoPacienteRapido] = useState({
@@ -2725,7 +2729,13 @@ export default function FormularioAgendamento({ agendamento, agendamentosDoDia, 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="forma_pagamento">Forma de Pagamento</Label>
-                <Select name="forma_pagamento" value={formData.forma_pagamento} onValueChange={(value) => handleChange('forma_pagamento', value)}>
+                <Select name="forma_pagamento" value={formData.forma_pagamento} onValueChange={(value) => {
+                  handleChange('forma_pagamento', value);
+                  if (value !== 'Múltiplas Formas') {
+                    setPagamento1({ forma: '', valor: '' });
+                    setPagamento2({ forma: '', valor: '' });
+                  }
+                }}>
                   <SelectTrigger id="forma_pagamento"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Dinheiro">Dinheiro</SelectItem>
@@ -2754,6 +2764,81 @@ export default function FormularioAgendamento({ agendamento, agendamentosDoDia, 
                 </Select>
               </div>
             </div>
+
+            {/* Campos para Múltiplas Formas de Pagamento */}
+            {formData.forma_pagamento === 'Múltiplas Formas' && (
+              <div className="p-4 border-2 border-blue-200 rounded-lg bg-blue-50 space-y-4">
+                <h4 className="font-medium text-blue-900">Detalhar Formas de Pagamento</h4>
+                
+                {/* Pagamento 1 */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-sm">Forma 1</Label>
+                    <Select value={pagamento1.forma} onValueChange={(v) => setPagamento1(prev => ({ ...prev, forma: v }))}>
+                      <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Dinheiro">Dinheiro</SelectItem>
+                        <SelectItem value="Cartão Débito">Cartão Débito</SelectItem>
+                        <SelectItem value="Cartão Crédito">Cartão Crédito</SelectItem>
+                        <SelectItem value="PIX">PIX</SelectItem>
+                        <SelectItem value="Transferência">Transferência</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-sm">Valor (R$)</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0,00"
+                      value={pagamento1.valor}
+                      onChange={(e) => setPagamento1(prev => ({ ...prev, valor: e.target.value }))}
+                    />
+                  </div>
+                </div>
+
+                {/* Pagamento 2 */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-sm">Forma 2</Label>
+                    <Select value={pagamento2.forma} onValueChange={(v) => setPagamento2(prev => ({ ...prev, forma: v }))}>
+                      <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Dinheiro">Dinheiro</SelectItem>
+                        <SelectItem value="Cartão Débito">Cartão Débito</SelectItem>
+                        <SelectItem value="Cartão Crédito">Cartão Crédito</SelectItem>
+                        <SelectItem value="PIX">PIX</SelectItem>
+                        <SelectItem value="Transferência">Transferência</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-sm">Valor (R$)</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0,00"
+                      value={pagamento2.valor}
+                      onChange={(e) => setPagamento2(prev => ({ ...prev, valor: e.target.value }))}
+                    />
+                  </div>
+                </div>
+
+                {/* Total das formas */}
+                {(pagamento1.valor || pagamento2.valor) && (
+                  <div className="pt-2 border-t border-blue-300">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-blue-800">Total informado:</span>
+                      <span className="font-bold text-blue-900">
+                        R$ {((parseFloat(pagamento1.valor) || 0) + (parseFloat(pagamento2.valor) || 0)).toFixed(2).replace('.', ',')}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
             <div>
               <Label htmlFor="observacoes">Observações</Label>
               <Textarea id="observacoes" name="observacoes" value={formData.observacoes} onChange={(e) => handleChange('observacoes', e.target.value)} placeholder="Alergias, pedidos especiais, etc." />
