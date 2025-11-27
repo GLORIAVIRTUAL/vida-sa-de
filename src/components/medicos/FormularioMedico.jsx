@@ -405,7 +405,7 @@ export default function FormularioMedico({ medico, open, onClose, onUpdate }) {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Cardiologia">Cardiologia</SelectItem>
-                  <SelectItem value="Clínico Generalista">Clínico Generalista</SelectItem>
+                  <SelectItem value="Clínico Geral">Clínico Geral</SelectItem>
                   <SelectItem value="Dermatologia">Dermatologia</SelectItem>
                   <SelectItem value="Eletrocardiograma">Eletrocardiograma</SelectItem>
                   <SelectItem value="Endocrinologia">Endocrinologia</SelectItem>
@@ -419,6 +419,7 @@ export default function FormularioMedico({ medico, open, onClose, onUpdate }) {
                   <SelectItem value="Nutricionista">Nutricionista</SelectItem>
                   <SelectItem value="Odontologia">Odontologia</SelectItem>
                   <SelectItem value="Oftalmologia">Oftalmologia</SelectItem>
+                  <SelectItem value="Optometrista">Optometrista</SelectItem>
                   <SelectItem value="Ortopedia">Ortopedia</SelectItem>
                   <SelectItem value="Otorrinolaringologia">Otorrinolaringologia</SelectItem>
                   <SelectItem value="Pediatria">Pediatria</SelectItem>
