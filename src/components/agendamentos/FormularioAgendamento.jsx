@@ -1968,18 +1968,39 @@ export default function FormularioAgendamento({ agendamento, agendamentosDoDia, 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="tipo_servico">Tipo de Serviço *</Label>
-                <Select name="tipo_servico" value={formData.tipo_servico} onValueChange={(value) => handleChange('tipo_servico', value)}>
+                <Select 
+                  name="tipo_servico" 
+                  value={formData.tipo_servico} 
+                  onValueChange={(value) => {
+                    handleChange('tipo_servico', value);
+                    if (value !== 'Múltiplos Serviços') {
+                      setModoMultiplosServicos(false);
+                      handleChange('itens_servico', []);
+                    }
+                  }}
+                >
                   <SelectTrigger id="tipo_servico"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Consulta">Consulta</SelectItem>
                     <SelectItem value="Retorno">Retorno</SelectItem>
                     <SelectItem value="Procedimento">Procedimento</SelectItem>
                     <SelectItem value="Exame">Exame</SelectItem>
+                    <SelectItem value="Múltiplos Serviços">
+                      <div className="flex items-center gap-2">
+                        <Layers className="w-4 h-4" />
+                        Múltiplos Serviços
+                      </div>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
                 {formData.tipo_servico === 'Retorno' && (
                   <p className="text-xs text-green-600 mt-1">
                     ✅ Retornos são sempre gratuitos para o paciente
+                  </p>
+                )}
+                {formData.tipo_servico === 'Múltiplos Serviços' && (
+                  <p className="text-xs text-purple-600 mt-1">
+                    🔄 Adicione consultas, procedimentos e exames no mesmo agendamento
                   </p>
                 )}
               </div>
