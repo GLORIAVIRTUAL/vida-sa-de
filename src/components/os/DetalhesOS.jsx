@@ -530,22 +530,38 @@ export default function DetalhesOS({ os, pacienteNome, medicoNome, categoriaNome
 
             <Separator className="my-4" />
 
-            {/* IMPOSTO (10%) */}
-            <div className="flex justify-between items-center bg-red-50 p-3 rounded border-l-4 border-red-400">
-              <div className="flex items-center gap-2">
-                <Receipt className="w-5 h-5 text-red-600" />
-                <span className="font-medium text-red-900">Imposto (10%):</span>
-              </div>
-              <span className="text-lg font-bold text-red-600">
-                - R$ {valorImposto.toFixed(2)}
-              </span>
-            </div>
+            {/* IMPOSTO (10%) - apenas para categorias não isentas */}
+            {!isentoImposto && (
+              <>
+                <div className="flex justify-between items-center bg-red-50 p-3 rounded border-l-4 border-red-400">
+                  <div className="flex items-center gap-2">
+                    <Receipt className="w-5 h-5 text-red-600" />
+                    <span className="font-medium text-red-900">Imposto (10%):</span>
+                  </div>
+                  <span className="text-lg font-bold text-red-600">
+                    - R$ {valorImposto.toFixed(2)}
+                  </span>
+                </div>
 
-            {/* Valor após imposto */}
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Valor após Imposto:</span>
-              <span className="text-lg font-medium">R$ {valorAposImposto.toFixed(2)}</span>
-            </div>
+                {/* Valor após imposto */}
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Valor após Imposto:</span>
+                  <span className="text-lg font-medium">R$ {valorAposImposto.toFixed(2)}</span>
+                </div>
+              </>
+            )}
+            
+            {isentoImposto && (
+              <div className="flex justify-between items-center bg-green-50 p-3 rounded border-l-4 border-green-400">
+                <div className="flex items-center gap-2">
+                  <Receipt className="w-5 h-5 text-green-600" />
+                  <span className="font-medium text-green-900">Imposto:</span>
+                </div>
+                <span className="text-lg font-bold text-green-600">
+                  Isento (Particular/Cartão Mais Vida)
+                </span>
+              </div>
+            )}
 
             <Separator className="my-4" />
 
