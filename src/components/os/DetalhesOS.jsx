@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { OrdemServico } from "@/entities/OrdemServico";
+import { useToast } from "@/components/ui/use-toast";
 import { 
   FileText, 
   User, 
@@ -15,7 +18,11 @@ import {
   Receipt,
   TrendingDown,
   Building2,
-  Printer
+  Printer,
+  Edit,
+  Save,
+  X,
+  Loader2
 } from "lucide-react";
 
 const statusPagamentoColors = {
@@ -29,8 +36,48 @@ const normalizeString = (str) => {
   return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
 };
 
-export default function DetalhesOS({ os, pacienteNome, medicoNome, categoriaNome, open, onClose }) {
+export default function DetalhesOS({ os, pacienteNome, medicoNome, categoriaNome, open, onClose, onUpdate }) {
+  const { toast } = useToast();
+  const [editando, setEditando] = useState(false);
+  const [salvando, setSalvando] = useState(false);
+  const [statusPagamento, setStatusPagamento] = useState(os?.status_pagamento || 'Pendente');
+  const [formaPagamento, setFormaPagamento] = useState(os?.forma_pagamento || 'Dinheiro');
+
   if (!os) return null;
+
+  const handleSalvar = async () => {
+    setSalvando(true);
+    try {
+      await OrdemServico.update(os.id, {
+        status_pagamento: statusPagamento,
+        forma_pagamento: formaPagamento,
+        data_pagamento: statusPagamento === 'Pago' ? new Date().toISOString() : null
+      });
+
+      toast({
+        title: "Sucesso!",
+        description: "Ordem de Serviço atualizada."
+      });
+
+      setEditando(false);
+      if (onUpdate) onUpdate();
+    } catch (error) {
+      console.error("Erro ao atualizar OS:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar: " + error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  const handleCancelarEdicao = () => {
+    setStatusPagamento(os.status_pagamento);
+    setFormaPagamento(os.forma_pagamento);
+    setEditando(false);
+  };
 
   // Verificar se a categoria é isenta de imposto (Particular ou Cartão Mais Vida)
   const categoriaNormalizada = normalizeString(categoriaNome);
@@ -415,11 +462,45 @@ export default function DetalhesOS({ os, pacienteNome, medicoNome, categoriaNome
         </DialogHeader>
 
         <div className="space-y-6">
+          {/* Botão de editar */}
+          <div className="flex justify-end">
+            {!editando ? (
+              <Button variant="outline" size="sm" onClick={() => setEditando(true)} className="gap-2">
+                <Edit className="w-4 h-4" />
+                Editar OS
+              </Button>
+            ) : (
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={handleCancelarEdicao} disabled={salvando}>
+                  <X className="w-4 h-4 mr-1" />
+                  Cancelar
+                </Button>
+                <Button size="sm" onClick={handleSalvar} disabled={salvando} className="bg-green-600 hover:bg-green-700">
+                  {salvando ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />}
+                  Salvar
+                </Button>
+              </div>
+            )}
+          </div>
+
           {/* Status e Data */}
           <div className="flex items-center justify-between">
-            <Badge className={`${statusPagamentoColors[os.status_pagamento]} text-sm px-4 py-1`}>
-              {os.status_pagamento}
-            </Badge>
+            {editando ? (
+              <Select value={statusPagamento} onValueChange={setStatusPagamento}>
+                <SelectTrigger className="w-40">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Pendente">Pendente</SelectItem>
+                  <SelectItem value="Pago">Pago</SelectItem>
+                  <SelectItem value="Cancelado">Cancelado</SelectItem>
+                </SelectContent>
+              </Select>
+            ) : (
+              <Badge className={`${statusPagamentoColors[os.status_pagamento]} text-sm px-4 py-1`}>
+                {os.status_pagamento}
+              </Badge>
+            )}
             <div className="text-sm text-gray-600">
               <Calendar className="w-4 h-4 inline mr-1" />
               {dataExecucao && !isNaN(dataExecucao.getTime()) 
@@ -615,7 +696,24 @@ export default function DetalhesOS({ os, pacienteNome, medicoNome, categoriaNome
               <CreditCard className="w-5 h-5 text-blue-600" />
               <span className="font-semibold text-blue-900">Forma de Pagamento:</span>
             </div>
-            <span className="text-lg">{os.forma_pagamento}</span>
+            {editando ? (
+              <Select value={formaPagamento} onValueChange={setFormaPagamento}>
+                <SelectTrigger className="w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Dinheiro">Dinheiro</SelectItem>
+                  <SelectItem value="Cartão Débito">Cartão Débito</SelectItem>
+                  <SelectItem value="Cartão Crédito">Cartão Crédito</SelectItem>
+                  <SelectItem value="PIX">PIX</SelectItem>
+                  <SelectItem value="Transferência">Transferência</SelectItem>
+                  <SelectItem value="Convênio">Convênio</SelectItem>
+                  <SelectItem value="Múltiplas Formas">Múltiplas Formas</SelectItem>
+                </SelectContent>
+              </Select>
+            ) : (
+              <span className="text-lg">{os.forma_pagamento}</span>
+            )}
           </div>
 
           {os.parcelas > 1 && (
