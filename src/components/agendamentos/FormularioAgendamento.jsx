@@ -2073,6 +2073,178 @@ export default function FormularioAgendamento({ agendamento, agendamentosDoDia, 
               )}
             </div>
             
+            {/* NOVO: Bloco para Múltiplos Serviços */}
+            {formData.tipo_servico === 'Múltiplos Serviços' && (
+              <div className="space-y-4 p-4 border-2 border-purple-200 rounded-lg bg-purple-50">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-medium text-lg text-purple-900 flex items-center gap-2">
+                    <Layers className="w-5 h-5" />
+                    Serviços Incluídos
+                  </h3>
+                  <Badge variant="outline" className="bg-purple-100 text-purple-700">
+                    {formData.itens_servico.length} serviço(s)
+                  </Badge>
+                </div>
+
+                {/* Adicionar novo serviço */}
+                <div className="p-3 border border-purple-300 rounded-lg bg-white space-y-3">
+                  <Label className="text-purple-800 font-medium">Adicionar Serviço</Label>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                    <Select 
+                      value={servicoParaAdicionar.tipo} 
+                      onValueChange={(v) => setServicoParaAdicionar(prev => ({ ...prev, tipo: v, id: '', medicoId: '' }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Tipo de serviço" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Consulta">Consulta</SelectItem>
+                        <SelectItem value="Procedimento">Procedimento</SelectItem>
+                        <SelectItem value="Exame">Exame</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    {servicoParaAdicionar.tipo === 'Consulta' && (
+                      <Select 
+                        value={servicoParaAdicionar.medicoId}
+                        onValueChange={(v) => setServicoParaAdicionar(prev => ({ ...prev, medicoId: v }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o médico" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {medicos.map(m => (
+                            <SelectItem key={m.id} value={m.id}>
+                              Dr(a). {m.nome} - {m.especialidade}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+
+                    {servicoParaAdicionar.tipo === 'Procedimento' && (
+                      <Select 
+                        value={servicoParaAdicionar.id}
+                        onValueChange={(v) => setServicoParaAdicionar(prev => ({ ...prev, id: v }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o procedimento" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {procedimentos.map(p => (
+                            <SelectItem key={p.id} value={p.id}>
+                              {p.nome}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+
+                    {servicoParaAdicionar.tipo === 'Exame' && (
+                      <Select 
+                        value={servicoParaAdicionar.id}
+                        onValueChange={(v) => setServicoParaAdicionar(prev => ({ ...prev, id: v }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o exame" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {exames.map(e => (
+                            <SelectItem key={e.id} value={e.id}>
+                              {e.nome}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        if (servicoParaAdicionar.tipo === 'Consulta' && servicoParaAdicionar.medicoId) {
+                          adicionarItemServico('Consulta', null, servicoParaAdicionar.medicoId);
+                        } else if (servicoParaAdicionar.tipo === 'Procedimento' && servicoParaAdicionar.id) {
+                          adicionarItemServico('Procedimento', servicoParaAdicionar.id);
+                        } else if (servicoParaAdicionar.tipo === 'Exame' && servicoParaAdicionar.id) {
+                          adicionarItemServico('Exame', servicoParaAdicionar.id);
+                        }
+                        setServicoParaAdicionar({ tipo: '', id: '', medicoId: '' });
+                      }}
+                      disabled={
+                        !servicoParaAdicionar.tipo ||
+                        (servicoParaAdicionar.tipo === 'Consulta' && !servicoParaAdicionar.medicoId) ||
+                        ((servicoParaAdicionar.tipo === 'Procedimento' || servicoParaAdicionar.tipo === 'Exame') && !servicoParaAdicionar.id)
+                      }
+                      className="bg-purple-600 hover:bg-purple-700"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Adicionar
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Lista de serviços adicionados */}
+                {formData.itens_servico.length > 0 && (
+                  <div className="space-y-2">
+                    {formData.itens_servico.map((item, index) => (
+                      <div 
+                        key={item.id} 
+                        className="flex items-center justify-between p-3 bg-white rounded border border-purple-200 hover:bg-purple-50 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <Badge 
+                            variant="outline" 
+                            className={
+                              item.tipo === 'Consulta' ? 'bg-blue-50 text-blue-700 border-blue-300' :
+                              item.tipo === 'Procedimento' ? 'bg-green-50 text-green-700 border-green-300' :
+                              'bg-orange-50 text-orange-700 border-orange-300'
+                            }
+                          >
+                            {item.tipo}
+                          </Badge>
+                          <span className="text-sm font-medium">{item.descricao}</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
+                            R$ {item.valor.toFixed(2).replace('.', ',')}
+                          </Badge>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => removerItemServico(item.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* Total */}
+                    <div className="mt-3 p-3 bg-purple-100 rounded-lg border border-purple-300">
+                      <div className="flex justify-between items-center">
+                        <span className="font-semibold text-purple-900">Total dos Serviços:</span>
+                        <span className="font-bold text-xl text-purple-900">
+                          R$ {formData.itens_servico.reduce((total, item) => total + item.valor, 0).toFixed(2).replace('.', ',')}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {formData.itens_servico.length === 0 && (
+                  <Alert className="bg-yellow-50 border-yellow-200">
+                    <AlertCircle className="w-4 h-4 text-yellow-600" />
+                    <AlertDescription className="text-yellow-800">
+                      Adicione pelo menos um serviço (consulta, procedimento ou exame) ao agendamento.
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </div>
+            )}
+
             {/* Bloco para seleção de exames com retry e compressão */}
             {formData.tipo_servico === 'Exame' && (
               <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
