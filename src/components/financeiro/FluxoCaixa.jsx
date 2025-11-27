@@ -150,6 +150,46 @@ export default function FluxoCaixa({ lancamentos, onUpdate }) {
 
   return (
     <div className="space-y-6">
+      {/* Filtros de Período */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex flex-wrap items-end gap-4">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-gray-500" />
+              <span className="font-medium text-gray-700">Período:</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="dataInicio" className="text-sm text-gray-600">De:</Label>
+              <Input
+                id="dataInicio"
+                type="date"
+                value={dataInicio}
+                onChange={(e) => setDataInicio(e.target.value)}
+                className="w-40"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="dataFim" className="text-sm text-gray-600">Até:</Label>
+              <Input
+                id="dataFim"
+                type="date"
+                value={dataFim}
+                onChange={(e) => setDataFim(e.target.value)}
+                className="w-40"
+              />
+            </div>
+            <Button
+              variant="outline"
+              onClick={handleImprimir}
+              className="gap-2"
+            >
+              <Printer className="w-4 h-4" />
+              Imprimir
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Resumo do Caixa */}
       <div className="grid md:grid-cols-3 gap-4">
         <Card className="bg-green-50 border-green-200">
