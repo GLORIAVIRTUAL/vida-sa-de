@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -147,9 +146,14 @@ export default function FormularioOS({
     let repasseLab = 0;
 
     if (medico && valorTotal > 0) {
-      const isParticular = categorias && categorias.some(c => 
-        normalizeString(c.nome) === 'PARTICULAR' && c.id === agendamento.categoria_preco_id
-      );
+      const categoriaNome = categorias?.find(c => c.id === agendamento.categoria_preco_id)?.nome || '';
+      const categoriaNormalizada = normalizeString(categoriaNome);
+      
+      const isParticular = categoriaNormalizada === 'PARTICULAR';
+      const isCartaoMaisVida = categoriaNormalizada.includes('CARTAO') && categoriaNormalizada.includes('MAIS') && categoriaNormalizada.includes('VIDA');
+      
+      // Categorias isentas de imposto: Particular e Cartão Mais Vida
+      const isentoImposto = isParticular || isCartaoMaisVida;
       
       const percentual = isParticular
         ? (medico.percentual_repasse || 0)
@@ -157,7 +161,8 @@ export default function FormularioOS({
       
       if (percentual > 0) {
         const bruto = valorTotal * (percentual / 100);
-        const imposto = bruto * 0.10;
+        // Aplicar imposto de 10% apenas para categorias NÃO isentas (convênios/prefeituras)
+        const imposto = isentoImposto ? 0 : bruto * 0.10;
         repasseMedico = bruto - imposto;
       }
     }
