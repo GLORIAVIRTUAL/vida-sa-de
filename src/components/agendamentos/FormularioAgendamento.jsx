@@ -1155,6 +1155,69 @@ export default function FormularioAgendamento({ agendamento, agendamentosDoDia, 
     handleChange('exames_ids', formData.exames_ids.filter(id => id !== exameId));
   };
 
+  // NOVO: Funções para gerenciar múltiplos serviços
+  const adicionarItemServico = (tipo, itemId = null, medicoId = null) => {
+    const particularCategory = Array.isArray(categorias) ? categorias.find(c => normalizeString(c.nome) === 'PARTICULAR') : null;
+    const isParticular = formData.categoria_preco_id === particularCategory?.id;
+    
+    let novoItem = {
+      id: Date.now().toString(), // ID temporário para o frontend
+      tipo: tipo,
+      medico_id: null,
+      procedimento_id: null,
+      exame_id: null,
+      descricao: '',
+      valor: 0
+    };
+
+    if (tipo === 'Consulta' && medicoId) {
+      const medico = medicos.find(m => m.id === medicoId);
+      if (medico) {
+        novoItem.medico_id = medicoId;
+        novoItem.descricao = `Consulta ${medico.especialidade} - Dr(a). ${medico.nome}`;
+        novoItem.valor = buscarPrecoConsulta(medicoId, formData.categoria_preco_id);
+      }
+    } else if (tipo === 'Procedimento' && itemId) {
+      const proc = procedimentos.find(p => p.id === itemId);
+      if (proc) {
+        novoItem.procedimento_id = itemId;
+        novoItem.descricao = proc.nome;
+        const preco = tabelaPrecos.find(tp => 
+          tp.procedimento_id === itemId && 
+          tp.categoria_id === formData.categoria_preco_id
+        );
+        novoItem.valor = preco?.valor || 0;
+      }
+    } else if (tipo === 'Exame' && itemId) {
+      const exame = exames.find(e => e.id === itemId);
+      if (exame) {
+        novoItem.exame_id = itemId;
+        novoItem.descricao = exame.nome;
+        novoItem.valor = isParticular ? (exame.valor_particular || 0) : (exame.valor_convenio || exame.valor_particular || 0);
+      }
+    }
+
+    if (novoItem.descricao) {
+      const novosItens = [...formData.itens_servico, novoItem];
+      handleChange('itens_servico', novosItens);
+      recalcularTotalMultiplosServicos(novosItens);
+    }
+  };
+
+  const removerItemServico = (itemId) => {
+    const novosItens = formData.itens_servico.filter(item => item.id !== itemId);
+    handleChange('itens_servico', novosItens);
+    recalcularTotalMultiplosServicos(novosItens);
+  };
+
+  const recalcularTotalMultiplosServicos = (itens) => {
+    const total = itens.reduce((soma, item) => soma + (item.valor || 0), 0);
+    setFormData(prev => ({ ...prev, valor_total: total.toFixed(2).toString() }));
+  };
+
+  // Estados para seleção de serviços adicionais
+  const [servicoParaAdicionar, setServicoParaAdicionar] = useState({ tipo: '', id: '', medicoId: '' });
+
   // Funções para controlar o redimensionamento da lista de exames
   const handleMouseDownResize = (e) => {
     e.preventDefault(); // Prevent text selection
