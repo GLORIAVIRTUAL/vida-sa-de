@@ -129,6 +129,20 @@ export default function FormularioMedico({ medico, open, onClose, onUpdate }) {
     }
   };
 
+  const carregarCategorias = async () => {
+    try {
+      const cats = await CategoriaPreco.list();
+      // Filtrar apenas categorias ativas e que NÃO sejam "Particular"
+      const categoriasConvenio = (Array.isArray(cats) ? cats : []).filter(c => 
+        c.status === 'Ativo' && c.nome?.toUpperCase() !== 'PARTICULAR'
+      );
+      setCategorias(categoriasConvenio);
+    } catch (error) {
+      console.error("Erro ao carregar categorias:", error);
+      setCategorias([]);
+    }
+  };
+
   const handleInputChange = (field, value) => {
     console.log(`🔄 Atualizando campo ${field}:`, value);
     setFormData(prev => ({
