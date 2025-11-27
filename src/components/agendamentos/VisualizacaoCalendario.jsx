@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
@@ -29,23 +28,49 @@ export default function VisualizacaoCalendario({ agendamentos, medicos, paciente
     return new Set(datas);
   }, [agendamentos]);
 
-  // Criar um mapa dos dias que os médicos atendem
-  const diasAtendimentoMedicos = useMemo(() => {
-    if (!medicos || medicos.length === 0) return new Set();
+  // Função para verificar se o médico atende em uma data específica considerando recorrência
+  const verificarMedicoAtendeNaData = (medico, data) => {
+    if (!medico.horarios_atendimento || !Array.isArray(medico.horarios_atendimento)) {
+      return false;
+    }
+
+    const diaSemana = data.getDay();
+    const diaDoMes = data.getDate();
     
-    const diasSet = new Set();
-    medicos.forEach(medico => {
-      if (medico.horarios_atendimento && Array.isArray(medico.horarios_atendimento)) {
-        medico.horarios_atendimento.forEach(horario => {
-          if (horario.dia_semana !== undefined && horario.dia_semana !== null) {
-            diasSet.add(horario.dia_semana);
-          }
-        });
+    // Calcular qual semana do mês é essa data (1ª, 2ª, 3ª, 4ª)
+    const semanaDoMes = Math.ceil(diaDoMes / 7);
+
+    return medico.horarios_atendimento.some(horario => {
+      if (horario.dia_semana !== diaSemana) return false;
+
+      const recorrencia = horario.recorrencia || 'Toda Semana';
+
+      switch (recorrencia) {
+        case 'Toda Semana':
+          return true;
+        case '1ª e 3ª Semana do Mês':
+          return semanaDoMes === 1 || semanaDoMes === 3;
+        case '2ª e 4ª Semana do Mês':
+          return semanaDoMes === 2 || semanaDoMes === 4;
+        case 'Apenas 1ª Semana do Mês':
+          return semanaDoMes === 1;
+        case 'Apenas 2ª Semana do Mês':
+          return semanaDoMes === 2;
+        case 'Apenas 3ª Semana do Mês':
+          return semanaDoMes === 3;
+        case 'Apenas 4ª Semana do Mês':
+          return semanaDoMes === 4;
+        default:
+          return true;
       }
     });
-    
-    return diasSet;
-  }, [medicos]);
+  };
+
+  // Função para verificar se algum médico atende na data
+  const verificarAlgumMedicoAtendeNaData = (data) => {
+    if (!medicos || medicos.length === 0) return false;
+    return medicos.some(medico => verificarMedicoAtendeNaData(medico, data));
+  };
 
   const agendamentosDoDia = useMemo(() => {
     // CORREÇÃO: Usar as mesmas partes da data para comparação
@@ -123,41 +148,35 @@ export default function VisualizacaoCalendario({ agendamentos, medicos, paciente
           locale={ptBR}
           modifiers={{
             comEventos: (date) => {
-              // CORREÇÃO: Usar as mesmas partes da data para comparação
               const ano = date.getFullYear();
               const mes = String(date.getMonth() + 1).padStart(2, '0');
               const dia = String(date.getDate()).padStart(2, '0');
               const dataFormatada = `${ano}-${mes}-${dia}`;
               
-              const diaSemana = date.getDay();
               const temAgendamento = diasComEventos.has(dataFormatada);
-              const medicoAtende = diasAtendimentoMedicos.has(diaSemana);
+              const medicoAtende = verificarAlgumMedicoAtendeNaData(date);
               
               return temAgendamento && !medicoAtende;
             },
             medicoDisponivel: (date) => {
-              // CORREÇÃO: Usar as mesmas partes da data para comparação
               const ano = date.getFullYear();
               const mes = String(date.getMonth() + 1).padStart(2, '0');
               const dia = String(date.getDate()).padStart(2, '0');
               const dataFormatada = `${ano}-${mes}-${dia}`;
               
-              const diaSemana = date.getDay();
               const temAgendamento = diasComEventos.has(dataFormatada);
-              const medicoAtende = diasAtendimentoMedicos.has(diaSemana);
+              const medicoAtende = verificarAlgumMedicoAtendeNaData(date);
               
               return medicoAtende && !temAgendamento;
             },
             ambos: (date) => {
-              // CORREÇÃO: Usar as mesmas partes da data para comparação
               const ano = date.getFullYear();
               const mes = String(date.getMonth() + 1).padStart(2, '0');
               const dia = String(date.getDate()).padStart(2, '0');
               const dataFormatada = `${ano}-${mes}-${dia}`;
               
-              const diaSemana = date.getDay();
               const temAgendamento = diasComEventos.has(dataFormatada);
-              const medicoAtende = diasAtendimentoMedicos.has(diaSemana);
+              const medicoAtende = verificarAlgumMedicoAtendeNaData(date);
               
               return temAgendamento && medicoAtende;
             }
