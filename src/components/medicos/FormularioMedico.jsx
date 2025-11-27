@@ -625,37 +625,72 @@ export default function FormularioMedico({ medico, open, onClose, onUpdate }) {
                 </div>
 
                 {formData.tipo_repasse === 'percentual' ? (
-                  <div>
-                    <Label htmlFor="percentual_repasse">Percentual Repasse Particular (%)</Label>
-                    <Input
-                      id="percentual_repasse"
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="0.01"
-                      value={formData.percentual_repasse}
-                      onChange={(e) => handleInputChange('percentual_repasse', e.target.value)}
-                      placeholder="0"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Percentual que o médico recebe em atendimentos particulares
-                    </p>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="percentual_repasse">Repasse Consulta Particular (%)</Label>
+                      <Input
+                        id="percentual_repasse"
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.01"
+                        value={formData.percentual_repasse}
+                        onChange={(e) => handleInputChange('percentual_repasse', e.target.value)}
+                        placeholder="0"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Para consultas particulares
+                      </p>
+                    </div>
+                    <div>
+                      <Label htmlFor="percentual_repasse_procedimento">Repasse Procedimento Particular (%)</Label>
+                      <Input
+                        id="percentual_repasse_procedimento"
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.01"
+                        value={formData.percentual_repasse_procedimento}
+                        onChange={(e) => handleInputChange('percentual_repasse_procedimento', e.target.value)}
+                        placeholder="0"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Para procedimentos particulares
+                      </p>
+                    </div>
                   </div>
                 ) : (
-                  <div>
-                    <Label htmlFor="valor_repasse_fixo">Valor Repasse Particular (R$)</Label>
-                    <Input
-                      id="valor_repasse_fixo"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={formData.valor_repasse_fixo}
-                      onChange={(e) => handleInputChange('valor_repasse_fixo', e.target.value)}
-                      placeholder="0.00"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Valor fixo que o médico recebe por atendimento particular (ex: R$ 60,00)
-                    </p>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="valor_repasse_fixo">Repasse Consulta Particular (R$)</Label>
+                      <Input
+                        id="valor_repasse_fixo"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={formData.valor_repasse_fixo}
+                        onChange={(e) => handleInputChange('valor_repasse_fixo', e.target.value)}
+                        placeholder="0.00"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Valor fixo por consulta particular
+                      </p>
+                    </div>
+                    <div>
+                      <Label htmlFor="valor_repasse_fixo_procedimento">Repasse Procedimento Particular (R$)</Label>
+                      <Input
+                        id="valor_repasse_fixo_procedimento"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={formData.valor_repasse_fixo_procedimento}
+                        onChange={(e) => handleInputChange('valor_repasse_fixo_procedimento', e.target.value)}
+                        placeholder="0.00"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Valor fixo por procedimento particular
+                      </p>
+                    </div>
                   </div>
                 )}
 
