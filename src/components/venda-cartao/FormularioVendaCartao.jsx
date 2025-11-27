@@ -196,7 +196,7 @@ export default function FormularioVendaCartao({ venda, onClose, onSave }) { // N
       return;
     }
     
-    const novosDependentes = [...formData.dependentes, { nome: '', cpf: '', data_nascimento: '', telefone: '' }];
+    const novosDependentes = [...formData.dependentes, { nome: '', cpf: '', data_nascimento: '', telefone: '', possui_beneficio: false }];
     const novaQuantidadeCartoes = 1 + novosDependentes.length; // Titular + novos dependentes
     const novoValorTotal = calcularValorTotal(formData.valor_plano, novaQuantidadeCartoes);
     const parcelas = formData.numero_parcelas > 0 ? formData.numero_parcelas : 1;
@@ -695,7 +695,7 @@ export default function FormularioVendaCartao({ venda, onClose, onSave }) { // N
                   />
                 </div>
 
-                <div className="col-span-2">
+                <div>
                   <Label htmlFor="titular_email">Email</Label>
                   <Input
                     id="titular_email"
@@ -705,7 +705,19 @@ export default function FormularioVendaCartao({ venda, onClose, onSave }) { // N
                     placeholder="email@exemplo.com"
                   />
                 </div>
-              </div>
+                <div className="flex items-center gap-2 pt-6">
+                  <input
+                    type="checkbox"
+                    id="titular_possui_beneficio"
+                    checked={formData.titular.possui_beneficio || false}
+                    onChange={(e) => handleTitularChange('possui_beneficio', e.target.checked)}
+                    className="w-4 h-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                  />
+                  <Label htmlFor="titular_possui_beneficio" className="cursor-pointer">
+                    Possui Benefício
+                  </Label>
+                </div>
+                </div>
 
               <div className="grid grid-cols-3 gap-4">
                 <div>
@@ -862,6 +874,18 @@ export default function FormularioVendaCartao({ venda, onClose, onSave }) { // N
                               onChange={(e) => handleDependenteChange(index, 'telefone', e.target.value)}
                               placeholder="(00) 00000-0000"
                             />
+                          </div>
+                          <div className="flex items-center gap-2 pt-6">
+                            <input
+                              type="checkbox"
+                              id={`dep_beneficio_${index}`}
+                              checked={dep.possui_beneficio || false}
+                              onChange={(e) => handleDependenteChange(index, 'possui_beneficio', e.target.checked)}
+                              className="w-4 h-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                            />
+                            <Label htmlFor={`dep_beneficio_${index}`} className="cursor-pointer text-sm">
+                              Possui Benefício
+                            </Label>
                           </div>
                         </div>
                       </div>
