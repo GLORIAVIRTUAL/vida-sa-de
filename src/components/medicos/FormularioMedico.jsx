@@ -211,11 +211,12 @@ export default function FormularioMedico({ medico, open, onClose, onUpdate }) {
         telefone: formData.telefone || null,
         email: formData.email || null,
         foto_url: formData.foto_url || null,
-        tipo_repasse: formData.tipo_repasse || 'percentual', // Include new field
+        tipo_repasse: formData.tipo_repasse || 'percentual',
         percentual_repasse: parseFloat(formData.percentual_repasse) || 0,
         percentual_repasse_convenio: parseFloat(formData.percentual_repasse_convenio) || 0,
-        valor_repasse_fixo: parseFloat(formData.valor_repasse_fixo) || 0, // Include new field
-        valor_repasse_fixo_convenio: parseFloat(formData.valor_repasse_fixo_convenio) || 0, // Include new field
+        valor_repasse_fixo: parseFloat(formData.valor_repasse_fixo) || 0,
+        valor_repasse_fixo_convenio: parseFloat(formData.valor_repasse_fixo_convenio) || 0,
+        repasses_por_categoria: formData.repasses_por_categoria || [],
         tempo_consulta_minutos: parseInt(formData.tempo_consulta_minutos) || 30,
         horarios_atendimento: formData.horarios_atendimento || [],
         status: formData.status || 'Ativo',
