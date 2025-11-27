@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -80,6 +79,7 @@ export default function FormularioAgendamento({ agendamento, agendamentosDoDia, 
     data_agendamento: format(new Date(), 'yyyy-MM-dd'), 
     horario: '',
     tipo_servico: 'Consulta',
+    itens_servico: [], // NOVO: Lista de serviços múltiplos
     is_encaixe: false,
     is_recorrente: false,
     recorrencia_tipo: '',
@@ -92,6 +92,9 @@ export default function FormularioAgendamento({ agendamento, agendamentosDoDia, 
     status: 'Agendado',
     observacoes: ''
   });
+
+  // NOVO: Estado para controlar modo de múltiplos serviços
+  const [modoMultiplosServicos, setModoMultiplosServicos] = useState(false);
   const [salvando, setSalvando] = useState(false); // Renamed from 'loading'
   const [horariosDisponiveis, setHorariosDisponiveis] = useState([]);
   const [loadingHorarios, setLoadingHorarios] = useState(false);
