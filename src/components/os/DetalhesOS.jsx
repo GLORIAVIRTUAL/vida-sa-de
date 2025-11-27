@@ -716,6 +716,21 @@ export default function DetalhesOS({ os, pacienteNome, medicoNome, categoriaNome
             )}
           </div>
 
+          {/* Detalhamento de Múltiplas Formas */}
+          {os.forma_pagamento === 'Múltiplas Formas' && os.pagamentos_detalhados && os.pagamentos_detalhados.length > 0 && (
+            <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+              <h4 className="font-semibold text-purple-900 mb-3">Detalhamento do Pagamento</h4>
+              <div className="space-y-2">
+                {os.pagamentos_detalhados.map((pag, idx) => (
+                  <div key={idx} className="flex justify-between items-center bg-white p-2 rounded border border-purple-100">
+                    <span className="text-purple-800">{pag.forma}</span>
+                    <span className="font-bold text-purple-900">R$ {pag.valor?.toFixed(2).replace('.', ',')}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {os.parcelas > 1 && (
             <div className="text-sm text-gray-600 bg-yellow-50 p-3 rounded border-l-4 border-yellow-400">
               <strong>Parcelamento:</strong> {os.parcelas}x no cartão de crédito

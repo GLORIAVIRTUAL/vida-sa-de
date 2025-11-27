@@ -14,7 +14,7 @@ import { OrdemServico } from "@/entities/all";
 import { format } from 'date-fns';
 import { useToast } from "@/components/ui/use-toast"; // Import useToast
 
-const formasPagamento = ["Dinheiro", "Cartão Débito", "Cartão Crédito", "PIX", "Transferência", "Convênio"];
+const formasPagamento = ["Dinheiro", "Cartão Débito", "Cartão Crédito", "PIX", "Transferência", "Convênio", "Múltiplas Formas"];
 
 const taxasCartao = {
   credito: {
@@ -60,8 +60,13 @@ export default function FormularioOS({
     valor_repasse_medico: 0,
     valor_repasse_laboratorio: 0,
     valor_clinica: 0,
-    cobrar_taxa: false
+    cobrar_taxa: false,
+    pagamentos_detalhados: []
   });
+  
+  // Estados para múltiplas formas de pagamento
+  const [pagamento1, setPagamento1] = useState({ forma: '', valor: '' });
+  const [pagamento2, setPagamento2] = useState({ forma: '', valor: '' });
   const [salvando, setSalvando] = useState(false);
   const [avisoCategoria, setAvisoCategoria] = useState(false);
   const { toast } = useToast(); // Initialize useToast
@@ -248,6 +253,17 @@ export default function FormularioOS({
       const categoria = categorias?.find(c => c.id === categoriaId);
       console.log('✅ Categoria a ser salva:', categoria?.nome, '(ID:', categoriaId, ')');
 
+      // Montar array de pagamentos detalhados se for Múltiplas Formas
+      let pagamentosDetalhados = [];
+      if (dados.forma_pagamento === 'Múltiplas Formas') {
+        if (pagamento1.forma && pagamento1.valor) {
+          pagamentosDetalhados.push({ forma: pagamento1.forma, valor: parseFloat(pagamento1.valor) || 0 });
+        }
+        if (pagamento2.forma && pagamento2.valor) {
+          pagamentosDetalhados.push({ forma: pagamento2.forma, valor: parseFloat(pagamento2.valor) || 0 });
+        }
+      }
+
       const osData = {
         agendamento_id: agendamento.id,
         paciente_id: agendamento.paciente_id,
@@ -260,6 +276,7 @@ export default function FormularioOS({
         juros: dados.juros,
         valor_final: dados.valor_final,
         forma_pagamento: dados.forma_pagamento,
+        pagamentos_detalhados: pagamentosDetalhados,
         parcelas: dados.parcelas,
         bandeira_cartao: dados.bandeira_cartao,
         status_pagamento: dados.status_pagamento,
@@ -447,7 +464,13 @@ export default function FormularioOS({
                   <Label>Forma de Pagamento</Label>
                   <Select 
                     value={dados.forma_pagamento} 
-                    onValueChange={(v) => setDados(prev => ({ ...prev, forma_pagamento: v, bandeira_cartao: null, parcelas: 1 }))}
+                    onValueChange={(v) => {
+                      setDados(prev => ({ ...prev, forma_pagamento: v, bandeira_cartao: null, parcelas: 1 }));
+                      if (v !== 'Múltiplas Formas') {
+                        setPagamento1({ forma: '', valor: '' });
+                        setPagamento2({ forma: '', valor: '' });
+                      }
+                    }}
                   >
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -527,6 +550,80 @@ export default function FormularioOS({
                       })}
                     </SelectContent>
                   </Select>
+                </div>
+              )}
+
+              {dados.forma_pagamento === 'Múltiplas Formas' && (
+                <div className="p-4 border-2 border-purple-200 bg-purple-50 rounded-lg space-y-4">
+                  <h4 className="font-medium text-purple-900">Detalhar Formas de Pagamento</h4>
+
+                  {/* Pagamento 1 */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-sm">Forma 1</Label>
+                      <Select value={pagamento1.forma} onValueChange={(v) => setPagamento1(prev => ({ ...prev, forma: v }))}>
+                        <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Dinheiro">Dinheiro</SelectItem>
+                          <SelectItem value="Cartão Débito">Cartão Débito</SelectItem>
+                          <SelectItem value="Cartão Crédito">Cartão Crédito</SelectItem>
+                          <SelectItem value="PIX">PIX</SelectItem>
+                          <SelectItem value="Transferência">Transferência</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-sm">Valor (R$)</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="0,00"
+                        value={pagamento1.valor}
+                        onChange={(e) => setPagamento1(prev => ({ ...prev, valor: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Pagamento 2 */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-sm">Forma 2</Label>
+                      <Select value={pagamento2.forma} onValueChange={(v) => setPagamento2(prev => ({ ...prev, forma: v }))}>
+                        <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Dinheiro">Dinheiro</SelectItem>
+                          <SelectItem value="Cartão Débito">Cartão Débito</SelectItem>
+                          <SelectItem value="Cartão Crédito">Cartão Crédito</SelectItem>
+                          <SelectItem value="PIX">PIX</SelectItem>
+                          <SelectItem value="Transferência">Transferência</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-sm">Valor (R$)</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="0,00"
+                        value={pagamento2.valor}
+                        onChange={(e) => setPagamento2(prev => ({ ...prev, valor: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Total das formas */}
+                  {(pagamento1.valor || pagamento2.valor) && (
+                    <div className="pt-2 border-t border-purple-300">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-purple-800">Total informado:</span>
+                        <span className="font-bold text-purple-900">
+                          R$ {((parseFloat(pagamento1.valor) || 0) + (parseFloat(pagamento2.valor) || 0)).toFixed(2).replace('.', ',')}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
