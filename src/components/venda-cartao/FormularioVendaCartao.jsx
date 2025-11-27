@@ -31,6 +31,7 @@ const VALORES_PLANOS = {
 };
 
 const CUSTO_CARTAO_FISICO = 5.00;
+const CUSTO_BENEFICIO = 120.00;
 
 export default function FormularioVendaCartao({ venda, onClose, onSave }) { // NEW: Recebe venda como prop
   const { toast } = useToast();
@@ -95,9 +96,25 @@ export default function FormularioVendaCartao({ venda, onClose, onSave }) { // N
     observacoes: ''
   });
 
-  const calcularValorTotal = (valorPlano, quantidadeCartoes) => {
+  const calcularValorTotal = (valorPlano, quantidadeCartoes, titular, dependentes) => {
     const custoCartoes = quantidadeCartoes * CUSTO_CARTAO_FISICO;
-    return (valorPlano || 0) + custoCartoes;
+    // Contar quantos possuem benefício
+    let qtdBeneficios = 0;
+    if (titular?.possui_beneficio) qtdBeneficios++;
+    if (dependentes && dependentes.length > 0) {
+      qtdBeneficios += dependentes.filter(d => d.possui_beneficio).length;
+    }
+    const custoBeneficios = qtdBeneficios * CUSTO_BENEFICIO;
+    return (valorPlano || 0) + custoCartoes + custoBeneficios;
+  };
+
+  const calcularCustoBeneficios = (titular, dependentes) => {
+    let qtdBeneficios = 0;
+    if (titular?.possui_beneficio) qtdBeneficios++;
+    if (dependentes && dependentes.length > 0) {
+      qtdBeneficios += dependentes.filter(d => d.possui_beneficio).length;
+    }
+    return qtdBeneficios * CUSTO_BENEFICIO;
   };
 
   const handleChange = (field, value) => {
@@ -106,7 +123,8 @@ export default function FormularioVendaCartao({ venda, onClose, onSave }) { // N
       const valorPlanoBase = VALORES_PLANOS[value] || 0;
       const quantidadeCartoes = 1 + formData.dependentes.length; // Titular + current dependents
       const custoCartoes = quantidadeCartoes * CUSTO_CARTAO_FISICO;
-      const valorTotalCalculado = valorPlanoBase + custoCartoes;
+      const custoBeneficios = calcularCustoBeneficios(formData.titular, formData.dependentes);
+      const valorTotalCalculado = valorPlanoBase + custoCartoes + custoBeneficios;
       const parcelas = value.includes('Parcelado') ? 12 : 1;
       const formaPagamento = value.includes('Parcelado') ? 'Cartão Crédito' : formData.forma_pagamento;
 
@@ -128,7 +146,7 @@ export default function FormularioVendaCartao({ venda, onClose, onSave }) { // N
     // Se mudou a quantidade de cartões, recalcular
     if (field === 'quantidade_cartoes') {
       const quantidadeCartoes = parseInt(value) || 0;
-      const valorTotalCalculado = calcularValorTotal(formData.valor_plano, quantidadeCartoes);
+      const valorTotalCalculado = calcularValorTotal(formData.valor_plano, quantidadeCartoes, formData.titular, formData.dependentes);
       const parcelas = formData.numero_parcelas > 0 ? formData.numero_parcelas : 1;
       
       setFormData(prev => ({
@@ -168,10 +186,29 @@ export default function FormularioVendaCartao({ venda, onClose, onSave }) { // N
   };
 
   const handleTitularChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      titular: { ...prev.titular, [field]: value }
-    }));
+    setFormData(prev => {
+      const novoTitular = { ...prev.titular, [field]: value };
+      
+      // Se mudou o campo possui_beneficio, recalcular valor total
+      if (field === 'possui_beneficio') {
+        const custoBeneficios = calcularCustoBeneficios(novoTitular, prev.dependentes);
+        const custoCartoes = prev.quantidade_cartoes * CUSTO_CARTAO_FISICO;
+        const novoValorTotal = (prev.valor_plano || 0) + custoCartoes + custoBeneficios;
+        const parcelas = prev.numero_parcelas > 0 ? prev.numero_parcelas : 1;
+        
+        return {
+          ...prev,
+          titular: novoTitular,
+          valor_total: novoValorTotal,
+          valor_parcela: novoValorTotal / parcelas
+        };
+      }
+      
+      return {
+        ...prev,
+        titular: novoTitular
+      };
+    });
   };
 
   const handleEnderecoChange = (field, value) => {
@@ -198,7 +235,7 @@ export default function FormularioVendaCartao({ venda, onClose, onSave }) { // N
     
     const novosDependentes = [...formData.dependentes, { nome: '', cpf: '', data_nascimento: '', telefone: '', possui_beneficio: false }];
     const novaQuantidadeCartoes = 1 + novosDependentes.length; // Titular + novos dependentes
-    const novoValorTotal = calcularValorTotal(formData.valor_plano, novaQuantidadeCartoes);
+    const novoValorTotal = calcularValorTotal(formData.valor_plano, novaQuantidadeCartoes, formData.titular, novosDependentes);
     const parcelas = formData.numero_parcelas > 0 ? formData.numero_parcelas : 1;
     
     setFormData(prev => ({
@@ -214,7 +251,7 @@ export default function FormularioVendaCartao({ venda, onClose, onSave }) { // N
   const handleRemoverDependente = (index) => {
     const novosDependentes = formData.dependentes.filter((_, i) => i !== index);
     const novaQuantidadeCartoes = 1 + novosDependentes.length; // Titular + novos dependentes
-    const novoValorTotal = calcularValorTotal(formData.valor_plano, novaQuantidadeCartoes);
+    const novoValorTotal = calcularValorTotal(formData.valor_plano, novaQuantidadeCartoes, formData.titular, novosDependentes);
     const parcelas = formData.numero_parcelas > 0 ? formData.numero_parcelas : 1;
     
     setFormData(prev => ({
@@ -228,12 +265,31 @@ export default function FormularioVendaCartao({ venda, onClose, onSave }) { // N
   };
 
   const handleDependenteChange = (index, field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      dependentes: prev.dependentes.map((dep, i) => 
+    setFormData(prev => {
+      const novosDependentes = prev.dependentes.map((dep, i) => 
         i === index ? { ...dep, [field]: value } : dep
-      )
-    }));
+      );
+      
+      // Se mudou o campo possui_beneficio, recalcular valor total
+      if (field === 'possui_beneficio') {
+        const custoBeneficios = calcularCustoBeneficios(prev.titular, novosDependentes);
+        const custoCartoes = prev.quantidade_cartoes * CUSTO_CARTAO_FISICO;
+        const novoValorTotal = (prev.valor_plano || 0) + custoCartoes + custoBeneficios;
+        const parcelas = prev.numero_parcelas > 0 ? prev.numero_parcelas : 1;
+        
+        return {
+          ...prev,
+          dependentes: novosDependentes,
+          valor_total: novoValorTotal,
+          valor_parcela: novoValorTotal / parcelas
+        };
+      }
+      
+      return {
+        ...prev,
+        dependentes: novosDependentes
+      };
+    });
   };
 
   const buscarCEP = async () => {
@@ -558,9 +614,26 @@ export default function FormularioVendaCartao({ venda, onClose, onSave }) { // N
                     </div>
                   </div>
                   <p className="text-xs text-blue-700 mt-3">
-                    💡 <strong>Cálculo:</strong> Plano Base (R$ {formData.valor_plano.toFixed(2).replace('.', ',')}) + {formData.quantidade_cartoes} Cartão(ões) (R$ {formData.valor_cartoes.toFixed(2).replace('.', ',')}) = <strong>R$ {formData.valor_total.toFixed(2).replace('.', ',')}</strong>
+                    💡 <strong>Cálculo:</strong> Plano Base (R$ {formData.valor_plano.toFixed(2).replace('.', ',')}) + {formData.quantidade_cartoes} Cartão(ões) (R$ {formData.valor_cartoes.toFixed(2).replace('.', ',')}) {calcularCustoBeneficios(formData.titular, formData.dependentes) > 0 ? `+ Benefícios (R$ ${calcularCustoBeneficios(formData.titular, formData.dependentes).toFixed(2).replace('.', ',')})` : ''} = <strong>R$ {formData.valor_total.toFixed(2).replace('.', ',')}</strong>
                   </p>
                 </div>
+
+                {/* Seção de Benefícios */}
+                {calcularCustoBeneficios(formData.titular, formData.dependentes) > 0 && (
+                  <div className="col-span-2 bg-purple-50 p-4 rounded-lg border-2 border-purple-200">
+                    <h4 className="font-semibold text-purple-900 mb-2 flex items-center gap-2">
+                      🎁 Benefícios
+                    </h4>
+                    <div className="flex justify-between items-center">
+                      <span className="text-purple-700">
+                        {((formData.titular?.possui_beneficio ? 1 : 0) + (formData.dependentes?.filter(d => d.possui_beneficio).length || 0))} pessoa(s) com benefício × R$ {CUSTO_BENEFICIO.toFixed(2).replace('.', ',')}
+                      </span>
+                      <span className="font-bold text-purple-900">
+                        R$ {calcularCustoBeneficios(formData.titular, formData.dependentes).toFixed(2).replace('.', ',')}
+                      </span>
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <Label htmlFor="valor_total">Valor Total *</Label>
