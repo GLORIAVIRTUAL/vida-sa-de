@@ -2639,6 +2639,7 @@ export default function FormularioAgendamento({ agendamento, agendamentosDoDia, 
                 ((formData.tipo_servico === 'Consulta' || formData.tipo_servico === 'Retorno') && !formData.medico_id) ||
                 (formData.tipo_servico === 'Procedimento' && !formData.procedimento_id) ||
                 (formData.tipo_servico === 'Exame' && formData.exames_ids.length === 0) ||
+                (formData.tipo_servico === 'Múltiplos Serviços' && formData.itens_servico.length === 0) ||
                 !formData.categoria_preco_id ||
                 (!horarioDisponivel && !formData.is_encaixe) ||
                 (formData.is_recorrente && (!formData.recorrencia_tipo || !formData.recorrencia_data_fim))
