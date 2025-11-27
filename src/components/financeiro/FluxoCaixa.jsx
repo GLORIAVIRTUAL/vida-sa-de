@@ -26,22 +26,126 @@ const tipoColors = {
 
 export default function FluxoCaixa({ lancamentos, onUpdate }) {
   const [mostrarForm, setMostrarForm] = useState(false);
-  const [tipoLancamento, setTipoLancamento] = useState("Entrada"); // New state to control form's initial type
+  const [tipoLancamento, setTipoLancamento] = useState("Entrada");
+  
+  // Filtros de data - padrão: mês atual
+  const [dataInicio, setDataInicio] = useState(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
+  const [dataFim, setDataFim] = useState(format(endOfMonth(new Date()), 'yyyy-MM-dd'));
 
   const abrirForm = (tipo) => {
     setTipoLancamento(tipo);
     setMostrarForm(true);
   };
 
+  // Filtrar lançamentos pelo período selecionado
+  const lancamentosFiltrados = useMemo(() => {
+    return lancamentos.filter(l => {
+      if (!l.data_lancamento) return false;
+      return l.data_lancamento >= dataInicio && l.data_lancamento <= dataFim;
+    });
+  }, [lancamentos, dataInicio, dataFim]);
+
   const { totalEntradas, totalSaidas, saldo } = useMemo(() => {
-    const entradas = lancamentos.filter(l => l.tipo === "Entrada").reduce((sum, l) => sum + l.valor, 0);
-    const saidas = lancamentos.filter(l => l.tipo === "Saída").reduce((sum, l) => sum + l.valor, 0);
+    const entradas = lancamentosFiltrados.filter(l => l.tipo === "Entrada").reduce((sum, l) => sum + l.valor, 0);
+    const saidas = lancamentosFiltrados.filter(l => l.tipo === "Saída").reduce((sum, l) => sum + l.valor, 0);
     return {
       totalEntradas: entradas,
       totalSaidas: saidas,
       saldo: entradas - saidas
     };
-  }, [lancamentos]);
+  }, [lancamentosFiltrados]);
+
+  const handleImprimir = () => {
+    const dataInicioFormatada = format(new Date(dataInicio + 'T00:00:00'), "dd/MM/yyyy", { locale: ptBR });
+    const dataFimFormatada = format(new Date(dataFim + 'T00:00:00'), "dd/MM/yyyy", { locale: ptBR });
+
+    const conteudo = `
+      <html>
+      <head>
+        <title>Fluxo de Caixa - ${dataInicioFormatada} a ${dataFimFormatada}</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 20px; max-width: 900px; margin: 0 auto; }
+          h1 { text-align: center; color: #1e40af; margin-bottom: 5px; }
+          h2 { text-align: center; color: #64748b; font-size: 16px; font-weight: normal; margin-bottom: 30px; }
+          .summary { display: flex; justify-content: space-between; margin-bottom: 30px; }
+          .summary-card { flex: 1; margin: 0 10px; padding: 15px; border-radius: 8px; text-align: center; }
+          .entradas { background: #dcfce7; color: #166534; }
+          .saidas { background: #fee2e2; color: #991b1b; }
+          .saldo { background: ${saldo >= 0 ? '#d1fae5' : '#fee2e2'}; color: ${saldo >= 0 ? '#065f46' : '#991b1b'}; }
+          .summary-card p { margin: 5px 0; }
+          .summary-card .valor { font-size: 24px; font-weight: bold; }
+          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+          th, td { border: 1px solid #ddd; padding: 10px 8px; text-align: left; font-size: 12px; }
+          th { background-color: #3b82f6; color: white; }
+          tr:nth-child(even) { background-color: #f8fafc; }
+          .entrada { color: #166534; }
+          .saida { color: #991b1b; }
+          .footer { margin-top: 40px; text-align: center; color: #64748b; font-size: 11px; }
+          @media print { body { padding: 10px; } }
+        </style>
+      </head>
+      <body>
+        <h1>🏥 Centro Vida Saúde</h1>
+        <h2>Fluxo de Caixa: ${dataInicioFormatada} a ${dataFimFormatada}</h2>
+        
+        <div class="summary">
+          <div class="summary-card entradas">
+            <p>Total Entradas</p>
+            <p class="valor">R$ ${totalEntradas.toFixed(2)}</p>
+          </div>
+          <div class="summary-card saidas">
+            <p>Total Saídas</p>
+            <p class="valor">R$ ${totalSaidas.toFixed(2)}</p>
+          </div>
+          <div class="summary-card saldo">
+            <p>Saldo</p>
+            <p class="valor">R$ ${saldo.toFixed(2)}</p>
+          </div>
+        </div>
+        
+        <table>
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Descrição</th>
+              <th>Categoria</th>
+              <th>Tipo</th>
+              <th style="text-align: right;">Valor</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${lancamentosFiltrados.length === 0 ? `
+              <tr><td colspan="5" style="text-align: center; padding: 40px;">Nenhuma movimentação no período.</td></tr>
+            ` : lancamentosFiltrados.map(l => `
+              <tr>
+                <td>${format(new Date(l.data_lancamento + 'T00:00:00'), "dd/MM/yyyy", { locale: ptBR })}</td>
+                <td>${l.descricao}</td>
+                <td>${l.categoria}</td>
+                <td class="${l.tipo === 'Entrada' ? 'entrada' : 'saida'}">${l.tipo}</td>
+                <td style="text-align: right;" class="${l.tipo === 'Entrada' ? 'entrada' : 'saida'}">
+                  ${l.tipo === 'Entrada' ? '+' : '-'}R$ ${l.valor.toFixed(2)}
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        
+        <div class="footer">
+          <p>Impresso em: ${format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</p>
+          <p><strong>Centro Vida Saúde</strong> - Sistema de Gestão Clínica</p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const janela = window.open('', '_blank');
+    if (janela) {
+      janela.document.write(conteudo);
+      janela.document.close();
+      janela.focus();
+      setTimeout(() => janela.print(), 250);
+    }
+  };
 
 
   return (
