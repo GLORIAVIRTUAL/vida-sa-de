@@ -994,6 +994,7 @@ export default function FormularioAgendamento({ agendamento, agendamentosDoDia, 
       if (formData.observacoes) dados.observacoes = formData.observacoes;
       if (formData.procedimento_id) dados.procedimento_id = formData.procedimento_id;
       if (formData.exames_ids?.length > 0) dados.exames_ids = formData.exames_ids;
+      if (formData.itens_servico?.length > 0) dados.itens_servico = formData.itens_servico;
       
       let resultado; // Will hold the result of Agendamento.create or Agendamento.update
 
