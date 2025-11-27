@@ -261,10 +261,10 @@ export default function FluxoCaixa({ lancamentos, onUpdate }) {
           </div>
         </CardHeader>
         <CardContent>
-          {lancamentos.length === 0 ? (
+          {lancamentosFiltrados.length === 0 ? (
             <div className="text-center py-10 text-gray-500">
-                <p>Nenhuma movimentação financeira registrada.</p>
-                <p className="text-sm mt-2">Use os botões acima para adicionar uma nova receita ou despesa.</p>
+                <p>Nenhuma movimentação financeira no período selecionado.</p>
+                <p className="text-sm mt-2">Altere as datas ou adicione uma nova receita ou despesa.</p>
             </div>
           ) : (
             <Table>
@@ -278,7 +278,7 @@ export default function FluxoCaixa({ lancamentos, onUpdate }) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                  {lancamentos.map((lancamento) => (
+                  {lancamentosFiltrados.map((lancamento) => (
                     <TableRow key={lancamento.id}>
                       <TableCell>
                         {/* CORRIGIDO: Adicionado 'T00:00:00' para forçar o fuso horário local */}
