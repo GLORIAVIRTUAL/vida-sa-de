@@ -372,6 +372,7 @@ export default function OrdemDeServico() {
             os={osSelecionada}
             pacienteNome={detalhesData.paciente?.nome || 'N/A'}
             medicoNome={detalhesData.medico?.nome || 'N/A'}
+            categoriaNome={detalhesData.categoria?.nome || ''}
             open={true}
             onClose={handleFecharDetalhes}
           />
