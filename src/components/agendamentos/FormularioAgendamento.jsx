@@ -433,6 +433,7 @@ export default function FormularioAgendamento({ agendamento, agendamentosDoDia, 
         initialFormData.medico_id = '';
         initialFormData.procedimento_id = '';
         initialFormData.exames_ids = [];
+        initialFormData.itens_servico = [];
         initialFormData.categoria_preco_id = categoriaParticular?.id || '';
         initialFormData.valor_total = '0';
         initialFormData.observacoes = '';
@@ -445,6 +446,7 @@ export default function FormularioAgendamento({ agendamento, agendamentosDoDia, 
         initialFormData.recorrencia_data_fim = '';
         setPacientesEncontrados([]);
         setBuscaPaciente('');
+        setModoMultiplosServicos(false);
       }
       setFormData(initialFormData);
     };
