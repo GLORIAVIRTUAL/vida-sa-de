@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, Loader2, Search, Clock, X, Plus, User, Stethoscope, Save, FileScan, Printer, Repeat, AlertCircle } from "lucide-react";
+import { Calendar as CalendarIcon, Loader2, Search, Clock, X, Plus, User, Stethoscope, Save, FileScan, Printer, Repeat, AlertCircle, Trash2, Layers } from "lucide-react";
 import { Agendamento, Paciente, Notification } from "@/entities/all";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/components/ui/use-toast";
