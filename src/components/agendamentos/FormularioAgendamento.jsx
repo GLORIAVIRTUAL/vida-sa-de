@@ -637,6 +637,21 @@ export default function FormularioAgendamento({ agendamento, agendamentosDoDia, 
       } else {
         setHorariosDisponiveis([]);
       }
+    } else if (formData.tipo_servico === 'Múltiplos Serviços') {
+      // Para múltiplos serviços, gerar horários automáticos (7h às 19h a cada 10 min)
+      if (formData.data_agendamento) {
+        const horariosAutomaticos = [];
+        for (let hora = 7; hora <= 18; hora++) {
+          for (let minuto = 0; minuto < 60; minuto += 10) {
+            const horario = `${String(hora).padStart(2, '0')}:${String(minuto).padStart(2, '0')}`;
+            horariosAutomaticos.push(horario);
+          }
+        }
+        horariosAutomaticos.push('19:00');
+        setHorariosDisponiveis(horariosAutomaticos.sort());
+      } else {
+        setHorariosDisponiveis([]);
+      }
     } else if (formData.medico_id && formData.data_agendamento) {
       // For consultations and returns, load based on the doctor
       carregarHorarios(formData.medico_id, formData.data_agendamento);
@@ -644,6 +659,78 @@ export default function FormularioAgendamento({ agendamento, agendamentosDoDia, 
       setHorariosDisponiveis([]);
     }
   }, [formData.medico_id, formData.data_agendamento, formData.tipo_servico, carregarHorarios]);
+
+  // NOVO: Carregar horários do médico selecionado para consulta em múltiplos serviços
+  const carregarHorariosParaMedicoMultiplo = useCallback(async (medicoId) => {
+    if (!medicoId || !formData.data_agendamento) {
+      setHorariosMultiplosServicos([]);
+      return;
+    }
+
+    setLoadingHorariosMultiplos(true);
+    try {
+      const medicoSelecionado = medicos.find(m => m.id === medicoId);
+      if (!medicoSelecionado || !medicoSelecionado.horarios_atendimento) {
+        setHorariosMultiplosServicos([]);
+        return;
+      }
+
+      const dataObj = new Date(formData.data_agendamento + 'T00:00:00');
+      const diaSemana = dataObj.getDay();
+      
+      const horariosDoMedico = medicoSelecionado.horarios_atendimento.filter(h => h.dia_semana === diaSemana);
+      
+      if (horariosDoMedico.length === 0) {
+        setHorariosMultiplosServicos([]);
+        return;
+      }
+
+      // Buscar agendamentos existentes do médico na data
+      const agendamentosExistentes = agendamentosDoDia.filter(a => 
+        a.medico_id === medicoId && 
+        a.data_agendamento === formData.data_agendamento &&
+        a.status !== 'Cancelado'
+      );
+      
+      const horariosOcupados = agendamentosExistentes.map(a => a.horario);
+      const tempoConsulta = medicoSelecionado.tempo_consulta_minutos || 30;
+      const horariosLivres = [];
+
+      for (let minutos = 0; minutos < 1440; minutos += tempoConsulta) {
+        const horas = Math.floor(minutos / 60);
+        const mins = minutos % 60;
+        const horario = `${String(horas).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+        
+        const isInPeriod = horariosDoMedico.some(periodo => {
+          const [inicioH, inicioM] = periodo.horario_inicio.split(':').map(Number);
+          const [fimH, fimM] = periodo.horario_fim.split(':').map(Number);
+          const periodoInicioMinutos = inicioH * 60 + inicioM;
+          const periodoFimMinutos = fimH * 60 + fimM;
+          return minutos >= periodoInicioMinutos && (minutos + tempoConsulta) <= periodoFimMinutos;
+        });
+
+        if (isInPeriod && !horariosOcupados.includes(horario)) {
+          horariosLivres.push(horario);
+        }
+      }
+
+      setHorariosMultiplosServicos(horariosLivres.sort());
+    } catch (error) {
+      console.error("Erro ao carregar horários do médico:", error);
+      setHorariosMultiplosServicos([]);
+    } finally {
+      setLoadingHorariosMultiplos(false);
+    }
+  }, [medicos, agendamentosDoDia, formData.data_agendamento]);
+
+  // Carregar horários quando selecionar médico em múltiplos serviços
+  useEffect(() => {
+    if (formData.tipo_servico === 'Múltiplos Serviços' && servicoParaAdicionar.tipo === 'Consulta' && servicoParaAdicionar.medicoId) {
+      carregarHorariosParaMedicoMultiplo(servicoParaAdicionar.medicoId);
+    } else {
+      setHorariosMultiplosServicos([]);
+    }
+  }, [servicoParaAdicionar.medicoId, servicoParaAdicionar.tipo, formData.tipo_servico, carregarHorariosParaMedicoMultiplo]);
   
   // NOVO: Callback para verificar a disponibilidade do horário selecionado
   const checkSelectedHorarioAvailability = useCallback(async () => {
