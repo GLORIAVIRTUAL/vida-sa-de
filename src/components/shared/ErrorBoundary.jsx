@@ -35,7 +35,11 @@ class ErrorBoundary extends React.Component {
             </CardHeader>
             <CardContent className="p-6">
               <p className="text-gray-700 mb-4">
-                Ocorreu um erro inesperado na aplicação. Tente recarregar a página.
+                {(this.state.error?.toString().includes('insertBefore') || 
+                  this.state.error?.toString().includes('Node') || 
+                  this.state.error?.toString().includes('NotFound'))
+                  ? "⚠️ ERRO DE TRADUÇÃO: Desative o Google Tradutor (ou extensões similares) e recarregue a página para corrigir." 
+                  : "Ocorreu um erro inesperado na aplicação. Tente recarregar a página."}
               </p>
               
               {this.state.error && (
