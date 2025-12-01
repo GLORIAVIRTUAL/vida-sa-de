@@ -21,7 +21,7 @@ import { safeApiCall } from "@/components/shared/apiThrottle";
 
 const normalizeString = (str) => {
     if (!str) return '';
-    return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+    return String(str).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
 }
 
 // Função para comprimir imagens
