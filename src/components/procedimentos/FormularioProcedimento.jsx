@@ -11,7 +11,7 @@ import { Loader2 } from 'lucide-react';
 const especialidades = [
   "Cardiologia", "Clínico Geral", "Dermatologia", "Eletrocardiograma", "Endocrinologia", "Fisioterapeuta",
   "Gastroenterologia", "Geral", "Geriatria", "Ginecologia", "Hidroginástica", "Hidroterapia",
-  "Massoterapia", "Neurologia", "Nutricionista", "Odontologia", "Oftalmologia",
+  "Massoterapia", "Neurologia", "Neuropediatra", "Nutricionista", "Odontologia", "Oftalmologia",
   "Optometrista", "Ortopedia", "Otorrinolaringologia", "Pediatria", "Pilates", "Pneumologia",
   "Psicologia", "Psicopedagoga", "Psiquiatria", "Quiropraxia", "Traumatologia", "Urologia"
 ];

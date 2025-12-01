@@ -417,6 +417,7 @@ export default function FormularioMedico({ medico, open, onClose, onUpdate }) {
                   <SelectItem value="Hidroterapia">Hidroterapia</SelectItem>
                   <SelectItem value="Massoterapia">Massoterapia</SelectItem>
                   <SelectItem value="Neurologia">Neurologia</SelectItem>
+                  <SelectItem value="Neuropediatra">Neuropediatra</SelectItem>
                   <SelectItem value="Nutricionista">Nutricionista</SelectItem>
                   <SelectItem value="Odontologia">Odontologia</SelectItem>
                   <SelectItem value="Oftalmologia">Oftalmologia</SelectItem>
