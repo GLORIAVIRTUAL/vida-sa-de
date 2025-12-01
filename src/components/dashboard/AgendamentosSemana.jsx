@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -17,9 +16,10 @@ const statusColors = {
 };
 
 export default function AgendamentosSemana({ agendamentos = [], medicos = [], pacientes = [], loading }) {
-  const getNomePaciente = (pacienteId) => {
-    const paciente = pacientes.find(p => p.id === pacienteId);
-    return paciente ? paciente.nome : "Paciente não encontrado";
+  const getNomePaciente = (agendamento) => {
+    if (!agendamento) return "Paciente não encontrado";
+    const paciente = pacientes.find(p => p.id === agendamento.paciente_id);
+    return paciente ? paciente.nome : (agendamento.paciente_nome || "Paciente não encontrado");
   };
 
   const getNomeMedico = (medicoId) => {
@@ -118,7 +118,7 @@ export default function AgendamentosSemana({ agendamentos = [], medicos = [], pa
                           <div className="flex items-center gap-2">
                             <span className="font-medium">{agendamento.horario}</span>
                             <span>•</span>
-                            <span>{getNomePaciente(agendamento.paciente_id)}</span>
+                            <span>{getNomePaciente(agendamento)}</span>
                           </div>
                           <p className="text-xs text-gray-500">
                             {getNomeMedico(agendamento.medico_id)}

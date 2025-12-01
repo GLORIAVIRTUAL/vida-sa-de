@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -36,11 +35,11 @@ export default function VisualizacaoDiaria({ agendamentos, medicos, pacientes, o
   const [pacienteParaEditar, setPacienteParaEditar] = useState(null);
   const { toast } = useToast();
 
-  const getNomePaciente = (pacienteId) => {
-    if (!pacienteId) return "Paciente não informado";
-    const paciente = pacientes.find(p => p.id === pacienteId);
+  const getNomePaciente = (agendamento) => {
+    if (!agendamento) return "Paciente não informado";
+    const paciente = pacientes.find(p => p.id === agendamento.paciente_id);
     if (paciente) return paciente.nome;
-    return "Paciente não encontrado";
+    return agendamento.paciente_nome || "Paciente não encontrado";
   };
 
   const getNomeMedico = (medicoId) => {
@@ -271,7 +270,7 @@ export default function VisualizacaoDiaria({ agendamentos, medicos, pacientes, o
                               className="font-medium text-blue-600 hover:text-blue-800 hover:underline cursor-pointer transition-colors"
                               title="Clique para editar o cadastro do paciente"
                             >
-                              {getNomePaciente(agendamento.paciente_id)}
+                              {getNomePaciente(agendamento)}
                             </button>
                           </p>
                           <p className="text-sm text-gray-600">
@@ -369,7 +368,7 @@ export default function VisualizacaoDiaria({ agendamentos, medicos, pacientes, o
             <div>
               <p className="mb-2">Tem certeza que deseja excluir este agendamento?</p>
               <div className="bg-gray-50 p-3 rounded-md text-sm space-y-1">
-                <p><strong>Paciente:</strong> {getNomePaciente(agendamentoParaExcluir.paciente_id)}</p>
+                <p><strong>Paciente:</strong> {getNomePaciente(agendamentoParaExcluir)}</p>
                 <p><strong>Médico:</strong> {getNomeMedico(agendamentoParaExcluir.medico_id)}</p>
                 <p><strong>Data:</strong> {format(new Date(agendamentoParaExcluir.data_agendamento + 'T00:00:00'), "dd/MM/yyyy", { locale: ptBR })}</p>
                 <p><strong>Horário:</strong> {agendamentoParaExcluir.horario}</p>
