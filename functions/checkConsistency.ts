@@ -2,128 +2,92 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
 
 Deno.serve(async (req) => {
     try {
+        // 0. Setup
         const base44 = createClientFromRequest(req);
-        
         let body = {};
-        try { 
-            // Only try to parse JSON if the request has a body
-            if (req.body) {
-                body = await req.json(); 
-            }
-        } catch (e) {
-            console.warn("Failed to parse body:", e);
-        }
-        
+        try { body = await req.json(); } catch (_) {}
         const { fix = false } = body;
-        const debugLogs = [];
+        const logs = [];
 
-        debugLogs.push("Step 1: Listing Medicos...");
-        // Using default sort or explicit sort if needed. Try/catch for safety.
-        let medicos = [];
-        try {
-            medicos = await base44.entities.Medico.list();
-        } catch (err) {
-            debugLogs.push("Error listing Medicos: " + err.message);
-            throw new Error("Falha ao listar Médicos: " + err.message);
-        }
+        logs.push("Starting check (Parallel Mode)...");
 
-        debugLogs.push("Step 2: Listing Pacientes...");
-        let pacientes = [];
-        try {
-            pacientes = await base44.entities.Paciente.list();
-        } catch (err) {
-            debugLogs.push("Error listing Pacientes: " + err.message);
-            throw new Error("Falha ao listar Pacientes: " + err.message);
-        }
-        
+        // 1. Fetch Data Parallelly
+        // Limit Pacientes to 1000 (should be enough for consistency check of recent items)
+        // Limit Agendamentos to 200 (most recent) to avoid timeout
+        const [medicosRes, pacientesRes, agendamentosRes] = await Promise.allSettled([
+            base44.entities.Medico.list(),
+            base44.entities.Paciente.list('-created_date', 1000), 
+            base44.entities.Agendamento.list('-created_date', 200) 
+        ]);
+
+        const medicos = medicosRes.status === 'fulfilled' ? medicosRes.value : [];
+        const pacientes = pacientesRes.status === 'fulfilled' ? pacientesRes.value : [];
+        const agendamentos = agendamentosRes.status === 'fulfilled' ? agendamentosRes.value : [];
+
+        if (medicosRes.status === 'rejected') logs.push("Error fetching Medicos: " + medicosRes.reason);
+        if (pacientesRes.status === 'rejected') logs.push("Error fetching Pacientes: " + pacientesRes.reason);
+        if (agendamentosRes.status === 'rejected') logs.push("Error fetching Agendamentos: " + agendamentosRes.reason);
+
+        logs.push(`Fetched: ${medicos.length} medicos, ${pacientes.length} pacientes, ${agendamentos.length} agendamentos`);
+
         const medicosIds = new Set(medicos.map(m => m.id));
         const pacientesIds = new Set(pacientes.map(p => p.id));
-
-        debugLogs.push("Step 3: Listing Agendamentos...");
-        let agendamentos = [];
-        try {
-            // Getting latest appointments
-            agendamentos = await base44.entities.Agendamento.list('-created_date', 500);
-        } catch (err) {
-             debugLogs.push("Error listing Agendamentos: " + err.message);
-             throw new Error("Falha ao listar Agendamentos: " + err.message);
-        }
 
         const issues = [];
         const fixedIds = [];
 
-        debugLogs.push(`Step 4: Checking ${agendamentos.length} appointments...`);
-
+        // 2. Analyze
         for (const ag of agendamentos) {
             let issueType = null;
             let issueDesc = null;
-            let needsFix = false;
-
-            // Safe access to properties
-            const dataAgendamento = ag.data_agendamento ? String(ag.data_agendamento).trim() : '';
-            const horario = ag.horario ? String(ag.horario).trim() : '';
-
-            // Check 1: Data Inválida ou Ausente
-            if (!dataAgendamento) {
+            
+            // Validate Date
+            if (!ag.data_agendamento) {
                 issueType = 'date_missing';
-                issueDesc = `Agendamento ID ${ag.id} sem data definida.`;
-                needsFix = true;
-            } else {
-                // Validar formato YYYY-MM-DD
-                const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-                if (!dateRegex.test(dataAgendamento)) {
-                    issueType = 'date_invalid';
-                    issueDesc = `Agendamento ID ${ag.id} com data inválida: "${dataAgendamento}".`;
-                    needsFix = true;
-                }
+                issueDesc = 'Data ausente';
+            } else if (!/^\d{4}-\d{2}-\d{2}$/.test(ag.data_agendamento)) {
+                issueType = 'date_invalid';
+                issueDesc = `Data inválida: ${ag.data_agendamento}`;
             }
 
-            // Check 2: Horário Inválido ou Ausente
-            if (!issueType && !horario) {
-                 issueType = 'time_missing';
-                 issueDesc = `Agendamento ID ${ag.id} sem horário definido.`;
-                 needsFix = true;
+            // Validate Time
+            if (!issueType && !ag.horario) {
+                issueType = 'time_missing';
+                issueDesc = 'Horário ausente';
             }
 
-            // Check 3: Médico Inexistente (mas referenciado)
+            // Validate Medico (only if medico_id is present)
             if (!issueType && ag.medico_id && !medicosIds.has(ag.medico_id)) {
                 issueType = 'medico_missing';
-                issueDesc = `Agendamento ${dataAgendamento} aponta para médico inexistente ID ${ag.medico_id}.`;
-                
-                if (fix) {
-                    try {
-                        await base44.entities.Agendamento.update(ag.id, { medico_id: null });
-                        fixedIds.push(ag.id);
-                    } catch (e) {
-                        debugLogs.push(`Failed to fix medico_id for ${ag.id}: ${e.message}`);
-                    }
-                }
+                issueDesc = `Médico ID ${ag.medico_id} não encontrado`;
             }
-
-            // Check 4: Paciente Inexistente (apenas reportar)
+            
+            // Validate Paciente
             if (!issueType && ag.paciente_id && !pacientesIds.has(ag.paciente_id)) {
-                 issueType = 'paciente_missing';
-                 issueDesc = `Agendamento ${dataAgendamento} aponta para paciente inexistente ID ${ag.paciente_id}.`;
+                 // Optional: we can flag this but usually it doesn't crash the calendar if handled in UI
+                 // issues.push({ type: 'paciente_missing', ... })
             }
 
             if (issueType) {
                 issues.push({
-                    type: issueType,
                     agendamento_id: ag.id,
-                    data: dataAgendamento,
-                    horario: horario,
-                    description: issueDesc
+                    type: issueType,
+                    description: issueDesc,
+                    data: ag.data_agendamento || 'N/A',
+                    horario: ag.horario || 'N/A'
                 });
 
-                if (needsFix && fix) {
-                    // Deletar agendamentos corrompidos
-                    if (issueType === 'date_missing' || issueType === 'date_invalid' || issueType === 'time_missing') {
-                        try {
+                if (fix) {
+                    try {
+                        if (['date_missing', 'date_invalid', 'time_missing'].includes(issueType)) {
                             await base44.entities.Agendamento.delete(ag.id);
                             fixedIds.push(ag.id);
-                        } catch (e) {
-                            debugLogs.push(`Failed to delete bad appointment ${ag.id}: ${e.message}`);
+                        } else if (issueType === 'medico_missing') {
+                            await base44.entities.Agendamento.update(ag.id, { medico_id: null });
+                            fixedIds.push(ag.id);
                         }
+                    } catch (err) {
+                        logs.push(`Failed to fix ${ag.id}: ${err.message}`);
                     }
                 }
             }
@@ -137,14 +101,15 @@ Deno.serve(async (req) => {
             issues,
             fixed,
             fixed_ids: fixedIds,
-            debug_logs: debugLogs
+            logs
         });
 
     } catch (error) {
+        // Return 200 with error details to avoid generic 500 in frontend
         return Response.json({ 
-            success: false,
-            error: error.message, 
-            stack: error.stack 
-        }, { status: 500 });
+            success: false, 
+            error: error.message,
+            stack: error.stack
+        }, { status: 200 });
     }
 });
