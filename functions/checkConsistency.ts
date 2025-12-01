@@ -99,7 +99,7 @@ Deno.serve(async (req) => {
             total_medicos_db: medicos.length,
             issues_found: issues.length,
             issues,
-            fixed,
+            fixed: fix,
             fixed_ids: fixedIds,
             logs
         });
