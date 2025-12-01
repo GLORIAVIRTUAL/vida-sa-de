@@ -1,13 +1,34 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
 
 Deno.serve(async (req) => {
+    let logId = null;
+    const base44 = createClientFromRequest(req);
+
     try {
-        const base44 = createClientFromRequest(req);
-        
-        // 1. Log para debug
+        // 1. Log para debug e Registro no Banco
         console.log("📥 Recebendo callback de pagamento da EvoluServices");
-        const body = await req.json();
+        
+        let body;
+        try {
+            body = await req.json();
+        } catch (e) {
+            body = { error: "Invalid JSON body", raw: "Could not parse" };
+        }
+
         console.log("📦 Payload:", JSON.stringify(body, null, 2));
+
+        // Criar Log inicial
+        try {
+            const log = await base44.asServiceRole.entities.WebhookLog.create({
+                endpoint: "callbackVendaCartao",
+                method: req.method,
+                body: JSON.stringify(body),
+                status: "processing"
+            });
+            logId = log.id;
+        } catch (err) {
+            console.error("Falha ao criar log:", err);
+        }
 
         // NOTA: A estrutura exata do payload de retorno não foi fornecida na documentação enviada.
         // Estamos assumindo uma estrutura padrão. Se falhar, verifique os logs para ajustar os campos.
@@ -58,10 +79,29 @@ Deno.serve(async (req) => {
                 `[${new Date().toISOString()}] Callback: ${status}`
         });
 
-        return Response.json({ success: true });
+        const responseData = { success: true, message: "Status updated", novoStatus };
+        
+        // Atualizar Log com sucesso
+        if (logId) {
+            await base44.asServiceRole.entities.WebhookLog.update(logId, {
+                status: "success",
+                response_sent: JSON.stringify(responseData)
+            });
+        }
+
+        return Response.json(responseData);
 
     } catch (error) {
         console.error('❌ Erro no callback:', error);
+        
+        // Atualizar Log com erro
+        if (logId) {
+            await base44.asServiceRole.entities.WebhookLog.update(logId, {
+                status: "error",
+                response_sent: JSON.stringify({ error: error.message })
+            });
+        }
+
         return Response.json({ error: error.message }, { status: 500 });
     }
 });

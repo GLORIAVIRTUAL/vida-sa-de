@@ -18,6 +18,7 @@ import AuditoriaSeguranca from './pages/AuditoriaSeguranca';
 import ImportadorDados from './pages/ImportadorDados';
 import ImportarVendasCartao from './pages/ImportarVendasCartao';
 import VendaCartao from './pages/VendaCartao';
+import WebhookLogs from './pages/WebhookLogs';
 import __Layout from './Layout.jsx';
 
 
@@ -42,6 +43,7 @@ export const PAGES = {
     "ImportadorDados": ImportadorDados,
     "ImportarVendasCartao": ImportarVendasCartao,
     "VendaCartao": VendaCartao,
+    "WebhookLogs": WebhookLogs,
 }
 
 export const pagesConfig = {
