@@ -16,13 +16,32 @@ Deno.serve(async (req) => {
         }
 
         const cleanTermo = termo.trim();
+        
+        // Função para gerar regex insensível a acentos
+        const escapeRegExp = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        
+        const createAccentInsensitiveRegex = (text) => {
+            const safeText = escapeRegExp(text);
+            // Mapeamento simples de caracteres acentuados para regex
+            const accents = {
+                'a': '[aáàâãä]', 'e': '[eéèêë]', 'i': '[iíìîï]', 'o': '[oóòôõö]', 'u': '[uúùûü]',
+                'c': '[cç]', 'n': '[nñ]',
+                'A': '[AÁÀÂÃÄ]', 'E': '[EÉÈÊË]', 'I': '[IÍÌÎÏ]', 'O': '[OÓÒÔÕÖ]', 'U': '[UÚÙÛÜ]',
+                'C': '[CÇ]', 'N': '[NÑ]'
+            };
+            
+            return safeText.split('').map(char => accents[char] || char).join('');
+        };
+        
+        const regexPattern = createAccentInsensitiveRegex(cleanTermo);
+
         // Remove tudo que não é dígito para buscar em campos numéricos
         const digitsOnly = cleanTermo.replace(/\D/g, '');
         
         const query = {
             $or: [
-                // Busca por nome (case insensitive)
-                { nome: { $regex: cleanTermo, $options: 'i' } },
+                // Busca por nome (case insensitive e accent insensitive manual)
+                { nome: { $regex: regexPattern, $options: 'i' } },
                 // Busca por email
                 { email: { $regex: cleanTermo, $options: 'i' } }
             ]

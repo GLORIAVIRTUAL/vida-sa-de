@@ -72,7 +72,8 @@ export default function Pacientes() {
       
       // Busca via backend function para garantir performance e suporte a regex
       // Passando um objeto vazio como fallback para detectar falha no safeApiCall se necessário
-      const response = await safeApiCall(() => base44.functions.invoke('searchPatients', { termo, limit: 100 }), { failed: true });
+      // Aumentado limite para 500 para garantir que encontre todos os nomes
+      const response = await safeApiCall(() => base44.functions.invoke('searchPatients', { termo, limit: 500 }), { failed: true });
       
       if (response?.failed) {
         console.error("❌ Falha na chamada da API de busca");
