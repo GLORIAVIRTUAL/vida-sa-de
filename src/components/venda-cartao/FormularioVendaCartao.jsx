@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Plus, Trash2, User, Users } from "lucide-react";
 import { VendaCartao, Paciente, CategoriaPreco } from "@/entities/all";
+import { base44 } from "@/api/base44Client";
 import { format, addYears } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
 import { safeApiCall } from "@/components/shared/apiThrottle";
@@ -66,7 +67,8 @@ export default function FormularioVendaCartao({ venda, onClose, onSave }) { // N
     valor_parcela: venda.valor_parcela || CUSTO_CARTAO_FISICO,
     data_venda: venda.data_venda || '',
     validade_cartao: venda.validade_cartao || '',
-    observacoes: venda.observacoes || ''
+    observacoes: venda.observacoes || '',
+    bandeira_cartao: venda.bandeira_cartao || ''
   } : {
     tipo_plano: '',
     titular: {
@@ -93,7 +95,8 @@ export default function FormularioVendaCartao({ venda, onClose, onSave }) { // N
     forma_pagamento: 'Dinheiro',
     numero_parcelas: 1,
     valor_parcela: CUSTO_CARTAO_FISICO, // Initial parcel value for 1 card
-    observacoes: ''
+    observacoes: '',
+    bandeira_cartao: ''
   });
 
   const calcularValorTotal = (valorPlano, quantidadeCartoes, titular, dependentes) => {
@@ -411,94 +414,48 @@ export default function FormularioVendaCartao({ venda, onClose, onSave }) { // N
         return;
       }
 
-      // Código original para NOVA venda
-      console.log('💳 Processando venda do cartão...');
-      
-      // 1. Buscar categoria "Cartão Mais Vida"
-      const categorias = await safeApiCall(() => CategoriaPreco.list());
-      const categoriaCartao = categorias.find(c => 
-        c.nome.toLowerCase().includes('cartão') && 
-        c.nome.toLowerCase().includes('mais') &&
-        c.nome.toLowerCase().includes('vida')
-      ) || categorias.find(c => c.nome.toLowerCase().includes('cartão'));
+      // NOVA VENDA via Backend (com integração de pagamento)
+      console.log('🚀 Iniciando venda via backend...');
 
-      if (!categoriaCartao) {
-        throw new Error('Categoria "Cartão Mais Vida" não encontrada. Crie-a primeiro na página de Procedimentos.');
-      }
-
-      console.log('✅ Categoria encontrada:', categoriaCartao.nome);
-
-      // 2. Cadastrar titular como paciente
-      console.log('👤 Cadastrando titular como paciente...');
-      const pacienteTitular = await safeApiCall(() => Paciente.create({
-        nome: formData.titular.nome,
-        cpf: formData.titular.cpf,
-        data_nascimento: formData.titular.data_nascimento,
-        telefone: formData.titular.telefone,
-        endereco: formData.titular.endereco,
-        convenio: categoriaCartao.nome,
-        observacoes: `Cliente do Cartão Mais Vida - ${formData.tipo_plano}`
-      }));
-      
-      console.log('✅ Titular cadastrado:', pacienteTitular.id);
-
-      // 3. Cadastrar dependentes como pacientes
-      const dependentesIds = [];
-      if (formData.dependentes.length > 0) {
-        console.log(`👨‍👩‍👧‍👦 Cadastrando ${formData.dependentes.length} dependente(s)...`);
-        
-        for (const dependente of formData.dependentes) {
-          const pacienteDependente = await safeApiCall(() => Paciente.create({
-            nome: dependente.nome,
-            cpf: dependente.cpf,
-            data_nascimento: dependente.data_nascimento,
-            telefone: formData.titular.telefone, // Usar telefone do titular
-            endereco: formData.titular.endereco, // Usar endereço do titular
-            convenio: categoriaCartao.nome,
-            observacoes: `Dependente de ${formData.titular.nome} - Cartão Mais Vida ${formData.tipo_plano}`
-          }));
-          
-          dependentesIds.push(pacienteDependente.id);
-          console.log('✅ Dependente cadastrado:', pacienteDependente.id);
-        }
-      }
-
-      // 4. Gerar número da venda
-      const numeroVenda = `CMV-${Date.now()}`;
-      
-      // 5. Calcular validade (1 ano)
-      const dataVenda = format(new Date(), 'yyyy-MM-dd');
-      const validadeCartao = format(addYears(new Date(), 1), 'yyyy-MM-dd');
-
-      // 6. Criar registro da venda
-      console.log('💾 Salvando venda...');
-      await safeApiCall(() => VendaCartao.create({
-        numero_venda: numeroVenda,
+      const payload = {
         tipo_plano: formData.tipo_plano,
         titular: formData.titular,
         dependentes: formData.dependentes,
-        paciente_titular_id: pacienteTitular.id,
-        pacientes_dependentes_ids: dependentesIds,
         quantidade_cartoes: formData.quantidade_cartoes,
         valor_cartoes: formData.valor_cartoes,
         valor_plano: formData.valor_plano,
-        valor_total: parseFloat(formData.valor_total),
+        valor_total: formData.valor_total,
         forma_pagamento: formData.forma_pagamento,
-        numero_parcelas: parseInt(formData.numero_parcelas),
-        valor_parcela: parseFloat(formData.valor_parcela),
-        data_venda: dataVenda,
-        validade_cartao: validadeCartao,
-        status: 'Ativo',
-        observacoes: formData.observacoes
-      }));
+        numero_parcelas: formData.numero_parcelas,
+        valor_parcela: formData.valor_parcela,
+        data_venda: formData.data_venda,
+        validade_cartao: formData.validade_cartao,
+        observacoes: formData.observacoes,
+        bandeira_cartao: formData.bandeira_cartao
+      };
 
-      console.log('✅ Venda registrada com sucesso!');
+      const response = await base44.functions.invoke('createVendaCartao', payload);
+      
+      if (!response.data || !response.data.success) {
+        throw new Error(response.data?.error || 'Erro ao processar venda no servidor');
+      }
 
-      toast({
-        title: "Venda realizada com sucesso! 🎉",
-        description: `${formData.quantidade_cartoes} cartão(ões) emitido(s) para ${formData.titular.nome}`,
-        duration: 5000
-      });
+      console.log('✅ Venda processada:', response.data);
+
+      if (response.data.transaction) {
+         toast({
+            title: "Transação Enviada ao Terminal 💳",
+            description: "Aguarde o processamento na maquininha.",
+            duration: 6000,
+            className: "bg-blue-50 border-blue-200"
+         });
+      } else {
+         toast({
+            title: "Venda realizada com sucesso! 🎉",
+            description: `${formData.quantidade_cartoes} cartão(ões) emitido(s) para ${formData.titular.nome}`,
+            duration: 5000
+         });
+      }
 
       await onSave();
       onClose();
@@ -666,6 +623,37 @@ export default function FormularioVendaCartao({ venda, onClose, onSave }) { // N
                     </SelectContent>
                   </Select>
                 </div>
+
+                {(formData.forma_pagamento === 'Cartão Crédito' || formData.forma_pagamento === 'Cartão Débito') && (
+                  <div>
+                    <Label htmlFor="bandeira_cartao">Bandeira do Cartão</Label>
+                    <Select
+                      value={formData.bandeira_cartao}
+                      onValueChange={(value) => handleChange('bandeira_cartao', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione a bandeira" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {formData.forma_pagamento === 'Cartão Crédito' ? (
+                          <>
+                            <SelectItem value="VISA_CREDITO">Visa Crédito</SelectItem>
+                            <SelectItem value="MASTERCARD_CREDITO">Mastercard Crédito</SelectItem>
+                            <SelectItem value="ELO_CREDITO">Elo Crédito</SelectItem>
+                            <SelectItem value="HIPERCARD_CREDITO">Hipercard Crédito</SelectItem>
+                            <SelectItem value="AMEX_CREDITO">Amex Crédito</SelectItem>
+                          </>
+                        ) : (
+                          <>
+                            <SelectItem value="VISA_ELECTRON">Visa Débito</SelectItem>
+                            <SelectItem value="MAESTRO">Maestro / Mastercard Débito</SelectItem>
+                            <SelectItem value="ELO_DEBITO">Elo Débito</SelectItem>
+                          </>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
                 {formData.tipo_plano.includes('Parcelado') && (
                   <>
