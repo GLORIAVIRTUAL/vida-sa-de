@@ -194,7 +194,7 @@ export default function FormularioAgendamento({ agendamento, agendamentosDoDia, 
     return preco.valor;
   }, [medicos, procedimentos, tabelaPrecos]);
 
-  // Função simples para buscar pacientes - MELHORADA
+  // Função de busca otimizada via servidor
   const buscarPacientesPorNome = async () => {
     if (!buscaPaciente || buscaPaciente.trim().length < 2) {
       toast({
@@ -207,68 +207,28 @@ export default function FormularioAgendamento({ agendamento, agendamentosDoDia, 
 
     setBuscandoPaciente(true);
     try {
-      const termo = buscaPaciente.trim().toLowerCase();
-      console.log(`🔍 Buscando pacientes com: "${termo}"`);
+      const termo = buscaPaciente.trim();
+      console.log(`🔍 Buscando pacientes no servidor: "${termo}"`);
       
-      // Buscar TODOS os pacientes (loop para contornar limite de 5000)
-      let todosArray = [];
-      let offset = 0;
-      const limite = 1000;
-      let temMais = true;
+      const query = {
+        $or: [
+          { nome: { $regex: termo, $options: 'i' } },
+          { cpf: { $regex: termo, $options: 'i' } },
+          { telefone: { $regex: termo, $options: 'i' } },
+          { email: { $regex: termo, $options: 'i' } }
+        ]
+      };
+
+      const resultados = await Paciente.filter(query, '-created_date', 50);
       
-      while (temMais) {
-        const lote = await Paciente.list('-created_date', limite, offset);
-        const loteArray = Array.isArray(lote) ? lote : [];
-        
-        if (loteArray.length === 0) {
-          temMais = false;
-        } else {
-          todosArray = [...todosArray, ...loteArray];
-          if (loteArray.length < limite) {
-            temMais = false;
-          } else {
-            offset += limite;
-          }
-        }
-      }
+      setPacientesEncontrados(resultados || []);
       
-      console.log(`📊 Total de pacientes no sistema: ${todosArray.length}`);
+      console.log(`✅ ${resultados?.length || 0} pacientes encontrados`);
       
-      // Filtrar no frontend
-      const termoNormalizado = termo.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-      const termoNumeros = termo.replace(/\D/g, '');
-      
-      const resultados = todosArray.filter(p => {
-        if (!p || !p.nome) return false;
-        
-        const nome = p.nome.toLowerCase();
-        const nomeNormalizado = nome.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        const cpf = (p.cpf || '').replace(/\D/g, '');
-        const telefone = (p.telefone || '').replace(/\D/g, '');
-        
-        return nome.includes(termo) || 
-               nomeNormalizado.includes(termoNormalizado) ||
-               (termoNumeros && cpf.includes(termoNumeros)) ||
-               (termoNumeros && telefone.includes(termoNumeros));
-      });
-      
-      // Ordenar: mais recentes primeiro (decrescente por created_date)
-      resultados.sort((a, b) => {
-        const dataA = new Date(a.created_date || 0);
-        const dataB = new Date(b.created_date || 0);
-        return dataB.getTime() - dataA.getTime();
-      });
-      
-      const limitados = resultados.slice(0, 100);
-      
-      setPacientesEncontrados(limitados);
-      
-      console.log(`✅ ${limitados.length} pacientes encontrados`);
-      
-      if (limitados.length > 0) {
+      if (resultados && resultados.length > 0) {
         toast({
           title: "Pacientes encontrados!",
-          description: `${limitados.length} paciente(s) encontrado(s). Selecione um abaixo.`
+          description: `${resultados.length} paciente(s) encontrado(s). Selecione um abaixo.`
         });
       } else {
         toast({

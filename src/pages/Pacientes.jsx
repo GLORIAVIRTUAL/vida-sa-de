@@ -32,7 +32,7 @@ export default function Pacientes() {
   const [totalCarregados, setTotalCarregados] = useState(0);
 
   const buscarPacientes = async () => {
-    const termo = searchTerm.trim().toLowerCase();
+    const termo = searchTerm.trim();
     
     if (termo.length < 2) {
       setErro("Digite pelo menos 2 caracteres para buscar");
@@ -44,85 +44,27 @@ export default function Pacientes() {
     setErro(null);
     
     try {
-      console.log(`🔍 Buscando pacientes com termo: "${termo}"`);
+      console.log(`🔍 Buscando pacientes no servidor com termo: "${termo}"`);
       
-      // Buscar em lotes de 1.000 para garantir que pegamos todos (evita timeout e limites da API)
-      let todosPacientes = [];
-      let offset = 0;
-      const limite = 1000; 
-      let temMais = true;
+      // Busca otimizada no servidor usando Regex
+      // Tenta buscar por nome, CPF ou telefone
+      const query = {
+        $or: [
+          { nome: { $regex: termo, $options: 'i' } },
+          { cpf: { $regex: termo, $options: 'i' } },
+          { telefone: { $regex: termo, $options: 'i' } },
+          { email: { $regex: termo, $options: 'i' } }
+        ]
+      };
+
+      // Busca até 100 resultados coincidentes (muito mais rápido que baixar 18k registros)
+      const resultados = await Paciente.filter(query, 'nome', 100);
       
-      while (temMais) {
-        console.log(`📥 Carregando lote a partir de offset ${offset}...`);
-        const lote = await Paciente.list('nome', limite, offset);
-        const loteArray = Array.isArray(lote) ? lote : [];
-        
-        if (loteArray.length === 0) {
-          temMais = false;
-        } else {
-          todosPacientes = [...todosPacientes, ...loteArray];
-          
-          if (loteArray.length < limite) {
-            temMais = false;
-          } else {
-            offset += limite;
-          }
-        }
-      }
+      setPacientes(resultados || []);
+      console.log(`✅ Encontrados ${resultados?.length || 0} pacientes`);
       
-      setTotalCarregados(todosPacientes.length);
-      console.log(`📥 Total carregado: ${todosPacientes.length} pacientes`);
-      
-      // Filtrar no frontend
-      const termoSemAcentos = termo.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-      const resultados = todosPacientes.filter(paciente => {
-        if (!paciente || !paciente.nome) return false;
-        
-        const nome = paciente.nome.toLowerCase();
-        const nomeNormalizado = nome.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        const cpf = (paciente.cpf || '').replace(/\D/g, '');
-        const telefone = (paciente.telefone || '').replace(/\D/g, '');
-        const email = (paciente.email || '').toLowerCase();
-        
-        const termoNumeros = termo.replace(/\D/g, '');
-        
-        if (nome.startsWith(termo) || nomeNormalizado.startsWith(termoSemAcentos)) {
-          return true;
-        }
-        
-        if (nome.includes(termo) || nomeNormalizado.includes(termoSemAcentos)) {
-          return true;
-        }
-        
-        if (termoNumeros && (cpf.includes(termoNumeros) || telefone.includes(termoNumeros))) {
-          return true;
-        }
-        
-        if (email.includes(termo)) {
-          return true;
-        }
-        
-        return false;
-      });
-      
-      resultados.sort((a, b) => {
-        const nomeA = (a.nome || '').toLowerCase();
-        const nomeB = (b.nome || '').toLowerCase();
-        
-        const aComeca = nomeA.startsWith(termo);
-        const bComeca = nomeB.startsWith(termo);
-        
-        if (aComeca && !bComeca) return -1;
-        if (!aComeca && bComeca) return 1;
-        
-        return nomeA.localeCompare(nomeB, 'pt-BR');
-      });
-      
-      setPacientes(resultados);
-      console.log(`✅ Encontrados ${resultados.length} pacientes que correspondem à busca`);
-      
-      if (resultados.length === 0) {
-        setErro(`Nenhum paciente encontrado com "${termo}". Todos os ${todosPacientes.length} pacientes foram verificados.`);
+      if (!resultados || resultados.length === 0) {
+        setErro(`Nenhum paciente encontrado com "${termo}".`);
       }
       
     } catch (error) {
