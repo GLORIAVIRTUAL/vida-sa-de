@@ -20,6 +20,7 @@ import ImportarVendasCartao from './pages/ImportarVendasCartao';
 import VendaCartao from './pages/VendaCartao';
 import WebhookLogs from './pages/WebhookLogs';
 import Turmas from './pages/Turmas';
+import Debug from './pages/Debug';
 import __Layout from './Layout.jsx';
 
 
@@ -46,6 +47,7 @@ export const PAGES = {
     "VendaCartao": VendaCartao,
     "WebhookLogs": WebhookLogs,
     "Turmas": Turmas,
+    "Debug": Debug,
 }
 
 export const pagesConfig = {
