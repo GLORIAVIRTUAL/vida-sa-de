@@ -28,8 +28,9 @@ export default function Dashboard() {
   const [agendamentosSemana, setAgendamentosSemana] = useState([]);
   const [medicos, setMedicos] = useState([]);
   const [pacientes, setPacientes] = useState([]);
-  const [totalPacientesCount, setTotalPacientesCount] = useState(0);
+  const [totalPacientesCount, setTotalPacientesCount] = useState(null); // null indica carregando
   const [loading, setLoading] = useState(true);
+  const [loadingPacientes, setLoadingPacientes] = useState(true);
   const [mensagemMotivacional, setMensagemMotivacional] = useState("");
 
   useEffect(() => {
@@ -96,11 +97,18 @@ export default function Dashboard() {
           const totalPacientesReal = statsResponse.data?.totalPacientes || 0;
           setTotalPacientesCount(totalPacientesReal);
         })
-        .catch(err => console.error("Erro ao carregar stats de pacientes:", err));
+        .catch(err => {
+          console.error("Erro ao carregar stats de pacientes:", err);
+          setTotalPacientesCount(0); // Em caso de erro, mostra 0 ou mantém o que tinha
+        })
+        .finally(() => {
+          setLoadingPacientes(false);
+        });
 
     } catch (error) {
       console.error("Erro ao carregar dados do dashboard:", error);
       setLoading(false);
+      setLoadingPacientes(false);
     }
   }, []);
 
@@ -146,7 +154,11 @@ export default function Dashboard() {
           </Card>
         </div>
 
-        <EstatisticasRapidas estatisticas={estatisticas} loading={loading} />
+        <EstatisticasRapidas 
+          estatisticas={estatisticas} 
+          loading={loading} 
+          loadingPacientes={loadingPacientes} 
+        />
 
         <div className="grid lg:grid-cols-2 gap-6 mb-6">
           <AgendamentosHoje 

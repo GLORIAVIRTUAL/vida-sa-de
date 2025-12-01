@@ -3,14 +3,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Stethoscope, Calendar, CheckCircle, XCircle, Clock } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export default function EstatisticasRapidas({ estatisticas, loading }) {
+export default function EstatisticasRapidas({ estatisticas, loading, loadingPacientes }) {
   const cards = [
     {
       title: "Pacientes Cadastrados",
       value: estatisticas.totalPacientes,
       icon: Users,
       bgColor: "bg-blue-500",
-      textColor: "text-blue-600"
+      textColor: "text-blue-600",
+      isLoading: loadingPacientes
     },
     {
       title: "Médicos Ativos",
@@ -58,11 +59,11 @@ export default function EstatisticasRapidas({ estatisticas, loading }) {
             <div className="flex justify-between items-start">
               <div>
                 <p className="text-xs font-medium text-gray-500 mb-1">{card.title}</p>
-                {loading ? (
+                {loading || card.isLoading ? (
                   <Skeleton className="h-8 w-12" />
                 ) : (
                   <CardTitle className="text-2xl font-bold">
-                    {card.value}
+                    {card.value !== null ? card.value : '-'}
                   </CardTitle>
                 )}
               </div>
