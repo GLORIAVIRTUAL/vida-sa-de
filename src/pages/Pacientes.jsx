@@ -73,6 +73,7 @@ export default function Pacientes() {
     setLoading(true);
     setErro(null);
     try {
+      // Carrega os 50 primeiros para garantir que a lista não fique vazia
       const dados = await safeApiCall(() => Paciente.list('-created_date', 50));
       if (Array.isArray(dados)) {
         setPacientes(dados);
