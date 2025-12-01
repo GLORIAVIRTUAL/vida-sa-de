@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Paciente } from "@/entities/all";
 import { Button } from "@/components/ui/button";
@@ -47,10 +46,10 @@ export default function Pacientes() {
     try {
       console.log(`🔍 Buscando pacientes com termo: "${termo}"`);
       
-      // Buscar em lotes de 10.000 (limite máximo da API)
+      // Buscar em lotes de 1.000 para garantir que pegamos todos (evita timeout e limites da API)
       let todosPacientes = [];
       let offset = 0;
-      const limite = 10000;
+      const limite = 1000; 
       let temMais = true;
       
       while (temMais) {
