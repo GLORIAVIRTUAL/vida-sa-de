@@ -3,9 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Code, TestTube, Clock, User, Search } from "lucide-react";
+import { Code, TestTube, Clock, User, Search, Database } from "lucide-react";
 import { listMedicos } from "@/functions/listMedicos";
 import { Medico } from "@/entities/all";
+import { base44 } from "@/api/base44Client";
+import { useToast } from "@/components/ui/use-toast";
 
 export default function ApiTest() {
   const [response, setResponse] = useState(null);
