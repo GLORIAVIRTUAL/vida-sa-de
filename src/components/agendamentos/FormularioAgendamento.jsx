@@ -208,24 +208,24 @@ export default function FormularioAgendamento({ agendamento, agendamentosDoDia, 
     setBuscandoPaciente(true);
     try {
       const termo = buscaPaciente.trim();
-      console.log(`🔍 Buscando pacientes no servidor: "${termo}"`);
+      console.log(`🔍 [DIRECT] Buscando pacientes: "${termo}"`);
 
-      const response = await safeApiCall(() => base44.functions.invoke('searchPatients', { termo, limit: 100 }));
+      // CHAMADA DIRETA - Removido safeApiCall para debug e performance
+      const response = await base44.functions.invoke('searchPatients', { termo, limit: 500 });
 
-      // Tratamento de erro
       if (response?.data?.error) {
-         console.error("Erro na função searchPatients:", response.data.error);
-         toast({ title: "Erro na busca", description: "Ocorreu um erro ao buscar os pacientes.", variant: "destructive" });
+         console.error("❌ Erro Backend:", response.data.error);
+         toast({ title: "Erro", description: "Falha na busca de pacientes.", variant: "destructive" });
          setPacientesEncontrados([]);
          return;
       }
 
       const resultados = Array.isArray(response?.data) ? response.data : [];
+      console.log(`✅ ${resultados.length} encontrados`);
+
       setPacientesEncontrados(resultados);
-      
-      console.log(`✅ ${resultados?.length || 0} pacientes encontrados`);
-      
-      if (resultados && resultados.length > 0) {
+
+      if (resultados.length > 0) {
         toast({
           title: "Pacientes encontrados!",
           description: `${resultados.length} paciente(s) encontrado(s). Selecione um abaixo.`
