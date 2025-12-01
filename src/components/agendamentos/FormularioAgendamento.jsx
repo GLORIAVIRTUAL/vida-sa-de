@@ -210,9 +210,27 @@ export default function FormularioAgendamento({ agendamento, agendamentosDoDia, 
       const termo = buscaPaciente.trim().toLowerCase();
       console.log(`🔍 Buscando pacientes com: "${termo}"`);
       
-      // Buscar TODOS os pacientes recentes primeiro (ordenados por data de criação)
-      const todos = await Paciente.list('-created_date', 10000);
-      const todosArray = Array.isArray(todos) ? todos : [];
+      // Buscar TODOS os pacientes (loop para contornar limite de 5000)
+      let todosArray = [];
+      let offset = 0;
+      const limite = 1000;
+      let temMais = true;
+      
+      while (temMais) {
+        const lote = await Paciente.list('-created_date', limite, offset);
+        const loteArray = Array.isArray(lote) ? lote : [];
+        
+        if (loteArray.length === 0) {
+          temMais = false;
+        } else {
+          todosArray = [...todosArray, ...loteArray];
+          if (loteArray.length < limite) {
+            temMais = false;
+          } else {
+            offset += limite;
+          }
+        }
+      }
       
       console.log(`📊 Total de pacientes no sistema: ${todosArray.length}`);
       
