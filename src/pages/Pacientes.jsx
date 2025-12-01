@@ -55,12 +55,43 @@ export default function Pacientes() {
     carregarRecentes();
   }, []);
 
+  // Debounce para busca automática
+  React.useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      if (searchTerm.trim().length >= 2) {
+        buscarPacientes();
+      } else if (searchTerm.trim().length === 0) {
+        // Se limpar a busca, recarrega os recentes
+        carregarRecentes();
+      }
+    }, 800);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchTerm]);
+
+  const carregarRecentes = async () => {
+    setLoading(true);
+    setErro(null);
+    try {
+      const dados = await safeApiCall(() => Paciente.list('-created_date', 50));
+      if (Array.isArray(dados)) {
+        setPacientes(dados);
+      }
+    } catch (err) {
+      console.error("Erro ao carregar recentes:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const buscarPacientes = async () => {
     const termo = searchTerm.trim();
     
     if (termo.length < 2) {
-      setErro("Digite pelo menos 2 caracteres para buscar");
-      setPacientes([]);
+      // Se for muito curto e não estiver vazio (já tratado no useEffect), ignora ou avisa
+      if (termo.length > 0) {
+         // Opcional: avisar ou só ignorar
+      }
       return;
     }
 

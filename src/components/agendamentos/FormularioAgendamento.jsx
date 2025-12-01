@@ -210,9 +210,9 @@ export default function FormularioAgendamento({ agendamento, agendamentosDoDia, 
       const termo = buscaPaciente.trim();
       console.log(`🔍 Buscando pacientes no servidor: "${termo}"`);
       
-      const response = await safeApiCall(() => base44.functions.invoke('searchPatients', { termo, limit: 50 }));
+      const response = await safeApiCall(() => base44.functions.invoke('searchPatients', { termo, limit: 500 }));
       const resultados = response?.data || [];
-      
+
       setPacientesEncontrados(resultados);
       
       console.log(`✅ ${resultados?.length || 0} pacientes encontrados`);
