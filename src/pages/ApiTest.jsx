@@ -16,6 +16,30 @@ export default function ApiTest() {
   const [medicoInfo, setMedicoInfo] = useState(null);
   const [loadingMedico, setLoadingMedico] = useState(false);
   const [medicoId, setMedicoId] = useState(""); // Novo state para o ID digitado
+  const [migrating, setMigrating] = useState(false);
+  const { toast } = useToast();
+
+  const handleMigration = async () => {
+    setMigrating(true);
+    try {
+      const { data } = await base44.functions.invoke('migratePatientNames');
+      console.log('Migração concluída:', data);
+      toast({
+        title: "Migração Concluída",
+        description: `Atualizados: ${data.stats.atualizados}, Ignorados: ${data.stats.ignorados}, Erros: ${data.stats.erros}`,
+        variant: "default"
+      });
+    } catch (err) {
+      console.error('Erro na migração:', err);
+      toast({
+        title: "Erro na Migração",
+        description: err.message || "Falha ao migrar nomes",
+        variant: "destructive"
+      });
+    } finally {
+      setMigrating(false);
+    }
+  };
 
   const handleTestClick = async () => {
     setLoading(true);
