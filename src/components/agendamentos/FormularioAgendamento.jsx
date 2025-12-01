@@ -1047,8 +1047,12 @@ export default function FormularioAgendamento({ agendamento, agendamentosDoDia, 
       }
 
       // Preparar dados - GARANTIR QUE CATEGORIA ESTÁ INCLUÍDA
+      // Buscar nome do paciente para salvar no snapshot
+      const pacienteSelecionado = pacientesEncontrados.find(p => p.id === formData.paciente_id);
+
       const dados = {
         paciente_id: formData.paciente_id,
+        paciente_nome: pacienteSelecionado ? pacienteSelecionado.nome : '',
         data_agendamento: formData.data_agendamento,
         horario: formData.horario,
         tipo_servico: formData.tipo_servico,
