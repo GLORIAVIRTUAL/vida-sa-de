@@ -55,48 +55,51 @@ export default function Dashboard() {
   const carregarDados = useCallback(async () => {
     setLoading(true);
     try {
-      console.log('🔄 Dashboard: Iniciando carregamento controlado de dados...');
+      console.log('🔄 Dashboard: Iniciando carregamento otimizado...');
       
-      // CORRIGIDO: Carregamento sequencial para evitar rate limit
-      const agendamentosData = await safeApiCall(() => Agendamento.list(), []);
-      const medicosData = await safeApiCall(() => Medico.list(), []);
-      const pacientesData = await safeApiCall(() => Paciente.list(), []);
-      
-      // Buscar contagem real de pacientes via backend function
-      const statsResponse = await safeApiCall(() => getDashboardStats(), { data: { totalPacientes: 0 } });
-      const totalPacientesReal = statsResponse.data?.totalPacientes || 0;
-
-      console.log('📊 Dashboard: Dados carregados com sucesso');
-      
-      const agendamentosArray = Array.isArray(agendamentosData) ? agendamentosData : [];
-      const medicosArray = Array.isArray(medicosData) ? medicosData : [];
-      const pacientesArray = Array.isArray(pacientesData) ? pacientesData : [];
-      
-      setTotalPacientesCount(totalPacientesReal || pacientesArray.length);
-
       const hoje = new Date();
+      const hojeFormatado = format(hoje, "yyyy-MM-dd");
       const inicioSemana = startOfWeek(hoje, { weekStartsOn: 1 });
       const fimSemana = endOfWeek(hoje, { weekStartsOn: 1 });
-      const hojeFormatado = format(hoje, "yyyy-MM-dd");
       
-      const agendamentosHojeFiltered = agendamentosArray.filter(
-        agendamento => agendamento && agendamento.data_agendamento === hojeFormatado
-      );
+      const inicioSemanaStr = format(inicioSemana, "yyyy-MM-dd");
+      const fimSemanaStr = format(fimSemana, "yyyy-MM-dd");
 
-      const agendamentosSemanaFiltered = agendamentosArray.filter(agendamento => {
-        if (!agendamento || !agendamento.data_agendamento) return false;
-        const dataAgendamento = new Date(agendamento.data_agendamento);
-        return dataAgendamento >= inicioSemana && dataAgendamento <= fimSemana;
-      });
-
-      setAgendamentosHoje(agendamentosHojeFiltered);
-      setAgendamentosSemana(agendamentosSemanaFiltered);
+      // 1. Carregar Médicos (lista pequena)
+      const medicosData = await safeApiCall(() => Medico.list(), []);
+      const medicosArray = Array.isArray(medicosData) ? medicosData : [];
       setMedicos(medicosArray);
-      setPacientes(pacientesArray);
+
+      // 2. Carregar Agendamentos da Semana (Filtro no Backend)
+      // Usando filtro por data para trazer apenas o necessário
+      const agendamentosSemanaData = await safeApiCall(() => Agendamento.filter({
+        data_agendamento: { 
+          "$gte": inicioSemanaStr, 
+          "$lte": fimSemanaStr 
+        }
+      }), []);
+      const agendamentosSemanaArray = Array.isArray(agendamentosSemanaData) ? agendamentosSemanaData : [];
+      setAgendamentosSemana(agendamentosSemanaArray);
+
+      // Filtrar hoje localmente a partir dos dados da semana (já que hoje está na semana)
+      const agendamentosHojeFiltered = agendamentosSemanaArray.filter(
+        a => a && a.data_agendamento === hojeFormatado
+      );
+      setAgendamentosHoje(agendamentosHojeFiltered);
+
+      // 3. Liberar o loading da UI principal
+      setLoading(false);
+
+      // 4. Carregar contagem total de pacientes em segundo plano
+      safeApiCall(() => getDashboardStats())
+        .then(statsResponse => {
+          const totalPacientesReal = statsResponse.data?.totalPacientes || 0;
+          setTotalPacientesCount(totalPacientesReal);
+        })
+        .catch(err => console.error("Erro ao carregar stats de pacientes:", err));
 
     } catch (error) {
       console.error("Erro ao carregar dados do dashboard:", error);
-    } finally {
       setLoading(false);
     }
   }, []);

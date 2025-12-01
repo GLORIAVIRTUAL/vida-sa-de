@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { Paciente } from "@/entities/all";
+import { base44 } from "@/api/base44Client";
+import { safeApiCall } from "@/components/shared/apiThrottle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Search, Loader2, User, Phone, MapPin, Edit, Trash2, AlertCircle, Printer } from "lucide-react";
@@ -46,21 +48,11 @@ export default function Pacientes() {
     try {
       console.log(`🔍 Buscando pacientes no servidor com termo: "${termo}"`);
       
-      // Busca otimizada no servidor usando Regex
-      // Tenta buscar por nome, CPF ou telefone
-      const query = {
-        $or: [
-          { nome: { $regex: termo, $options: 'i' } },
-          { cpf: { $regex: termo, $options: 'i' } },
-          { telefone: { $regex: termo, $options: 'i' } },
-          { email: { $regex: termo, $options: 'i' } }
-        ]
-      };
-
-      // Busca até 100 resultados coincidentes (muito mais rápido que baixar 18k registros)
-      const resultados = await Paciente.filter(query, 'nome', 100);
+      // Busca via backend function para garantir performance e suporte a regex
+      const response = await safeApiCall(() => base44.functions.invoke('searchPatients', { termo, limit: 100 }));
+      const resultados = response?.data || [];
       
-      setPacientes(resultados || []);
+      setPacientes(resultados);
       console.log(`✅ Encontrados ${resultados?.length || 0} pacientes`);
       
       if (!resultados || resultados.length === 0) {

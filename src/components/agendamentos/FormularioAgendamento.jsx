@@ -210,18 +210,10 @@ export default function FormularioAgendamento({ agendamento, agendamentosDoDia, 
       const termo = buscaPaciente.trim();
       console.log(`🔍 Buscando pacientes no servidor: "${termo}"`);
       
-      const query = {
-        $or: [
-          { nome: { $regex: termo, $options: 'i' } },
-          { cpf: { $regex: termo, $options: 'i' } },
-          { telefone: { $regex: termo, $options: 'i' } },
-          { email: { $regex: termo, $options: 'i' } }
-        ]
-      };
-
-      const resultados = await Paciente.filter(query, '-created_date', 50);
+      const response = await safeApiCall(() => base44.functions.invoke('searchPatients', { termo, limit: 50 }));
+      const resultados = response?.data || [];
       
-      setPacientesEncontrados(resultados || []);
+      setPacientesEncontrados(resultados);
       
       console.log(`✅ ${resultados?.length || 0} pacientes encontrados`);
       
