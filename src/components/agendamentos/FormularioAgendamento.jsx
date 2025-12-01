@@ -150,18 +150,12 @@ export default function FormularioAgendamento({ agendamento, agendamentosDoDia, 
 
     console.log(`🔍 Buscando preço para: ${medico.especialidade} - Categoria ID: ${categoriaId}`);
 
-    // Normalizar especialidade
-    const especialidadeNorm = medico.especialidade
-      .toUpperCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "");
+    // Normalizar especialidade (Safe)
+    const especialidadeNorm = normalizeString(medico.especialidade);
 
     // Buscar procedimento de consulta da especialidade
     const procedimentoConsulta = procedimentos.find(p => {
-      const nomeNorm = p.nome
-        .toUpperCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "");
+      const nomeNorm = normalizeString(p.nome);
       
       const temConsulta = nomeNorm.includes('CONSULTA');
       const temEspecialidade = nomeNorm.includes(especialidadeNorm);
