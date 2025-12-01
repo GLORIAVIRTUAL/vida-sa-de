@@ -89,59 +89,36 @@ export default function Pacientes() {
     const termo = searchTerm.trim();
     
     if (termo.length < 2) {
-      // Se for muito curto e não estiver vazio (já tratado no useEffect), ignora ou avisa
-      if (termo.length > 0) {
-         // Opcional: avisar ou só ignorar
-      }
+      if (termo.length === 0) carregarRecentes();
       return;
     }
 
     setLoading(true);
     setErro(null);
-    
-    try {
-      console.log(`🔍 Buscando pacientes no servidor com termo: "${termo}"`);
-      
-      // Busca via backend function para garantir performance e suporte a regex
-      // Passando um objeto vazio como fallback para detectar falha no safeApiCall se necessário
-      const response = await safeApiCall(() => base44.functions.invoke('searchPatients', { termo, limit: 100 }), { failed: true });
-      
-      // Tratamento de erro robusto
-      if (response?.failed) {
-        console.error("❌ Falha na chamada da API de busca (Network/Throttle)");
-        setErro("Erro de conexão. Verifique sua internet.");
-        setPacientes([]);
-        return;
-      }
 
-      // O axios do invoke retorna data. Se a function retornou {error: ...}, estará em response.data.error
+    try {
+      console.log(`🔍 [DIRECT] Buscando: "${termo}"`);
+      
+      // CHAMADA DIRETA para debug
+      const response = await base44.functions.invoke('searchPatients', { termo, limit: 500 });
+      
       if (response?.data?.error) {
-         console.error("❌ Erro interno na função de busca:", response.data.error);
-         setErro("Erro no servidor ao buscar pacientes. Tente novamente.");
-         setPacientes([]);
-         return;
+         throw new Error(response.data.error);
       }
 
       const resultados = response?.data;
       
-      if (!Array.isArray(resultados)) {
-        console.error("❌ Resposta inválida (não é array):", resultados);
-        setErro("Erro inesperado na resposta do servidor.");
-        setPacientes([]);
-        return;
+      if (Array.isArray(resultados)) {
+        console.log(`✅ ${resultados.length} encontrados`);
+        setPacientes(resultados);
+      } else {
+        console.error("❌ Formato inválido:", response);
+        setErro("Erro na resposta do servidor.");
       }
-      
-      setPacientes(resultados);
-      console.log(`✅ Encontrados ${resultados?.length || 0} pacientes`);
-      
-      if (!resultados || resultados.length === 0) {
-        setErro(`Nenhum paciente encontrado com "${termo}".`);
-      }
-      
-    } catch (error) {
-      console.error("❌ Erro ao buscar:", error);
-      setErro(`Erro ao buscar pacientes: ${error.message}`);
-      setPacientes([]);
+
+    } catch (err) {
+      console.error("❌ Erro busca:", err);
+      setErro("Erro ao buscar pacientes.");
     } finally {
       setLoading(false);
     }
