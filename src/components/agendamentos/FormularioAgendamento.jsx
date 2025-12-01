@@ -918,16 +918,10 @@ export default function FormularioAgendamento({ agendamento, agendamentosDoDia, 
       ) {
         const medico = medicos.find(m => m.id === newData.medico_id);
         if (medico) {
-          const especialidadeNorm = medico.especialidade
-            .toUpperCase()
-            .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "");
+          const especialidadeNorm = normalizeString(medico.especialidade);
           
           const procedimentoConsulta = procedimentos.find(p => {
-            const nomeNorm = p.nome
-              .toUpperCase()
-              .normalize("NFD")
-              .replace(/[\u0300-\u036f]/g, "");
+            const nomeNorm = normalizeString(p.nome);
             
             const temConsulta = nomeNorm.includes('CONSULTA');
             const temEspecialidade = nomeNorm.includes(especialidadeNorm);
