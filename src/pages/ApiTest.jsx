@@ -99,6 +99,28 @@ export default function ApiTest() {
         </div>
 
         <div className="grid gap-6">
+          {/* Card de Migração */}
+          <Card className="border-amber-200 bg-amber-50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-amber-900">
+                <Database className="w-5 h-5" />
+                Migração de Dados
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-amber-800">
+                Use este botão para preencher os nomes dos pacientes nos agendamentos antigos que estão sem nome.
+              </p>
+              <Button 
+                onClick={handleMigration} 
+                disabled={migrating}
+                className="bg-amber-600 hover:bg-amber-700 text-white"
+              >
+                {migrating ? "Migrando..." : "Migrar Nomes de Pacientes nos Agendamentos"}
+              </Button>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>Testar a Função `listMedicos`</CardTitle>
