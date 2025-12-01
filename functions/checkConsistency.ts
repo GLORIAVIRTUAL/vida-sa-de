@@ -8,13 +8,14 @@ Deno.serve(async (req) => {
         const { fix = false } = body;
 
         // 1. Buscar referências
-        const medicos = await base44.entities.Medico.list('', 1000);
-        const pacientes = await base44.entities.Paciente.list('', 1000);
+        // Usar ordenação por data de criação para evitar erro com string vazia
+        const medicos = await base44.entities.Medico.list('-created_date', 1000);
+        const pacientes = await base44.entities.Paciente.list('-created_date', 1000);
         
         const medicosIds = new Set(medicos.map(m => m.id));
         const pacientesIds = new Set(pacientes.map(p => p.id));
 
-        // 2. Buscar Agendamentos (aumentar limite para pegar problemas antigos se houver)
+        // 2. Buscar Agendamentos
         const agendamentos = await base44.entities.Agendamento.list('-data_agendamento', 1000);
 
         const issues = [];
@@ -86,6 +87,7 @@ Deno.serve(async (req) => {
 
         return Response.json({
             total_agendamentos_verificados: agendamentos.length,
+            total_medicos_db: medicos.length,
             issues_found: issues.length,
             issues,
             fixed,
