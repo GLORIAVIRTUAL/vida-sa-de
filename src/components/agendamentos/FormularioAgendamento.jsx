@@ -209,10 +209,18 @@ export default function FormularioAgendamento({ agendamento, agendamentosDoDia, 
     try {
       const termo = buscaPaciente.trim();
       console.log(`🔍 Buscando pacientes no servidor: "${termo}"`);
-      
-      const response = await safeApiCall(() => base44.functions.invoke('searchPatients', { termo, limit: 500 }));
-      const resultados = response?.data || [];
 
+      const response = await safeApiCall(() => base44.functions.invoke('searchPatients', { termo, limit: 100 }));
+
+      // Tratamento de erro
+      if (response?.data?.error) {
+         console.error("Erro na função searchPatients:", response.data.error);
+         toast({ title: "Erro na busca", description: "Ocorreu um erro ao buscar os pacientes.", variant: "destructive" });
+         setPacientesEncontrados([]);
+         return;
+      }
+
+      const resultados = Array.isArray(response?.data) ? response.data : [];
       setPacientesEncontrados(resultados);
       
       console.log(`✅ ${resultados?.length || 0} pacientes encontrados`);

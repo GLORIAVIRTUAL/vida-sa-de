@@ -4,73 +4,52 @@ Deno.serve(async (req) => {
     try {
         const base44 = createClientFromRequest(req);
         
+        // Validar auth
         const user = await base44.auth.me();
         if (!user) {
             return Response.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const { termo, limit = 50 } = await req.json();
-
-        if (!termo || termo.trim().length < 2) {
+        // Parse body com segurança
+        let body = {};
+        try {
+            body = await req.json();
+        } catch (e) {
+            console.error("Erro parse JSON:", e);
             return Response.json([]);
         }
 
-        const cleanTermo = termo.trim();
-        
-        // Função para gerar regex insensível a acentos
-        const escapeRegExp = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        
-        const createAccentInsensitiveRegex = (text) => {
-            const safeText = escapeRegExp(text);
-            // Mapeamento simples de caracteres acentuados para regex
-            const accents = {
-                'a': '[aáàâãä]', 'e': '[eéèêë]', 'i': '[iíìîï]', 'o': '[oóòôõö]', 'u': '[uúùûü]',
-                'c': '[cç]', 'n': '[nñ]',
-                'A': '[AÁÀÂÃÄ]', 'E': '[EÉÈÊË]', 'I': '[IÍÌÎÏ]', 'O': '[OÓÒÔÕÖ]', 'U': '[UÚÙÛÜ]',
-                'C': '[CÇ]', 'N': '[NÑ]'
-            };
-            
-            return safeText.split('').map(char => accents[char] || char).join('');
-        };
-        
-        const regexPattern = createAccentInsensitiveRegex(cleanTermo);
+        const { termo, limit = 100 } = body;
 
-        // Remove tudo que não é dígito para buscar em campos numéricos
-        const digitsOnly = cleanTermo.replace(/\D/g, '');
+        console.log(`🔍 Backend Search: "${termo}"`);
+
+        if (!termo || String(termo).trim().length < 2) {
+            return Response.json([]);
+        }
+
+        const cleanTermo = String(termo).trim();
         
+        // Simplificação: Busca direta com Regex simples (Case Insensitive)
+        // Removida lógica complexa de acentos temporariamente para isolar falhas
         const query = {
             $or: [
-                // Busca por nome (case insensitive e accent insensitive manual)
-                { nome: { $regex: regexPattern, $options: 'i' } },
-                // Busca por email
-                { email: { $regex: cleanTermo, $options: 'i' } }
+                { nome: { $regex: cleanTermo, $options: 'i' } },
+                { email: { $regex: cleanTermo, $options: 'i' } },
+                { cpf: { $regex: cleanTermo, $options: 'i' } },
+                { telefone: { $regex: cleanTermo, $options: 'i' } }
             ]
         };
 
-        // Se tiver dígitos, adiciona busca por CPF e Telefone (que podem estar formatados ou não no banco)
-        // Como não sabemos como está no banco, buscamos pela string original (regex) E pelos dígitos apenas (se o banco tiver só dígitos)
-        // Mas regex em número pode ser lento se não indexado. O Base44 guarda tudo como string ou conforme schema?
-        // Schema diz string.
+        // Executar busca
+        // Importante: O segundo parametro do filter é sort, o terceiro é limit
+        const results = await base44.entities.Paciente.filter(query, '-created_date', Number(limit));
         
-        if (digitsOnly.length > 0) {
-            // Busca por CPF e Telefone com regex para pegar parcial
-            query.$or.push({ cpf: { $regex: digitsOnly, $options: 'i' } });
-            query.$or.push({ telefone: { $regex: digitsOnly, $options: 'i' } });
-            
-            // Também tenta buscar com o termo original (caso tenha formatação no banco e o usuário digitou formatado)
-            if (digitsOnly !== cleanTermo) {
-                 query.$or.push({ cpf: { $regex: cleanTermo, $options: 'i' } });
-                 query.$or.push({ telefone: { $regex: cleanTermo, $options: 'i' } });
-            }
-        }
-
-        console.log(`🔍 Buscando pacientes: ${cleanTermo} (digits: ${digitsOnly})`);
-
-        const results = await base44.entities.Paciente.filter(query, 'nome', limit);
+        console.log(`✅ Encontrados: ${results?.length || 0}`);
 
         return Response.json(results || []);
+
     } catch (error) {
-        console.error('❌ Erro na busca de pacientes:', error);
+        console.error('❌ Search Function Error:', error);
         return Response.json({ error: error.message }, { status: 500 });
     }
 });

@@ -103,21 +103,29 @@ export default function Pacientes() {
       
       // Busca via backend function para garantir performance e suporte a regex
       // Passando um objeto vazio como fallback para detectar falha no safeApiCall se necessário
-      // Aumentado limite para 500 para garantir que encontre todos os nomes
-      const response = await safeApiCall(() => base44.functions.invoke('searchPatients', { termo, limit: 500 }), { failed: true });
+      const response = await safeApiCall(() => base44.functions.invoke('searchPatients', { termo, limit: 100 }), { failed: true });
       
+      // Tratamento de erro robusto
       if (response?.failed) {
-        console.error("❌ Falha na chamada da API de busca");
-        setErro("Erro de conexão ao buscar pacientes. Tente novamente.");
+        console.error("❌ Falha na chamada da API de busca (Network/Throttle)");
+        setErro("Erro de conexão. Verifique sua internet.");
         setPacientes([]);
         return;
+      }
+
+      // O axios do invoke retorna data. Se a function retornou {error: ...}, estará em response.data.error
+      if (response?.data?.error) {
+         console.error("❌ Erro interno na função de busca:", response.data.error);
+         setErro("Erro no servidor ao buscar pacientes. Tente novamente.");
+         setPacientes([]);
+         return;
       }
 
       const resultados = response?.data;
       
       if (!Array.isArray(resultados)) {
-        console.error("❌ Formato inválido de resposta:", response);
-        setErro("Erro no formato da resposta do servidor.");
+        console.error("❌ Resposta inválida (não é array):", resultados);
+        setErro("Erro inesperado na resposta do servidor.");
         setPacientes([]);
         return;
       }
