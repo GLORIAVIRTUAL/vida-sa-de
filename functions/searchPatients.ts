@@ -1,28 +1,19 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
 
-function createAccentRegex(text) {
-    try {
-        // Escape special regex chars
-        const cleanText = text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        // Replace vowels with accent groups
-        return cleanText
-            .replace(/a/gi, '[aáàâãäå]')
-            .replace(/e/gi, '[eéèêë]')
-            .replace(/i/gi, '[iíìîï]')
-            .replace(/o/gi, '[oóòôõö]')
-            .replace(/u/gi, '[uúùûü]')
-            .replace(/c/gi, '[cç]')
-            .replace(/n/gi, '[nñ]');
-    } catch (e) {
-        return text;
-    }
-}
+// Função para normalizar strings (remove acentos e põe em minúsculas)
+const normalize = (str) => {
+    if (!str) return '';
+    return String(str)
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
+};
 
 Deno.serve(async (req) => {
     try {
         const base44 = createClientFromRequest(req);
         
-        // 1. Autenticação (Segurança básica)
+        // 1. Autenticação
         const user = await base44.auth.me();
         if (!user) {
             return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -30,53 +21,45 @@ Deno.serve(async (req) => {
 
         let body = {};
         try { body = await req.json(); } catch (e) {}
-        
-        const { termo, limit = 100 } = body;
+        const { termo } = body;
 
-        // 2. CRÍTICO: Usar Service Role para ver TODOS os pacientes
-        // Se não usar isso, o usuário só vê os pacientes que ELE criou (se RLS estiver ativo/padrão)
+        // 2. Usar Service Role para pegar TODOS os pacientes (bypass RLS)
         const adminClient = base44.asServiceRole;
 
-        // 3. Se não tem termo, retorna recentes
-        if (!termo || String(termo).trim().length === 0) {
-             const recentes = await adminClient.entities.Paciente.list('-created_date', 50);
-             return Response.json(recentes || []);
+        // 3. Buscar TODOS os pacientes (limite de segurança de 2000)
+        // Trazendo tudo para filtrar em memória (mais confiável para busca textual complexa)
+        const allPatients = await adminClient.entities.Paciente.list('-created_date', 2000);
+
+        if (!allPatients || allPatients.length === 0) {
+            return Response.json([]);
         }
 
-        // 4. Lógica de Busca Inteligente (Split Terms)
-        // "Antonio Thiago" vira ["Antonio", "Thiago"]
-        // Busca registros que tenham "Antonio" E "Thiago" em qualquer campo
-        const rawTerm = String(termo).trim();
-        const terms = rawTerm.split(/\s+/).filter(t => t.length > 0);
+        // 4. Se não tem termo, retorna os 50 mais recentes
+        if (!termo || String(termo).trim().length === 0) {
+             return Response.json(allPatients.slice(0, 50));
+        }
+
+        // 5. Filtragem em Memória (Robustez total)
+        const searchTerms = normalize(termo).split(/\s+/).filter(t => t.length > 0);
         
-        const andConditions = terms.map(t => {
-            const regex = createAccentRegex(t);
-            // Para cada palavra digitada, ela deve aparecer em Nome OU CPF OU Telefone...
-            return {
-                $or: [
-                    { nome: { $regex: regex, $options: 'i' } },
-                    { cpf: { $regex: t, $options: 'i' } }, // CPF sem regex de acento
-                    { telefone: { $regex: t, $options: 'i' } },
-                    { email: { $regex: t, $options: 'i' } }
-                ]
-            };
+        const filtered = allPatients.filter(paciente => {
+            // Monta uma string única com todos os dados pesquisáveis do paciente
+            const searchableText = normalize(
+                `${paciente.nome} ${paciente.cpf} ${paciente.telefone} ${paciente.email} ${paciente.convenio}`
+            );
+
+            // Verifica se TODOS os termos digitados existem nos dados do paciente
+            // Ex: "Antonio Thiago" -> "antonio" deve existir E "thiago" deve existir
+            return searchTerms.every(term => searchableText.includes(term));
         });
 
-        const query = { $and: andConditions };
-        
-        console.log(`🔍 Searching (Admin): "${rawTerm}" [${terms.length} parts]`);
+        console.log(`🔍 Busca: "${termo}" | Total Banco: ${allPatients.length} | Encontrados: ${filtered.length}`);
 
-        // Limite de segurança aumentado
-        const searchLimit = Math.min(Math.max(Number(limit), 50), 1000);
-
-        const results = await adminClient.entities.Paciente.filter(query, '-created_date', searchLimit);
-        
-        console.log(`✅ Found: ${results?.length || 0}`);
-
-        return Response.json(results || []);
+        // Retorna os top 100 resultados
+        return Response.json(filtered.slice(0, 100));
 
     } catch (error) {
-        console.error('❌ Search Function Error:', error);
+        console.error('❌ Erro na busca:', error);
         return Response.json({ error: error.message }, { status: 500 });
     }
 });
