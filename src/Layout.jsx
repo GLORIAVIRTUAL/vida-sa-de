@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { User } from "@/entities/all";
-import { Loader2, User as UserIcon, Menu, LogOut, Calendar, BarChart3, Users, Stethoscope, DollarSign, FileText, Computer, AlertCircle, Edit, ClipboardList, Upload, MessageSquare, CreditCard, Activity } from "lucide-react";
+import { Loader2, User as UserIcon, Menu, LogOut, Calendar, BarChart3, Users, Stethoscope, DollarSign, FileText, Computer, AlertCircle, Edit, ClipboardList, Upload, MessageSquare, CreditCard, Activity, Wrench } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
