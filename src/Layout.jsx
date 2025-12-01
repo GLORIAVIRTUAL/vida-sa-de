@@ -17,7 +17,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import ProfileEditor from '../components/perfil/ProfileEditor';
 import NotificacaoAgendamento from '../components/shared/NotificacaoAgendamento';
-import ChatbotAjuda from '../components/shared/ChatbotAjuda'; // NEW: Import ChatbotAjuda
+import ChatbotAjuda from '../components/shared/ChatbotAjuda';
+import ErrorBoundary from '../components/shared/ErrorBoundary';
 
 // Tela de Login
 function LoginPage() {
@@ -122,6 +123,7 @@ function MainLayout({ children, currentPageName, currentUser, onUserUpdate }) {
 
   const menuSistemaBase = [
     { name: "Logs de Webhook", page: "WebhookLogs", icon: Activity, roles: ["admin"] },
+    { name: "Debug Usuário", page: "Debug", icon: Activity, roles: ["admin"] },
     { name: "Importar Vendas Cartão", page: "ImportarVendasCartao", icon: CreditCard, roles: ["admin"] },
     { name: "Importador de Dados", page: "ImportadorDados", icon: Upload, roles: ["admin"] }, // NOVO: Página de importação
     { name: "API e Integrações", page: "ApiIntegracoes", icon: FileText, roles: ["admin"] },
@@ -273,7 +275,9 @@ function MainLayout({ children, currentPageName, currentUser, onUserUpdate }) {
         </header>
         
         <div className="flex-1 overflow-y-auto">
-          {children}
+          <ErrorBoundary>
+            {children}
+          </ErrorBoundary>
         </div>
         
         <footer className="bg-white border-t p-3 text-center text-xs text-gray-500">
