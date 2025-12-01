@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from "react";
 import { Agendamento, Medico, Paciente } from "@/entities/all";
 import { format, startOfWeek, endOfWeek, getDayOfYear } from "date-fns";
@@ -6,6 +5,7 @@ import { ptBR } from "date-fns/locale";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Sparkles, Heart } from "lucide-react";
 import { safeApiCall } from "@/components/shared/apiThrottle";
+import { getDashboardStats } from "@/functions/getDashboardStats";
 
 import AgendamentosHoje from "../components/dashboard/AgendamentosHoje";
 import AgendamentosSemana from "../components/dashboard/AgendamentosSemana";
@@ -28,6 +28,7 @@ export default function Dashboard() {
   const [agendamentosSemana, setAgendamentosSemana] = useState([]);
   const [medicos, setMedicos] = useState([]);
   const [pacientes, setPacientes] = useState([]);
+  const [totalPacientesCount, setTotalPacientesCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [mensagemMotivacional, setMensagemMotivacional] = useState("");
 
@@ -61,11 +62,17 @@ export default function Dashboard() {
       const medicosData = await safeApiCall(() => Medico.list(), []);
       const pacientesData = await safeApiCall(() => Paciente.list(), []);
       
+      // Buscar contagem real de pacientes via backend function
+      const statsResponse = await safeApiCall(() => getDashboardStats(), { data: { totalPacientes: 0 } });
+      const totalPacientesReal = statsResponse.data?.totalPacientes || 0;
+
       console.log('📊 Dashboard: Dados carregados com sucesso');
       
       const agendamentosArray = Array.isArray(agendamentosData) ? agendamentosData : [];
       const medicosArray = Array.isArray(medicosData) ? medicosData : [];
       const pacientesArray = Array.isArray(pacientesData) ? pacientesData : [];
+      
+      setTotalPacientesCount(totalPacientesReal || pacientesArray.length);
 
       const hoje = new Date();
       const inicioSemana = startOfWeek(hoje, { weekStartsOn: 1 });
@@ -99,7 +106,7 @@ export default function Dashboard() {
   }, [carregarDados]);
 
   const estatisticas = {
-    totalPacientes: pacientes.length,
+    totalPacientes: totalPacientesCount,
     totalMedicos: medicos.length,
     agendamentosHoje: agendamentosHoje.length,
     agendamentosSemana: agendamentosSemana.length,
