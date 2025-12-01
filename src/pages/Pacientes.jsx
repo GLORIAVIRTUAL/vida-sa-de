@@ -49,8 +49,24 @@ export default function Pacientes() {
       console.log(`🔍 Buscando pacientes no servidor com termo: "${termo}"`);
       
       // Busca via backend function para garantir performance e suporte a regex
-      const response = await safeApiCall(() => base44.functions.invoke('searchPatients', { termo, limit: 100 }));
-      const resultados = response?.data || [];
+      // Passando um objeto vazio como fallback para detectar falha no safeApiCall se necessário
+      const response = await safeApiCall(() => base44.functions.invoke('searchPatients', { termo, limit: 100 }), { failed: true });
+      
+      if (response?.failed) {
+        console.error("❌ Falha na chamada da API de busca");
+        setErro("Erro de conexão ao buscar pacientes. Tente novamente.");
+        setPacientes([]);
+        return;
+      }
+
+      const resultados = response?.data;
+      
+      if (!Array.isArray(resultados)) {
+        console.error("❌ Formato inválido de resposta:", response);
+        setErro("Erro no formato da resposta do servidor.");
+        setPacientes([]);
+        return;
+      }
       
       setPacientes(resultados);
       console.log(`✅ Encontrados ${resultados?.length || 0} pacientes`);
