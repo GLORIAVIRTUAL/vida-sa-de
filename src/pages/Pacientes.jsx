@@ -33,6 +33,28 @@ export default function Pacientes() {
   const [erro, setErro] = useState(null);
   const [totalCarregados, setTotalCarregados] = useState(0);
 
+  // Carregar pacientes recentes ao abrir a página
+  React.useEffect(() => {
+    const carregarRecentes = async () => {
+      setLoading(true);
+      try {
+        console.log("🔄 Carregando pacientes recentes...");
+        const dados = await safeApiCall(() => Paciente.list('-created_date', 50));
+        if (Array.isArray(dados)) {
+          setPacientes(dados);
+          console.log(`✅ ${dados.length} pacientes recentes carregados`);
+        }
+      } catch (err) {
+        console.error("❌ Erro ao carregar recentes:", err);
+        setErro("Não foi possível carregar a lista inicial. Tente buscar um paciente.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    carregarRecentes();
+  }, []);
+
   const buscarPacientes = async () => {
     const termo = searchTerm.trim();
     
