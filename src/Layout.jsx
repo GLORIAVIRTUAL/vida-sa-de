@@ -104,6 +104,7 @@ function MainLayout({ children, currentPageName, currentUser, onUserUpdate }) {
   const menuBase = [
     { name: "Dashboard", page: "Dashboard", icon: BarChart3, roles: ["admin", "user"] }, // Removido "medico"
     { name: "Agendamentos", page: "Agendamentos", icon: Calendar, roles: ["admin", "user"] },
+    { name: "Turmas e Grupos", page: "Turmas", icon: Users, roles: ["admin", "user"] }, // NOVO: Link para turmas
     { name: "Pacientes", page: "Pacientes", icon: Users, roles: ["admin", "user"] },
     { name: "Ordens de Serviço", page: "ordem-servico", icon: ClipboardList, roles: ["admin", "user"] },
     { name: "Painel TV", page: "Atendimento", icon: Computer, roles: ["admin", "user"] },
