@@ -124,6 +124,7 @@ function MainLayout({ children, currentPageName, currentUser, onUserUpdate }) {
   const menuSistemaBase = [
     { name: "Logs de Webhook", page: "WebhookLogs", icon: Activity, roles: ["admin"] },
     { name: "Debug Usuário", page: "Debug", icon: Activity, roles: ["admin"] },
+    { name: "Diagnóstico Dados", page: "Diagnostico", icon: Wrench, roles: ["admin"] },
     { name: "Importar Vendas Cartão", page: "ImportarVendasCartao", icon: CreditCard, roles: ["admin"] },
     { name: "Importador de Dados", page: "ImportadorDados", icon: Upload, roles: ["admin"] }, // NOVO: Página de importação
     { name: "API e Integrações", page: "ApiIntegracoes", icon: FileText, roles: ["admin"] },
