@@ -311,21 +311,32 @@ export default function FormularioOS({
       console.log('📦 categoria_preco_id incluída?', 'categoria_preco_id' in osData);
       console.log('📦 Valor da categoria_preco_id:', osData.categoria_preco_id);
 
-      const novaOS = await OrdemServico.create(osData);
+      // MUDANÇA: Usar backend function para integrar com pagamento
+      const response = await base44.functions.invoke('createOrdemServico', osData);
       
-      console.log('✅ OS criada com sucesso!');
-      console.log('✅ ID da OS:', novaOS.id);
-      console.log('✅ categoria_preco_id NA OS CRIADA:', novaOS.categoria_preco_id);
-      console.log('═══════════════════════════════════════\n');
-
-      if (!novaOS.categoria_preco_id) {
-        console.error('⚠️⚠️⚠️ CATEGORIA NÃO FOI SALVA NA OS! ⚠️⚠️⚠️');
+      if (!response.data || !response.data.success) {
+        throw new Error(response.data?.error || 'Erro ao processar OS no servidor');
       }
 
-      toast({
-        title: "Sucesso!",
-        description: "Ordem de Serviço criada!"
-      });
+      const novaOS = response.data.os;
+      const transaction = response.data.transaction;
+      
+      console.log('✅ OS processada com sucesso!');
+      console.log('✅ ID da OS:', novaOS.id);
+
+      if (transaction) {
+         toast({
+            title: "Enviado para Maquininha 💳",
+            description: "Aguarde o processamento no terminal.",
+            className: "bg-blue-50 border-blue-200",
+            duration: 6000
+         });
+      } else {
+         toast({
+            title: "Sucesso!",
+            description: "Ordem de Serviço criada!"
+         });
+      }
 
       onSalvar(novaOS);
     } catch (error) {
