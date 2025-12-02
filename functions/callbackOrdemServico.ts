@@ -19,9 +19,14 @@ Deno.serve(async (req) => {
             status: 'processing'
         });
 
-        const { transactionId, status, nsu, authorizationCode } = payload;
+        // Extração robusta de dados
+        const transactionId = payload.transactionId || payload.transaction?.transactionId || payload.transaction?.id;
+        const status = payload.status || payload.transaction?.status;
+        const nsu = payload.nsu || payload.transaction?.nsu;
+        const authorizationCode = payload.authorizationCode || payload.authorization || payload.transaction?.authorizationCode;
 
         if (!transactionId) {
+            console.error('❌ Transaction ID não encontrado no payload');
             return Response.json({ error: 'Transaction ID missing' }, { status: 400 });
         }
 
@@ -40,10 +45,12 @@ Deno.serve(async (req) => {
 
         // Mapear status
         let novoStatus = ordemServico.status_pagamento;
-        if (status === 'CONFIRMED' || status === 'APPROVED') {
+        const statusUpper = String(status || '').toUpperCase();
+        
+        if (['CONFIRMED', 'APPROVED', 'SUCESSO', 'PAID'].includes(statusUpper)) {
             novoStatus = 'Pago';
-        } else if (status === 'CANCELLED' || status === 'DENIED') {
-            novoStatus = 'Cancelado'; // Ou manter pendente/erro
+        } else if (['CANCELLED', 'DENIED', 'FAILED', 'VOIDED'].includes(statusUpper)) {
+            novoStatus = 'Cancelado';
         }
 
         await base44.asServiceRole.entities.OrdemServico.update(ordemServico.id, {
