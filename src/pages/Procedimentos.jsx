@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Search } from "lucide-react";
+import { PlusCircle, Search, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import FormularioProcedimento from "../components/procedimentos/FormularioProcedimento";
 import { Procedimento, CategoriaPreco, TabelaPreco } from "@/entities/all";
@@ -50,6 +50,21 @@ export default function Procedimentos() {
   const handleSave = async () => {
     await carregarDados();
     handleCloseForm();
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm("Tem certeza que deseja excluir este procedimento? Esta ação não pode ser desfeita.")) {
+      try {
+        setLoading(true);
+        await Procedimento.delete(id);
+        await carregarDados();
+      } catch (error) {
+        console.error("Erro ao excluir:", error);
+        alert("Erro ao excluir procedimento. Verifique se não há agendamentos vinculados.");
+      } finally {
+        setLoading(false);
+      }
+    }
   };
 
   const getPreco = (procedimentoId, categoriaId) => {
@@ -113,9 +128,19 @@ export default function Procedimentos() {
                       <td key={cat.id} className="p-3">{getPreco(proc.id, cat.id)}</td>
                     ))}
                     <td className="p-3">
-                      <Button variant="outline" size="sm" onClick={() => handleOpenForm(proc)}>
-                        Editar
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={() => handleOpenForm(proc)}>
+                          Editar
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => handleDelete(proc.id)}
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}
