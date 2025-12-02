@@ -22,8 +22,10 @@ import {
   Edit,
   Save,
   X,
-  Loader2
+  Loader2,
+  RefreshCcw
 } from "lucide-react";
+import { base44 } from "@/api/base44Client";
 
 const statusPagamentoColors = {
   "Pendente": "bg-yellow-100 text-yellow-800",
@@ -40,6 +42,7 @@ export default function DetalhesOS({ os, pacienteNome, medicoNome, categoriaNome
   const { toast } = useToast();
   const [editando, setEditando] = useState(false);
   const [salvando, setSalvando] = useState(false);
+  const [verificandoStatus, setVerificandoStatus] = useState(false);
   const [statusPagamento, setStatusPagamento] = useState(os?.status_pagamento || 'Pendente');
   const [formaPagamento, setFormaPagamento] = useState(os?.forma_pagamento || 'Dinheiro');
 
@@ -77,6 +80,35 @@ export default function DetalhesOS({ os, pacienteNome, medicoNome, categoriaNome
     setStatusPagamento(os.status_pagamento);
     setFormaPagamento(os.forma_pagamento);
     setEditando(false);
+  };
+
+  const handleVerificarStatus = async () => {
+    if (!os.transaction_id) {
+        toast({ title: "Sem transação", description: "Esta OS não tem ID de transação vinculado.", variant: "destructive" });
+        return;
+    }
+    setVerificandoStatus(true);
+    try {
+        const res = await base44.functions.invoke('checkStatusOrdemServico', { os_id: os.id });
+        if (res.data?.success) {
+             const msg = res.data.updated 
+                ? `Status atualizado para: ${res.data.status}` 
+                : `Status verificado: ${res.data.status} (Sem alterações)`;
+             
+             toast({ title: "Verificação Concluída", description: msg });
+             if (res.data.updated && onUpdate) onUpdate();
+             
+             // Atualiza localmente se não houver reload completo
+             if (res.data.status) setStatusPagamento(res.data.status);
+        } else {
+             toast({ title: "Erro na verificação", description: res.data?.error || "Erro desconhecido", variant: "destructive" });
+        }
+    } catch (err) {
+        console.error(err);
+        toast({ title: "Erro", description: "Falha ao verificar status.", variant: "destructive" });
+    } finally {
+        setVerificandoStatus(false);
+    }
   };
 
   // Verificar se a categoria é isenta de imposto (Particular ou Cartão Mais Vida)
@@ -485,22 +517,37 @@ export default function DetalhesOS({ os, pacienteNome, medicoNome, categoriaNome
 
           {/* Status e Data */}
           <div className="flex items-center justify-between">
-            {editando ? (
-              <Select value={statusPagamento} onValueChange={setStatusPagamento}>
-                <SelectTrigger className="w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Pendente">Pendente</SelectItem>
-                  <SelectItem value="Pago">Pago</SelectItem>
-                  <SelectItem value="Cancelado">Cancelado</SelectItem>
-                </SelectContent>
-              </Select>
-            ) : (
-              <Badge className={`${statusPagamentoColors[os.status_pagamento]} text-sm px-4 py-1`}>
-                {os.status_pagamento}
-              </Badge>
-            )}
+            <div className="flex items-center gap-2">
+              {editando ? (
+                <Select value={statusPagamento} onValueChange={setStatusPagamento}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Pendente">Pendente</SelectItem>
+                    <SelectItem value="Pago">Pago</SelectItem>
+                    <SelectItem value="Cancelado">Cancelado</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Badge className={`${statusPagamentoColors[os.status_pagamento]} text-sm px-4 py-1`}>
+                  {os.status_pagamento}
+                </Badge>
+              )}
+              
+              {!editando && os.transaction_id && (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-6 w-6" 
+                  onClick={handleVerificarStatus}
+                  disabled={verificandoStatus}
+                  title="Verificar status na maquininha"
+                >
+                  <RefreshCcw className={`w-4 h-4 ${verificandoStatus ? 'animate-spin' : ''}`} />
+                </Button>
+              )}
+            </div>
             <div className="text-sm text-gray-600">
               <Calendar className="w-4 h-4 inline mr-1" />
               {dataExecucao && !isNaN(dataExecucao.getTime()) 
