@@ -155,10 +155,7 @@ Deno.serve(async (req) => {
                     installments: body.numero_parcelas || 1,
                     paymentBrand: bandeira_cartao,
                     callbackUrl: callbackUrl,
-                    clientName: titular.nome,
-                    clientDocument: titular.cpf ? titular.cpf.replace(/\D/g, '') : '',
-                    clientEmail: titular.email || '',
-                    installmentsCanChange: false
+                    clientName: titular.nome
                 }
             };
 
