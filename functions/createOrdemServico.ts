@@ -61,10 +61,7 @@ Deno.serve(async (req) => {
                     installments: parcelas || 1,
                     paymentBrand: bandeira_cartao,
                     callbackUrl: callbackUrl,
-                    clientName: paciente.nome,
-                    clientDocument: paciente.cpf ? paciente.cpf.replace(/\D/g, '') : '',
-                    clientEmail: paciente.email || '',
-                    installmentsCanChange: false
+                    clientName: paciente.nome
                 }
             };
 
