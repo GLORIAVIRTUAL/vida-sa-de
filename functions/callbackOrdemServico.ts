@@ -47,9 +47,9 @@ Deno.serve(async (req) => {
         let novoStatus = ordemServico.status_pagamento;
         const statusUpper = String(status || '').toUpperCase();
         
-        if (['CONFIRMED', 'APPROVED', 'SUCESSO', 'PAID'].includes(statusUpper)) {
+        if (['CONFIRMED', 'APPROVED', 'SUCESSO', 'PAID', 'CAPTURED', 'AUTHORIZED', 'COMPLETED'].includes(statusUpper)) {
             novoStatus = 'Pago';
-        } else if (['CANCELLED', 'DENIED', 'FAILED', 'VOIDED'].includes(statusUpper)) {
+        } else if (['CANCELLED', 'DENIED', 'FAILED', 'VOIDED', 'REFUNDED', 'REVERSED'].includes(statusUpper)) {
             novoStatus = 'Cancelado';
         }
 

@@ -40,10 +40,14 @@ Deno.serve(async (req) => {
         if (!paciente) {
             return Response.json({ error: 'Paciente não encontrado' }, { status: 404 });
         }
+        
+        console.log('👤 Paciente encontrado:', paciente.nome);
 
         // 4. Criar Ordem de Serviço (Inicialmente Pendente)
         console.log('💾 Criando OS...');
-        const novaOS = await base44.asServiceRole.entities.OrdemServico.create(body);
+        // Garantir que paciente_nome seja salvo se o campo existir na entidade (usuário pode ter adicionado)
+        const dadosOS = { ...body, paciente_nome: paciente.nome };
+        const novaOS = await base44.asServiceRole.entities.OrdemServico.create(dadosOS);
 
         const isPagamentoIntegrado = (forma_pagamento === 'Cartão Crédito' || forma_pagamento === 'Cartão Débito') && bandeira_cartao;
         let transactionResponse = null;
