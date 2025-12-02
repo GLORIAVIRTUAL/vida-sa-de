@@ -2,16 +2,16 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
 
 Deno.serve(async (req) => {
     try {
-        console.log('🚀 createVendaCartao started');
+        console.log('[VendaCartao] Function Started');
         const base44 = createClientFromRequest(req);
         
         // 1. Autenticação
         const user = await base44.auth.me();
         if (!user) {
-            console.log('❌ Unauthorized user');
+            console.log('[VendaCartao] Unauthorized access attempt');
             return Response.json({ error: 'Unauthorized' }, { status: 401 });
         }
-        console.log('✅ User authenticated:', user.email);
+        console.log('[VendaCartao] Authenticated user:', user.email);
 
         // 2. Verificar Segredos
         let API_URL = Deno.env.get("EVOLUSERVICES_API_URL");
@@ -19,9 +19,9 @@ Deno.serve(async (req) => {
         const MERCHANT_ID = Deno.env.get("EVOLUSERVICES_MERCHANT_ID");
 
         if (!API_URL || !API_TOKEN || !MERCHANT_ID) {
-            console.error('❌ Missing secrets');
+            console.error('[VendaCartao] Missing Payment Secrets');
             return Response.json({ 
-                error: 'Configuração de pagamento incompleta. Contate o suporte para configurar os segredos da EvoluServices.' 
+                error: 'Configuração de pagamento incompleta. Verifique os segredos da EvoluServices.' 
             }, { status: 500 });
         }
 
@@ -30,10 +30,17 @@ Deno.serve(async (req) => {
         if (API_URL.endsWith('/')) API_URL = API_URL.slice(0, -1);
         if (API_URL.endsWith('/remote/transaction')) API_URL = API_URL.replace('/remote/transaction', '');
 
-        const body = await req.json();
-        console.log('📦 Request body received');
+        // 3. Parse Body
+        let body;
+        try {
+            body = await req.json();
+        } catch (e) {
+            console.error('[VendaCartao] Invalid JSON body:', e);
+            return Response.json({ error: 'Invalid JSON body' }, { status: 400 });
+        }
+
+        console.log('[VendaCartao] Body received, processing...');
         
-        // 3. Validação básica
         const {
             tipo_plano,
             titular,
@@ -44,51 +51,59 @@ Deno.serve(async (req) => {
             bandeira_cartao
         } = body;
 
+        // Validação de campos obrigatórios
         if (!tipo_plano || !titular || !titular.nome || !titular.cpf || !forma_pagamento) {
-            console.error('❌ Missing required fields');
-            return Response.json({ 
-                error: 'Campos obrigatórios faltando.' 
-            }, { status: 400 });
+            console.error('[VendaCartao] Missing required fields in body');
+            return Response.json({ error: 'Campos obrigatórios faltando.' }, { status: 400 });
         }
 
-        // 4. Buscar categoria "Cartão Mais Vida"
+        // 4. Buscar Categoria
         const categorias = await base44.asServiceRole.entities.CategoriaPreco.list();
         const categoriaCartao = categorias.find(c => 
-            c.nome.toLowerCase().includes('cartão') && 
-            c.nome.toLowerCase().includes('mais')
+            c.nome && c.nome.toLowerCase().includes('cartão') && c.nome.toLowerCase().includes('mais')
         ) || categorias[0];
-
         const nomeConvenio = categoriaCartao ? categoriaCartao.nome : 'Cartão Mais Vida';
 
         // 5. Criar Pacientes
-        console.log('👤 Criando pacientes...');
-        const pacienteTitular = await base44.asServiceRole.entities.Paciente.create({
-            nome: titular.nome,
-            cpf: titular.cpf,
-            data_nascimento: titular.data_nascimento,
-            telefone: titular.telefone,
-            endereco: titular.endereco,
-            convenio: nomeConvenio,
-            observacoes: `Cliente do Cartão Mais Vida - ${tipo_plano}`
-        });
+        console.log('[VendaCartao] Creating Patients...');
+        let pacienteTitular;
+        try {
+            pacienteTitular = await base44.asServiceRole.entities.Paciente.create({
+                nome: titular.nome,
+                cpf: titular.cpf,
+                data_nascimento: titular.data_nascimento,
+                telefone: titular.telefone || "", 
+                endereco: titular.endereco || {},
+                convenio: nomeConvenio,
+                observacoes: `Cliente do Cartão Mais Vida - ${tipo_plano}`
+            });
+        } catch (err) {
+            console.error('[VendaCartao] Error creating titular:', err);
+            throw new Error(`Erro ao criar paciente titular: ${err.message}`);
+        }
 
         const dependentesIds = [];
-        if (dependentes.length > 0) {
+        if (dependentes && dependentes.length > 0) {
             for (const dep of dependentes) {
-                const pacienteDep = await base44.asServiceRole.entities.Paciente.create({
-                    nome: dep.nome,
-                    cpf: dep.cpf,
-                    data_nascimento: dep.data_nascimento,
-                    telefone: titular.telefone,
-                    endereco: titular.endereco,
-                    convenio: nomeConvenio,
-                    observacoes: `Dependente de ${titular.nome}`
-                });
-                dependentesIds.push(pacienteDep.id);
+                try {
+                    const pacienteDep = await base44.asServiceRole.entities.Paciente.create({
+                        nome: dep.nome,
+                        cpf: dep.cpf,
+                        data_nascimento: dep.data_nascimento,
+                        telefone: titular.telefone || "",
+                        endereco: titular.endereco || {},
+                        convenio: nomeConvenio,
+                        observacoes: `Dependente de ${titular.nome}`
+                    });
+                    dependentesIds.push(pacienteDep.id);
+                } catch (err) {
+                    console.error('[VendaCartao] Error creating dependente:', err);
+                    // Continue or fail? Let's continue but log
+                }
             }
         }
 
-        // 6. Preparar dados da venda
+        // 6. Preparar Venda
         const numeroVenda = `CMV-${Date.now()}`;
         const dataVenda = body.data_venda || new Date().toISOString().split('T')[0];
         let validadeCartao = body.validade_cartao;
@@ -98,11 +113,10 @@ Deno.serve(async (req) => {
             validadeCartao = data.toISOString().split('T')[0];
         }
 
-        // 7. Criar VendaCartao
         const isPagamentoIntegrado = forma_pagamento.includes('Cartão') && bandeira_cartao;
         const statusInicial = isPagamentoIntegrado ? 'Pendente' : 'Ativo';
 
-        console.log('💾 Criando registro da venda (Status:', statusInicial, ')');
+        console.log(`[VendaCartao] Creating Sale Record (Status: ${statusInicial})`);
         
         const novaVenda = await base44.asServiceRole.entities.VendaCartao.create({
             numero_venda: numeroVenda,
@@ -127,14 +141,13 @@ Deno.serve(async (req) => {
 
         let transactionResponse = null;
 
-        // 8. Se for Pagamento Integrado, chamar EvoluServices
+        // 7. Integração EvoluServices
         if (isPagamentoIntegrado) {
-            console.log('💳 Iniciando transação na EvoluServices...');
+            console.log('[VendaCartao] Starting Payment Integration...');
             
             const host = req.headers.get("host") || ""; 
             const callbackUrl = `https://${host}/functions/callbackVendaCartao`;
             
-            // REMOVIDO O BLOCO AUTH - Seguindo o modelo do usuário
             const payloadEvolu = {
                 auth: {
                     username: "gloria",
@@ -147,14 +160,13 @@ Deno.serve(async (req) => {
                     paymentBrand: bandeira_cartao,
                     callbackUrl: callbackUrl,
                     clientName: titular.nome,
-                    clientDocument: titular.cpf.replace(/\D/g, ''),
-                    clientEmail: titular.email,
+                    clientDocument: titular.cpf ? titular.cpf.replace(/\D/g, '') : '',
+                    clientEmail: titular.email || '',
                     installmentsCanChange: false
                 }
             };
 
-            console.log('📤 Enviando para API:', API_URL + '/remote/transaction');
-            console.log('📦 Payload:', JSON.stringify(payloadEvolu));
+            console.log('[VendaCartao] Sending to API:', API_URL + '/remote/transaction');
             
             try {
                 const resp = await fetch(`${API_URL}/remote/transaction`, {
@@ -167,31 +179,33 @@ Deno.serve(async (req) => {
                 });
 
                 transactionResponse = await resp.json();
-                console.log('📥 Resposta EvoluServices:', transactionResponse);
+                console.log('[VendaCartao] Payment Response:', transactionResponse);
 
                 if (resp.ok && transactionResponse.success === "true") {
                     await base44.asServiceRole.entities.VendaCartao.update(novaVenda.id, {
                         transaction_id: transactionResponse.transactionId
                     });
                 } else {
+                    const errorMsg = transactionResponse.error || 'Erro desconhecido na maquininha';
+                    console.error('[VendaCartao] Payment Failed:', errorMsg);
+                    
                     await base44.asServiceRole.entities.VendaCartao.update(novaVenda.id, {
                         status: 'Falha Pagamento',
-                        observacoes: `Erro na integração: ${transactionResponse.error || 'Erro desconhecido'}`
+                        observacoes: `Erro na integração: ${errorMsg}`
                     });
                     
-                    // Retornar sucesso com aviso, para não travar o frontend com erro 500
                     return Response.json({
                         success: true,
-                        message: 'Venda registrada, mas houve erro na maquininha: ' + (transactionResponse.error || 'Erro desconhecido'),
+                        message: 'Venda registrada, mas erro na maquininha: ' + errorMsg,
                         venda: novaVenda,
                         transaction: transactionResponse
                     });
                 }
             } catch (err) {
-                console.error('❌ Erro na chamada API:', err);
+                console.error('[VendaCartao] Payment API Error:', err);
                 await base44.asServiceRole.entities.VendaCartao.update(novaVenda.id, {
                     status: 'Falha Pagamento',
-                    observacoes: `Erro na integração: ${err.message}`
+                    observacoes: `Erro de comunicação: ${err.message}`
                 });
                 return Response.json({
                     success: true,
@@ -202,15 +216,19 @@ Deno.serve(async (req) => {
             }
         }
 
+        console.log('[VendaCartao] Success');
         return Response.json({
             success: true,
-            message: isPagamentoIntegrado ? 'Transação iniciada no terminal' : 'Venda registrada com sucesso',
+            message: isPagamentoIntegrado ? 'Solicitação enviada para a maquininha' : 'Venda registrada com sucesso',
             venda: novaVenda,
             transaction: transactionResponse
         });
 
     } catch (error) {
-        console.error('❌ Erro Fatal:', error);
-        return Response.json({ success: false, error: error.message }, { status: 500 });
+        console.error('[VendaCartao] FATAL ERROR:', error);
+        return Response.json({ 
+            success: false, 
+            error: error.message || 'Erro interno no servidor' 
+        }, { status: 500 });
     }
 });
