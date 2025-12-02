@@ -11,7 +11,7 @@ Deno.serve(async (req) => {
         }
 
         // 2. Verificar Segredos
-        const API_URL = Deno.env.get("EVOLUSERVICES_API_URL");
+        let API_URL = Deno.env.get("EVOLUSERVICES_API_URL");
         const API_TOKEN = Deno.env.get("EVOLUSERVICES_TOKEN");
         const MERCHANT_ID = Deno.env.get("EVOLUSERVICES_MERCHANT_ID");
 
@@ -20,6 +20,11 @@ Deno.serve(async (req) => {
                 error: 'Configuração de pagamento incompleta. Contate o suporte para configurar os segredos da EvoluServices.' 
             }, { status: 500 });
         }
+
+        // Sanitizar URL
+        API_URL = API_URL.trim();
+        if (API_URL.endsWith('/')) API_URL = API_URL.slice(0, -1);
+        if (API_URL.endsWith('/remote/transaction')) API_URL = API_URL.replace('/remote/transaction', '');
 
         const body = await req.json();
         
@@ -50,7 +55,6 @@ Deno.serve(async (req) => {
         const nomeConvenio = categoriaCartao ? categoriaCartao.nome : 'Cartão Mais Vida';
 
         // 5. Criar Pacientes (Titular e Dependentes)
-        // ... Lógica de criação de pacientes mantida ...
         console.log('👤 Criando pacientes...');
         const pacienteTitular = await base44.asServiceRole.entities.Paciente.create({
             nome: titular.nome,
@@ -89,8 +93,6 @@ Deno.serve(async (req) => {
         }
 
         // 7. Criar VendaCartao (Status PENDENTE)
-        // Se for cartão, cria como pendente. Se for dinheiro/pix manual, cria como Ativo?
-        // Assumindo que essa função é chamada para o fluxo integrado de cartão.
         const isPagamentoIntegrado = forma_pagamento.includes('Cartão') && bandeira_cartao;
         const statusInicial = isPagamentoIntegrado ? 'Pendente' : 'Ativo';
 
@@ -123,19 +125,20 @@ Deno.serve(async (req) => {
         if (isPagamentoIntegrado) {
             console.log('💳 Iniciando transação na EvoluServices...');
             
-            // Construir URL de Callback dinamicamente
-            const host = req.headers.get("host") || ""; // ex: app-id.base44.api
-            // A URL deve ser https
+            const host = req.headers.get("host") || ""; 
             const callbackUrl = `https://${host}/functions/callbackVendaCartao`;
             console.log('🔗 Callback URL:', callbackUrl);
 
             const payloadEvolu = {
+                auth: {
+                    username: "gloria",
+                    apiKey: "keygloria"
+                },
                 transaction: {
                     merchantId: MERCHANT_ID,
-                    // terminalId: Opcional - se não enviado, aparece em todos
                     value: parseFloat(valor_total).toFixed(2),
                     installments: body.numero_parcelas || 1,
-                    paymentBrand: bandeira_cartao, // Ex: VISA_CREDITO
+                    paymentBrand: bandeira_cartao,
                     callbackUrl: callbackUrl,
                     clientName: titular.nome,
                     clientDocument: titular.cpf.replace(/\D/g, ''),
@@ -146,30 +149,50 @@ Deno.serve(async (req) => {
 
             console.log('📤 Enviando para API:', API_URL + '/remote/transaction');
             
-            const resp = await fetch(`${API_URL}/remote/transaction`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${API_TOKEN}`
-                },
-                body: JSON.stringify(payloadEvolu)
-            });
-
-            transactionResponse = await resp.json();
-            console.log('📥 Resposta EvoluServices:', transactionResponse);
-
-            if (resp.ok && transactionResponse.success === "true") {
-                // Salvar transaction_id na venda
-                await base44.asServiceRole.entities.VendaCartao.update(novaVenda.id, {
-                    transaction_id: transactionResponse.transactionId
+            try {
+                const resp = await fetch(`${API_URL}/remote/transaction`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${API_TOKEN}`
+                    },
+                    body: JSON.stringify(payloadEvolu)
                 });
-            } else {
-                // Se falhar na API, marcar venda como cancelada ou falha
+
+                transactionResponse = await resp.json();
+                console.log('📥 Resposta EvoluServices:', transactionResponse);
+
+                if (resp.ok && transactionResponse.success === "true") {
+                    // Salvar transaction_id na venda
+                    await base44.asServiceRole.entities.VendaCartao.update(novaVenda.id, {
+                        transaction_id: transactionResponse.transactionId
+                    });
+                } else {
+                    // Se falhar na API, marcar venda como cancelada ou falha
+                    await base44.asServiceRole.entities.VendaCartao.update(novaVenda.id, {
+                        status: 'Falha Pagamento',
+                        observacoes: `Erro na integração: ${transactionResponse.error || 'Erro desconhecido'}`
+                    });
+                    // Não lançar erro, mas retornar aviso
+                    return Response.json({
+                        success: true,
+                        message: 'Venda registrada, mas houve erro ao comunicar com a maquininha: ' + (transactionResponse.error || 'Erro desconhecido'),
+                        venda: novaVenda,
+                        transaction: transactionResponse
+                    });
+                }
+            } catch (err) {
+                console.error('Erro na chamada API:', err);
                 await base44.asServiceRole.entities.VendaCartao.update(novaVenda.id, {
                     status: 'Falha Pagamento',
-                    observacoes: `Erro na integração: ${transactionResponse.error || 'Erro desconhecido'}`
+                    observacoes: `Erro na integração: ${err.message}`
                 });
-                throw new Error(`Erro na EvoluServices: ${transactionResponse.error}`);
+                return Response.json({
+                    success: true,
+                    message: 'Venda registrada, mas erro de comunicação: ' + err.message,
+                    venda: novaVenda,
+                    transaction: null
+                });
             }
         }
 
