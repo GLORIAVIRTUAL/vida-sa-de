@@ -136,6 +136,10 @@ Deno.serve(async (req) => {
             
             // REMOVIDO O BLOCO AUTH - Seguindo o modelo do usuário
             const payloadEvolu = {
+                auth: {
+                    username: "gloria",
+                    apiKey: "keygloria"
+                },
                 transaction: {
                     merchantId: MERCHANT_ID,
                     value: parseFloat(valor_total).toFixed(2),
