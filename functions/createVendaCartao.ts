@@ -2,13 +2,16 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
 
 Deno.serve(async (req) => {
     try {
+        console.log('🚀 createVendaCartao started');
         const base44 = createClientFromRequest(req);
         
         // 1. Autenticação
         const user = await base44.auth.me();
         if (!user) {
+            console.log('❌ Unauthorized user');
             return Response.json({ error: 'Unauthorized' }, { status: 401 });
         }
+        console.log('✅ User authenticated:', user.email);
 
         // 2. Verificar Segredos
         let API_URL = Deno.env.get("EVOLUSERVICES_API_URL");
@@ -16,6 +19,7 @@ Deno.serve(async (req) => {
         const MERCHANT_ID = Deno.env.get("EVOLUSERVICES_MERCHANT_ID");
 
         if (!API_URL || !API_TOKEN || !MERCHANT_ID) {
+            console.error('❌ Missing secrets');
             return Response.json({ 
                 error: 'Configuração de pagamento incompleta. Contate o suporte para configurar os segredos da EvoluServices.' 
             }, { status: 500 });
@@ -27,6 +31,7 @@ Deno.serve(async (req) => {
         if (API_URL.endsWith('/remote/transaction')) API_URL = API_URL.replace('/remote/transaction', '');
 
         const body = await req.json();
+        console.log('📦 Request body received');
         
         // 3. Validação básica
         const {
@@ -36,10 +41,11 @@ Deno.serve(async (req) => {
             forma_pagamento,
             valor_total,
             observacoes,
-            bandeira_cartao // Obrigatório para transação remota
+            bandeira_cartao
         } = body;
 
         if (!tipo_plano || !titular || !titular.nome || !titular.cpf || !forma_pagamento) {
+            console.error('❌ Missing required fields');
             return Response.json({ 
                 error: 'Campos obrigatórios faltando.' 
             }, { status: 400 });
@@ -50,11 +56,11 @@ Deno.serve(async (req) => {
         const categoriaCartao = categorias.find(c => 
             c.nome.toLowerCase().includes('cartão') && 
             c.nome.toLowerCase().includes('mais')
-        ) || categorias[0]; // Fallback
+        ) || categorias[0];
 
         const nomeConvenio = categoriaCartao ? categoriaCartao.nome : 'Cartão Mais Vida';
 
-        // 5. Criar Pacientes (Titular e Dependentes)
+        // 5. Criar Pacientes
         console.log('👤 Criando pacientes...');
         const pacienteTitular = await base44.asServiceRole.entities.Paciente.create({
             nome: titular.nome,
@@ -92,7 +98,7 @@ Deno.serve(async (req) => {
             validadeCartao = data.toISOString().split('T')[0];
         }
 
-        // 7. Criar VendaCartao (Status PENDENTE)
+        // 7. Criar VendaCartao
         const isPagamentoIntegrado = forma_pagamento.includes('Cartão') && bandeira_cartao;
         const statusInicial = isPagamentoIntegrado ? 'Pendente' : 'Ativo';
 
@@ -127,13 +133,9 @@ Deno.serve(async (req) => {
             
             const host = req.headers.get("host") || ""; 
             const callbackUrl = `https://${host}/functions/callbackVendaCartao`;
-            console.log('🔗 Callback URL:', callbackUrl);
-
+            
+            // REMOVIDO O BLOCO AUTH - Seguindo o modelo do usuário
             const payloadEvolu = {
-                auth: {
-                    username: "gloria",
-                    apiKey: "keygloria"
-                },
                 transaction: {
                     merchantId: MERCHANT_ID,
                     value: parseFloat(valor_total).toFixed(2),
@@ -148,6 +150,7 @@ Deno.serve(async (req) => {
             };
 
             console.log('📤 Enviando para API:', API_URL + '/remote/transaction');
+            console.log('📦 Payload:', JSON.stringify(payloadEvolu));
             
             try {
                 const resp = await fetch(`${API_URL}/remote/transaction`, {
@@ -163,26 +166,25 @@ Deno.serve(async (req) => {
                 console.log('📥 Resposta EvoluServices:', transactionResponse);
 
                 if (resp.ok && transactionResponse.success === "true") {
-                    // Salvar transaction_id na venda
                     await base44.asServiceRole.entities.VendaCartao.update(novaVenda.id, {
                         transaction_id: transactionResponse.transactionId
                     });
                 } else {
-                    // Se falhar na API, marcar venda como cancelada ou falha
                     await base44.asServiceRole.entities.VendaCartao.update(novaVenda.id, {
                         status: 'Falha Pagamento',
                         observacoes: `Erro na integração: ${transactionResponse.error || 'Erro desconhecido'}`
                     });
-                    // Não lançar erro, mas retornar aviso
+                    
+                    // Retornar sucesso com aviso, para não travar o frontend com erro 500
                     return Response.json({
                         success: true,
-                        message: 'Venda registrada, mas houve erro ao comunicar com a maquininha: ' + (transactionResponse.error || 'Erro desconhecido'),
+                        message: 'Venda registrada, mas houve erro na maquininha: ' + (transactionResponse.error || 'Erro desconhecido'),
                         venda: novaVenda,
                         transaction: transactionResponse
                     });
                 }
             } catch (err) {
-                console.error('Erro na chamada API:', err);
+                console.error('❌ Erro na chamada API:', err);
                 await base44.asServiceRole.entities.VendaCartao.update(novaVenda.id, {
                     status: 'Falha Pagamento',
                     observacoes: `Erro na integração: ${err.message}`
@@ -204,7 +206,7 @@ Deno.serve(async (req) => {
         });
 
     } catch (error) {
-        console.error('❌ Erro:', error);
+        console.error('❌ Erro Fatal:', error);
         return Response.json({ success: false, error: error.message }, { status: 500 });
     }
 });
