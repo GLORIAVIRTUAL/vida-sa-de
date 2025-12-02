@@ -239,10 +239,17 @@ export default function VendaCartaoPage() {
   };
 
   const vendasFiltradas = vendas.filter(venda => {
-    const matchBusca = venda.titular.nome.toLowerCase().includes(busca.toLowerCase()) ||
+    const termoBusca = busca.toLowerCase();
+    const matchTitular = venda.titular.nome.toLowerCase().includes(termoBusca) ||
                       venda.titular.cpf.includes(busca) ||
                       venda.numero_venda?.includes(busca);
+
+    const matchDependente = venda.dependentes?.some(dep => 
+      dep.nome.toLowerCase().includes(termoBusca) || 
+      (dep.cpf && dep.cpf.includes(busca))
+    );
     
+    const matchBusca = matchTitular || matchDependente;
     const matchStatus = filtroStatus === 'todos' || venda.status === filtroStatus;
     
     return matchBusca && matchStatus;
@@ -291,7 +298,7 @@ export default function VendaCartaoPage() {
                 <div className="relative">
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Buscar por nome, CPF ou número..."
+                    placeholder="Buscar por titular, dependente, CPF ou número..."
                     className="pl-8"
                     value={busca}
                     onChange={(e) => setBusca(e.target.value)}
