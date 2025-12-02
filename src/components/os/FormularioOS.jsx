@@ -16,15 +16,25 @@ import { useToast } from "@/components/ui/use-toast"; // Import useToast
 
 const formasPagamento = ["Dinheiro", "Cartão Débito", "Cartão Crédito", "PIX", "Transferência", "Convênio", "Múltiplas Formas"];
 
+// Taxas padronizadas (Grupo 1 e Grupo 2)
+const taxasGrupo1 = { 1: 3.64, 2: 4.62, 3: 5.54, 4: 6.19, 5: 7.04, 6: 7.89, 7: 8.94, 8: 9.89, 9: 10.84, 10: 11.49, 11: 12.19, 12: 12.89 };
+const taxasGrupo2 = { 1: 4.64, 2: 5.62, 3: 6.54, 4: 7.19, 5: 8.04, 6: 8.89, 7: 9.94, 8: 10.89, 9: 11.84, 10: 12.49, 11: 13.19, 12: 13.89 };
+
 const taxasCartao = {
   credito: {
-    'Visa/Master/Diners/Cabal/JCB/Agip/Banes/CredZ': { 1: 3.64, 2: 4.62, 3: 5.54, 4: 6.19, 5: 7.04, 6: 7.89, 7: 8.94, 8: 9.89, 9: 10.84, 10: 11.49, 11: 12.19, 12: 12.89 },
-    'Amex/Sorocred/Elo': { 1: 4.64, 2: 5.62, 3: 6.54, 4: 7.19, 5: 8.04, 6: 8.89, 7: 9.94, 8: 10.89, 9: 11.84, 10: 12.49, 11: 13.19, 12: 13.89 },
+    'VISA_CREDITO': { label: 'Visa Crédito', taxas: taxasGrupo1 },
+    'MASTERCARD_CREDITO': { label: 'Mastercard Crédito', taxas: taxasGrupo1 },
+    'HIPERCARD_CREDITO': { label: 'Hipercard Crédito', taxas: taxasGrupo1 },
+    'ELO_CREDITO': { label: 'Elo Crédito', taxas: taxasGrupo2 },
+    'AMEX_CREDITO': { label: 'Amex Crédito', taxas: taxasGrupo2 },
+    'DINERS_CREDITO': { label: 'Diners Crédito', taxas: taxasGrupo1 },
+    'CABAL_CREDITO': { label: 'Cabal Crédito', taxas: taxasGrupo1 }
   },
   debito: {
-    'Cabal/Banescard/Mastercard/Visa': 1.10,
-    'Elo': 1.98,
-    'Banrisul': 2.99,
+    'VISA_ELECTRON': { label: 'Visa Débito', taxa: 1.10 },
+    'MAESTRO': { label: 'Mastercard Débito / Maestro', taxa: 1.10 },
+    'ELO_DEBITO': { label: 'Elo Débito', taxa: 1.98 },
+    'BANESCARD_DEBITO': { label: 'Banescard Débito', taxa: 1.10 }
   }
 };
 
@@ -204,11 +214,13 @@ export default function FormularioOS({
 
     if (dados.cobrar_taxa && ['Cartão Crédito', 'Cartão Débito'].includes(dados.forma_pagamento) && dados.bandeira_cartao) {
       let taxaPercentual = 0;
-      
+
       if (dados.forma_pagamento === 'Cartão Crédito') {
-        taxaPercentual = taxasCartao.credito[dados.bandeira_cartao]?.[dados.parcelas] || 0;
+        // Acessar .taxas pois agora o objeto tem label e taxas
+        taxaPercentual = taxasCartao.credito[dados.bandeira_cartao]?.taxas?.[dados.parcelas] || 0;
       } else if (dados.forma_pagamento === 'Cartão Débito') {
-        taxaPercentual = taxasCartao.debito[dados.bandeira_cartao] || 0;
+        // Acessar .taxa
+        taxaPercentual = taxasCartao.debito[dados.bandeira_cartao]?.taxa || 0;
       }
 
       if (taxaPercentual > 0) {
@@ -505,7 +517,11 @@ export default function FormularioOS({
                     >
                       <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                       <SelectContent>
-                        {bandeirasCredito.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+                        {bandeirasCredito.map(b => (
+                          <SelectItem key={b} value={b}>
+                            {taxasCartao.credito[b].label}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -518,7 +534,7 @@ export default function FormularioOS({
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         {Array.from({ length: 12 }, (_, i) => i + 1).map(p => {
-                          const taxa = dados.bandeira_cartao && taxasCartao.credito[dados.bandeira_cartao]?.[p];
+                          const taxa = dados.bandeira_cartao && taxasCartao.credito[dados.bandeira_cartao]?.taxas?.[p];
                           return (
                             <SelectItem key={p} value={String(p)}>
                               {p}x {taxa ? `(Taxa: ${taxa}%)` : ''}
@@ -541,10 +557,10 @@ export default function FormularioOS({
                     <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                     <SelectContent>
                       {bandeirasDebito.map(b => {
-                        const taxa = taxasCartao.debito[b];
+                        const info = taxasCartao.debito[b];
                         return (
                           <SelectItem key={b} value={b}>
-                            {b} {taxa ? `(Taxa: ${taxa}%)` : ''}
+                            {info.label} {info.taxa ? `(Taxa: ${info.taxa}%)` : ''}
                           </SelectItem>
                         );
                       })}
