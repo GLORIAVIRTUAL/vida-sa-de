@@ -36,9 +36,6 @@ Deno.serve(async (req) => {
         console.log(`🔍 Consultando status da transação: ${os.transaction_id}`);
 
         // 4. Consultar EvoluServices (Tentativa de GET)
-        // Assumindo endpoint /remote/transaction/{id} ou query
-        // Como não temos a doc exata, vamos tentar o padrão REST
-        
         const resp = await fetch(`${API_URL}/remote/transaction/${os.transaction_id}`, {
             method: 'GET',
             headers: {
