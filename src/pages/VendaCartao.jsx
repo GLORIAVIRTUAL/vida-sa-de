@@ -363,13 +363,26 @@ export default function VendaCartaoPage() {
                 {vendasFiltradas.map((venda) => {
                   const statusInfo = getStatusCartao(venda);
                   
+                  // Verificar se algum dependente deu match na busca
+                  const dependenteEncontrado = busca && venda.dependentes?.find(dep => 
+                    dep.nome.toLowerCase().includes(busca.toLowerCase()) || 
+                    (dep.cpf && dep.cpf.includes(busca))
+                  );
+
                   return (
                     <div key={venda.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-white">
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
                             <CreditCard className="w-5 h-5 text-teal-600" />
-                            <span className="font-semibold text-lg">{venda.titular.nome}</span>
+                            <div className="flex flex-col">
+                              <span className="font-semibold text-lg">{venda.titular.nome}</span>
+                              {dependenteEncontrado && (
+                                <span className="text-xs text-teal-600 font-medium bg-teal-50 px-2 py-0.5 rounded-md w-fit mt-1">
+                                  Dependente encontrado: {dependenteEncontrado.nome}
+                                </span>
+                              )}
+                            </div>
                             <Badge className={`${statusInfo.cor} border`}>
                               {statusInfo.status}
                             </Badge>
