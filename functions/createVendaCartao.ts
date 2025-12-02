@@ -149,10 +149,6 @@ Deno.serve(async (req) => {
             const callbackUrl = `https://${host}/functions/callbackVendaCartao`;
             
             const payloadEvolu = {
-                auth: {
-                    username: "gloria",
-                    apiKey: "keygloria"
-                },
                 transaction: {
                     merchantId: MERCHANT_ID,
                     value: parseFloat(valor_total).toFixed(2),
