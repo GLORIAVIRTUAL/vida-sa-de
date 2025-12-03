@@ -34,10 +34,11 @@ Deno.serve(async (req) => {
         // Estamos assumindo uma estrutura padrão. Se falhar, verifique os logs para ajustar os campos.
         // Exemplo esperado: { transactionId: "...", status: "APPROVED", nsu: "...", authorizationCode: "..." }
         
-        const transactionId = body.transactionId || body.transaction?.id;
+        // Extração conforme documentação
+        const transactionId = body.remoteTransactionId || body.transactionNumber || body.transactionId || body.transaction?.id;
         const status = body.status || body.transaction?.status;
-        const nsu = body.nsu || body.transaction?.nsu;
-        const authorizationCode = body.authorizationCode || body.authorization || body.transaction?.authorizationCode;
+        const nsu = body.NSU || body.nsu || body.transaction?.nsu;
+        const authorizationCode = body.authorizationNumber || body.authorizationCode || body.authorization || body.transaction?.authorizationCode;
 
         if (!transactionId) {
             console.error("❌ ID da transação não encontrado no payload");
@@ -62,9 +63,9 @@ Deno.serve(async (req) => {
         let novoStatus = venda.status;
         const statusUpper = String(status).toUpperCase();
 
-        if (statusUpper === 'APPROVED' || statusUpper === 'CONFIRMED' || statusUpper === 'SUCESSO') {
+        if (['APPROVED', 'CONFIRMED', 'SUCESSO', 'COMPLETE', 'PRE_APPROVED', 'AUTHORIZED', 'CAPTURED', 'COMPLETED'].includes(statusUpper)) {
             novoStatus = 'Ativo';
-        } else if (statusUpper === 'DENIED' || statusUpper === 'FAILED' || statusUpper === 'CANCELLED') {
+        } else if (['DENIED', 'FAILED', 'CANCELLED', 'ABORTED', 'ABORTED_BY_MERCHANT', 'VOIDED', 'REFUNDED'].includes(statusUpper)) {
             novoStatus = 'Falha Pagamento';
         }
 
