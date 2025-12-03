@@ -133,9 +133,8 @@ export default function OrdemDeServico() {
       setLoading(true);
       console.log('🔄 Carregando dados da página OS...');
       
-      // Buscando OS via backend function para garantir ordenação correta
-      const [ordensRes, pacientesData, medicosData, procedimentosData, examesData, agendamentosData, categoriasData] = await Promise.all([
-        base44.functions.invoke('listOrdensServico', {}),
+      // Carregar dados auxiliares em paralelo
+      const [pacientesData, medicosData, procedimentosData, examesData, agendamentosData, categoriasData] = await Promise.all([
         Paciente.list("nome", 3000),
         Medico.list("nome", 1000),
         Procedimento.list(),
@@ -143,18 +142,26 @@ export default function OrdemDeServico() {
         Agendamento.list(),
         CategoriaPreco.list(),
       ]);
+
+      // Carregar Ordens de Serviço (Backend Function com Fallback)
+      let ordensData = [];
+      try {
+        console.log('🔄 Tentando carregar OS via função backend...');
+        const res = await base44.functions.invoke('listOrdensServico', {});
+        if (res?.data?.ordens) {
+           ordensData = res.data.ordens;
+           console.log('✅ OS carregadas via função:', ordensData.length);
+        } else {
+           throw new Error("Formato de resposta inválido");
+        }
+      } catch (err) {
+        console.warn("⚠️ Falha na função backend, usando fallback SDK:", err);
+        // Fallback: Ordenação via SDK direto (ordenando por data de execução decrescente)
+        ordensData = await OrdemServico.list("-data_execucao", 500);
+        console.log('✅ OS carregadas via fallback:', ordensData?.length);
+      }
       
-      console.log('✅ Dados carregados:', {
-        ordens: ordensData?.length,
-        pacientes: pacientesData?.length,
-        medicos: medicosData?.length,
-        procedimentos: procedimentosData?.length,
-        exames: examesData?.length,
-        agendamentos: agendamentosData?.length,
-        categorias: categoriasData?.length
-      });
-      
-      setOrdens(ordensRes?.data?.ordens || []);
+      setOrdens(ordensData || []);
       setPacientes(pacientesData || []);
       setMedicos(medicosData || []);
       setProcedimentos(procedimentosData || []);
@@ -163,17 +170,12 @@ export default function OrdemDeServico() {
       setCategorias(categoriasData || []);
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
+      // Fallback de segurança para não quebrar a tela
       setOrdens([]);
-      setPacientes([]);
-      setMedicos([]);
-      setProcedimentos([]);
-      setExames([]);
-      setAgendamentos([]);
-      setCategorias([]);
       
       toast({
-        title: "Erro",
-        description: "Erro ao carregar dados: " + error.message,
+        title: "Erro Parcial",
+        description: "Alguns dados não puderam ser carregados. " + error.message,
         variant: "destructive"
       });
     } finally {
