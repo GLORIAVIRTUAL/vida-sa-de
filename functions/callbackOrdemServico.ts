@@ -19,11 +19,11 @@ Deno.serve(async (req) => {
             status: 'processing'
         });
 
-        // Extração robusta de dados
-        const transactionId = payload.transactionId || payload.transaction?.transactionId || payload.transaction?.id;
+        // Extração robusta de dados conforme documentação
+        const transactionId = payload.remoteTransactionId || payload.transactionNumber || payload.transactionId || payload.transaction?.transactionId || payload.transaction?.id;
         const status = payload.status || payload.transaction?.status;
-        const nsu = payload.nsu || payload.transaction?.nsu;
-        const authorizationCode = payload.authorizationCode || payload.authorization || payload.transaction?.authorizationCode;
+        const nsu = payload.NSU || payload.nsu || payload.transaction?.nsu;
+        const authorizationCode = payload.authorizationNumber || payload.authorizationCode || payload.authorization || payload.transaction?.authorizationCode;
 
         if (!transactionId) {
             console.error('❌ Transaction ID não encontrado no payload');
@@ -47,9 +47,10 @@ Deno.serve(async (req) => {
         let novoStatus = ordemServico.status_pagamento;
         const statusUpper = String(status || '').toUpperCase();
         
-        if (['CONFIRMED', 'APPROVED', 'SUCESSO', 'PAID', 'CAPTURED', 'AUTHORIZED', 'COMPLETED'].includes(statusUpper)) {
+        // Mapeamento atualizado com status da documentação (APPROVED, COMPLETE, etc)
+        if (['CONFIRMED', 'APPROVED', 'SUCESSO', 'PAID', 'CAPTURED', 'AUTHORIZED', 'COMPLETED', 'COMPLETE', 'PRE_APPROVED'].includes(statusUpper)) {
             novoStatus = 'Pago';
-        } else if (['CANCELLED', 'DENIED', 'FAILED', 'VOIDED', 'REFUNDED', 'REVERSED'].includes(statusUpper)) {
+        } else if (['CANCELLED', 'DENIED', 'FAILED', 'VOIDED', 'REFUNDED', 'REVERSED', 'ABORTED', 'ABORTED_BY_MERCHANT'].includes(statusUpper)) {
             novoStatus = 'Cancelado';
         }
 
