@@ -3,7 +3,8 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Agendamento, Paciente, Medico, Lancamento, Procedimento, Exame, CategoriaPreco } from "@/entities/all";
 import { OrdemServico } from "@/entities/OrdemServico";
 import { Button } from "@/components/ui/button";
-import { FileText, Plus, Search } from "lucide-react";
+import { FileText, Plus, Search, RefreshCw } from "lucide-react";
+import { base44 } from "@/api/base44Client";
 import { createPageUrl } from "@/utils";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
@@ -49,6 +50,30 @@ export default function OrdemDeServico() {
   const [pacienteFormulario, setPacienteFormulario] = useState(null);
   const [mostrarForm, setMostrarForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [corrigindo, setCorrigindo] = useState(false);
+
+  const handleCorrigirNomes = async () => {
+    setCorrigindo(true);
+    try {
+        toast({ title: "Sincronizando...", description: "Buscando e corrigindo nomes faltantes..." });
+        const res = await base44.functions.invoke('fixOsPatientNames', {});
+        if (res.data?.success) {
+            toast({ 
+                title: "Sucesso", 
+                description: res.data.message || "Nomes sincronizados com sucesso!",
+                className: "bg-green-50 border-green-200" 
+            });
+            await carregarDados();
+        } else {
+            toast({ title: "Aviso", description: "Não foi possível completar a sincronização.", variant: "destructive" });
+        }
+    } catch (error) {
+        console.error(error);
+        toast({ title: "Erro", description: "Falha ao chamar função de correção.", variant: "destructive" });
+    } finally {
+        setCorrigindo(false);
+    }
+  };
 
   useEffect(() => {
     carregarDados();
@@ -304,6 +329,15 @@ export default function OrdemDeServico() {
               Gerencie e visualize as Ordens de Serviço da clínica.
             </p>
           </div>
+          <Button 
+            variant="outline" 
+            onClick={handleCorrigirNomes} 
+            disabled={corrigindo}
+            className="gap-2"
+          >
+            <RefreshCw className={`w-4 h-4 ${corrigindo ? 'animate-spin' : ''}`} />
+            Sincronizar Nomes
+          </Button>
         </div>
 
         {mostrarForm && osFormData && (
