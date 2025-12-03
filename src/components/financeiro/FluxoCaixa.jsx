@@ -24,8 +24,41 @@ const tipoColors = {
   "Saída": "bg-red-100 text-red-800 border-red-200"
 };
 
-export default function FluxoCaixa({ lancamentos, onUpdate }) {
+export default function FluxoCaixa({ lancamentos, ordensServico, pacientes, onUpdate }) {
   const [mostrarForm, setMostrarForm] = useState(false);
+
+  // Função auxiliar para enriquecer a descrição
+  const getDescricaoCompleta = (lancamento) => {
+    let desc = lancamento.descricao;
+    
+    // Se tem ID de OS e as listas foram passadas
+    if (lancamento.ordem_servico_id && ordensServico && pacientes) {
+      const os = ordensServico.find(o => o.id === lancamento.ordem_servico_id);
+      
+      if (os) {
+        const partesExtras = [];
+        
+        // Tentar achar o nome do paciente (na lista ou na própria OS)
+        const paciente = pacientes.find(p => p.id === os.paciente_id);
+        const nomePaciente = paciente ? paciente.nome : os.paciente_nome;
+        
+        // Se o nome do paciente não estiver na descrição original, adiciona
+        if (nomePaciente && !desc.toLowerCase().includes(nomePaciente.toLowerCase())) {
+           partesExtras.push(`Paciente: ${nomePaciente}`);
+        }
+        
+        // Se o tipo de serviço/procedimento não estiver, adiciona (opcional, mas ajuda)
+        if (os.tipo_servico && !desc.includes(os.tipo_servico)) {
+           // partesExtras.push(os.tipo_servico); 
+        }
+
+        if (partesExtras.length > 0) {
+          desc += ` (${partesExtras.join(' - ')})`;
+        }
+      }
+    }
+    return desc;
+  };
   const [tipoLancamento, setTipoLancamento] = useState("Entrada");
   
   // Filtros de data - padrão: mês atual
@@ -119,7 +152,7 @@ export default function FluxoCaixa({ lancamentos, onUpdate }) {
             ` : lancamentosFiltrados.map(l => `
               <tr>
                 <td>${format(new Date(l.data_lancamento + 'T00:00:00'), "dd/MM/yyyy", { locale: ptBR })}</td>
-                <td>${l.descricao}</td>
+                <td>${getDescricaoCompleta(l)}</td>
                 <td>${l.categoria}</td>
                 <td class="${l.tipo === 'Entrada' ? 'entrada' : 'saida'}">${l.tipo}</td>
                 <td style="text-align: right;" class="${l.tipo === 'Entrada' ? 'entrada' : 'saida'}">

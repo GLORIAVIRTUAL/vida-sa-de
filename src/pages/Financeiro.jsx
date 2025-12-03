@@ -45,10 +45,10 @@ export default function Financeiro() {
         examesData,
         categoriasPrecoData,
       ] = await safeApiCall(async () => Promise.all([
-        Lancamento.list('-data_lancamento'),
-        OrdemServico.list('-created_date'),
+        Lancamento.list('-data_lancamento', 2000),
+        OrdemServico.list('-created_date', 2000),
         Medico.list(),
-        Paciente.list(),
+        Paciente.list('nome', 2000),
         Procedimento.list(),
         Exame.list(),
         CategoriaPreco.list()
