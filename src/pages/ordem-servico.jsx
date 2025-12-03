@@ -204,7 +204,8 @@ export default function OrdemDeServico() {
       }
 
       if (novaOS.status_pagamento === 'Pago' && agendamentoParaOS) {
-        const paciente = pacientes.find(p => p.id === novaOS.paciente_id);
+        // Tenta pegar nome da OS (snapshot histórico) ou da lista
+        const nomePaciente = novaOS.paciente_nome || pacientes.find(p => p.id === novaOS.paciente_id)?.nome || 'Paciente Não Identificado';
         const tipoServico = agendamentoParaOS.tipo_servico;
 
         let categoriaReceita = "Outros";
@@ -212,14 +213,17 @@ export default function OrdemDeServico() {
         else if (tipoServico === "Procedimento") categoriaReceita = "Receita Procedimentos";
         else if (tipoServico === "Exame") categoriaReceita = "Receita Exames";
 
-        const descricaoConvenio = agendamentoParaOS.convenio === "Prefeituras"
-          ? `(${agendamentoParaOS.convenio} - ${agendamentoParaOS.nome_prefeitura})`
-          : `(${agendamentoParaOS.convenio})`;
+        let descricaoConvenio = "";
+        if (agendamentoParaOS.convenio) {
+             descricaoConvenio = agendamentoParaOS.convenio === "Prefeituras"
+                ? `(${agendamentoParaOS.convenio} - ${agendamentoParaOS.nome_prefeitura || ''})`
+                : `(${agendamentoParaOS.convenio})`;
+        }
 
         const dadosLancamento = {
           tipo: "Entrada",
           categoria: categoriaReceita,
-          descricao: `Receita: ${tipoServico} de ${paciente?.nome || 'N/A'} ${descricaoConvenio}`,
+          descricao: `Receita: ${tipoServico} de ${nomePaciente} ${descricaoConvenio}`,
           valor: novaOS.valor_final,
           data_lancamento: new Date().toISOString().split('T')[0],
           forma_pagamento: novaOS.forma_pagamento,

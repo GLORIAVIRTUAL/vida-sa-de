@@ -27,10 +27,14 @@ const tipoColors = {
 export default function FluxoCaixa({ lancamentos, ordensServico, pacientes, onUpdate }) {
   const [mostrarForm, setMostrarForm] = useState(false);
 
-  // Função auxiliar para enriquecer a descrição
+  // Função auxiliar para enriquecer a descrição e limpar dados corrompidos
   const getDescricaoCompleta = (lancamento) => {
-    let desc = lancamento.descricao;
+    let desc = lancamento.descricao || "";
     
+    // Limpeza inicial de strings corrompidas (Legacy Fix)
+    desc = desc.replace("N/A (undefined)", "N/A");
+    desc = desc.replace("(undefined)", "");
+
     // Se tem ID de OS e as listas foram passadas
     if (lancamento.ordem_servico_id && ordensServico && pacientes) {
       const os = ordensServico.find(o => o.id === lancamento.ordem_servico_id);
@@ -42,9 +46,15 @@ export default function FluxoCaixa({ lancamentos, ordensServico, pacientes, onUp
         const paciente = pacientes.find(p => p.id === os.paciente_id);
         const nomePaciente = paciente ? paciente.nome : os.paciente_nome;
         
-        // Se o nome do paciente não estiver na descrição original, adiciona
-        if (nomePaciente && !desc.toLowerCase().includes(nomePaciente.toLowerCase())) {
-           partesExtras.push(`Paciente: ${nomePaciente}`);
+        if (nomePaciente) {
+            // Se a descrição tem "N/A", substitui pelo nome correto
+            if (desc.includes("N/A")) {
+                desc = desc.replace("N/A", nomePaciente);
+            } 
+            // Se não tem o nome, adiciona no final
+            else if (!desc.toLowerCase().includes(nomePaciente.toLowerCase())) {
+               partesExtras.push(`Paciente: ${nomePaciente}`);
+            }
         }
         
         if (partesExtras.length > 0) {
