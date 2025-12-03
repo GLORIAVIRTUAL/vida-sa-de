@@ -266,6 +266,9 @@ export default function FormularioOS({
       const categoria = categorias?.find(c => c.id === categoriaId);
       console.log('✅ Categoria a ser salva:', categoria?.nome, '(ID:', categoriaId, ')');
 
+      // Obter nome do paciente para garantir envio
+      const nomePaciente = paciente?.nome || agendamento?.paciente_nome;
+
       // Montar array de pagamentos detalhados se for Múltiplas Formas
       let pagamentosDetalhados = [];
       if (dados.forma_pagamento === 'Múltiplas Formas') {
@@ -280,6 +283,7 @@ export default function FormularioOS({
       const osData = {
         agendamento_id: agendamento.id,
         paciente_id: agendamento.paciente_id,
+        paciente_nome: nomePaciente,
         medico_id: agendamento.medico_id || null,
         data_execucao: agendamento.data_agendamento,
         tipo_servico: agendamento.tipo_servico,
