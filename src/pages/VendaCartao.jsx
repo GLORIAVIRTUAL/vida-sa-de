@@ -28,6 +28,17 @@ import ContratoAdesao from "../components/venda-cartao/ContratoAdesao";
 
 const SENHA_CANCELAMENTO = "123123";
 
+const formatDateSafe = (dateString) => {
+  if (!dateString) return "N/A";
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "Data Inválida";
+    return format(date, 'dd/MM/yyyy');
+  } catch (e) {
+    return "Erro Data";
+  }
+};
+
 const statusColors = {
   "Ativo": "bg-green-100 text-green-800 border-green-200",
   "Vencido": "bg-red-100 text-red-800 border-red-200",
@@ -413,13 +424,13 @@ export default function VendaCartaoPage() {
                             <div>
                               <p className="text-gray-500">Data Venda</p>
                               <p className="font-medium">
-                                {format(new Date(venda.data_venda), 'dd/MM/yyyy')}
+                                {formatDateSafe(venda.data_venda)}
                               </p>
                             </div>
                             <div>
                               <p className="text-gray-500">Validade</p>
                               <p className={`font-medium ${statusInfo.status === 'Vencido' ? 'text-red-600' : statusInfo.aviso ? 'text-yellow-600' : 'text-gray-900'}`}>
-                                {format(new Date(venda.validade_cartao), 'dd/MM/yyyy')}
+                                {formatDateSafe(venda.validade_cartao)}
                               </p>
                             </div>
                             <div>
