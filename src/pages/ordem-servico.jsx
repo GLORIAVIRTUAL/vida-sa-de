@@ -133,8 +133,9 @@ export default function OrdemDeServico() {
       setLoading(true);
       console.log('🔄 Carregando dados da página OS...');
       
-      const [ordensData, pacientesData, medicosData, procedimentosData, examesData, agendamentosData, categoriasData] = await Promise.all([
-        OrdemServico.list("-data_execucao", 500),
+      // Buscando OS via backend function para garantir ordenação correta
+      const [ordensRes, pacientesData, medicosData, procedimentosData, examesData, agendamentosData, categoriasData] = await Promise.all([
+        base44.functions.invoke('listOrdensServico'),
         Paciente.list("nome", 3000),
         Medico.list("nome", 1000),
         Procedimento.list(),
@@ -153,7 +154,7 @@ export default function OrdemDeServico() {
         categorias: categoriasData?.length
       });
       
-      setOrdens(ordensData || []);
+      setOrdens(ordensRes?.data?.ordens || []);
       setPacientes(pacientesData || []);
       setMedicos(medicosData || []);
       setProcedimentos(procedimentosData || []);
