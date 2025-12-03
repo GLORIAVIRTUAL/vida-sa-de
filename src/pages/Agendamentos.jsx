@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Agendamento, Medico, Paciente, Procedimento, Exame, Notification, CategoriaPreco, TabelaPreco } from "@/entities/all";
+import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarIcon, Plus, List, Grid3x3, Printer, Clock, Stethoscope, User, RefreshCw } from "lucide-react"; // Import Stethoscope and User icons
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
