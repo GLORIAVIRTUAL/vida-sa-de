@@ -175,8 +175,18 @@ Deno.serve(async (req) => {
                 console.log('[VendaCartao] Payment Response:', transactionResponse);
 
                 if (resp.ok && transactionResponse.success === "true") {
+                    const status = transactionResponse.status || transactionResponse.transaction?.status;
+                    const statusUpper = String(status || '').toUpperCase();
+                    let novoStatus = 'Pendente';
+                    if (['CONFIRMED', 'APPROVED', 'SUCESSO', 'PAID', 'CAPTURED', 'AUTHORIZED', 'COMPLETED'].includes(statusUpper)) {
+                        novoStatus = 'Ativo';
+                    }
+
                     await base44.asServiceRole.entities.VendaCartao.update(novaVenda.id, {
-                        transaction_id: transactionResponse.transactionId
+                        transaction_id: transactionResponse.transactionId,
+                        status: novoStatus,
+                        nsu: transactionResponse.nsu || transactionResponse.transaction?.nsu,
+                        autorizacao: transactionResponse.authorizationCode || transactionResponse.transaction?.authorizationCode
                     });
                 } else {
                     const errorMsg = transactionResponse.error || 'Erro desconhecido na maquininha';
