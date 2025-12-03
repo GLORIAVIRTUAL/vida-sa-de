@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Save } from "lucide-react";
+import { Loader2, Save, Printer } from "lucide-react";
 import { CategoriaPreco } from "@/entities/all";
 
 export default function FormularioPaciente({ paciente, onSalvar, onCancelar }) {
@@ -120,6 +120,91 @@ export default function FormularioPaciente({ paciente, onSalvar, onCancelar }) {
   const comoConheceuOpcoes = [
     "Google", "Facebook", "Instagram", "Panfleto", "Rádio", "TV", "Indicação", "Passou na frente", "Tik Tok", "Outro"
   ];
+
+  const handleImprimir = () => {
+    const dataAtual = new Date().toLocaleDateString('pt-BR');
+    
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Ficha do Paciente - ${formData.nome}</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 20px; line-height: 1.5; color: #333; }
+          .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px; }
+          .logo { font-size: 24px; font-weight: bold; color: #0d9488; }
+          .title { font-size: 18px; margin-top: 10px; font-weight: bold; }
+          .section { margin-bottom: 15px; border: 1px solid #ddd; padding: 15px; border-radius: 8px; }
+          .section-title { font-weight: bold; font-size: 14px; text-transform: uppercase; color: #666; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 10px; }
+          .row { display: flex; margin-bottom: 8px; }
+          .label { font-weight: bold; width: 160px; color: #444; }
+          .value { flex: 1; }
+          .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #666; border-top: 1px solid #eee; padding-top: 10px; }
+          @media print {
+            body { padding: 0; }
+            .section { break-inside: avoid; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+            <div class="logo">Centro Vida Saúde</div>
+            <div class="title">Ficha de Cadastro do Paciente</div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Dados Pessoais</div>
+            <div class="row"><span class="label">Nome:</span><span class="value">${formData.nome || '-'}</span></div>
+            <div class="row"><span class="label">CPF:</span><span class="value">${formData.cpf || '-'}</span></div>
+            <div class="row"><span class="label">RG:</span><span class="value">${formData.rg || '-'}</span></div>
+            <div class="row"><span class="label">Data Nascimento:</span><span class="value">${formData.data_nascimento ? new Date(formData.data_nascimento).toLocaleDateString('pt-BR', {timeZone: 'UTC'}) : '-'}</span></div>
+            <div class="row"><span class="label">Telefone:</span><span class="value">${formData.telefone || '-'}</span></div>
+            <div class="row"><span class="label">Telefone Secundário:</span><span class="value">${formData.telefone_secundario || '-'}</span></div>
+            <div class="row"><span class="label">Email:</span><span class="value">${formData.email || '-'}</span></div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Convênio e Prioridade</div>
+            <div class="row"><span class="label">Convênio:</span><span class="value">${formData.convenio || '-'}</span></div>
+            <div class="row"><span class="label">Carteirinha:</span><span class="value">${formData.numero_carteira || '-'}</span></div>
+            <div class="row"><span class="label">Prioridade:</span><span class="value">${formData.prioridade || 'Normal'}</span></div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Endereço</div>
+            <div class="row"><span class="label">Logradouro:</span><span class="value">${formData.endereco?.logradouro || ''}, ${formData.endereco?.numero || ''}</span></div>
+            <div class="row"><span class="label">Complemento:</span><span class="value">${formData.endereco?.complemento || '-'}</span></div>
+            <div class="row"><span class="label">Bairro:</span><span class="value">${formData.endereco?.bairro || '-'}</span></div>
+            <div class="row"><span class="label">Cidade/UF:</span><span class="value">${formData.endereco?.cidade || '-'} / ${formData.endereco?.estado || '-'}</span></div>
+            <div class="row"><span class="label">CEP:</span><span class="value">${formData.endereco?.cep || '-'}</span></div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Outras Informações</div>
+             <div class="row"><span class="label">Como conheceu:</span><span class="value">${formData.como_conheceu || '-'}${formData.como_conheceu === 'Outro' ? ` (${formData.como_conheceu_outro})` : ''}</span></div>
+        </div>
+
+        ${formData.observacoes ? `
+        <div class="section">
+            <div class="section-title">Observações</div>
+            <div>${formData.observacoes}</div>
+        </div>
+        ` : ''}
+
+        <div class="footer">
+            Documento gerado em ${dataAtual}
+        </div>
+      </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    printWindow.onload = () => {
+      printWindow.print();
+    };
+  };
 
   return (
     <Dialog open onOpenChange={onCancelar}>
@@ -384,7 +469,13 @@ export default function FormularioPaciente({ paciente, onSalvar, onCancelar }) {
           </div>
 
           {/* Botões */}
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-0">
+            {paciente && (
+              <Button type="button" variant="secondary" onClick={handleImprimir} className="mr-auto bg-gray-200 hover:bg-gray-300 text-gray-800">
+                <Printer className="w-4 h-4 mr-2" />
+                Imprimir Ficha
+              </Button>
+            )}
             <Button type="button" variant="outline" onClick={onCancelar}>
               Cancelar
             </Button>
