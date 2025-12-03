@@ -46,6 +46,7 @@ export default function OrdemDeServico() {
   const [loading, setLoading] = useState(true);
   const [osSelecionada, setOsSelecionada] = useState(null);
   const [agendamentoParaOS, setAgendamentoParaOS] = useState(null);
+  const [pacienteFormulario, setPacienteFormulario] = useState(null);
   const [mostrarForm, setMostrarForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -53,7 +54,7 @@ export default function OrdemDeServico() {
     carregarDados();
   }, []);
 
-  const handleAbrirFormOS = useCallback((agendamento) => {
+  const handleAbrirFormOS = useCallback(async (agendamento) => {
     console.log('═══════════════════════════════════════');
     console.log('🔍 ABRINDO FORMULÁRIO DE OS');
     console.log('═══════════════════════════════════════');
@@ -76,9 +77,25 @@ export default function OrdemDeServico() {
     console.log('✅ Categoria encontrada:', categoria?.nome);
     console.log('═══════════════════════════════════════\n');
 
+    // Buscar paciente se não estiver na lista carregada
+    let paciente = pacientes.find(p => p.id === agendamento.paciente_id);
+    if (!paciente && agendamento.paciente_id) {
+        try {
+            console.log('🔍 Paciente não encontrado na lista local, buscando na API...');
+            const res = await Paciente.filter({ id: agendamento.paciente_id });
+            if (res && res.length > 0) {
+                paciente = res[0];
+                console.log('✅ Paciente recuperado da API:', paciente.nome);
+            }
+        } catch (e) {
+            console.error('❌ Erro ao buscar paciente:', e);
+        }
+    }
+    
+    setPacienteFormulario(paciente);
     setAgendamentoParaOS(agendamento);
     setMostrarForm(true);
-  }, [categorias, toast]);
+  }, [categorias, toast, pacientes]);
 
   useEffect(() => {
     if (agendamentoInicial && categorias.length > 0) {
@@ -208,6 +225,7 @@ export default function OrdemDeServico() {
   const handleCancelarForm = () => {
     setMostrarForm(false);
     setAgendamentoParaOS(null);
+    setPacienteFormulario(null);
     setOsSelecionada(null);
     navigate(createPageUrl('Agendamentos'));
   };
@@ -237,11 +255,13 @@ export default function OrdemDeServico() {
   }, [searchTerm, ordens, getNome]);
 
   const osFormData = useMemo(() => {
-    if (!agendamentoParaOS || !pacientes.length || !medicos.length || !categorias.length) {
+    if (!agendamentoParaOS || !medicos.length || !categorias.length) {
       return null;
     }
 
-    const paciente = pacientes.find(p => p.id === agendamentoParaOS.paciente_id);
+    // Usar pacienteFormulario se disponível, senão tentar buscar na lista
+    const paciente = pacienteFormulario || pacientes.find(p => p.id === agendamentoParaOS.paciente_id);
+    
     const medico = medicos.find(m => m.id === agendamentoParaOS.medico_id);
     const categoriaPreco = categorias.find(c => c.id === agendamentoParaOS.categoria_preco_id);
 
@@ -256,7 +276,7 @@ export default function OrdemDeServico() {
     }
 
     return { paciente, medico, procedimento, exames: examesSelecionados, categoriaPreco };
-  }, [agendamentoParaOS, pacientes, medicos, procedimentos, exames, categorias]);
+  }, [agendamentoParaOS, pacienteFormulario, pacientes, medicos, procedimentos, exames, categorias]);
 
   const detalhesData = useMemo(() => {
     if (!osSelecionada || !pacientes.length || !medicos.length || !agendamentos.length) {

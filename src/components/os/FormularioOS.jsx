@@ -375,11 +375,11 @@ export default function FormularioOS({
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <Label className="text-xs text-gray-500">Paciente</Label>
-                  <p className="font-semibold">{paciente?.nome}</p>
+                  <p className="font-semibold">{paciente?.nome || agendamento?.paciente_nome || 'Nome não disponível'}</p>
                 </div>
                 <div>
                   <Label className="text-xs text-gray-500">CPF</Label>
-                  <p className="font-semibold">{paciente?.cpf}</p>
+                  <p className="font-semibold">{paciente?.cpf || 'Não informado'}</p>
                 </div>
                 <div>
                   <Label className="text-xs text-gray-500">Convênio</Label>
