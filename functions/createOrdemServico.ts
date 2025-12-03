@@ -32,37 +32,31 @@ Deno.serve(async (req) => {
             valor_final,
             forma_pagamento,
             bandeira_cartao,
-            parcelas,
-            paciente_nome: nomeEnviado // Nome enviado pelo frontend
+            parcelas
         } = body;
 
         // 3. Buscar Paciente para dados
-        let nomeFinal = nomeEnviado;
-        let paciente = null;
-
-        if (paciente_id) {
-            paciente = await base44.asServiceRole.entities.Paciente.get(paciente_id);
-            if (paciente) {
-                console.log('👤 Paciente encontrado no banco:', paciente.nome);
-                nomeFinal = paciente.nome;
-            } else {
-                console.warn('⚠️ Paciente não encontrado no banco pelo ID:', paciente_id);
-            }
+        const paciente = await base44.asServiceRole.entities.Paciente.get(paciente_id);
+        if (!paciente) {
+            return Response.json({ error: 'Paciente não encontrado' }, { status: 404 });
         }
-
-        if (!nomeFinal) {
-            nomeFinal = "Paciente não identificado";
-            console.warn('⚠️ Criando OS sem nome de paciente identificado!');
-        }
+        
+        console.log('👤 Paciente encontrado:', paciente.nome);
 
         // 4. Criar Ordem de Serviço (Inicialmente Pendente)
-        console.log('💾 Criando OS para:', nomeFinal);
-        
+        console.log('💾 Criando OS...');
+        // Garantir que paciente_nome seja salvo se o campo existir na entidade (usuário pode ter adicionado)
+        // Gerar Numero OS
+        const now = new Date();
+        const dateStr = now.toISOString().replace(/[-T:]/g, '').slice(0, 12); // YYYYMMDDHHMM
+        const randomStr = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+        const numero_os = `${dateStr}-${randomStr}`;
+
         const dadosOS = { 
             ...body, 
-            paciente_nome: nomeFinal 
+            paciente_nome: paciente.nome,
+            numero_os: numero_os
         };
-        
         const novaOS = await base44.asServiceRole.entities.OrdemServico.create(dadosOS);
 
         const isPagamentoIntegrado = (forma_pagamento === 'Cartão Crédito' || forma_pagamento === 'Cartão Débito') && bandeira_cartao;
@@ -81,7 +75,7 @@ Deno.serve(async (req) => {
                     installments: parcelas || 1,
                     paymentBrand: bandeira_cartao,
                     callbackUrl: callbackUrl,
-                    clientName: nomeFinal
+                    clientName: paciente.nome
                 }
             };
 
