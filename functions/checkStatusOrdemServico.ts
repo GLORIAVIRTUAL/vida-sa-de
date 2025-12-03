@@ -36,6 +36,8 @@ Deno.serve(async (req) => {
         console.log(`🔍 Consultando status da transação: ${os.transaction_id}`);
 
         // 4. Consultar EvoluServices (Tentativa de GET)
+        console.log(`📡 GET ${API_URL}/remote/transaction/${os.transaction_id}`);
+        
         const resp = await fetch(`${API_URL}/remote/transaction/${os.transaction_id}`, {
             method: 'GET',
             headers: {
@@ -47,7 +49,11 @@ Deno.serve(async (req) => {
         if (!resp.ok) {
             const errorText = await resp.text();
             console.error('❌ Erro ao consultar API:', errorText);
-            return Response.json({ error: 'Failed to fetch status from payment provider', details: errorText }, { status: 502 });
+            // Retornar 200 com success:false para o frontend exibir o erro ao invés de cair no catch genérico
+            return Response.json({ 
+                success: false, 
+                error: `Erro na maquininha: ${resp.status} - ${errorText.substring(0, 100)}` 
+            });
         }
 
         const data = await resp.json();
@@ -59,10 +65,10 @@ Deno.serve(async (req) => {
         let novoStatus = os.status_pagamento;
         let updated = false;
 
-        if (['CONFIRMED', 'APPROVED', 'SUCESSO', 'PAID'].includes(statusUpper)) {
+        if (['CONFIRMED', 'APPROVED', 'SUCESSO', 'PAID', 'CAPTURED', 'AUTHORIZED', 'COMPLETED'].includes(statusUpper)) {
             novoStatus = 'Pago';
             updated = true;
-        } else if (['CANCELLED', 'DENIED', 'FAILED', 'VOIDED'].includes(statusUpper)) {
+        } else if (['CANCELLED', 'DENIED', 'FAILED', 'VOIDED', 'REFUNDED', 'REVERSED'].includes(statusUpper)) {
             novoStatus = 'Cancelado';
             updated = true;
         }
