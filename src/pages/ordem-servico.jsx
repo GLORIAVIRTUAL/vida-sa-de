@@ -134,7 +134,7 @@ export default function OrdemDeServico() {
       console.log('🔄 Carregando dados da página OS...');
       
       const [ordensData, pacientesData, medicosData, procedimentosData, examesData, agendamentosData, categoriasData] = await Promise.all([
-        OrdemServico.list("-created_date", 500),
+        OrdemServico.list("-data_execucao", 500),
         Paciente.list("nome", 3000),
         Medico.list("nome", 1000),
         Procedimento.list(),
