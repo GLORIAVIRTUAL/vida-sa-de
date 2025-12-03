@@ -344,7 +344,7 @@ export default function OrdemDeServico() {
                       return (
                         <TableRow key={os.id}>
                           <TableCell>{dataExecucao && !isNaN(dataExecucao.getTime()) ? format(dataExecucao, 'dd/MM/yyyy') : 'N/A'}</TableCell>
-                          <TableCell>{getNome(os.paciente_id, 'paciente')}</TableCell>
+                          <TableCell>{os.paciente_nome || getNome(os.paciente_id, 'paciente')}</TableCell>
                           <TableCell>{getNome(os.medico_id, 'medico')}</TableCell>
                           <TableCell>R$ {os.valor_final?.toFixed(2)}</TableCell>
                           <TableCell>

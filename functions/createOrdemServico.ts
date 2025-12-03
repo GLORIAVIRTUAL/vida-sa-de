@@ -84,24 +84,33 @@ Deno.serve(async (req) => {
                 transactionResponse = await resp.json();
                 console.log('📥 Resposta EvoluServices:', transactionResponse);
 
-                if (resp.ok && transactionResponse.success === "true") {
-                    // Verificar status da transação para atualizar OS imediatamente
+                const txId = transactionResponse.transactionId || transactionResponse.transaction?.transactionId;
+                const success = transactionResponse.success === "true" || transactionResponse.success === true;
+
+                // Salvar Transaction ID sempre que disponível, mesmo se success for false (para debug/consulta futura)
+                if (txId) {
                     const status = transactionResponse.status || transactionResponse.transaction?.status;
                     const statusUpper = String(status || '').toUpperCase();
                     
                     let novoStatus = 'Pendente';
-                    if (['CONFIRMED', 'APPROVED', 'SUCESSO', 'PAID', 'CAPTURED', 'AUTHORIZED', 'COMPLETED'].includes(statusUpper)) {
+                    if (success && ['CONFIRMED', 'APPROVED', 'SUCESSO', 'PAID', 'CAPTURED', 'AUTHORIZED', 'COMPLETED'].includes(statusUpper)) {
                         novoStatus = 'Pago';
                     }
 
-                    // Atualizar OS com ID da transação e Status
+                    console.log(`💾 Atualizando OS com TransactionID: ${txId} | Status: ${novoStatus}`);
+
                     await base44.asServiceRole.entities.OrdemServico.update(novaOS.id, {
-                        transaction_id: transactionResponse.transactionId,
+                        transaction_id: txId,
                         status_pagamento: novoStatus,
                         nsu: transactionResponse.nsu || transactionResponse.transaction?.nsu,
                         autorizacao: transactionResponse.authorizationCode || transactionResponse.transaction?.authorizationCode,
-                        data_pagamento: novoStatus === 'Pago' ? new Date().toISOString() : null
+                        data_pagamento: novoStatus === 'Pago' ? new Date().toISOString() : null,
+                        observacoes: (novaOS.observacoes || '') + (success ? '' : `\n[Alerta]: API retornou success=false mas gerou ID. Status: ${status}`)
                     });
+                }
+
+                if (resp.ok && success) {
+                    // Sucesso confirmado
                 } else {
                     await base44.asServiceRole.entities.OrdemServico.update(novaOS.id, {
                         observacoes: (novaOS.observacoes || '') + `\n[Erro Pagamento]: ${transactionResponse.error || 'Falha na comunicação'}`
