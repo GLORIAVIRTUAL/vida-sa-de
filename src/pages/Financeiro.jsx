@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProtectedRoute from '../components/auth/ProtectedRoute';
@@ -174,6 +173,8 @@ export default function Financeiro() {
             <TabsContent value="fluxo">
               <FluxoCaixa 
                 lancamentos={lancamentos}
+                ordensServico={ordensServico}
+                pacientes={pacientes}
                 onNovoLancamento={handleNovoLancamento}
                 onUpdate={carregarDados}
               />
