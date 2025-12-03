@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, User, CheckCircle, XCircle, ArrowUpCircle, DollarSign, FileText, Edit, MessageSquare, Repeat, Trash2 } from "lucide-react";
+import { Calendar, Clock, User, CheckCircle, XCircle, ArrowUpCircle, DollarSign, FileText, Edit, MessageSquare, Repeat, Trash2, UserCog } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -221,6 +221,17 @@ export default function VisualizacaoDiaria({ agendamentos, medicos, pacientes, o
                         </div>
                       </div>
                       <div className="flex gap-2">
+                        {!agendamento.is_reserva && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleAbrirPaciente(agendamento.paciente_id)}
+                            title="Editar cadastro do paciente"
+                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          >
+                            <UserCog className="w-4 h-4" />
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="sm"
