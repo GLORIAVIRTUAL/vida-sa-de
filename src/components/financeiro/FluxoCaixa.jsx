@@ -47,11 +47,6 @@ export default function FluxoCaixa({ lancamentos, ordensServico, pacientes, onUp
            partesExtras.push(`Paciente: ${nomePaciente}`);
         }
         
-        // Se o tipo de serviço/procedimento não estiver, adiciona (opcional, mas ajuda)
-        if (os.tipo_servico && !desc.includes(os.tipo_servico)) {
-           // partesExtras.push(os.tipo_servico); 
-        }
-
         if (partesExtras.length > 0) {
           desc += ` (${partesExtras.join(' - ')})`;
         }
@@ -59,6 +54,7 @@ export default function FluxoCaixa({ lancamentos, ordensServico, pacientes, onUp
     }
     return desc;
   };
+
   const [tipoLancamento, setTipoLancamento] = useState("Entrada");
   
   // Filtros de data - padrão: mês atual
@@ -317,7 +313,7 @@ export default function FluxoCaixa({ lancamentos, ordensServico, pacientes, onUp
                         {/* CORRIGIDO: Adicionado 'T00:00:00' para forçar o fuso horário local */}
                         {format(new Date(lancamento.data_lancamento + 'T00:00:00'), "dd/MM/yyyy", { locale: ptBR })}
                       </TableCell>
-                      <TableCell className="font-medium">{lancamento.descricao}</TableCell>
+                      <TableCell className="font-medium">{getDescricaoCompleta(lancamento)}</TableCell>
                       <TableCell>{lancamento.categoria}</TableCell>
                       <TableCell>
                         <Badge className={`${tipoColors[lancamento.tipo]} border`}>
