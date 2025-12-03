@@ -121,7 +121,8 @@ export default function DetalhesOS({ os, pacienteNome, medicoNome, categoriaNome
   const valorImposto = isentoImposto ? 0 : os.valor_final * 0.10;
   const valorAposImposto = os.valor_final - valorImposto;
 
-  const dataExecucao = os.data_execucao ? new Date(os.data_execucao + 'T00:00:00') : null;
+  const rawDataExecucao = os.data_execucao ? new Date(os.data_execucao + 'T00:00:00') : null;
+  const dataExecucao = rawDataExecucao && !isNaN(rawDataExecucao.getTime()) ? rawDataExecucao : null;
 
   // Função para converter número em valor por extenso
   const valorPorExtenso = (valor) => {

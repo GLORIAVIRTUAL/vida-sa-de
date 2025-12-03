@@ -370,7 +370,7 @@ export default function OrdemDeServico() {
         {osSelecionada && detalhesData && (
           <DetalhesOS
             os={osSelecionada}
-            pacienteNome={detalhesData.paciente?.nome || 'N/A'}
+            pacienteNome={osSelecionada.paciente_nome || detalhesData.paciente?.nome || 'N/A'}
             medicoNome={detalhesData.medico?.nome || 'N/A'}
             categoriaNome={detalhesData.categoria?.nome || ''}
             open={true}
