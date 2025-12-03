@@ -85,9 +85,22 @@ Deno.serve(async (req) => {
                 console.log('📥 Resposta EvoluServices:', transactionResponse);
 
                 if (resp.ok && transactionResponse.success === "true") {
-                    // Atualizar OS com ID da transação
+                    // Verificar status da transação para atualizar OS imediatamente
+                    const status = transactionResponse.status || transactionResponse.transaction?.status;
+                    const statusUpper = String(status || '').toUpperCase();
+                    
+                    let novoStatus = 'Pendente';
+                    if (['CONFIRMED', 'APPROVED', 'SUCESSO', 'PAID', 'CAPTURED', 'AUTHORIZED', 'COMPLETED'].includes(statusUpper)) {
+                        novoStatus = 'Pago';
+                    }
+
+                    // Atualizar OS com ID da transação e Status
                     await base44.asServiceRole.entities.OrdemServico.update(novaOS.id, {
-                        transaction_id: transactionResponse.transactionId
+                        transaction_id: transactionResponse.transactionId,
+                        status_pagamento: novoStatus,
+                        nsu: transactionResponse.nsu || transactionResponse.transaction?.nsu,
+                        autorizacao: transactionResponse.authorizationCode || transactionResponse.transaction?.authorizationCode,
+                        data_pagamento: novoStatus === 'Pago' ? new Date().toISOString() : null
                     });
                 } else {
                     await base44.asServiceRole.entities.OrdemServico.update(novaOS.id, {
