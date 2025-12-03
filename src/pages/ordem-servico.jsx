@@ -135,7 +135,7 @@ export default function OrdemDeServico() {
       
       // Buscando OS via backend function para garantir ordenação correta
       const [ordensRes, pacientesData, medicosData, procedimentosData, examesData, agendamentosData, categoriasData] = await Promise.all([
-        base44.functions.invoke('listOrdensServico'),
+        base44.functions.invoke('listOrdensServico', {}),
         Paciente.list("nome", 3000),
         Medico.list("nome", 1000),
         Procedimento.list(),
