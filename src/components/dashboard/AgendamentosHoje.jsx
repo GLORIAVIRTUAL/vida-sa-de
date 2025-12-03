@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -83,7 +82,7 @@ export default function AgendamentosHoje({ agendamentos = [], medicos = [], paci
                   <div className="space-y-1">
                     <p className="flex items-center gap-2 text-sm">
                       <User className="w-4 h-4 text-gray-400" />
-                      <span className="font-medium">{getNomePaciente(agendamento.paciente_id)}</span>
+                      <span className="font-medium">{agendamento.paciente_nome || getNomePaciente(agendamento.paciente_id)}</span>
                     </p>
                     <p className="text-sm text-gray-600 ml-6">
                       {getNomeMedico(agendamento.medico_id)} • {agendamento.tipo_servico}

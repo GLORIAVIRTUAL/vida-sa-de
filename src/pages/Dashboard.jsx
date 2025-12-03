@@ -71,6 +71,11 @@ export default function Dashboard() {
       const medicosArray = Array.isArray(medicosData) ? medicosData : [];
       setMedicos(medicosArray);
 
+      // 1b. Carregar Pacientes (necessário para exibir nomes no componente AgendamentosHoje)
+      const pacientesData = await safeApiCall(() => Paciente.list(), []);
+      const pacientesArray = Array.isArray(pacientesData) ? pacientesData : [];
+      setPacientes(pacientesArray);
+
       // 2. Carregar Agendamentos da Semana (Filtro no Backend)
       // Usando filtro por data para trazer apenas o necessário
       const agendamentosSemanaData = await safeApiCall(() => Agendamento.filter({
