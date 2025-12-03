@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Agendamento, Medico, Paciente, Procedimento, Exame, Notification, CategoriaPreco, TabelaPreco } from "@/entities/all";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarIcon, Plus, List, Grid3x3, Printer, Clock, Stethoscope, User } from "lucide-react"; // Import Stethoscope and User icons
+import { Calendar as CalendarIcon, Plus, List, Grid3x3, Printer, Clock, Stethoscope, User, RefreshCw } from "lucide-react"; // Import Stethoscope and User icons
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -43,8 +43,32 @@ export default function Agendamentos() {
     tipo: "todos"
   });
   const [filtroMedicoCalendario, setFiltroMedicoCalendario] = useState("todos"); // New state for calendar doctor filter
+  const [corrigindo, setCorrigindo] = useState(false); // Novo estado para correção
 
   const { toast } = useToast(); // Initialize useToast
+
+  const handleCorrigirNomes = async () => {
+    setCorrigindo(true);
+    try {
+        toast({ title: "Sincronizando...", description: "Buscando e corrigindo nomes faltantes..." });
+        const res = await base44.functions.invoke('fixAppointmentPatientNames', {});
+        if (res.data?.success) {
+            toast({ 
+                title: "Sucesso", 
+                description: res.data.message || "Nomes sincronizados com sucesso!",
+                className: "bg-green-50 border-green-200" 
+            });
+            await carregarDados();
+        } else {
+            toast({ title: "Aviso", description: "Não foi possível completar a sincronização.", variant: "destructive" });
+        }
+    } catch (error) {
+        console.error(error);
+        toast({ title: "Erro", description: "Falha ao chamar função de correção.", variant: "destructive" });
+    } finally {
+        setCorrigindo(false);
+    }
+  };
 
   const carregarDados = useCallback(async () => {
     setLoading(true);
@@ -504,6 +528,16 @@ export default function Agendamentos() {
             </div>
             
             <div className="flex items-center gap-3">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleCorrigirNomes} 
+                disabled={corrigindo}
+                className="gap-2 text-gray-600"
+              >
+                <RefreshCw className={`w-4 h-4 ${corrigindo ? 'animate-spin' : ''}`} />
+                Corrigir Nomes
+              </Button>
               <div className="flex bg-gray-100 rounded-lg p-1">
                 <Button
                   variant={visualizacao === "lista" ? "default" : "ghost"}
