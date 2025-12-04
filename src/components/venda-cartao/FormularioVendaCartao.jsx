@@ -88,13 +88,13 @@ export default function FormularioVendaCartao({ venda, onClose, onSave }) { // N
       }
     },
     dependentes: [],
-    quantidade_cartoes: 1, // Default 1 for the titular
-    valor_cartoes: CUSTO_CARTAO_FISICO, // Default cost for 1 card
+    quantidade_cartoes: 0, // Começa com 0 (titular não paga)
+    valor_cartoes: 0,
     valor_plano: 0, // Base value of the selected plan
-    valor_total: CUSTO_CARTAO_FISICO, // Initial total with 1 card
+    valor_total: 0, // Initial total
     forma_pagamento: 'Dinheiro',
     numero_parcelas: 1,
-    valor_parcela: CUSTO_CARTAO_FISICO, // Initial parcel value for 1 card
+    valor_parcela: 0, // Initial parcel value
     observacoes: '',
     bandeira_cartao: ''
   });
@@ -124,7 +124,8 @@ export default function FormularioVendaCartao({ venda, onClose, onSave }) { // N
     // Se mudou o tipo de plano, atualizar valor automaticamente
     if (field === 'tipo_plano') {
       const valorPlanoBase = VALORES_PLANOS[value] || 0;
-      const quantidadeCartoes = 1 + formData.dependentes.length; // Titular + current dependents
+      // Se mudar o plano, assume 0 para o titular e 1 para cada dependente existente
+      const quantidadeCartoes = formData.dependentes.length; 
       const custoCartoes = quantidadeCartoes * CUSTO_CARTAO_FISICO;
       const custoBeneficios = calcularCustoBeneficios(formData.titular, formData.dependentes);
       const valorTotalCalculado = valorPlanoBase + custoCartoes + custoBeneficios;
@@ -237,7 +238,8 @@ export default function FormularioVendaCartao({ venda, onClose, onSave }) { // N
     }
     
     const novosDependentes = [...formData.dependentes, { nome: '', cpf: '', data_nascimento: '', telefone: '', possui_beneficio: false }];
-    const novaQuantidadeCartoes = 1 + novosDependentes.length; // Titular + novos dependentes
+    // Adiciona 1 cartão para o novo dependente (respeitando a contagem atual que pode ser 0 para titular)
+    const novaQuantidadeCartoes = formData.quantidade_cartoes + 1;
     const novoValorTotal = calcularValorTotal(formData.valor_plano, novaQuantidadeCartoes, formData.titular, novosDependentes);
     const parcelas = formData.numero_parcelas > 0 ? formData.numero_parcelas : 1;
     
@@ -253,7 +255,8 @@ export default function FormularioVendaCartao({ venda, onClose, onSave }) { // N
 
   const handleRemoverDependente = (index) => {
     const novosDependentes = formData.dependentes.filter((_, i) => i !== index);
-    const novaQuantidadeCartoes = 1 + novosDependentes.length; // Titular + novos dependentes
+    // Remove 1 cartão, mas não deixa ficar negativo
+    const novaQuantidadeCartoes = Math.max(0, formData.quantidade_cartoes - 1); 
     const novoValorTotal = calcularValorTotal(formData.valor_plano, novaQuantidadeCartoes, formData.titular, novosDependentes);
     const parcelas = formData.numero_parcelas > 0 ? formData.numero_parcelas : 1;
     
@@ -543,7 +546,7 @@ export default function FormularioVendaCartao({ venda, onClose, onSave }) { // N
                       <Input
                         id="quantidade_cartoes"
                         type="number"
-                        min="1"
+                        min="0"
                         max={limiteMaximoCartoes}
                         value={formData.quantidade_cartoes}
                         onChange={(e) => handleChange('quantidade_cartoes', e.target.value)}
