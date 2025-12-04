@@ -171,9 +171,26 @@ export default function FormularioOS({
       // Categorias isentas de imposto: Particular e Cartão Mais Vida
       const isentoImposto = isParticular || isCartaoMaisVida;
 
-      const percentual = isParticular
-        ? (medico.percentual_repasse || 0)
-        : (medico.percentual_repasse_convenio || medico.percentual_repasse || 0);
+      let percentual = 0;
+
+      // Lógica diferenciada para Procedimentos vs Consultas
+      if (agendamento.tipo_servico === 'Procedimento' && procedimento) {
+        // 1. Prioridade: Definição no próprio Procedimento
+        if (procedimento.percentual_repasse_medico > 0) {
+          percentual = procedimento.percentual_repasse_medico;
+        } 
+        // 2. Fallback: Configuração do Médico para Procedimentos
+        else {
+          percentual = isParticular
+            ? (medico.percentual_repasse_procedimento || medico.percentual_repasse || 0)
+            : (medico.percentual_repasse_procedimento_convenio || medico.percentual_repasse_convenio || 0);
+        }
+      } else {
+        // Lógica para Consultas (padrão)
+        percentual = isParticular
+          ? (medico.percentual_repasse || 0)
+          : (medico.percentual_repasse_convenio || medico.percentual_repasse || 0);
+      }
 
       if (percentual > 0) {
         const bruto = valorTotal * (percentual / 100);
