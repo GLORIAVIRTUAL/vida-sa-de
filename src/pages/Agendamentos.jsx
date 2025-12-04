@@ -663,7 +663,7 @@ export default function Agendamentos() {
           {isFormOpen && (
             <FormularioAgendamento
               agendamento={selectedAgendamento}
-              agendamentosDoDia={Array.isArray(agendamentosPorPeriodo) ? agendamentosPorPeriodo : []}
+              todosAgendamentos={agendamentos}
               medicos={Array.isArray(medicos) ? medicos : []}
               pacientes={Array.isArray(pacientes) ? pacientes : []}
               procedimentos={Array.isArray(procedimentos) ? procedimentos : []}

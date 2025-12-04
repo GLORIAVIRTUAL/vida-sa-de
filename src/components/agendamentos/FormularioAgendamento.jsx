@@ -70,7 +70,7 @@ const uploadWithRetry = async (file, maxRetries = 3, delay = 2000) => {
   }
 };
 
-export default function FormularioAgendamento({ agendamento, agendamentosDoDia, medicos, pacientes: pacientesProps, procedimentos, exames, categorias, tabelaPrecos, onSave, onClose }) {
+export default function FormularioAgendamento({ agendamento, todosAgendamentos, medicos, pacientes: pacientesProps, procedimentos, exames, categorias, tabelaPrecos, onSave, onClose }) {
   const { toast } = useToast();
   const [formData, setFormData] = useState({
     id: null,
@@ -531,7 +531,7 @@ export default function FormularioAgendamento({ agendamento, agendamentosDoDia, 
         return;
       }
 
-      const agendamentosExistentes = agendamentosDoDia.filter(a => 
+      const agendamentosExistentes = (todosAgendamentos || []).filter(a => 
         a.medico_id === medicoId && 
         a.data_agendamento === data &&
         a.status !== 'Cancelado'
@@ -598,7 +598,7 @@ export default function FormularioAgendamento({ agendamento, agendamentosDoDia, 
     } finally {
       setLoadingHorarios(false);
     }
-  }, [medicos, agendamentosDoDia, agendamento, formData.tipo_servico]);
+  }, [medicos, todosAgendamentos, agendamento, formData.tipo_servico]);
 
   // Função para verificar se o médico atende em uma data específica
   const medicoAtendeNaData = useCallback((data) => {
@@ -668,7 +668,7 @@ export default function FormularioAgendamento({ agendamento, agendamentosDoDia, 
         return;
       }
 
-      const agendamentosExistentes = agendamentosDoDia.filter(a => 
+      const agendamentosExistentes = (todosAgendamentos || []).filter(a => 
         a.medico_id === medicoId && 
         a.data_agendamento === formData.data_agendamento &&
         a.status !== 'Cancelado'
@@ -703,7 +703,7 @@ export default function FormularioAgendamento({ agendamento, agendamentosDoDia, 
     } finally {
       setLoadingHorariosMultiplos(false);
     }
-  }, [medicos, agendamentosDoDia, formData.data_agendamento]);
+  }, [medicos, todosAgendamentos, formData.data_agendamento]);
 
   // Carregar horários quando selecionar médico em múltiplos serviços
   useEffect(() => {
@@ -758,7 +758,7 @@ export default function FormularioAgendamento({ agendamento, agendamentosDoDia, 
       }
 
       // Filter existing appointments that conflict with the selected time
-      const agendamentosConflitantes = agendamentosDoDia.filter(a =>
+      const agendamentosConflitantes = (todosAgendamentos || []).filter(a =>
         a.medico_id === formData.medico_id &&
         a.data_agendamento === formData.data_agendamento &&
         a.horario === formData.horario &&
@@ -796,7 +796,7 @@ export default function FormularioAgendamento({ agendamento, agendamentosDoDia, 
       setHorarioDisponivel(false); 
       setMensagemDisponibilidade("Erro ao verificar disponibilidade.");
     }
-  }, [formData.medico_id, formData.data_agendamento, formData.horario, formData.is_encaixe, formData.is_recorrente, medicos, agendamentosDoDia, agendamento, formData.tipo_servico]);
+  }, [formData.medico_id, formData.data_agendamento, formData.horario, formData.is_encaixe, formData.is_recorrente, medicos, todosAgendamentos, agendamento, formData.tipo_servico]);
 
   useEffect(() => {
     checkSelectedHorarioAvailability();
