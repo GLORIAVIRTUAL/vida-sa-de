@@ -39,11 +39,48 @@ Deno.serve(async (req) => {
       if (deveAvisar && consultaAindaValida) {
         // Buscar nomes para a mensagem
         let nomePaciente = agendamento.paciente_nome || 'Paciente';
-        let nomeMedico = 'N/A';
-        
-        if (agendamento.medico_id) {
-          const medico = await base44.entities.Medico.get(agendamento.medico_id);
-          if (medico) nomeMedico = medico.nome;
+        let detalheServico = '';
+        let nomeMedico = 'N/A'; // Usado para o log de dados
+
+        // Lógica detalhada de serviço
+        if (agendamento.tipo_servico === 'Procedimento' && agendamento.procedimento_id) {
+             try {
+                const proc = await base44.entities.Procedimento.get(agendamento.procedimento_id);
+                detalheServico = `o procedimento ${proc ? proc.nome : 'não identificado'}`;
+             } catch (e) {
+                detalheServico = 'o procedimento';
+             }
+        } else if (agendamento.tipo_servico === 'Exame') {
+             if (agendamento.exames_ids && agendamento.exames_ids.length > 1) {
+                 detalheServico = 'vários exames';
+             } else if (agendamento.exames_ids && agendamento.exames_ids.length === 1) {
+                 try {
+                    const exame = await base44.entities.Exame.get(agendamento.exames_ids[0]);
+                    detalheServico = `o exame ${exame ? exame.nome : 'não identificado'}`;
+                 } catch (e) {
+                    detalheServico = 'o exame';
+                 }
+             } else {
+                 detalheServico = 'exame';
+             }
+        } else if (agendamento.tipo_servico === 'Consulta' || agendamento.tipo_servico === 'Retorno') {
+             let especialidade = '';
+             if (agendamento.medico_id) {
+                try {
+                    const medico = await base44.entities.Medico.get(agendamento.medico_id);
+                    if (medico) {
+                        nomeMedico = medico.nome;
+                        especialidade = medico.especialidade;
+                    }
+                } catch (e) {
+                    console.error('Erro ao buscar medico', e);
+                }
+             }
+             detalheServico = `${agendamento.tipo_servico === 'Retorno' ? 'o retorno' : 'a consulta'} com Dr(a). ${nomeMedico} (${especialidade || 'Geral'})`;
+        } else if (agendamento.tipo_servico === 'Múltiplos Serviços') {
+             detalheServico = 'múltiplos serviços';
+        } else {
+             detalheServico = 'o atendimento';
         }
 
         // Formatar data para exibição amigável
@@ -51,7 +88,7 @@ Deno.serve(async (req) => {
         const [ano, mes, dia] = agendamento.data_agendamento.split('-');
         const dataFormatada = `${dia}/${mes}/${ano}`;
 
-        const mensagem = `Atenção! ${diasAntes === 0 ? 'É HOJE' : `Falta ${diasAntes} dia(s)`} para a consulta de ${nomePaciente} com Dr(a). ${nomeMedico} (${dataFormatada} às ${agendamento.horario}). Favor lembrar o paciente.`;
+        const mensagem = `Atenção! ${diasAntes === 0 ? 'É HOJE' : `Falta ${diasAntes} dia(s)`} para ${detalheServico} de ${nomePaciente} (${dataFormatada} às ${agendamento.horario}). Favor lembrar o paciente.`;
 
         // Criar Notificação
         await base44.entities.Notification.create({
