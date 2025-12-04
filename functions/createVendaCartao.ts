@@ -51,22 +51,43 @@ Deno.serve(async (req) => {
             bandeira_cartao
         } = body;
 
-        // Helper para limpar datas vazias
-        const cleanDate = (dateStr) => {
-            if (!dateStr || typeof dateStr !== 'string') return null;
-            if (dateStr.trim() === '') return null;
-            return dateStr;
+        // Helper para limpar datas vazias e objetos para o schema VendaCartao
+        const prepareTitularForVenda = (t) => {
+            const res = {
+                nome: t.nome,
+                cpf: t.cpf,
+                telefone: t.telefone || "",
+                endereco: t.endereco || {}
+            };
+            if (t.data_nascimento && typeof t.data_nascimento === 'string' && t.data_nascimento.trim() !== '') {
+                res.data_nascimento = t.data_nascimento;
+            }
+            return res;
         };
 
-        // Sanitizar dados do titular
-        if (titular) {
-            titular.data_nascimento = cleanDate(titular.data_nascimento);
-        }
+        const prepareDependenteForVenda = (d) => {
+            const res = {
+                nome: d.nome,
+                cpf: d.cpf
+            };
+            if (d.data_nascimento && typeof d.data_nascimento === 'string' && d.data_nascimento.trim() !== '') {
+                res.data_nascimento = d.data_nascimento;
+            }
+            return res;
+        };
 
-        // Sanitizar dados dos dependentes
+        // Preparar objetos limpos para salvar na Venda (sem campos extras como email/beneficio)
+        const titularVenda = prepareTitularForVenda(titular);
+        const dependentesVenda = (dependentes && Array.isArray(dependentes)) 
+            ? dependentes.map(prepareDependenteForVenda) 
+            : [];
+
+        // Para criação do PACIENTE, usamos o objeto original (que pode ter email, etc)
+        // mas limpamos a data se estiver vazia para evitar erro
+        if (titular.data_nascimento === '') delete titular.data_nascimento;
         if (dependentes && Array.isArray(dependentes)) {
             dependentes.forEach(d => {
-                d.data_nascimento = cleanDate(d.data_nascimento);
+                if (d.data_nascimento === '') delete d.data_nascimento;
             });
         }
 
@@ -140,8 +161,8 @@ Deno.serve(async (req) => {
         const novaVenda = await base44.asServiceRole.entities.VendaCartao.create({
             numero_venda: numeroVenda,
             tipo_plano,
-            titular,
-            dependentes,
+            titular: titularVenda,
+            dependentes: dependentesVenda,
             paciente_titular_id: pacienteTitular.id,
             pacientes_dependentes_ids: dependentesIds,
             quantidade_cartoes: body.quantidade_cartoes || 1,
