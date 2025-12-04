@@ -172,14 +172,15 @@ export default function FormularioOS({
       const isentoImposto = isParticular || isCartaoMaisVida;
 
       let percentual = 0;
+      let repasseFixo = 0;
 
       // Lógica diferenciada para Procedimentos vs Consultas
       if (agendamento.tipo_servico === 'Procedimento' && procedimento) {
-        // 1. Prioridade: Definição no próprio Procedimento
-        if (procedimento.percentual_repasse_medico > 0) {
-          percentual = procedimento.percentual_repasse_medico;
+        // 1. Prioridade: Definição no próprio Procedimento (Valor Fixo)
+        if (procedimento.valor_repasse_medico > 0) {
+          repasseFixo = procedimento.valor_repasse_medico;
         } 
-        // 2. Fallback: Configuração do Médico para Procedimentos
+        // 2. Fallback: Configuração do Médico para Procedimentos (Percentual)
         else {
           percentual = isParticular
             ? (medico.percentual_repasse_procedimento || medico.percentual_repasse || 0)
@@ -192,7 +193,12 @@ export default function FormularioOS({
           : (medico.percentual_repasse_convenio || medico.percentual_repasse || 0);
       }
 
-      if (percentual > 0) {
+      if (repasseFixo > 0) {
+        // Se for valor fixo, usamos diretamente (assumindo que já é o valor acordado)
+        // Mas mantemos a lógica de imposto se necessário, ou assumimos que o fixo é o valor BRUTO base
+        const bruto = repasseFixo;
+        repasseMedico = isentoImposto ? bruto : bruto * 0.90;
+      } else if (percentual > 0) {
         const bruto = valorTotal * (percentual / 100);
         // NÃO aplicar imposto de 10% para Particular e Cartão Mais Vida
         repasseMedico = isentoImposto ? bruto : bruto * 0.90;

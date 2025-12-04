@@ -22,7 +22,7 @@ export default function FormularioProcedimento({ procedimento, categorias, preco
     codigo: '',
     especialidade: '',
     duracao_minutos: '',
-    percentual_repasse_medico: '',
+    valor_repasse_medico: '',
     descricao: '',
     status: 'Ativo'
   });
@@ -36,7 +36,7 @@ export default function FormularioProcedimento({ procedimento, categorias, preco
         codigo: procedimento.codigo || '',
         especialidade: procedimento.especialidade || '',
         duracao_minutos: procedimento.duracao_minutos !== null ? String(procedimento.duracao_minutos) : '',
-        percentual_repasse_medico: procedimento.percentual_repasse_medico !== null ? String(procedimento.percentual_repasse_medico) : '',
+        valor_repasse_medico: procedimento.valor_repasse_medico !== null ? String(procedimento.valor_repasse_medico) : '',
         descricao: procedimento.descricao || '',
         status: procedimento.status || 'Ativo'
       });
@@ -65,7 +65,7 @@ export default function FormularioProcedimento({ procedimento, categorias, preco
       const dataToSave = {
         ...formData,
         duracao_minutos: formData.duracao_minutos ? Number(formData.duracao_minutos) : null,
-        percentual_repasse_medico: formData.percentual_repasse_medico ? Number(formData.percentual_repasse_medico) : null,
+        valor_repasse_medico: formData.valor_repasse_medico ? Number(formData.valor_repasse_medico) : null,
       };
 
       // 1. Salvar ou atualizar o procedimento principal
@@ -150,8 +150,8 @@ export default function FormularioProcedimento({ procedimento, categorias, preco
                 <Input type="number" id="duracao_minutos" name="duracao_minutos" value={formData.duracao_minutos} onChange={handleChange} />
               </div>
               <div>
-                <Label htmlFor="percentual_repasse_medico">Repasse Médico (%)</Label>
-                <Input type="number" id="percentual_repasse_medico" name="percentual_repasse_medico" value={formData.percentual_repasse_medico} onChange={handleChange} />
+                <Label htmlFor="valor_repasse_medico">Repasse Médico (R$)</Label>
+                <Input type="number" id="valor_repasse_medico" name="valor_repasse_medico" value={formData.valor_repasse_medico} onChange={handleChange} placeholder="0.00" />
               </div>
             </div>
              <div>
