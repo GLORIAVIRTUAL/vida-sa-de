@@ -161,10 +161,13 @@ Deno.serve(async (req) => {
         const numeroVenda = `CMV-${Date.now()}`;
         const dataVenda = body.data_venda || new Date().toISOString().split('T')[0];
         let validadeCartao = body.validade_cartao;
+        
+        // Calcular validade automaticamente se não fornecida (1 ano após data da venda)
         if (!validadeCartao) {
-            const data = new Date();
-            data.setFullYear(data.getFullYear() + 1);
-            validadeCartao = data.toISOString().split('T')[0];
+            // Usar a data da venda como base para evitar inconsistências
+            const dataBase = dataVenda ? new Date(dataVenda) : new Date();
+            dataBase.setFullYear(dataBase.getFullYear() + 1);
+            validadeCartao = dataBase.toISOString().split('T')[0];
         }
 
         const isPagamentoIntegrado = forma_pagamento.includes('Cartão') && bandeira_cartao;
@@ -187,7 +190,7 @@ Deno.serve(async (req) => {
             numero_parcelas: body.numero_parcelas || 1,
             valor_parcela: body.valor_parcela || 0,
             data_venda: dataVenda,
-            validade_cartao,
+            validade_cartao: validadeCartao, // Corrigido: Usando a variável correta
             status: statusInicial,
             observacoes: observacoes || '',
             bandeira_cartao: bandeira_cartao || ''
