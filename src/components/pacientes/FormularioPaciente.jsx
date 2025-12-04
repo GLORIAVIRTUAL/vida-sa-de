@@ -130,16 +130,16 @@ export default function FormularioPaciente({ paciente, onSalvar, onCancelar }) {
       <head>
         <title>Ficha do Paciente - ${formData.nome}</title>
         <style>
-          body { font-family: Arial, sans-serif; padding: 20px; line-height: 1.5; color: #333; }
-          .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px; }
-          .logo { font-size: 24px; font-weight: bold; color: #0d9488; }
-          .title { font-size: 18px; margin-top: 10px; font-weight: bold; }
-          .section { margin-bottom: 15px; border: 1px solid #ddd; padding: 15px; border-radius: 8px; }
-          .section-title { font-weight: bold; font-size: 14px; text-transform: uppercase; color: #666; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 10px; }
-          .row { display: flex; margin-bottom: 8px; }
-          .label { font-weight: bold; width: 160px; color: #444; }
+          body { font-family: Arial, sans-serif; padding: 10px; line-height: 1.2; color: #333; font-size: 11px; }
+          .header { text-align: center; margin-bottom: 10px; border-bottom: 2px solid #333; padding-bottom: 5px; }
+          .logo { font-size: 16px; font-weight: bold; color: #0d9488; }
+          .title { font-size: 13px; margin-top: 5px; font-weight: bold; }
+          .section { margin-bottom: 8px; border: 1px solid #ddd; padding: 8px; border-radius: 8px; }
+          .section-title { font-weight: bold; font-size: 11px; text-transform: uppercase; color: #666; border-bottom: 1px solid #eee; padding-bottom: 3px; margin-bottom: 5px; }
+          .row { display: flex; margin-bottom: 3px; }
+          .label { font-weight: bold; width: 130px; color: #444; }
           .value { flex: 1; }
-          .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #666; border-top: 1px solid #eee; padding-top: 10px; }
+          .footer { margin-top: 15px; text-align: center; font-size: 9px; color: #666; border-top: 1px solid #eee; padding-top: 5px; }
           @media print {
             body { padding: 0; }
             .section { break-inside: avoid; }
