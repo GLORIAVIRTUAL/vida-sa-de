@@ -2084,15 +2084,22 @@ export default function FormularioAgendamento({ agendamento, agendamentosDoDia, 
                 )}
               </div>
 
-              {(formData.tipo_servico === 'Retorno' || formData.tipo_servico === 'Consulta') && (
+              {(formData.tipo_servico === 'Retorno' || formData.tipo_servico === 'Consulta' || formData.tipo_servico === 'Procedimento') && (
                 <div>
-                  <Label htmlFor="medico_id">Médico *</Label>
+                  <Label htmlFor="medico_id">
+                    Médico {formData.tipo_servico === 'Procedimento' ? '(Opcional)' : '*'}
+                  </Label>
                   <Select name="medico_id" value={formData.medico_id} onValueChange={(value) => handleChange('medico_id', value)}>
                     <SelectTrigger id="medico_id"><SelectValue placeholder="Selecione o médico" /></SelectTrigger>
                     <SelectContent>
                       {medicos.map(m => <SelectItem key={m.id} value={m.id}>Dr(a). {m.nome} - {m.especialidade}</SelectItem>)}
                     </SelectContent>
                   </Select>
+                  {formData.tipo_servico === 'Procedimento' && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Selecione um médico se desejar vincular o procedimento para cálculo de repasse.
+                    </p>
+                  )}
                 </div>
               )}
 
