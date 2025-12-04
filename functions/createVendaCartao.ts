@@ -51,6 +51,25 @@ Deno.serve(async (req) => {
             bandeira_cartao
         } = body;
 
+        // Helper para limpar datas vazias
+        const cleanDate = (dateStr) => {
+            if (!dateStr || typeof dateStr !== 'string') return null;
+            if (dateStr.trim() === '') return null;
+            return dateStr;
+        };
+
+        // Sanitizar dados do titular
+        if (titular) {
+            titular.data_nascimento = cleanDate(titular.data_nascimento);
+        }
+
+        // Sanitizar dados dos dependentes
+        if (dependentes && Array.isArray(dependentes)) {
+            dependentes.forEach(d => {
+                d.data_nascimento = cleanDate(d.data_nascimento);
+            });
+        }
+
         // Validação de campos obrigatórios
         if (!tipo_plano || !titular || !titular.nome || !titular.cpf || !forma_pagamento) {
             console.error('[VendaCartao] Missing required fields in body');
