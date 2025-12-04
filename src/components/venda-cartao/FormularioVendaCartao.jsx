@@ -353,13 +353,13 @@ export default function FormularioVendaCartao({ venda, onClose, onSave }) { // N
     e.preventDefault();
     
     // Validações
-    if (!formData.tipo_plano || !formData.titular.nome || !formData.titular.cpf || !formData.valor_total) {
-      toast({
-        title: "Campos obrigatórios",
-        description: "Preencha todos os campos obrigatórios",
-        variant: "destructive"
-      });
-      return;
+    if (!formData.tipo_plano || !formData.titular.nome || !formData.titular.cpf || !formData.titular.telefone || !formData.valor_total) {
+    toast({
+      title: "Campos obrigatórios",
+      description: "Preencha todos os campos obrigatórios (incluindo Telefone)",
+      variant: "destructive"
+    });
+    return;
     }
 
     setSalvando(true);
@@ -439,8 +439,12 @@ export default function FormularioVendaCartao({ venda, onClose, onSave }) { // N
 
       const response = await base44.functions.invoke('createVendaCartao', payload);
       
+      // O SDK retorna a resposta da função dentro de 'data'. 
+      // Se a função retornou status 400/500, o axios/fetch do SDK pode ter jogado erro, OU retornado o objeto de erro.
+      // Vamos verificar o sucesso.
       if (!response.data || !response.data.success) {
-        throw new Error(response.data?.error || 'Erro ao processar venda no servidor');
+        console.error('❌ Erro retornado pelo backend:', response.data);
+        throw new Error(response.data?.error || response.data?.message || 'Erro desconhecido ao processar venda.');
       }
 
       console.log('✅ Venda processada:', response.data);
@@ -464,11 +468,15 @@ export default function FormularioVendaCartao({ venda, onClose, onSave }) { // N
       onClose();
 
     } catch (error) {
-      console.error('❌ Erro:', error);
+      console.error('❌ Erro no processamento:', error);
+      // Tentar extrair mensagem de erro mais detalhada
+      const errorMsg = error.response?.data?.error || error.message || "Erro desconhecido";
+      
       toast({
         title: "Erro ao processar venda",
-        description: error.message,
-        variant: "destructive"
+        description: errorMsg,
+        variant: "destructive",
+        duration: 8000
       });
     } finally {
       setSalvando(false);
@@ -750,7 +758,7 @@ export default function FormularioVendaCartao({ venda, onClose, onSave }) { // N
                 </div>
 
                 <div>
-                  <Label htmlFor="titular_telefone">Telefone</Label>
+                  <Label htmlFor="titular_telefone">Telefone *</Label>
                   <Input
                     id="titular_telefone"
                     value={formData.titular.telefone}

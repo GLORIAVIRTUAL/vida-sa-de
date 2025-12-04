@@ -92,9 +92,9 @@ Deno.serve(async (req) => {
         }
 
         // Validação de campos obrigatórios
-        if (!tipo_plano || !titular || !titular.nome || !titular.cpf || !forma_pagamento) {
+        if (!tipo_plano || !titular || !titular.nome || !titular.cpf || !titular.telefone || !forma_pagamento) {
             console.error('[VendaCartao] Missing required fields in body');
-            return Response.json({ error: 'Campos obrigatórios faltando.' }, { status: 400 });
+            return Response.json({ error: 'Campos obrigatórios faltando (verifique se o telefone foi preenchido).' }, { status: 400 });
         }
 
         // 4. Buscar Categoria
@@ -108,7 +108,7 @@ Deno.serve(async (req) => {
         console.log('[VendaCartao] Creating Patients...');
         let pacienteTitular;
         try {
-            pacienteTitular = await base44.asServiceRole.entities.Paciente.create({
+            const dadosPaciente = {
                 nome: titular.nome,
                 cpf: titular.cpf,
                 data_nascimento: titular.data_nascimento,
@@ -116,16 +116,30 @@ Deno.serve(async (req) => {
                 endereco: titular.endereco || {},
                 convenio: nomeConvenio,
                 observacoes: `Cliente do Cartão Mais Vida - ${tipo_plano}`
-            });
+            };
+
+            // Adicionar email se existir e não for vazio
+            if (titular.email && typeof titular.email === 'string' && titular.email.trim() !== '') {
+                dadosPaciente.email = titular.email.trim();
+            }
+
+            pacienteTitular = await base44.asServiceRole.entities.Paciente.create(dadosPaciente);
         } catch (err) {
             console.error('[VendaCartao] Error creating titular:', err);
-            throw new Error(`Erro ao criar paciente titular: ${err.message}`);
+            // Retornar erro específico para o frontend (será pego pelo catch global e retornado como JSON)
+            throw new Error(`Erro ao cadastrar o paciente titular no sistema: ${err.message}`);
         }
 
         const dependentesIds = [];
         if (dependentes && dependentes.length > 0) {
             for (const dep of dependentes) {
                 try {
+                    // Validar se tem dados mínimos para criar o paciente dependente
+                    if (!dep.nome || !dep.cpf) {
+                         console.warn('[VendaCartao] Skipping dependent without nome or cpf');
+                         continue;
+                    }
+                    
                     const pacienteDep = await base44.asServiceRole.entities.Paciente.create({
                         nome: dep.nome,
                         cpf: dep.cpf,
@@ -137,8 +151,8 @@ Deno.serve(async (req) => {
                     });
                     dependentesIds.push(pacienteDep.id);
                 } catch (err) {
-                    console.error('[VendaCartao] Error creating dependente:', err);
-                    // Continue or fail? Let's continue but log
+                    console.error(`[VendaCartao] Error creating dependente ${dep.nome}:`, err);
+                    // Não vamos falhar a venda inteira se um dependente falhar, mas logamos
                 }
             }
         }
