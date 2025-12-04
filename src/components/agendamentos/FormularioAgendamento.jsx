@@ -90,7 +90,9 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
     valor_total: '0',
     forma_pagamento: 'Dinheiro',
     status: 'Agendado',
-    observacoes: ''
+    observacoes: '',
+    lembrete_equipe: false,
+    lembrete_dias_antes: 1
   });
 
   // NOVO: Estado para controlar modo de múltiplos serviços
@@ -380,7 +382,9 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
           valor_total: agendamento.valor_total?.toString() || '0',
           forma_pagamento: agendamento.forma_pagamento || 'Dinheiro',
           status: agendamento.status || 'Agendado',
-          observacoes: agendamento.observacoes || ''
+          observacoes: agendamento.observacoes || '',
+          lembrete_equipe: agendamento.lembrete_equipe || false,
+          lembrete_dias_antes: agendamento.lembrete_dias_antes !== undefined ? agendamento.lembrete_dias_antes : 1
         };
         
         // Ativar modo múltiplos serviços se já tiver itens
@@ -427,6 +431,8 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
         initialFormData.is_recorrente = false;
         initialFormData.recorrencia_tipo = '';
         initialFormData.recorrencia_data_fim = '';
+        initialFormData.lembrete_equipe = false;
+        initialFormData.lembrete_dias_antes = 1;
         setPacientesEncontrados([]);
         setBuscaPaciente('');
         setModoMultiplosServicos(false);
@@ -1061,7 +1067,9 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
         status: formData.status || 'Agendado',
         forma_pagamento: formData.forma_pagamento || 'Dinheiro',
         is_encaixe: formData.is_encaixe || false,
-        is_recorrente: formData.is_recorrente || false
+        is_recorrente: formData.is_recorrente || false,
+        lembrete_equipe: formData.lembrete_equipe || false,
+        lembrete_dias_antes: parseInt(formData.lembrete_dias_antes) || 0
       };
 
       // Adicionar campos opcionais
@@ -2819,6 +2827,40 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
             <div>
               <Label htmlFor="observacoes">Observações</Label>
               <Textarea id="observacoes" name="observacoes" value={formData.observacoes} onChange={(e) => handleChange('observacoes', e.target.value)} placeholder="Alergias, pedidos especiais, etc." />
+            </div>
+
+            <div className="flex items-center space-x-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="lembrete_equipe"
+                  checked={formData.lembrete_equipe}
+                  onCheckedChange={(checked) => handleChange('lembrete_equipe', checked)}
+                />
+                <Label htmlFor="lembrete_equipe" className="cursor-pointer font-medium text-yellow-900">
+                  Lembrar equipe
+                </Label>
+              </div>
+              
+              {formData.lembrete_equipe && (
+                <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2">
+                  <Label htmlFor="lembrete_dias_antes" className="text-sm whitespace-nowrap">Avisar:</Label>
+                  <Select 
+                    value={String(formData.lembrete_dias_antes)} 
+                    onValueChange={(v) => handleChange('lembrete_dias_antes', parseInt(v))}
+                  >
+                    <SelectTrigger id="lembrete_dias_antes" className="w-[180px] h-8 bg-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0">No dia do agendamento</SelectItem>
+                      <SelectItem value="1">1 dia antes</SelectItem>
+                      <SelectItem value="2">2 dias antes</SelectItem>
+                      <SelectItem value="3">3 dias antes</SelectItem>
+                      <SelectItem value="7">1 semana antes</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
           </form>
           <DialogFooter className="mt-4 pt-4 border-t">

@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useToast } from "@/components/ui/use-toast";
-import { Calendar, Bell } from "lucide-react";
+import { Calendar, Bell, AlertTriangle } from "lucide-react";
 import { Notification, User } from "@/entities/all";
+import { base44 } from "@/api/base44Client";
 
 export default function NotificacaoAgendamento() {
   const { toast } = useToast();
@@ -85,42 +86,67 @@ export default function NotificacaoAgendamento() {
 
     const verificarNotificacoes = async () => {
       try {
-        // Buscar notificações não lidas do tipo novo_agendamento
+        // 1. Acionar verificação de lembretes no backend (não bloqueante)
+        // Chama a função para gerar notificações de lembrete se houver
+        base44.functions.invoke('checkTeamReminders').catch(console.error);
+
+        // 2. Buscar notificações não lidas (qualquer tipo, mas vamos focar nos tipos conhecidos)
+        // Vamos buscar as últimas não lidas
         const notificacoes = await Notification.filter(
-          { type: 'novo_agendamento', is_read: false },
+          { is_read: false },
           '-created_date',
-          1
+          5 // Buscar um pouco mais para garantir
         );
 
         if (notificacoes && notificacoes.length > 0) {
+          // Pegar a mais recente para exibir
           const novaNotificacao = notificacoes[0];
           
           // Verificar se é uma notificação diferente da última processada
           if (novaNotificacao.id !== ultimaNotificacaoId) {
-            console.log('🎉 Nova notificação de agendamento detectada!', novaNotificacao);
+            console.log('🔔 Nova notificação detectada!', novaNotificacao);
             
             setUltimaNotificacaoId(novaNotificacao.id);
             
             // Reproduzir som
             reproduzirSom();
             
-            // Mostrar toast visual
-            toast({
-              title: (
-                <div className="flex items-center gap-2">
-                  <Bell className="w-5 h-5 text-blue-500 animate-bounce" />
-                  <span className="font-bold text-lg">🎉 Novo Agendamento!</span>
-                </div>
-              ),
-              description: (
-                <div className="flex items-center gap-2 mt-2">
-                  <Calendar className="w-4 h-4" />
-                  <span className="text-sm">{novaNotificacao.message}</span>
-                </div>
-              ),
-              duration: 10000,
-              className: "border-blue-500 bg-blue-50 shadow-2xl border-2",
-            });
+            if (novaNotificacao.type === 'lembrete_equipe') {
+              // Toast específico para lembrete
+              toast({
+                title: (
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="w-5 h-5 text-amber-600 animate-pulse" />
+                    <span className="font-bold text-lg text-amber-800">Lembrete da Equipe</span>
+                  </div>
+                ),
+                description: (
+                  <div className="flex flex-col gap-1 mt-2">
+                    <span className="text-sm font-medium text-gray-800">{novaNotificacao.message}</span>
+                  </div>
+                ),
+                duration: 15000, // Mais tempo para ler
+                className: "border-amber-500 bg-amber-50 shadow-2xl border-2",
+              });
+            } else {
+              // Toast padrão (novo agendamento)
+              toast({
+                title: (
+                  <div className="flex items-center gap-2">
+                    <Bell className="w-5 h-5 text-blue-500 animate-bounce" />
+                    <span className="font-bold text-lg">🎉 Novo Agendamento!</span>
+                  </div>
+                ),
+                description: (
+                  <div className="flex items-center gap-2 mt-2">
+                    <Calendar className="w-4 h-4" />
+                    <span className="text-sm">{novaNotificacao.message}</span>
+                  </div>
+                ),
+                duration: 10000,
+                className: "border-blue-500 bg-blue-50 shadow-2xl border-2",
+              });
+            }
 
             // Marcar como lida
             await Notification.update(novaNotificacao.id, { is_read: true });
