@@ -17,6 +17,7 @@ import FormularioPaciente from '../pacientes/FormularioPaciente';
 
 const statusColors = {
   "Agendado": "bg-blue-100 text-blue-800 border-blue-200",
+  "Confirmado": "bg-emerald-600 text-white border-emerald-700",
   "Pago": "bg-teal-100 text-teal-800 border-teal-200",
   "Em Atendimento": "bg-yellow-100 text-yellow-800 border-yellow-200",
   "Finalizado": "bg-emerald-100 text-emerald-800 border-emerald-200",
