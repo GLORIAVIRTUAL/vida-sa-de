@@ -70,6 +70,96 @@ Deno.serve(async (req) => {
       });
     }
     
+    // Se não passou o parâmetro confirmar=sim, mostrar página de confirmação
+    if (confirmar !== 'sim') {
+      return new Response(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <title>Confirmar Presença</title>
+          <style>
+            body { 
+              font-family: Arial, sans-serif; 
+              text-align: center; 
+              padding: 20px; 
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+              min-height: 100vh;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            }
+            .container { 
+              background: white; 
+              padding: 40px; 
+              border-radius: 15px; 
+              max-width: 400px; 
+              margin: 0 auto; 
+              box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            }
+            .icon { font-size: 64px; margin-bottom: 20px; }
+            h2 { color: #333; margin: 20px 0; font-size: 24px; }
+            .info { 
+              background: #f8f9fa; 
+              padding: 20px; 
+              border-radius: 10px; 
+              margin: 25px 0;
+              text-align: left;
+            }
+            .info p { 
+              margin: 12px 0; 
+              color: #333;
+              font-size: 16px;
+            }
+            .btn {
+              background: #28a745;
+              color: white;
+              border: none;
+              padding: 15px 40px;
+              font-size: 18px;
+              font-weight: bold;
+              border-radius: 8px;
+              cursor: pointer;
+              width: 100%;
+              margin-top: 20px;
+              transition: background 0.3s;
+            }
+            .btn:hover {
+              background: #218838;
+            }
+            .status-badge {
+              display: inline-block;
+              padding: 5px 12px;
+              border-radius: 20px;
+              font-size: 14px;
+              font-weight: bold;
+              ${agendamento.status === 'Confirmado' ? 'background: #d4edda; color: #155724;' : 'background: #fff3cd; color: #856404;'}
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="icon">📅</div>
+            <h2>Confirmar sua Presença</h2>
+            <div class="info">
+              <p><strong>📋 Paciente:</strong><br>${agendamento.paciente_nome}</p>
+              <p><strong>📅 Data:</strong><br>${new Date(agendamento.data_agendamento + 'T00:00:00').toLocaleDateString('pt-BR', { dateStyle: 'long' })}</p>
+              <p><strong>🕐 Horário:</strong><br>${agendamento.horario}</p>
+              <p><strong>Status:</strong><br><span class="status-badge">${agendamento.status}</span></p>
+            </div>
+            ${agendamento.status === 'Confirmado' 
+              ? '<p style="color: #28a745; font-weight: bold;">✅ Já confirmado anteriormente</p>'
+              : '<a href="?codigo=${codigo}&confirmar=sim"><button class="btn">✅ Confirmar Presença</button></a>'
+            }
+          </div>
+        </body>
+        </html>
+      `, {
+        headers: { 'Content-Type': 'text/html; charset=utf-8' }
+      });
+    }
+    
     // Verificar se já confirmado
     if (agendamento.status === 'Confirmado') {
       return new Response(`
