@@ -16,15 +16,15 @@ import { useToast } from "@/components/ui/use-toast"; // Adicionado import para 
 const modelosMensagens = {
   lembrete_consulta: {
     nome: 'Lembrete de Consulta',
-    template: 'Olá [PACIENTE]! Lembramos da sua consulta com [MEDICO] ([ESPECIALIDADE]) no dia [DATA] às [HORARIO]. Para CONFIRMAR sua presença, envie o código: [CODIGO]. Centro Vida Saúde agradece!'
+    template: '🏥 *CENTRO VIDA SAÚDE*\n\n📅 Lembrete de Consulta\n\nOlá [PACIENTE]! Você tem consulta marcada com [MEDICO] ([ESPECIALIDADE]):\n\n📆 Data: [DATA]\n🕐 Horário: [HORARIO]\n\n✅ *Clique aqui para CONFIRMAR sua presença:*\n[LINK_CONFIRMACAO]\n\nPor favor, chegue com 10 minutos de antecedência.'
   },
   confirmacao_agendamento: {
     nome: 'Confirmação de Agendamento',
-    template: 'Olá [PACIENTE], seu agendamento com [MEDICO] ([ESPECIALIDADE]) para o dia [DATA] às [HORARIO] foi confirmado com sucesso. Centro Vida Saúde agradece!'
+    template: '✅ *CONSULTA CONFIRMADA*\n\n🏥 CENTRO VIDA SAÚDE\n\nOlá [PACIENTE], seu agendamento com [MEDICO] ([ESPECIALIDADE]) foi confirmado!\n\n📆 Data: [DATA]\n🕐 Horário: [HORARIO]\n\nAguardamos você! 😊'
   },
   aviso_cancelamento: {
     nome: 'Aviso de Cancelamento',
-    template: 'Olá [PACIENTE], informamos que seu agendamento com [MEDICO] para o dia [DATA] às [HORARIO] foi cancelado. Para reagendar, entre em contato. Agradecemos a compreensão.'
+    template: '❌ *CONSULTA CANCELADA*\n\n🏥 CENTRO VIDA SAÚDE\n\nOlá [PACIENTE], informamos que seu agendamento com [MEDICO] para o dia [DATA] às [HORARIO] foi cancelado.\n\nPara reagendar, entre em contato conosco.\n\nAgradecemos a compreensão.'
   }
 };
 
@@ -57,13 +57,16 @@ export default function EnviarNotificacao({
       
       const nomeMedicoFormatado = medico.nome.startsWith('Dr') ? medico.nome : `Dr(a). ${medico.nome}`;
 
+      const linkConfirmacao = `https://vidasaude.base44.com/functions/confirmAppointmentLink?codigo=${agendamento.id}`;
+      
       const mensagemPersonalizada = template
         .replace('[PACIENTE]', paciente.nome.split(' ')[0]) // Primeiro nome
         .replace('[MEDICO]', nomeMedicoFormatado) // CORREÇÃO: Nome do médico formatado
         .replace('[DATA]', dataFormatada)
         .replace('[HORARIO]', agendamento.horario)
         .replace('[ESPECIALIDADE]', medico.especialidade)
-        .replace('[CODIGO]', agendamento.id); // Código de confirmação é o ID do agendamento
+        .replace('[CODIGO]', agendamento.id) // Código de confirmação é o ID do agendamento
+        .replace('[LINK_CONFIRMACAO]', linkConfirmacao);
 
       setMensagem(mensagemPersonalizada);
     }
