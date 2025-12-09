@@ -7,6 +7,7 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const url = new URL(req.url);
     const codigo = url.searchParams.get('codigo');
+    const confirmar = url.searchParams.get('confirmar');
     
     if (!codigo) {
       return new Response(`
