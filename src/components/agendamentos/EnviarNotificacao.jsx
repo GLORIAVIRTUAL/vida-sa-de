@@ -57,7 +57,7 @@ export default function EnviarNotificacao({
       
       const nomeMedicoFormatado = medico.nome.startsWith('Dr') ? medico.nome : `Dr(a). ${medico.nome}`;
 
-      const linkConfirmacao = `https://vidasaude.base44.com/functions/confirmAppointmentLink?codigo=${agendamento.id}`;
+      const linkConfirmacao = `https://clinica-plus-7629e61a.base44.app/functions/confirmAppointmentLink?codigo=${agendamento.id}`;
       
       const mensagemPersonalizada = template
         .replace('[PACIENTE]', paciente.nome.split(' ')[0]) // Primeiro nome
