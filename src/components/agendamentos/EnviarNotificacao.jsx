@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -17,7 +16,7 @@ import { useToast } from "@/components/ui/use-toast"; // Adicionado import para 
 const modelosMensagens = {
   lembrete_consulta: {
     nome: 'Lembrete de Consulta',
-    template: 'Olá [PACIENTE]! Lembramos da sua consulta com [MEDICO] ([ESPECIALIDADE]) no dia [DATA] às [HORARIO]. Confirma sua presença? Responda SIM ou NÃO. Centro Vida Saúde agradece!'
+    template: 'Olá [PACIENTE]! Lembramos da sua consulta com [MEDICO] ([ESPECIALIDADE]) no dia [DATA] às [HORARIO]. Para CONFIRMAR sua presença, envie o código: [CODIGO]. Centro Vida Saúde agradece!'
   },
   confirmacao_agendamento: {
     nome: 'Confirmação de Agendamento',
@@ -63,7 +62,8 @@ export default function EnviarNotificacao({
         .replace('[MEDICO]', nomeMedicoFormatado) // CORREÇÃO: Nome do médico formatado
         .replace('[DATA]', dataFormatada)
         .replace('[HORARIO]', agendamento.horario)
-        .replace('[ESPECIALIDADE]', medico.especialidade);
+        .replace('[ESPECIALIDADE]', medico.especialidade)
+        .replace('[CODIGO]', agendamento.id); // Código de confirmação é o ID do agendamento
 
       setMensagem(mensagemPersonalizada);
     }
