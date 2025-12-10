@@ -34,7 +34,16 @@ Deno.serve(async (req) => {
 
         console.log(`>>> [listMedicos] Encontrados ${medicos.length} médicos ativos`);
 
-        const medicosFormatados = medicos.map((medico) => ({
+        // Remover duplicatas baseado em CRM
+        const medicosUnicos = medicos.reduce((acc, medico) => {
+            const jaExiste = acc.find(m => m.crm === medico.crm);
+            if (!jaExiste) {
+                acc.push(medico);
+            }
+            return acc;
+        }, []);
+
+        const medicosFormatados = medicosUnicos.map((medico) => ({
             id: medico.id,
             nome: medico.nome,
             especialidade: medico.especialidade,
