@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -44,22 +43,30 @@ export default function FormularioAgendamentoOnline({ onSucesso }) {
     setErro('');
     try {
       console.log('🔍 Tentando carregar médicos (função pública)...');
+      console.log('URL completa:', `${window.location.origin}/functions/listMedicos`);
       
-      const response = await fetch(`/functions/listMedicos`, {
+      const response = await fetch(`${window.location.origin}/functions/listMedicos`, {
         method: 'POST', 
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
       });
 
+      console.log('📡 Response status:', response.status);
+      console.log('📡 Response headers:', [...response.headers.entries()]);
+
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Resposta de erro:', errorText);
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json();
       console.log('✅ Médicos carregados:', data);
+      console.log('✅ Total de médicos:', data.length);
       setMedicos(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("❌ Erro ao carregar médicos:", err);
-      setErro('Não foi possível carregar a lista de médicos. Tente recarregar a página.');
+      setErro(`Não foi possível carregar a lista de médicos: ${err.message}`);
     } finally {
       setLoadingMedicos(false);
     }
