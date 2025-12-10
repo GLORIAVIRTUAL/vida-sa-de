@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.5.0';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
 
 // Helper to handle CORS preflight requests
 const handleOptions = (req) => {
