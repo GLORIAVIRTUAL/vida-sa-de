@@ -45,7 +45,7 @@ export default function FormularioAgendamentoOnline({ onSucesso }) {
       console.log('🔍 Tentando carregar médicos (função pública)...');
       console.log('URL completa:', `${window.location.origin}/functions/listMedicos`);
       
-      const response = await fetch(`${window.location.origin}/functions/listMedicos`, {
+      const response = await fetch('/functions/listMedicos', {
         method: 'POST', 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({})
