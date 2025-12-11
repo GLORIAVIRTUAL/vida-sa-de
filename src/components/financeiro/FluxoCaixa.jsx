@@ -149,18 +149,20 @@ export default function FluxoCaixa({ lancamentos, ordensServico, pacientes, onUp
               <th>Descrição</th>
               <th>Categoria</th>
               <th>Tipo</th>
+              <th>Forma Pagamento</th>
               <th style="text-align: right;">Valor</th>
             </tr>
           </thead>
           <tbody>
             ${lancamentosFiltrados.length === 0 ? `
-              <tr><td colspan="5" style="text-align: center; padding: 40px;">Nenhuma movimentação no período.</td></tr>
+              <tr><td colspan="6" style="text-align: center; padding: 40px;">Nenhuma movimentação no período.</td></tr>
             ` : lancamentosFiltrados.map(l => `
               <tr>
                 <td>${format(new Date(l.data_lancamento + 'T00:00:00'), "dd/MM/yyyy", { locale: ptBR })}</td>
                 <td>${getDescricaoCompleta(l)}</td>
                 <td>${l.categoria}</td>
                 <td class="${l.tipo === 'Entrada' ? 'entrada' : 'saida'}">${l.tipo}</td>
+                <td>${l.forma_pagamento || '-'}</td>
                 <td style="text-align: right;" class="${l.tipo === 'Entrada' ? 'entrada' : 'saida'}">
                   ${l.tipo === 'Entrada' ? '+' : '-'}R$ ${l.valor.toFixed(2)}
                 </td>
@@ -313,6 +315,7 @@ export default function FluxoCaixa({ lancamentos, ordensServico, pacientes, onUp
                   <TableHead>Descrição</TableHead>
                   <TableHead>Categoria</TableHead>
                   <TableHead>Tipo</TableHead>
+                  <TableHead>Forma Pagamento</TableHead>
                   <TableHead className="text-right">Valor</TableHead>
                 </TableRow>
               </TableHeader>
@@ -329,6 +332,11 @@ export default function FluxoCaixa({ lancamentos, ordensServico, pacientes, onUp
                         <Badge className={`${tipoColors[lancamento.tipo]} border`}>
                           {lancamento.tipo}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-gray-600">
+                          {lancamento.forma_pagamento || '-'}
+                        </span>
                       </TableCell>
                       <TableCell className={`text-right font-semibold ${
                         lancamento.tipo === "Entrada" ? 'text-green-600' : 'text-red-600'
