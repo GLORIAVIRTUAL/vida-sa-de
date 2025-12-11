@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -40,12 +39,13 @@ export default function AssistenteIA() {
     try {
       console.log('🤖 [AssistenteIA] Coletando dados detalhados...');
       
+      // Coletar TODOS os dados do sistema
       const [agendamentos, ordensServico, lancamentos, medicos, pacientes] = await Promise.all([
-        safeApiCall(() => Agendamento.list("-created_date")),
-        safeApiCall(() => OrdemServico.list("-created_date")),
-        safeApiCall(() => Lancamento.list("-data_lancamento")),
+        safeApiCall(() => Agendamento.list("-created_date", 5000)),
+        safeApiCall(() => OrdemServico.list("-created_date", 5000)),
+        safeApiCall(() => Lancamento.list("-data_lancamento", 5000)),
         safeApiCall(() => Medico.list()),
-        safeApiCall(() => Paciente.list())
+        safeApiCall(() => Paciente.list("-created_date", 5000))
       ]);
 
       // DATAS
@@ -130,25 +130,56 @@ export default function AssistenteIA() {
         repassesMesPorMedico[os.medico_id].total_repasse += os.valor_repasse_medico;
       });
 
-      // ANÁLISE DE AGENDAMENTOS
+      // ANÁLISE DE AGENDAMENTOS DETALHADA
+      const agendamentosHoje = agendamentos?.filter(a => a.data_agendamento === hoje) || [];
       const agendamentosMes = agendamentos?.filter(a => a.data_agendamento?.startsWith(mesAtual)) || [];
       const canceladosMes = agendamentosMes.filter(a => a.status === "Cancelado").length;
       const finalizadosMes = agendamentosMes.filter(a => a.status === "Finalizado").length;
       const naoCompareceuMes = agendamentosMes.filter(a => a.status === "Não Compareceu").length;
+      const confirmadosMes = agendamentosMes.filter(a => a.status === "Confirmado").length;
+      const pagosMes = agendamentosMes.filter(a => a.status === "Pago").length;
+
+      // Estatísticas detalhadas por médico
+      const estatisticasMedicos = medicos.map(medico => {
+        const agendamentosMedico = agendamentosMes.filter(a => a.medico_id === medico.id);
+        const ordensMedico = ordensMes.filter(os => os.medico_id === medico.id);
+        const faturamento = ordensMedico.reduce((sum, os) => sum + (os.valor_final || 0), 0);
+        const repasse = ordensMedico.reduce((sum, os) => sum + (os.valor_repasse_medico || 0), 0);
+        
+        return {
+          nome: medico.nome,
+          especialidade: medico.especialidade,
+          atendimentos_mes: agendamentosMedico.length,
+          faturamento_mes: faturamento,
+          repasse_mes: repasse
+        };
+      });
 
       const resumo = {
         totais: {
           pacientes: pacientes?.length || 0,
           medicos: medicos?.length || 0,
+          medicos_ativos: medicos?.filter(m => m.status === 'Ativo').length || 0,
           agendamentos_total: agendamentos?.length || 0,
-          ordens_servico: ordensServico?.length || 0,
+          ordens_servico_total: ordensServico?.length || 0,
         },
         hoje: {
           data: hoje,
-          agendamentos: agendamentos?.filter(a => a.data_agendamento === hoje).length || 0,
+          agendamentos: agendamentosHoje.length,
+          agendamentos_detalhados: agendamentosHoje.map(a => {
+            const pac = pacientes.find(p => p.id === a.paciente_id);
+            const med = medicos.find(m => m.id === a.medico_id);
+            return {
+              paciente: pac?.nome || 'N/A',
+              medico: med?.nome || 'N/A',
+              horario: a.horario,
+              tipo: a.tipo_servico,
+              status: a.status
+            };
+          }),
           ordens_servico_pagas: ordensHoje.length,
+          faturamento_total: ordensHoje.reduce((sum, os) => sum + (os.valor_final || 0), 0),
           repasses_detalhados: Object.values(repassesHojePorMedico),
-          // NOVO: Fluxo de caixa detalhado
           fluxo_caixa: {
             entradas: entradasHoje.map(e => ({
               categoria: e.categoria,
@@ -168,17 +199,29 @@ export default function AssistenteIA() {
           }
         },
         mes_atual: {
+          mes: format(new Date(mesAtual + '-01'), "MMMM 'de' yyyy", { locale: ptBR }),
           agendamentos: agendamentosMes.length,
           agendamentos_finalizados: finalizadosMes,
+          agendamentos_pagos: pagosMes,
+          agendamentos_confirmados: confirmadosMes,
           agendamentos_cancelados: canceladosMes,
           nao_compareceu: naoCompareceuMes,
           taxa_comparecimento: agendamentosMes.length > 0 ? ((finalizadosMes / agendamentosMes.length) * 100).toFixed(1) : 0,
           taxa_cancelamento: agendamentosMes.length > 0 ? ((canceladosMes / agendamentosMes.length) * 100).toFixed(1) : 0,
-          entradas: entradas.filter(e => e.data_lancamento?.startsWith(mesAtual))
+          faturamento_bruto: ordensMes.reduce((sum, os) => sum + (os.valor_final || 0), 0),
+          total_repasses: ordensMes.reduce((sum, os) => sum + (os.valor_repasse_medico || 0), 0),
+          total_clinica: ordensMes.reduce((sum, os) => sum + (os.valor_clinica || 0), 0),
+          entradas_financeiras: entradas.filter(e => e.data_lancamento?.startsWith(mesAtual))
             .reduce((sum, e) => sum + (e.valor || 0), 0),
-          saidas: saidas.filter(s => s.data_lancamento?.startsWith(mesAtual))
+          saidas_financeiras: saidas.filter(s => s.data_lancamento?.startsWith(mesAtual))
             .reduce((sum, s) => sum + (s.valor || 0), 0),
-          repasses_por_medico: Object.values(repassesMesPorMedico)
+          repasses_por_medico: Object.values(repassesMesPorMedico),
+          estatisticas_medicos: estatisticasMedicos.filter(e => e.atendimentos_mes > 0)
+        },
+        dados_brutos: {
+          total_agendamentos_sistema: agendamentos?.length || 0,
+          total_ordens_servico: ordensServico?.length || 0,
+          total_lancamentos: lancamentos?.length || 0
         }
       };
 
@@ -258,32 +301,59 @@ ${atendimentos}
 
 PERGUNTA DO GESTOR: ${pergunta}
 
-DADOS ATUAIS DA CLÍNICA (CENTRO VIDA SAÚDE):
+═══════════════════════════════════════════════════════════
+DADOS COMPLETOS DO SISTEMA - CENTRO VIDA SAÚDE
+═══════════════════════════════════════════════════════════
 
-📊 CADASTROS:
-- Total de pacientes: ${dados.totais.pacientes}
-- Total de médicos: ${dados.totais.medicos}
+📊 CADASTROS TOTAIS:
+- Pacientes cadastrados: ${dados.totais.pacientes}
+- Médicos cadastrados: ${dados.totais.medicos} (${dados.totais.medicos_ativos} ativos)
+- Total de agendamentos (histórico): ${dados.dados_brutos.total_agendamentos_sistema}
+- Total de ordens de serviço: ${dados.dados_brutos.total_ordens_servico}
+- Total de lançamentos financeiros: ${dados.dados_brutos.total_lancamentos}
 
-📅 AGENDAMENTOS ESTE MÊS:
+📅 AGENDAMENTOS HOJE (${format(new Date(dados.hoje.data + 'T00:00:00'), "dd/MM/yyyy")}):
+- Total de agendamentos: ${dados.hoje.agendamentos}
+${dados.hoje.agendamentos_detalhados.length > 0 ? `
+Detalhamento:
+${dados.hoje.agendamentos_detalhados.map(a => 
+  `  • ${a.horario} - ${a.paciente} com Dr(a). ${a.medico} (${a.tipo}) - Status: ${a.status}`
+).join('\n')}` : '  Nenhum agendamento hoje'}
+
+📅 AGENDAMENTOS ESTE MÊS (${dados.mes_atual.mes}):
 - Total: ${dados.mes_atual.agendamentos}
 - Finalizados: ${dados.mes_atual.agendamentos_finalizados}
+- Pagos: ${dados.mes_atual.agendamentos_pagos}
+- Confirmados: ${dados.mes_atual.agendamentos_confirmados}
 - Cancelados: ${dados.mes_atual.agendamentos_cancelados}
 - Não compareceram: ${dados.mes_atual.nao_compareceu}
 - Taxa de comparecimento: ${dados.mes_atual.taxa_comparecimento}%
+- Taxa de cancelamento: ${dados.mes_atual.taxa_cancelamento}%
 
 ${tabelaFluxoCaixaString}
 
-💰 FINANCEIRO ESTE MÊS:
-- Faturamento: R$ ${dados.mes_atual.entradas.toFixed(2)}
-- Despesas: R$ ${dados.mes_atual.saidas.toFixed(2)}
-- Lucro Líquido: R$ ${(dados.mes_atual.entradas - dados.mes_atual.saidas).toFixed(2)}
+💰 FINANCEIRO DETALHADO ESTE MÊS:
+- Faturamento Bruto (OS): R$ ${dados.mes_atual.faturamento_bruto.toFixed(2)}
+- Total de Repasses Médicos: R$ ${dados.mes_atual.total_repasses.toFixed(2)}
+- Valor Líquido Clínica (OS): R$ ${dados.mes_atual.total_clinica.toFixed(2)}
+- Entradas (Lançamentos): R$ ${dados.mes_atual.entradas_financeiras.toFixed(2)}
+- Saídas (Lançamentos): R$ ${dados.mes_atual.saidas_financeiras.toFixed(2)}
+- Resultado Final: R$ ${(dados.mes_atual.entradas_financeiras - dados.mes_atual.saidas_financeiras).toFixed(2)}
 
-💼 REPASSES MÉDICOS HOJE (${dados.hoje.data}):
+💼 REPASSES MÉDICOS HOJE (${format(new Date(dados.hoje.data + 'T00:00:00'), "dd/MM/yyyy")}):
 ${dados.hoje.repasses_detalhados.length > 0 ? tabelaRepassesHoje : 'Nenhum repasse hoje'}
 
-📈 REPASSES MÉDICOS ESTE MÊS:
+📈 DESEMPENHO POR MÉDICO ESTE MÊS:
+${dados.mes_atual.estatisticas_medicos.length > 0 ? dados.mes_atual.estatisticas_medicos.map(e => 
+  `• Dr(a). ${e.nome} (${e.especialidade}):
+  - Atendimentos: ${e.atendimentos_mes}
+  - Faturamento: R$ ${e.faturamento_mes.toFixed(2)}
+  - Repasse: R$ ${e.repasse_mes.toFixed(2)}`
+).join('\n') : 'Nenhum atendimento registrado este mês'}
+
+📊 REPASSES MÉDICOS - RESUMO MENSAL:
 ${dados.mes_atual.repasses_por_medico.map(r => 
-  `${r.medico_nome}: ${r.quantidade} atendimento(s) - R$ ${r.total_repasse.toFixed(2)}`
+  `• ${r.medico_nome}: ${r.quantidade} atendimento(s) - Total de Repasse: R$ ${r.total_repasse.toFixed(2)}`
 ).join('\n')}
 
 ${precisaTabela ? `
