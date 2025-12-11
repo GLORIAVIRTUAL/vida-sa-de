@@ -293,176 +293,118 @@ export default function Agendamentos() {
     const conteudoImpressao = `
       <html>
       <head>
-        <title>Agenda - ${tituloPeriodo}</title>
+        <title>Agendamentos - ${tituloPeriodo}</title>
         <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
           body { 
             font-family: Arial, sans-serif; 
-            padding: 20px;
-            max-width: 900px;
-            margin: 0 auto;
+            padding: 15px;
+            font-size: 10px;
+            line-height: 1.3;
           }
-          h1 { 
-            text-align: center; 
-            color: #1e40af;
+          .header {
             margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #000;
           }
-          h2 {
-            text-align: center;
-            color: #64748b;
-            font-size: 18px;
-            font-weight: normal;
-            margin-bottom: 30px;
+          .header h1 { 
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 2px;
+          }
+          .header .subtitle {
+            font-size: 11px;
+            margin-bottom: 3px;
+          }
+          .info-line {
+            font-size: 10px;
+            margin: 2px 0;
+          }
+          .profissional {
+            font-weight: bold;
+            margin: 8px 0 5px 0;
+            font-size: 11px;
+            background: #f5f5f5;
+            padding: 4px;
           }
           table { 
             width: 100%; 
             border-collapse: collapse; 
-            margin-top: 20px;
+            margin-top: 3px;
+            font-size: 9px;
           }
           th, td { 
-            border: 1px solid #ddd; 
-            padding: 10px 8px; 
+            border: 1px solid #ccc;
+            padding: 3px 4px;
             text-align: left;
-            font-size: 13px;
           }
           th { 
-            background-color: #3b82f6; 
-            color: white;
+            background-color: #e0e0e0;
             font-weight: bold;
+            font-size: 9px;
           }
-          tr:nth-child(even) { 
-            background-color: #f8fafc; 
-          }
-          .status-badge {
-            display: inline-block;
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: 500;
-          }
-          .status-agendado { background-color: #dbeafe; color: #1e40af; }
-          .status-pago { background-color: #ccfbf1; color: #0f766e; }
-          .status-confirmado { background-color: #ddd6fe; color: #5b21b6; }
-          .status-em-atendimento { background-color: #fef3c7; color: #92400e; }
-          .status-finalizado { background-color: #d1fae5; color: #065f46; }
-          .status-cancelado { background-color: #fee2e2; color: #991b1b; }
-          .status-nao-compareceu { background-color: #f3f4f6; color: #4b5563; }
-          .categoria-badge {
-            display: inline-block;
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: 500;
-            background-color: #e0e7ff;
-            color: #3730a3;
+          td {
+            vertical-align: top;
           }
           .footer {
-            margin-top: 40px;
-            text-align: center;
-            color: #64748b;
-            font-size: 12px;
-          }
-          .summary {
-            margin: 20px 0;
-            padding: 15px;
-            background-color: #f1f5f9;
-            border-radius: 8px;
-          }
-          .summary-item {
-            display: inline-block;
-            margin-right: 20px;
-            font-weight: bold;
-            font-size: 13px;
-          }
-          .filters-info {
-            margin: 20px 0;
-            padding: 10px 15px;
-            background-color: #fef3c7;
-            border-left: 4px solid #f59e0b;
-            border-radius: 4px;
-            font-size: 12px;
-          }
-          .filters-info strong {
-            color: #92400e;
+            margin-top: 10px;
+            font-size: 8px;
+            text-align: right;
+            color: #666;
           }
           @media print {
             body { padding: 10px; }
-            button { display: none; }
+            @page { margin: 10mm; }
           }
         </style>
       </head>
       <body>
-        <h1>🏥 Centro Vida Saúde</h1>
-        <h2>Agenda de Atendimentos</h2>
-        <h2>${tituloPeriodo}</h2>
-        ${medicoParaImpressao ? `<h2>Dr(a). ${medicoParaImpressao.nome} - ${medicoParaImpressao.especialidade}</h2>` : '<h2>Todos os Médicos</h2>'}
+        <div class="header">
+          <h1>Centro Vida Saúde</h1>
+          <div class="subtitle">Agendamentos</div>
+          <div class="info-line">Entre ${visualizacao === "lista" ? getTituloPeriodo() : format(diaSelecionado, "dd/MM/yyyy", { locale: ptBR })}</div>
+          <div class="info-line">Página 1 de 1</div>
+        </div>
         
-        ${visualizacao === "lista" ? `
-        <div class="filters-info">
-          <strong>🔍 Filtros Aplicados:</strong><br/>
-          Período: <strong>${filtros.periodo === 'dia' ? 'Dia' : filtros.periodo === 'semana' ? 'Semana' : 'Mês'}</strong> | 
-          Médico: <strong>${medicoParaImpressao ? medicoParaImpressao.nome : 'Todos'}</strong> | 
-          Status: <strong>${filtros.status === 'todos' ? 'Todos' : filtros.status}</strong> | 
-          Tipo: <strong>${filtros.tipo === 'todos' ? 'Todos' : filtros.tipo}</strong>
+        ${medicoParaImpressao ? `
+        <div class="profissional">
+          Profissional: ${medicoParaImpressao.nome.toUpperCase()}
         </div>
-        ` : `
-        <div class="filters-info">
-          <strong>🔍 Visualização:</strong> Calendário - Dia Selecionado<br/>
-          <strong>Médico:</strong> ${medicoParaImpressao ? medicoParaImpressao.nome : 'Todos os Médicos'}
-        </div>
-        `}
-        
-        <div class="summary">
-          <span class="summary-item">📋 Total: ${agendamentosParaImpressao.length} agendamentos</span>
-          <span class="summary-item">✅ Pagos: ${agendamentosParaImpressao.filter(a => a.status === 'Pago').length}</span>
-          <span class="summary-item">🔄 Em Atendimento: ${agendamentosParaImpressao.filter(a => a.status === 'Em Atendimento').length}</span>
-          <span class="summary-item">✔️ Finalizados: ${agendamentosParaImpressao.filter(a => a.status === 'Finalizado').length}</span>
-        </div>
+        ` : ''}
         
         <table>
           <thead>
-            ${visualizacao === "calendario" ? `
             <tr>
-              <th>Horário</th>
-              <th>Paciente</th>
-              <th>Médico</th>
-              <th>Tipo</th>
-              <th>Categoria</th>
-              <th>Status</th>
+              <th style="width: 70px;">Data</th>
+              <th style="width: 40px;">Hora</th>
+              <th>Descrição</th>
+              <th style="width: 90px;">Celular</th>
+              <th style="width: 100px;">Convênio</th>
+              <th style="width: 80px;">Observação</th>
+              <th style="width: 70px;">Atendente</th>
             </tr>
-            ` : `
-            <tr>
-              <th>Data</th>
-              <th>Horário</th>
-              <th>Paciente</th>
-              <th>Médico</th>
-              <th>Tipo</th>
-              <th>Categoria</th>
-              <th>Status</th>
-            </tr>
-            `}
           </thead>
           <tbody>
             ${agendamentosParaImpressao.length === 0 ? `
               <tr>
-                <td colspan="${visualizacao === "calendario" ? '6' : '7'}" style="text-align: center; padding: 40px; color: #64748b;">
-                  Nenhum agendamento encontrado para este dia.
+                <td colspan="7" style="text-align: center; padding: 20px;">
+                  Nenhum agendamento
                 </td>
               </tr>
             ` : agendamentosParaImpressao.map(ag => {
               const paciente = pacientes.find(p => p.id === ag.paciente_id);
               const medico = medicos.find(m => m.id === ag.medico_id);
               const categoria = categorias.find(c => c.id === ag.categoria_preco_id);
-              const statusClass = ag.status.toLowerCase().replace(/\s+/g, '-');
               
               return `
                 <tr>
-                  ${visualizacao === "lista" ? `<td><strong>${format(new Date(ag.data_agendamento + 'T00:00:00'), 'dd/MM/yyyy')}</strong></td>` : ''}
+                  <td>${format(new Date(ag.data_agendamento + 'T00:00:00'), 'dd/MM/yyyy')}</td>
                   <td><strong>${ag.horario}</strong></td>
-                  <td>${paciente?.nome || 'N/A'}</td>
-                  <td>${medico ? `Dr(a). ${medico.nome}` : 'N/A'}</td>
-                  <td>${ag.tipo_servico}</td>
-                  <td><span class="categoria-badge">${categoria?.nome || 'N/A'}</span></td>
-                  <td><span class="status-badge status-${statusClass}">${ag.status}</span></td>
+                  <td>${paciente?.cpf || ''} - ${paciente?.nome || 'N/A'}</td>
+                  <td>${paciente?.telefone || ''}</td>
+                  <td>${categoria?.nome || ''}</td>
+                  <td>${ag.observacoes || ''}</td>
+                  <td>${ag.created_by?.split('@')[0]?.toUpperCase() || ''}</td>
                 </tr>
               `;
             }).join('')}
@@ -470,9 +412,7 @@ export default function Agendamentos() {
         </table>
         
         <div class="footer">
-          <p>Impresso em: ${format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</p>
-          <p><strong>Centro Vida Saúde</strong> - Sistema de Gestão Clínica</p>
-          <p>gloriavirtual.com | CNPJ: 51.424.200/0001-02</p>
+          Impresso em ${format(new Date(), "dd/MM/yyyy HH:mm", { locale: ptBR })}
         </div>
       </body>
       </html>
