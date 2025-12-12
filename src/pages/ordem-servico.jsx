@@ -3,10 +3,12 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Agendamento, Paciente, Medico, Lancamento, Procedimento, Exame, CategoriaPreco } from "@/entities/all";
 import { OrdemServico } from "@/entities/OrdemServico";
 import { Button } from "@/components/ui/button";
-import { FileText, Plus, Search, RefreshCw } from "lucide-react";
+import { FileText, Plus, Search, RefreshCw, Calendar } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { createPageUrl } from "@/utils";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 
 import FormularioOS from "../components/os/FormularioOS";
@@ -22,7 +24,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { format } from "date-fns";
+import { format, startOfMonth, endOfMonth } from "date-fns";
 
 const statusPagamentoColors = {
   "Pendente": "bg-yellow-100 text-yellow-800",
@@ -51,6 +53,11 @@ export default function OrdemDeServico() {
   const [mostrarForm, setMostrarForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [corrigindo, setCorrigindo] = useState(false);
+  
+  // Filtros
+  const [dataInicio, setDataInicio] = useState(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
+  const [dataFim, setDataFim] = useState(format(endOfMonth(new Date()), 'yyyy-MM-dd'));
+  const [statusPagamentoFiltro, setStatusPagamentoFiltro] = useState("todos");
 
   const handleCorrigirNomes = async () => {
     setCorrigindo(true);
@@ -273,18 +280,29 @@ export default function OrdemDeServico() {
   };
 
   const ordensFiltradas = useMemo(() => {
-    if (!searchTerm) {
-      return ordens;
-    }
-
-    const termoBusca = searchTerm.toLowerCase();
     return ordens.filter(os => {
-      const nomePaciente = getNome(os.paciente_id, 'paciente').toLowerCase();
-      const nomeMedico = getNome(os.medico_id, 'medico').toLowerCase();
-
-      return nomePaciente.includes(termoBusca) || nomeMedico.includes(termoBusca);
+      // Filtro de data
+      if (os.data_execucao) {
+        const dentroData = os.data_execucao >= dataInicio && os.data_execucao <= dataFim;
+        if (!dentroData) return false;
+      }
+      
+      // Filtro de status de pagamento
+      if (statusPagamentoFiltro !== "todos" && os.status_pagamento !== statusPagamentoFiltro) {
+        return false;
+      }
+      
+      // Filtro de busca por texto
+      if (searchTerm) {
+        const termoBusca = searchTerm.toLowerCase();
+        const nomePaciente = getNome(os.paciente_id, 'paciente').toLowerCase();
+        const nomeMedico = getNome(os.medico_id, 'medico').toLowerCase();
+        return nomePaciente.includes(termoBusca) || nomeMedico.includes(termoBusca);
+      }
+      
+      return true;
     });
-  }, [searchTerm, ordens, getNome]);
+  }, [ordens, dataInicio, dataFim, statusPagamentoFiltro, searchTerm, getNome]);
 
   const osFormData = useMemo(() => {
     if (!agendamentoParaOS || !medicos.length || !categorias.length) {
@@ -366,14 +384,61 @@ export default function OrdemDeServico() {
               <CardTitle>Histórico de Ordens de Serviço</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center gap-2 mb-4">
-                <Search className="w-5 h-5 text-gray-500" />
-                <Input
-                  placeholder="Buscar por paciente ou médico..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="max-w-sm"
-                />
+              {/* Filtros */}
+              <div className="mb-6 p-4 bg-gray-50 rounded-lg space-y-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Calendar className="w-5 h-5 text-gray-500" />
+                  <span className="font-medium text-gray-700">Filtros:</span>
+                </div>
+                
+                <div className="flex flex-wrap items-end gap-4">
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="dataInicio" className="text-sm text-gray-600">De:</Label>
+                    <Input
+                      id="dataInicio"
+                      type="date"
+                      value={dataInicio}
+                      onChange={(e) => setDataInicio(e.target.value)}
+                      className="w-40"
+                    />
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="dataFim" className="text-sm text-gray-600">Até:</Label>
+                    <Input
+                      id="dataFim"
+                      type="date"
+                      value={dataFim}
+                      onChange={(e) => setDataFim(e.target.value)}
+                      className="w-40"
+                    />
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="statusPagamento" className="text-sm text-gray-600">Status:</Label>
+                    <Select value={statusPagamentoFiltro} onValueChange={setStatusPagamentoFiltro}>
+                      <SelectTrigger id="statusPagamento" className="w-40">
+                        <SelectValue placeholder="Todos" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="todos">Todos</SelectItem>
+                        <SelectItem value="Pendente">Pendente</SelectItem>
+                        <SelectItem value="Pago">Pago</SelectItem>
+                        <SelectItem value="Cancelado">Cancelado</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 flex-1">
+                    <Search className="w-5 h-5 text-gray-500" />
+                    <Input
+                      placeholder="Buscar por paciente ou médico..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="max-w-sm"
+                    />
+                  </div>
+                </div>
               </div>
               <Table>
                 <TableHeader>
