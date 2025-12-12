@@ -82,6 +82,11 @@ export default function CartaoDigital({ venda, titular = true, dependente = null
             <p className="text-base font-bold leading-tight break-words">{nomeTitular}</p>
           </div>
 
+          <div>
+            <p className="text-xs text-white/70 uppercase tracking-wider mb-1">Plano</p>
+            <p className="text-sm font-semibold">{venda.tipo_plano}</p>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-xs text-white/70 uppercase tracking-wider mb-1">CPF</p>
@@ -97,11 +102,6 @@ export default function CartaoDigital({ venda, titular = true, dependente = null
                   : 'N/A'}
               </p>
             </div>
-          </div>
-
-          <div>
-            <p className="text-xs text-white/70 uppercase tracking-wider mb-1">Plano</p>
-            <p className="text-sm font-semibold">{venda.tipo_plano}</p>
           </div>
         </div>
 
