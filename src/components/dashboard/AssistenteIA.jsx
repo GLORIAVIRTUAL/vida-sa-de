@@ -369,7 +369,10 @@ export default function AssistenteIA() {
                            pergunta.toLowerCase().includes('detalhado') ||
                            pergunta.toLowerCase().includes('tabela') ||
                            pergunta.toLowerCase().includes('fluxo') ||
-                           pergunta.toLowerCase().includes('caixa');
+                           pergunta.toLowerCase().includes('caixa') ||
+                           pergunta.toLowerCase().includes('lista') ||
+                           pergunta.toLowerCase().includes('pacientes que') ||
+                           pergunta.toLowerCase().includes('clientes que');
 
       // NOVO: Montar tabela de fluxo de caixa
       let tabelaFluxoCaixaString = ''; // Renamed to avoid conflict with the HTML string
@@ -515,6 +518,40 @@ ${precisaTabela ? `
 🔥 ATENÇÃO: A pergunta solicita um RELATÓRIO DETALHADO COM TABELA.
 Você DEVE incluir uma tabela HTML formatada com os dados.
 
+${pergunta.toLowerCase().includes('lista') || pergunta.toLowerCase().includes('pacientes que') || pergunta.toLowerCase().includes('clientes que') ? `
+🚨 ATENÇÃO: O usuário pediu uma LISTA de pacientes/clientes!
+
+Você DEVE criar uma tabela HTML COMPLETA com TODOS os registros que atendem o critério.
+
+Exemplo para lista de pacientes que pagaram com PIX:
+<div class="tabela-relatorio">
+  <h3>📋 Lista de Pacientes que Pagaram com PIX - Dezembro/2025</h3>
+  <table class="relatorio-tabela">
+    <thead>
+      <tr>
+        <th>Paciente</th>
+        <th>Data</th>
+        <th>Valor</th>
+        <th>Tipo de Serviço</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- FILTRE dados.mes_atual.ordens_servico_por_forma onde forma === "PIX" -->
+      <!-- PARA CADA transacao em PIX.transacoes: -->
+      <tr>
+        <td>[Nome do Paciente]</td>
+        <td>[Data formatada]</td>
+        <td style="color: #059669;">R$ [Valor]</td>
+        <td>[Tipo]</td>
+      </tr>
+      <!-- FIM DO LOOP -->
+    </tbody>
+  </table>
+</div>
+
+IMPORTANTE: Liste LINHA POR LINHA, não resuma!
+` : ''}
+
 ${(pergunta.toLowerCase().includes('fluxo') || pergunta.toLowerCase().includes('caixa')) && dados.hoje.fluxo_caixa ? `
 Para FLUXO DE CAIXA, use esta estrutura:
 <div class="tabela-relatorio">
@@ -591,18 +628,38 @@ Para REPASSES MÉDICOS, use esta estrutura:
 - Adicione linha de TOTAL GERAL no final
 ` : ''}
 
-INSTRUÇÕES CRÍTICAS PARA SUA RESPOSTA:
-1. Seja DETALHADO e ESPECÍFICO - use TODOS os dados fornecidos
-2. Quando o usuário pedir uma LISTA ou RELATÓRIO de pacientes/clientes:
-   - OBRIGATÓRIO: Crie uma TABELA HTML com TODAS as transações/clientes solicitados
-   - Inclua: Nome do paciente/cliente, Data, Valor, Forma de Pagamento, Tipo de Serviço
-   - NÃO resuma - mostre LINHA POR LINHA cada registro
-3. ${precisaTabela ? 'OBRIGATÓRIO: Inclua tabela HTML com os dados detalhados' : ''}
-4. Identifique PONTOS FORTES e PONTOS DE ATENÇÃO
-5. Forneça RECOMENDAÇÕES PRÁTICAS e ACIONÁVEIS
-6. Se o usuário perguntar sobre uma forma de pagamento específica (PIX, Cartão, Dinheiro):
-   - Filtre e mostre APENAS os registros dessa forma de pagamento
-   - Liste TODOS os pacientes/clientes que usaram essa forma
+🚨 INSTRUÇÕES CRÍTICAS OBRIGATÓRIAS 🚨
+
+QUANDO O USUÁRIO PEDIR UMA "LISTA" DE PACIENTES/CLIENTES:
+
+1. SEMPRE inclua uma tabela HTML no campo "html_table" com:
+   - Título claro indicando o que está sendo listado
+   - TODAS as linhas de dados solicitadas (NÃO RESUMIR!)
+   - Colunas: Nome Completo | Data | Valor | Forma Pagamento | Tipo/Serviço
+   - Exemplo de estrutura:
+   
+   <div class="tabela-relatorio">
+     <h3>📋 Lista de Pacientes - [Filtro Solicitado]</h3>
+     <table class="relatorio-tabela">
+       <thead>
+         <tr><th>Paciente</th><th>Data</th><th>Valor</th><th>Forma Pgto</th><th>Serviço</th></tr>
+       </thead>
+       <tbody>
+         <!-- UMA LINHA PARA CADA TRANSAÇÃO -->
+       </tbody>
+     </table>
+   </div>
+
+2. Se a pergunta mencionar uma forma de pagamento específica (PIX, Cartão Crédito, Dinheiro, etc):
+   - Filtre APENAS essa forma de pagamento
+   - Mostre TODOS os registros dessa forma
+   - Não inclua outras formas de pagamento
+
+3. NO CAMPO "summary": Explique brevemente quantos registros foram encontrados
+
+4. ${precisaTabela ? 'OBRIGATÓRIO: Inclua tabela HTML com os dados detalhados' : ''}
+
+5. NUNCA resuma ou agrupe - LISTE LINHA POR LINHA
 
 Responda em JSON com:
 {
