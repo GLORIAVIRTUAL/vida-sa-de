@@ -38,18 +38,18 @@ export default function AssistenteIA() {
   const coletarDadosDetalhados = async () => {
     try {
       console.log('🤖 [AssistenteIA] Coletando dados detalhados...');
-      console.log('⚠️ [AssistenteIA] ATENÇÃO: Carregando TODOS os registros sem limite...');
+      console.log('⚠️ [AssistenteIA] ATENÇÃO: Carregando TODOS os registros do sistema usando filter({})...');
 
-      // Coletar TODOS os dados do sistema SEM LIMITE - usando 100000 para garantir
+      // Coletar TODOS os dados do sistema usando filter({}) - SEM LIMITE!
       const [agendamentos, ordensServico, lancamentos, medicos, pacientes, vendasCartao, procedimentos, exames] = await Promise.all([
-        Agendamento.list("-created_date", 100000).catch(() => []),
-        OrdemServico.list("-created_date", 100000).catch(() => []),
-        Lancamento.list("-data_lancamento", 100000).catch(() => []),
-        Medico.list("nome", 10000).catch(() => []),
-        Paciente.list("-created_date", 100000).catch(() => []),
-        VendaCartao.list("-created_date", 100000).catch(() => []),
-        Procedimento.list("nome", 10000).catch(() => []),
-        Exame.list("nome", 10000).catch(() => [])
+        Agendamento.filter({}, "-created_date").catch(() => []),
+        OrdemServico.filter({}, "-created_date").catch(() => []),
+        Lancamento.filter({}, "-data_lancamento").catch(() => []),
+        Medico.filter({}, "nome").catch(() => []),
+        Paciente.filter({}, "-created_date").catch(() => []),
+        VendaCartao.filter({}, "-created_date").catch(() => []),
+        Procedimento.filter({}, "nome").catch(() => []),
+        Exame.filter({}, "nome").catch(() => [])
       ]);
 
       console.log('📊 [AssistenteIA] ═══════════════════════════════════════');
