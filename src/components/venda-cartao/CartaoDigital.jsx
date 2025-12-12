@@ -56,7 +56,7 @@ export default function CartaoDigital({ venda, titular = true, dependente = null
         <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full -ml-16 -mb-16"></div>
 
         {/* Header - Logos */}
-        <div className="flex items-start justify-between mb-2 relative z-10">
+        <div className="flex items-start justify-between mb-1 relative z-10">
           <img 
             src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68b9fe84de5d54897629e61a/2b9859adb_Untitleddesign30.png" 
             alt="Cartão Mais Vida" 
@@ -72,7 +72,7 @@ export default function CartaoDigital({ venda, titular = true, dependente = null
         </div>
 
         {/* Tipo de Cartão */}
-        <div className="mb-2 relative z-10">
+        <div className="mb-1.5 relative z-10">
           <div className="inline-block bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold uppercase">
             {tipoRelacao}
           </div>
