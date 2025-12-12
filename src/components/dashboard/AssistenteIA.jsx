@@ -147,12 +147,35 @@ export default function AssistenteIA() {
         console.log(`  ${forma}: ${dados.quantidade} transações = R$ ${dados.valor_total.toFixed(2)}`);
       });
 
-      // VENDAS DE CARTÃO - ANÁLISE DETALHADA COM LISTA DE CLIENTES
+      // VENDAS DE CARTÃO - ANÁLISE DETALHADA COM LISTA DE CLIENTES E DEPENDENTES
       const vendasCartaoMes = vendasCartao.filter(v => v.data_venda?.startsWith(mesAtual));
       const vendasCartaoHoje = vendasCartao.filter(v => v.data_venda === hoje);
-      
+
       console.log(`💳 [AssistenteIA] Vendas de cartão no mês ${mesAtual}:`, vendasCartaoMes.length);
-      
+
+      // Contar dependentes
+      let totalDependentesTodas = 0;
+      let totalDependentesMes = 0;
+      let totalDependentesHoje = 0;
+
+      vendasCartao.forEach(v => {
+        const numDependentes = (v.dependentes && Array.isArray(v.dependentes)) ? v.dependentes.length : 0;
+        totalDependentesTodas += numDependentes;
+      });
+
+      vendasCartaoMes.forEach(v => {
+        const numDependentes = (v.dependentes && Array.isArray(v.dependentes)) ? v.dependentes.length : 0;
+        totalDependentesMes += numDependentes;
+      });
+
+      vendasCartaoHoje.forEach(v => {
+        const numDependentes = (v.dependentes && Array.isArray(v.dependentes)) ? v.dependentes.length : 0;
+        totalDependentesHoje += numDependentes;
+      });
+
+      console.log(`👨‍👩‍👧‍👦 [AssistenteIA] Dependentes cadastrados: ${totalDependentesTodas}`);
+      console.log(`👨‍👩‍👧‍👦 [AssistenteIA] Dependentes do mês: ${totalDependentesMes}`);
+
       const vendasPorForma = {};
       vendasCartaoMes.forEach(v => {
         const forma = v.forma_pagamento || 'Não informado';
@@ -161,12 +184,16 @@ export default function AssistenteIA() {
         }
         vendasPorForma[forma].quantidade += 1;
         vendasPorForma[forma].valor_total += (v.valor_total || 0);
+
+        const numDeps = (v.dependentes && Array.isArray(v.dependentes)) ? v.dependentes.length : 0;
+
         vendasPorForma[forma].clientes.push({
           titular: v.titular?.nome || 'N/A',
           cpf: v.titular?.cpf || 'N/A',
           data: v.data_venda,
           plano: v.tipo_plano,
-          valor: v.valor_total || 0
+          valor: v.valor_total || 0,
+          dependentes: numDeps
         });
       });
 
@@ -382,6 +409,9 @@ export default function AssistenteIA() {
           vendas_cartao: {
             total_vendas: vendasCartaoMes.length,
             valor_total: vendasCartaoMes.reduce((sum, v) => sum + (v.valor_total || 0), 0),
+            total_dependentes_cadastrados: totalDependentesTodas,
+            dependentes_mes: totalDependentesMes,
+            dependentes_hoje: totalDependentesHoje,
             por_forma_pagamento: Object.entries(vendasPorForma).map(([forma, dados]) => ({
               forma,
               quantidade: dados.quantidade,
@@ -563,13 +593,16 @@ ${dados.mes_atual.repasses_por_medico.map(r =>
 💳 VENDAS DE CARTÃO MAIS VIDA ESTE MÊS:
 - Total de vendas: ${dados.mes_atual.vendas_cartao.total_vendas}
 - Valor total arrecadado: R$ ${dados.mes_atual.vendas_cartao.valor_total.toFixed(2)}
+- 👨‍👩‍👧‍👦 Total de dependentes cadastrados (histórico completo): ${dados.mes_atual.vendas_cartao.total_dependentes_cadastrados}
+- 👨‍👩‍👧‍👦 Dependentes cadastrados este mês: ${dados.mes_atual.vendas_cartao.dependentes_mes}
+- 👨‍👩‍👧‍👦 Dependentes cadastrados hoje: ${dados.mes_atual.vendas_cartao.dependentes_hoje}
 ${dados.mes_atual.vendas_cartao.por_forma_pagamento.length > 0 ? `
 Detalhamento por forma de pagamento com lista de clientes:
 ${dados.mes_atual.vendas_cartao.por_forma_pagamento.map(f => 
   `  • ${f.forma}: ${f.quantidade} venda(s) - R$ ${f.valor_total.toFixed(2)}
 ${f.clientes && f.clientes.length > 0 ? 
   f.clientes.map(c => 
-    `      - ${c.titular} (CPF: ${c.cpf}) | ${c.data} | ${c.plano} | R$ ${c.valor.toFixed(2)}`
+    `      - ${c.titular} (CPF: ${c.cpf}) | ${c.data} | ${c.plano} | ${c.dependentes} dependente(s) | R$ ${c.valor.toFixed(2)}`
   ).join('\n') 
   : ''}`
 ).join('\n')}` : ''}
