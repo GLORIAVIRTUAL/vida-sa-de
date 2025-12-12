@@ -38,28 +38,37 @@ export default function AssistenteIA() {
   const coletarDadosDetalhados = async () => {
     try {
       console.log('🤖 [AssistenteIA] Coletando dados detalhados...');
+      console.log('⚠️ [AssistenteIA] ATENÇÃO: Carregando TODOS os registros sem limite...');
 
-      // Coletar TODOS os dados do sistema SEM LIMITE
+      // Coletar TODOS os dados do sistema SEM LIMITE - usando 100000 para garantir
       const [agendamentos, ordensServico, lancamentos, medicos, pacientes, vendasCartao, procedimentos, exames] = await Promise.all([
-        Agendamento.list("-created_date", 50000).catch(() => []),
-        OrdemServico.list("-created_date", 50000).catch(() => []),
-        Lancamento.list("-data_lancamento", 50000).catch(() => []),
-        Medico.list("nome", 5000).catch(() => []),
-        Paciente.list("-created_date", 50000).catch(() => []),
-        VendaCartao.list("-created_date", 50000).catch(() => []),
-        Procedimento.list("nome", 5000).catch(() => []),
-        Exame.list("nome", 5000).catch(() => [])
+        Agendamento.list("-created_date", 100000).catch(() => []),
+        OrdemServico.list("-created_date", 100000).catch(() => []),
+        Lancamento.list("-data_lancamento", 100000).catch(() => []),
+        Medico.list("nome", 10000).catch(() => []),
+        Paciente.list("-created_date", 100000).catch(() => []),
+        VendaCartao.list("-created_date", 100000).catch(() => []),
+        Procedimento.list("nome", 10000).catch(() => []),
+        Exame.list("nome", 10000).catch(() => [])
       ]);
 
-      console.log('📊 [AssistenteIA] Total de registros carregados:');
-      console.log(`  - Pacientes: ${pacientes.length}`);
-      console.log(`  - Agendamentos: ${agendamentos.length}`);
-      console.log(`  - Ordens de Serviço: ${ordensServico.length}`);
-      console.log(`  - Lançamentos: ${lancamentos.length}`);
-      console.log(`  - Vendas Cartão: ${vendasCartao.length}`);
-      console.log(`  - Médicos: ${medicos.length}`);
-      console.log(`  - Procedimentos: ${procedimentos.length}`);
-      console.log(`  - Exames: ${exames.length}`);
+      console.log('📊 [AssistenteIA] ═══════════════════════════════════════');
+      console.log('📊 [AssistenteIA] TOTAL DE REGISTROS CARREGADOS:');
+      console.log('📊 [AssistenteIA] ═══════════════════════════════════════');
+      console.log(`  🔵 Pacientes: ${pacientes.length} registros`);
+      console.log(`  🔵 Agendamentos: ${agendamentos.length} registros`);
+      console.log(`  🔵 Ordens de Serviço: ${ordensServico.length} registros`);
+      console.log(`  🔵 Lançamentos: ${lancamentos.length} registros`);
+      console.log(`  🔵 Vendas Cartão: ${vendasCartao.length} registros`);
+      console.log(`  🔵 Médicos: ${medicos.length} registros`);
+      console.log(`  🔵 Procedimentos: ${procedimentos.length} registros`);
+      console.log(`  🔵 Exames: ${exames.length} registros`);
+      console.log('📊 [AssistenteIA] ═══════════════════════════════════════');
+
+      if (pacientes.length < 20000) {
+        console.warn('⚠️ [AssistenteIA] ALERTA: Menos de 20.000 pacientes carregados!');
+        console.warn(`⚠️ [AssistenteIA] Esperado: ~21.000 | Carregado: ${pacientes.length}`);
+      }
 
       // DATAS
       const hoje = new Date().toISOString().split('T')[0];
