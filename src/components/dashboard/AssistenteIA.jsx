@@ -39,16 +39,16 @@ export default function AssistenteIA() {
     try {
       console.log('🤖 [AssistenteIA] Coletando dados detalhados...');
       
-      // Coletar TODOS os dados do sistema
+      // Coletar TODOS os dados do sistema SEM LIMITE
       const [agendamentos, ordensServico, lancamentos, medicos, pacientes, vendasCartao, procedimentos, exames] = await Promise.all([
-        safeApiCall(() => Agendamento.list("-created_date", 10000), []),
-        safeApiCall(() => OrdemServico.list("-created_date", 10000), []),
-        safeApiCall(() => Lancamento.list("-data_lancamento", 10000), []),
-        safeApiCall(() => Medico.list(), []),
-        safeApiCall(() => Paciente.list("-created_date", 10000), []),
-        safeApiCall(() => VendaCartao.list("-created_date", 5000), []),
-        safeApiCall(() => Procedimento.list(), []),
-        safeApiCall(() => Exame.list(), [])
+        Agendamento.list("-created_date").catch(() => []),
+        OrdemServico.list("-created_date").catch(() => []),
+        Lancamento.list("-data_lancamento").catch(() => []),
+        Medico.list().catch(() => []),
+        Paciente.list("-created_date").catch(() => []),
+        VendaCartao.list("-created_date").catch(() => []),
+        Procedimento.list().catch(() => []),
+        Exame.list().catch(() => [])
       ]);
 
       console.log('📊 [AssistenteIA] Total de registros carregados:');
@@ -68,9 +68,12 @@ export default function AssistenteIA() {
       inicioSemana.setDate(inicioSemana.getDate() - inicioSemana.getDay());
       const semanaAtual = inicioSemana.toISOString().split('T')[0];
 
-      // ORDENS DE SERVIÇO COM DETALHES
-      const ordensHoje = (ordensServico || []).filter(os => os.data_execucao === hoje && os.status_pagamento === "Pago");
-      const ordensMes = (ordensServico || []).filter(os => os.data_execucao?.startsWith(mesAtual) && os.status_pagamento === "Pago");
+      // ORDENS DE SERVIÇO COM DETALHES - USAR TODAS AS PAGAS
+      const ordensHoje = ordensServico.filter(os => os.data_execucao === hoje && os.status_pagamento === "Pago");
+      const ordensMes = ordensServico.filter(os => os.data_execucao?.startsWith(mesAtual) && os.status_pagamento === "Pago");
+      
+      console.log(`📋 [AssistenteIA] Ordens filtradas para ${mesAtual}:`, ordensMes.length);
+      console.log(`📋 [AssistenteIA] Ordens de hoje (${hoje}):`, ordensHoje.length);
       
       // Análise de formas de pagamento nas ordens de serviço - COM DETALHES DE PACIENTES
       const formasPagamentoOS = {};
@@ -106,8 +109,10 @@ export default function AssistenteIA() {
       });
 
       // VENDAS DE CARTÃO - ANÁLISE DETALHADA COM LISTA DE CLIENTES
-      const vendasCartaoMes = (vendasCartao || []).filter(v => v.data_venda?.startsWith(mesAtual));
-      const vendasCartaoHoje = (vendasCartao || []).filter(v => v.data_venda === hoje);
+      const vendasCartaoMes = vendasCartao.filter(v => v.data_venda?.startsWith(mesAtual));
+      const vendasCartaoHoje = vendasCartao.filter(v => v.data_venda === hoje);
+      
+      console.log(`💳 [AssistenteIA] Vendas de cartão no mês ${mesAtual}:`, vendasCartaoMes.length);
       
       const vendasPorForma = {};
       vendasCartaoMes.forEach(v => {
@@ -127,13 +132,17 @@ export default function AssistenteIA() {
       });
 
       // LANÇAMENTOS FINANCEIROS - DETALHADOS
-      const entradas = lancamentos?.filter(l => l.tipo === "Entrada") || [];
-      const saidas = lancamentos?.filter(l => l.tipo === "Saída") || [];
+      const entradas = lancamentos.filter(l => l.tipo === "Entrada");
+      const saidas = lancamentos.filter(l => l.tipo === "Saída");
+      
+      console.log(`💰 [AssistenteIA] Lançamentos - Entradas: ${entradas.length}, Saídas: ${saidas.length}`);
       
       // Análise de formas de pagamento nos lançamentos
       const formasPagamentoLancamentos = {};
-      lancamentos?.forEach(l => {
-        if (l.data_lancamento?.startsWith(mesAtual) && l.forma_pagamento) {
+      const lancamentosMes = lancamentos.filter(l => l.data_lancamento?.startsWith(mesAtual));
+      
+      lancamentosMes.forEach(l => {
+        if (l.forma_pagamento) {
           const forma = l.forma_pagamento;
           if (!formasPagamentoLancamentos[forma]) {
             formasPagamentoLancamentos[forma] = { entradas: 0, saidas: 0, total: 0 };
@@ -146,6 +155,8 @@ export default function AssistenteIA() {
           formasPagamentoLancamentos[forma].total = formasPagamentoLancamentos[forma].entradas - formasPagamentoLancamentos[forma].saidas;
         }
       });
+      
+      console.log(`💵 [AssistenteIA] Lançamentos do mês (${mesAtual}):`, lancamentosMes.length);
       
       // Lançamentos de HOJE detalhados
       const entradasHoje = entradas.filter(l => l.data_lancamento === hoje);
@@ -215,8 +226,10 @@ export default function AssistenteIA() {
       });
 
       // ANÁLISE DE AGENDAMENTOS DETALHADA
-      const agendamentosHoje = agendamentos?.filter(a => a.data_agendamento === hoje) || [];
-      const agendamentosMes = agendamentos?.filter(a => a.data_agendamento?.startsWith(mesAtual)) || [];
+      const agendamentosHoje = agendamentos.filter(a => a.data_agendamento === hoje);
+      const agendamentosMes = agendamentos.filter(a => a.data_agendamento?.startsWith(mesAtual));
+      
+      console.log(`📅 [AssistenteIA] Agendamentos do mês (${mesAtual}):`, agendamentosMes.length);
       const canceladosMes = agendamentosMes.filter(a => a.status === "Cancelado").length;
       const finalizadosMes = agendamentosMes.filter(a => a.status === "Finalizado").length;
       const naoCompareceuMes = agendamentosMes.filter(a => a.status === "Não Compareceu").length;
@@ -337,7 +350,14 @@ export default function AssistenteIA() {
         }
       };
 
-      console.log('✅ [AssistenteIA] Dados detalhados coletados:', resumo);
+      console.log('✅ [AssistenteIA] Resumo final de dados:');
+      console.log(`  - Total geral de pacientes: ${resumo.totais.pacientes}`);
+      console.log(`  - Agendamentos do mês: ${resumo.mes_atual.agendamentos}`);
+      console.log(`  - OS pagas do mês: ${ordensMes.length}`);
+      console.log(`  - Vendas cartão do mês: ${resumo.mes_atual.vendas_cartao.total_vendas}`);
+      console.log(`  - Lançamentos entradas mês: R$ ${resumo.mes_atual.entradas_financeiras.toFixed(2)}`);
+      console.log(`  - Lançamentos saídas mês: R$ ${resumo.mes_atual.saidas_financeiras.toFixed(2)}`);
+      
       return resumo;
       
     } catch (error) {
