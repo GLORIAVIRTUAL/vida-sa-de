@@ -291,17 +291,40 @@ export default function AssistenteIA() {
         };
       });
 
+      // CÁLCULO PRECISO - Remover CPFs vazios/inválidos
+      const cpfsValidos = pacientes.filter(p => p.cpf && p.cpf.trim() !== '').map(p => p.cpf);
+      const cpfsUnicos = [...new Set(cpfsValidos)];
+      
+      // FATURAMENTO BRUTO - Soma direta das OS pagas (sem duplicação)
+      const faturamentoBrutoMes = ordensMes.reduce((sum, os) => sum + (os.valor_final || 0), 0);
+      const totalRepassesMes = ordensMes.reduce((sum, os) => sum + (os.valor_repasse_medico || 0), 0);
+      const totalClinicaMes = ordensMes.reduce((sum, os) => sum + (os.valor_clinica || 0), 0);
+      
+      // LANÇAMENTOS - Filtrar por mês
+      const entradasMes = entradas.filter(e => e.data_lancamento?.startsWith(mesAtual));
+      const saidasMes = saidas.filter(s => s.data_lancamento?.startsWith(mesAtual));
+      const totalEntradasMes = entradasMes.reduce((sum, e) => sum + (e.valor || 0), 0);
+      const totalSaidasMes = saidasMes.reduce((sum, s) => sum + (s.valor || 0), 0);
+      
+      console.log(`💰 [AssistenteIA] VALIDAÇÃO DE VALORES:`);
+      console.log(`  - Faturamento Bruto (OS): R$ ${faturamentoBrutoMes.toFixed(2)}`);
+      console.log(`  - Total Repasses: R$ ${totalRepassesMes.toFixed(2)}`);
+      console.log(`  - Total Clínica: R$ ${totalClinicaMes.toFixed(2)}`);
+      console.log(`  - Entradas (Lançamentos): R$ ${totalEntradasMes.toFixed(2)}`);
+      console.log(`  - Saídas (Lançamentos): R$ ${totalSaidasMes.toFixed(2)}`);
+      console.log(`  - Resultado: R$ ${(totalEntradasMes - totalSaidasMes).toFixed(2)}`);
+
       const resumo = {
         totais: {
-          pacientes: pacientes?.length || 0,
-          pacientes_unicos: [...new Set(pacientes?.map(p => p.cpf))].length,
-          medicos: medicos?.length || 0,
-          medicos_ativos: medicos?.filter(m => m.status === 'Ativo').length || 0,
-          agendamentos_total: agendamentos?.length || 0,
-          ordens_servico_total: ordensServico?.length || 0,
-          vendas_cartao_total: vendasCartao?.length || 0,
-          procedimentos_cadastrados: procedimentos?.length || 0,
-          exames_cadastrados: exames?.length || 0,
+          pacientes: pacientes.length,
+          pacientes_unicos: cpfsUnicos.length,
+          medicos: medicos.length,
+          medicos_ativos: medicos.filter(m => m.status === 'Ativo').length,
+          agendamentos_total: agendamentos.length,
+          ordens_servico_total: ordensServico.length,
+          vendas_cartao_total: vendasCartao.length,
+          procedimentos_cadastrados: procedimentos.length,
+          exames_cadastrados: exames.length,
         },
         hoje: {
           data: hoje,
@@ -348,13 +371,11 @@ export default function AssistenteIA() {
           nao_compareceu: naoCompareceuMes,
           taxa_comparecimento: agendamentosMes.length > 0 ? ((finalizadosMes / agendamentosMes.length) * 100).toFixed(1) : 0,
           taxa_cancelamento: agendamentosMes.length > 0 ? ((canceladosMes / agendamentosMes.length) * 100).toFixed(1) : 0,
-          faturamento_bruto: ordensMes.reduce((sum, os) => sum + (os.valor_final || 0), 0),
-          total_repasses: ordensMes.reduce((sum, os) => sum + (os.valor_repasse_medico || 0), 0),
-          total_clinica: ordensMes.reduce((sum, os) => sum + (os.valor_clinica || 0), 0),
-          entradas_financeiras: entradas.filter(e => e.data_lancamento?.startsWith(mesAtual))
-            .reduce((sum, e) => sum + (e.valor || 0), 0),
-          saidas_financeiras: saidas.filter(s => s.data_lancamento?.startsWith(mesAtual))
-            .reduce((sum, s) => sum + (s.valor || 0), 0),
+          faturamento_bruto: faturamentoBrutoMes,
+          total_repasses: totalRepassesMes,
+          total_clinica: totalClinicaMes,
+          entradas_financeiras: totalEntradasMes,
+          saidas_financeiras: totalSaidasMes,
           repasses_por_medico: Object.values(repassesMesPorMedico),
           estatisticas_medicos: estatisticasMedicos.filter(e => e.atendimentos_mes > 0),
           // NOVO: Análise de formas de pagamento
@@ -389,13 +410,19 @@ export default function AssistenteIA() {
         }
       };
 
-      console.log('✅ [AssistenteIA] Resumo final de dados:');
-      console.log(`  - Total geral de pacientes: ${resumo.totais.pacientes}`);
-      console.log(`  - Agendamentos do mês: ${resumo.mes_atual.agendamentos}`);
-      console.log(`  - OS pagas do mês: ${ordensMes.length}`);
-      console.log(`  - Vendas cartão do mês: ${resumo.mes_atual.vendas_cartao.total_vendas}`);
-      console.log(`  - Lançamentos entradas mês: R$ ${resumo.mes_atual.entradas_financeiras.toFixed(2)}`);
-      console.log(`  - Lançamentos saídas mês: R$ ${resumo.mes_atual.saidas_financeiras.toFixed(2)}`);
+      console.log('✅ [AssistenteIA] ═══════════════════════════════════════');
+      console.log('✅ [AssistenteIA] RESUMO FINAL - VALORES VALIDADOS:');
+      console.log('✅ [AssistenteIA] ═══════════════════════════════════════');
+      console.log(`  📊 Pacientes cadastrados: ${resumo.totais.pacientes}`);
+      console.log(`  👥 Pacientes únicos (CPF): ${resumo.totais.pacientes_unicos}`);
+      console.log(`  👨‍⚕️ Médicos ativos: ${resumo.totais.medicos_ativos} / ${resumo.totais.medicos}`);
+      console.log(`  📅 Agendamentos do mês: ${resumo.mes_atual.agendamentos}`);
+      console.log(`  📋 OS pagas do mês: ${ordensMes.length}`);
+      console.log(`  💰 Faturamento Bruto (OS): R$ ${resumo.mes_atual.faturamento_bruto.toFixed(2)}`);
+      console.log(`  💵 Entradas (Lançamentos): R$ ${resumo.mes_atual.entradas_financeiras.toFixed(2)}`);
+      console.log(`  📤 Saídas (Lançamentos): R$ ${resumo.mes_atual.saidas_financeiras.toFixed(2)}`);
+      console.log(`  💼 Resultado Final: R$ ${(resumo.mes_atual.entradas_financeiras - resumo.mes_atual.saidas_financeiras).toFixed(2)}`);
+      console.log('✅ [AssistenteIA] ═══════════════════════════════════════');
       
       return resumo;
       
