@@ -648,38 +648,51 @@ Para REPASSES MÉDICOS, use esta estrutura:
 - Adicione linha de TOTAL GERAL no final
 ` : ''}
 
-🚨 INSTRUÇÕES CRÍTICAS OBRIGATÓRIAS 🚨
+🚨 INSTRUÇÕES CRÍTICAS - LEIA COM ATENÇÃO 🚨
 
-QUANDO O USUÁRIO PEDIR UMA "LISTA" DE PACIENTES/CLIENTES:
+QUANDO O USUÁRIO PEDIR UMA "LISTA" DE PACIENTES/CLIENTES POR FORMA DE PAGAMENTO:
 
-1. SEMPRE inclua uma tabela HTML no campo "html_table" com:
-   - Título claro indicando o que está sendo listado
-   - TODAS as linhas de dados solicitadas (NÃO RESUMIR!)
-   - Colunas: Nome Completo | Data | Valor | Forma Pagamento | Tipo/Serviço
-   - Exemplo de estrutura:
-   
-   <div class="tabela-relatorio">
-     <h3>📋 Lista de Pacientes - [Filtro Solicitado]</h3>
-     <table class="relatorio-tabela">
-       <thead>
-         <tr><th>Paciente</th><th>Data</th><th>Valor</th><th>Forma Pgto</th><th>Serviço</th></tr>
-       </thead>
-       <tbody>
-         <!-- UMA LINHA PARA CADA TRANSAÇÃO -->
-       </tbody>
-     </table>
-   </div>
+1. Use EXATAMENTE os dados de "ordens_servico_por_forma" fornecidos no contexto
+2. CADA entrada em "transacoes" representa UM registro real do banco de dados
+3. NÃO invente, NÃO estime, NÃO aproxime valores - use APENAS os dados fornecidos
+4. Para PIX: use dados.mes_atual.ordens_servico_por_forma["PIX"].transacoes
+5. Para Cartão: use dados.mes_atual.ordens_servico_por_forma["Cartão Crédito"] ou ["Cartão Débito"]
 
-2. Se a pergunta mencionar uma forma de pagamento específica (PIX, Cartão Crédito, Dinheiro, etc):
-   - Filtre APENAS essa forma de pagamento
-   - Mostre TODOS os registros dessa forma
-   - Não inclua outras formas de pagamento
+ESTRUTURA OBRIGATÓRIA DA TABELA HTML:
 
-3. NO CAMPO "summary": Explique brevemente quantos registros foram encontrados
+<div class="tabela-relatorio">
+  <h3>📋 [Título claro]</h3>
+  <p><strong>Total de registros encontrados: [número exato]</strong></p>
+  <table class="relatorio-tabela">
+    <thead>
+      <tr>
+        <th>Nº</th>
+        <th>Paciente</th>
+        <th>Data</th>
+        <th>Valor</th>
+        <th>Tipo de Serviço</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- LOOP por cada item em transacoes -->
+      <tr>
+        <td>[índice]</td>
+        <td>[paciente_nome]</td>
+        <td>[data formatada]</td>
+        <td style="color: #059669;">R$ [valor]</td>
+        <td>[tipo]</td>
+      </tr>
+    </tbody>
+  </table>
+  <p><strong>TOTAL: R$ [soma exata]</strong></p>
+</div>
 
-4. ${precisaTabela ? 'OBRIGATÓRIO: Inclua tabela HTML com os dados detalhados' : ''}
+VALIDAÇÃO DOS NÚMEROS:
+- Some TODOS os valores da lista e mostre o total
+- O total deve bater com o valor_total da forma de pagamento
+- Se não bater, PARE e revise a lista
 
-5. NUNCA resuma ou agrupe - LISTE LINHA POR LINHA
+${precisaTabela ? 'OBRIGATÓRIO: Inclua tabela HTML com os dados detalhados' : ''}
 
 Responda em JSON com:
 {
