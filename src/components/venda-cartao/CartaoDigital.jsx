@@ -44,7 +44,7 @@ export default function CartaoDigital({ venda, titular = true, dependente = null
       {/* Preview do Cartão */}
       <div 
         ref={cartaoRef} 
-        className="w-[450px] h-[280px] bg-gradient-to-br from-blue-600 via-blue-700 to-purple-700 rounded-2xl shadow-2xl p-6 text-white relative overflow-hidden"
+        className="w-[450px] h-[280px] bg-gradient-to-br from-emerald-600 via-teal-700 to-green-800 rounded-2xl shadow-2xl p-6 text-white relative overflow-hidden"
       >
         {/* Elementos de fundo decorativos */}
         <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -mr-20 -mt-20"></div>
@@ -52,15 +52,11 @@ export default function CartaoDigital({ venda, titular = true, dependente = null
 
         {/* Logo e Nome do Programa */}
         <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
-              <CreditCard className="w-6 h-6 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-sm font-bold leading-tight">CARTÃO</p>
-              <p className="text-lg font-bold leading-tight">MAIS VIDA</p>
-            </div>
-          </div>
+          <img 
+            src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68b9fe84de5d54897629e61a/2b9859adb_Untitleddesign30.png" 
+            alt="Cartão Mais Vida" 
+            className="h-16 w-auto object-contain"
+          />
           <img 
             src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68b9fe84de5d54897629e61a/a0f6566fe_ImagemdoWhatsAppde2025-08-31s094100_18581e21.jpg" 
             alt="Centro Vida Saúde" 
