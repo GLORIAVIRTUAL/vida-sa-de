@@ -48,32 +48,32 @@ export default function CartaoDigital({ venda, titular = true, dependente = null
       {/* Preview do Cartão */}
       <div 
         ref={cartaoRef} 
-        className="w-[450px] h-[280px] bg-gradient-to-br from-emerald-600 via-teal-700 to-green-800 rounded-2xl shadow-2xl p-5 text-white relative overflow-hidden"
-        style={{ fontFamily: 'Arial, sans-serif' }}
+        className="w-[450px] h-[280px] bg-gradient-to-br from-emerald-600 via-teal-700 to-green-800 rounded-2xl shadow-2xl text-white relative overflow-hidden"
+        style={{ fontFamily: 'Arial, sans-serif', padding: '20px 20px 16px 20px' }}
       >
         {/* Elementos de fundo decorativos */}
         <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -mr-20 -mt-20"></div>
         <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full -ml-16 -mb-16"></div>
 
         {/* Header - Logos */}
-        <div className="flex items-start justify-between mb-1 relative z-10">
+        <div className="flex items-start justify-between mb-3 relative z-10">
           <img 
             src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68b9fe84de5d54897629e61a/2b9859adb_Untitleddesign30.png" 
             alt="Cartão Mais Vida" 
-            className="h-12 w-auto object-contain"
+            className="h-11 w-auto object-contain"
             crossOrigin="anonymous"
           />
           <img 
             src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68b9fe84de5d54897629e61a/a0f6566fe_ImagemdoWhatsAppde2025-08-31s094100_18581e21.jpg" 
             alt="Centro Vida Saúde" 
-            className="h-8 w-auto object-contain bg-white rounded px-2 py-1"
+            className="h-8 w-auto object-contain bg-white rounded px-2 py-0.5"
             crossOrigin="anonymous"
           />
         </div>
 
         {/* Tipo de Cartão */}
-        <div className="mb-1.5 relative z-10">
-          <div className="inline-block bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold uppercase">
+        <div className="mb-2 relative z-10">
+          <div className="inline-block bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide">
             {tipoRelacao}
           </div>
         </div>
