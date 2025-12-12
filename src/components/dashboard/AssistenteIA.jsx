@@ -38,17 +38,17 @@ export default function AssistenteIA() {
   const coletarDadosDetalhados = async () => {
     try {
       console.log('🤖 [AssistenteIA] Coletando dados detalhados...');
-      
+
       // Coletar TODOS os dados do sistema SEM LIMITE
       const [agendamentos, ordensServico, lancamentos, medicos, pacientes, vendasCartao, procedimentos, exames] = await Promise.all([
-        Agendamento.list("-created_date").catch(() => []),
-        OrdemServico.list("-created_date").catch(() => []),
-        Lancamento.list("-data_lancamento").catch(() => []),
-        Medico.list().catch(() => []),
-        Paciente.list("-created_date").catch(() => []),
-        VendaCartao.list("-created_date").catch(() => []),
-        Procedimento.list().catch(() => []),
-        Exame.list().catch(() => [])
+        Agendamento.list("-created_date", 50000).catch(() => []),
+        OrdemServico.list("-created_date", 50000).catch(() => []),
+        Lancamento.list("-data_lancamento", 50000).catch(() => []),
+        Medico.list("nome", 5000).catch(() => []),
+        Paciente.list("-created_date", 50000).catch(() => []),
+        VendaCartao.list("-created_date", 50000).catch(() => []),
+        Procedimento.list("nome", 5000).catch(() => []),
+        Exame.list("nome", 5000).catch(() => [])
       ]);
 
       console.log('📊 [AssistenteIA] Total de registros carregados:');
