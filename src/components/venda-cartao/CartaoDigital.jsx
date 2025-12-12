@@ -1,0 +1,121 @@
+import React, { useRef } from 'react';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Download, CreditCard } from "lucide-react";
+import html2canvas from "html2canvas";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+
+export default function CartaoDigital({ venda, titular = true, dependente = null }) {
+  const cartaoRef = useRef(null);
+
+  // Determinar dados do cartão
+  const nomeTitular = titular ? venda.titular?.nome : dependente?.nome;
+  const cpfTitular = titular ? venda.titular?.cpf : dependente?.cpf;
+  const tipoRelacao = titular ? "TITULAR" : "DEPENDENTE";
+
+  const baixarCartao = async () => {
+    if (!cartaoRef.current) return;
+
+    try {
+      const canvas = await html2canvas(cartaoRef.current, {
+        scale: 3,
+        backgroundColor: null,
+        logging: false,
+      });
+
+      const link = document.createElement('a');
+      const nomeArquivo = `cartao-mais-vida-${nomeTitular?.replace(/\s+/g, '-').toLowerCase()}.png`;
+      link.download = nomeArquivo;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch (error) {
+      console.error('Erro ao gerar cartão:', error);
+      alert('Erro ao gerar o cartão digital.');
+    }
+  };
+
+  if (!venda || !nomeTitular) {
+    return null;
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Preview do Cartão */}
+      <div 
+        ref={cartaoRef} 
+        className="w-[450px] h-[280px] bg-gradient-to-br from-blue-600 via-blue-700 to-purple-700 rounded-2xl shadow-2xl p-6 text-white relative overflow-hidden"
+      >
+        {/* Elementos de fundo decorativos */}
+        <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -mr-20 -mt-20"></div>
+        <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full -ml-16 -mb-16"></div>
+
+        {/* Logo e Nome do Programa */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
+              <CreditCard className="w-6 h-6 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-sm font-bold leading-tight">CARTÃO</p>
+              <p className="text-lg font-bold leading-tight">MAIS VIDA</p>
+            </div>
+          </div>
+          <img 
+            src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68b9fe84de5d54897629e61a/a0f6566fe_ImagemdoWhatsAppde2025-08-31s094100_18581e21.jpg" 
+            alt="Centro Vida Saúde" 
+            className="h-10 w-auto object-contain bg-white rounded px-2 py-1"
+          />
+        </div>
+
+        {/* Tipo de Cartão */}
+        <div className="mb-6">
+          <div className="inline-block bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-semibold">
+            {tipoRelacao}
+          </div>
+        </div>
+
+        {/* Informações do Portador */}
+        <div className="space-y-3">
+          <div>
+            <p className="text-xs text-white/70 uppercase tracking-wider mb-1">Nome do Portador</p>
+            <p className="text-lg font-bold truncate">{nomeTitular}</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-xs text-white/70 uppercase tracking-wider mb-1">CPF</p>
+              <p className="text-sm font-semibold">
+                {cpfTitular?.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-white/70 uppercase tracking-wider mb-1">Validade</p>
+              <p className="text-sm font-semibold">
+                {venda.validade_cartao 
+                  ? format(new Date(venda.validade_cartao + 'T00:00:00'), "MM/yy", { locale: ptBR })
+                  : 'N/A'}
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <p className="text-xs text-white/70 uppercase tracking-wider mb-1">Plano</p>
+            <p className="text-sm font-semibold">{venda.tipo_plano}</p>
+          </div>
+        </div>
+
+        {/* Rodapé */}
+        <div className="absolute bottom-4 right-6">
+          <p className="text-xs text-white/60">Centro Vida Saúde</p>
+        </div>
+      </div>
+
+      {/* Botão para Baixar */}
+      <Button onClick={baixarCartao} className="w-full bg-blue-600 hover:bg-blue-700" size="lg">
+        <Download className="w-4 h-4 mr-2" />
+        Baixar Cartão Digital
+      </Button>
+    </div>
+  );
+}
