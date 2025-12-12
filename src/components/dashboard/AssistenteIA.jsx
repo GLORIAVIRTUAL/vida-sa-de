@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Brain, Send, Sparkles, Loader2, AlertCircle, Download, TrendingUp, AlertTriangle, CheckCircle2, Lightbulb } from "lucide-react";
 import { DollarSign, Users, Calendar, BarChart, FileText, Activity } from 'lucide-react';
 import { InvokeLLM } from "@/integrations/Core";
-import { Agendamento, OrdemServico, Lancamento, Medico, Paciente } from "@/entities/all";
+import { Agendamento, OrdemServico, Lancamento, Medico, Paciente, VendaCartao, Procedimento, Exame } from "@/entities/all";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { safeApiCall } from "@/components/shared/apiThrottle";
 import { format } from "date-fns";
@@ -40,13 +40,26 @@ export default function AssistenteIA() {
       console.log('🤖 [AssistenteIA] Coletando dados detalhados...');
       
       // Coletar TODOS os dados do sistema
-      const [agendamentos, ordensServico, lancamentos, medicos, pacientes] = await Promise.all([
-        safeApiCall(() => Agendamento.list("-created_date", 5000)),
-        safeApiCall(() => OrdemServico.list("-created_date", 5000)),
-        safeApiCall(() => Lancamento.list("-data_lancamento", 5000)),
-        safeApiCall(() => Medico.list()),
-        safeApiCall(() => Paciente.list("-created_date", 5000))
+      const [agendamentos, ordensServico, lancamentos, medicos, pacientes, vendasCartao, procedimentos, exames] = await Promise.all([
+        safeApiCall(() => Agendamento.list("-created_date", 10000), []),
+        safeApiCall(() => OrdemServico.list("-created_date", 10000), []),
+        safeApiCall(() => Lancamento.list("-data_lancamento", 10000), []),
+        safeApiCall(() => Medico.list(), []),
+        safeApiCall(() => Paciente.list("-created_date", 10000), []),
+        safeApiCall(() => VendaCartao.list("-created_date", 5000), []),
+        safeApiCall(() => Procedimento.list(), []),
+        safeApiCall(() => Exame.list(), [])
       ]);
+
+      console.log('📊 [AssistenteIA] Total de registros carregados:');
+      console.log(`  - Pacientes: ${pacientes.length}`);
+      console.log(`  - Agendamentos: ${agendamentos.length}`);
+      console.log(`  - Ordens de Serviço: ${ordensServico.length}`);
+      console.log(`  - Lançamentos: ${lancamentos.length}`);
+      console.log(`  - Vendas Cartão: ${vendasCartao.length}`);
+      console.log(`  - Médicos: ${medicos.length}`);
+      console.log(`  - Procedimentos: ${procedimentos.length}`);
+      console.log(`  - Exames: ${exames.length}`);
 
       // DATAS
       const hoje = new Date().toISOString().split('T')[0];
@@ -58,12 +71,54 @@ export default function AssistenteIA() {
       // ORDENS DE SERVIÇO COM DETALHES
       const ordensHoje = (ordensServico || []).filter(os => os.data_execucao === hoje && os.status_pagamento === "Pago");
       const ordensMes = (ordensServico || []).filter(os => os.data_execucao?.startsWith(mesAtual) && os.status_pagamento === "Pago");
+      
+      // Análise de formas de pagamento nas ordens de serviço
+      const formasPagamentoOS = {};
+      ordensMes.forEach(os => {
+        const forma = os.forma_pagamento || 'Não informado';
+        if (!formasPagamentoOS[forma]) {
+          formasPagamentoOS[forma] = { quantidade: 0, valor_total: 0 };
+        }
+        formasPagamentoOS[forma].quantidade += 1;
+        formasPagamentoOS[forma].valor_total += (os.valor_final || 0);
+      });
+
+      // VENDAS DE CARTÃO - ANÁLISE DETALHADA
+      const vendasCartaoMes = (vendasCartao || []).filter(v => v.data_venda?.startsWith(mesAtual));
+      const vendasCartaoHoje = (vendasCartao || []).filter(v => v.data_venda === hoje);
+      
+      const vendasPorForma = {};
+      vendasCartaoMes.forEach(v => {
+        const forma = v.forma_pagamento || 'Não informado';
+        if (!vendasPorForma[forma]) {
+          vendasPorForma[forma] = { quantidade: 0, valor_total: 0 };
+        }
+        vendasPorForma[forma].quantidade += 1;
+        vendasPorForma[forma].valor_total += (v.valor_total || 0);
+      });
 
       // LANÇAMENTOS FINANCEIROS - DETALHADOS
       const entradas = lancamentos?.filter(l => l.tipo === "Entrada") || [];
       const saidas = lancamentos?.filter(l => l.tipo === "Saída") || [];
       
-      // NOVO: Lançamentos de HOJE detalhados
+      // Análise de formas de pagamento nos lançamentos
+      const formasPagamentoLancamentos = {};
+      lancamentos?.forEach(l => {
+        if (l.data_lancamento?.startsWith(mesAtual) && l.forma_pagamento) {
+          const forma = l.forma_pagamento;
+          if (!formasPagamentoLancamentos[forma]) {
+            formasPagamentoLancamentos[forma] = { entradas: 0, saidas: 0, total: 0 };
+          }
+          if (l.tipo === "Entrada") {
+            formasPagamentoLancamentos[forma].entradas += (l.valor || 0);
+          } else {
+            formasPagamentoLancamentos[forma].saidas += (l.valor || 0);
+          }
+          formasPagamentoLancamentos[forma].total = formasPagamentoLancamentos[forma].entradas - formasPagamentoLancamentos[forma].saidas;
+        }
+      });
+      
+      // Lançamentos de HOJE detalhados
       const entradasHoje = entradas.filter(l => l.data_lancamento === hoje);
       const saidasHoje = saidas.filter(l => l.data_lancamento === hoje);
       
@@ -158,10 +213,14 @@ export default function AssistenteIA() {
       const resumo = {
         totais: {
           pacientes: pacientes?.length || 0,
+          pacientes_unicos: [...new Set(pacientes?.map(p => p.cpf))].length,
           medicos: medicos?.length || 0,
           medicos_ativos: medicos?.filter(m => m.status === 'Ativo').length || 0,
           agendamentos_total: agendamentos?.length || 0,
           ordens_servico_total: ordensServico?.length || 0,
+          vendas_cartao_total: vendasCartao?.length || 0,
+          procedimentos_cadastrados: procedimentos?.length || 0,
+          exames_cadastrados: exames?.length || 0,
         },
         hoje: {
           data: hoje,
@@ -216,7 +275,28 @@ export default function AssistenteIA() {
           saidas_financeiras: saidas.filter(s => s.data_lancamento?.startsWith(mesAtual))
             .reduce((sum, s) => sum + (s.valor || 0), 0),
           repasses_por_medico: Object.values(repassesMesPorMedico),
-          estatisticas_medicos: estatisticasMedicos.filter(e => e.atendimentos_mes > 0)
+          estatisticas_medicos: estatisticasMedicos.filter(e => e.atendimentos_mes > 0),
+          // NOVO: Análise de formas de pagamento
+          vendas_cartao: {
+            total_vendas: vendasCartaoMes.length,
+            valor_total: vendasCartaoMes.reduce((sum, v) => sum + (v.valor_total || 0), 0),
+            por_forma_pagamento: Object.entries(vendasPorForma).map(([forma, dados]) => ({
+              forma,
+              quantidade: dados.quantidade,
+              valor_total: dados.valor_total
+            }))
+          },
+          ordens_servico_por_forma: Object.entries(formasPagamentoOS).map(([forma, dados]) => ({
+            forma,
+            quantidade: dados.quantidade,
+            valor_total: dados.valor_total
+          })),
+          lancamentos_por_forma: Object.entries(formasPagamentoLancamentos).map(([forma, dados]) => ({
+            forma,
+            entradas: dados.entradas,
+            saidas: dados.saidas,
+            saldo: dados.total
+          }))
         },
         dados_brutos: {
           total_agendamentos_sistema: agendamentos?.length || 0,
@@ -306,10 +386,13 @@ DADOS COMPLETOS DO SISTEMA - CENTRO VIDA SAÚDE
 ═══════════════════════════════════════════════════════════
 
 📊 CADASTROS TOTAIS:
-- Pacientes cadastrados: ${dados.totais.pacientes}
+- Pacientes cadastrados: ${dados.totais.pacientes} (${dados.totais.pacientes_unicos} únicos por CPF)
 - Médicos cadastrados: ${dados.totais.medicos} (${dados.totais.medicos_ativos} ativos)
+- Procedimentos cadastrados: ${dados.totais.procedimentos_cadastrados}
+- Exames cadastrados: ${dados.totais.exames_cadastrados}
 - Total de agendamentos (histórico): ${dados.dados_brutos.total_agendamentos_sistema}
 - Total de ordens de serviço: ${dados.dados_brutos.total_ordens_servico}
+- Total de vendas de cartão: ${dados.totais.vendas_cartao_total}
 - Total de lançamentos financeiros: ${dados.dados_brutos.total_lancamentos}
 
 📅 AGENDAMENTOS HOJE (${format(new Date(dados.hoje.data + 'T00:00:00'), "dd/MM/yyyy")}):
@@ -355,6 +438,30 @@ ${dados.mes_atual.estatisticas_medicos.length > 0 ? dados.mes_atual.estatisticas
 ${dados.mes_atual.repasses_por_medico.map(r => 
   `• ${r.medico_nome}: ${r.quantidade} atendimento(s) - Total de Repasse: R$ ${r.total_repasse.toFixed(2)}`
 ).join('\n')}
+
+💳 VENDAS DE CARTÃO MAIS VIDA ESTE MÊS:
+- Total de vendas: ${dados.mes_atual.vendas_cartao.total_vendas}
+- Valor total arrecadado: R$ ${dados.mes_atual.vendas_cartao.valor_total.toFixed(2)}
+${dados.mes_atual.vendas_cartao.por_forma_pagamento.length > 0 ? `
+Detalhamento por forma de pagamento:
+${dados.mes_atual.vendas_cartao.por_forma_pagamento.map(f => 
+  `  • ${f.forma}: ${f.quantidade} venda(s) - R$ ${f.valor_total.toFixed(2)}`
+).join('\n')}` : ''}
+
+💰 ORDENS DE SERVIÇO - ANÁLISE POR FORMA DE PAGAMENTO:
+${dados.mes_atual.ordens_servico_por_forma.length > 0 ? 
+  dados.mes_atual.ordens_servico_por_forma.map(f => 
+    `• ${f.forma}: ${f.quantidade} OS - Total: R$ ${f.valor_total.toFixed(2)}`
+  ).join('\n') : 'Nenhuma OS registrada'}
+
+📊 LANÇAMENTOS FINANCEIROS - POR FORMA DE PAGAMENTO:
+${dados.mes_atual.lancamentos_por_forma.length > 0 ? 
+  dados.mes_atual.lancamentos_por_forma.map(f => 
+    `• ${f.forma}:
+  - Entradas: R$ ${f.entradas.toFixed(2)}
+  - Saídas: R$ ${f.saidas.toFixed(2)}
+  - Saldo: R$ ${f.saldo.toFixed(2)}`
+  ).join('\n') : 'Nenhum lançamento com forma de pagamento especificada'}
 
 ${precisaTabela ? `
 🔥 ATENÇÃO: A pergunta solicita um RELATÓRIO DETALHADO COM TABELA.
