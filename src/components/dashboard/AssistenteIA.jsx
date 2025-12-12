@@ -72,18 +72,40 @@ export default function AssistenteIA() {
       const ordensHoje = (ordensServico || []).filter(os => os.data_execucao === hoje && os.status_pagamento === "Pago");
       const ordensMes = (ordensServico || []).filter(os => os.data_execucao?.startsWith(mesAtual) && os.status_pagamento === "Pago");
       
-      // Análise de formas de pagamento nas ordens de serviço
+      // Análise de formas de pagamento nas ordens de serviço - COM DETALHES DE PACIENTES
       const formasPagamentoOS = {};
+      const ordensDetalhadas = ordensMes.map(os => {
+        const pac = pacientes.find(p => p.id === os.paciente_id);
+        const med = medicos.find(m => m.id === os.medico_id);
+        return {
+          os_id: os.id,
+          paciente_nome: pac?.nome || os.paciente_nome || 'N/A',
+          medico_nome: med?.nome || 'N/A',
+          data: os.data_execucao,
+          tipo_servico: os.tipo_servico,
+          forma_pagamento: os.forma_pagamento || 'Não informado',
+          valor: os.valor_final || 0,
+          status: os.status_pagamento
+        };
+      });
+
       ordensMes.forEach(os => {
         const forma = os.forma_pagamento || 'Não informado';
         if (!formasPagamentoOS[forma]) {
-          formasPagamentoOS[forma] = { quantidade: 0, valor_total: 0 };
+          formasPagamentoOS[forma] = { quantidade: 0, valor_total: 0, transacoes: [] };
         }
+        const pac = pacientes.find(p => p.id === os.paciente_id);
         formasPagamentoOS[forma].quantidade += 1;
         formasPagamentoOS[forma].valor_total += (os.valor_final || 0);
+        formasPagamentoOS[forma].transacoes.push({
+          paciente: pac?.nome || os.paciente_nome || 'N/A',
+          data: os.data_execucao,
+          valor: os.valor_final || 0,
+          tipo: os.tipo_servico
+        });
       });
 
-      // VENDAS DE CARTÃO - ANÁLISE DETALHADA
+      // VENDAS DE CARTÃO - ANÁLISE DETALHADA COM LISTA DE CLIENTES
       const vendasCartaoMes = (vendasCartao || []).filter(v => v.data_venda?.startsWith(mesAtual));
       const vendasCartaoHoje = (vendasCartao || []).filter(v => v.data_venda === hoje);
       
@@ -91,10 +113,17 @@ export default function AssistenteIA() {
       vendasCartaoMes.forEach(v => {
         const forma = v.forma_pagamento || 'Não informado';
         if (!vendasPorForma[forma]) {
-          vendasPorForma[forma] = { quantidade: 0, valor_total: 0 };
+          vendasPorForma[forma] = { quantidade: 0, valor_total: 0, clientes: [] };
         }
         vendasPorForma[forma].quantidade += 1;
         vendasPorForma[forma].valor_total += (v.valor_total || 0);
+        vendasPorForma[forma].clientes.push({
+          titular: v.titular?.nome || 'N/A',
+          cpf: v.titular?.cpf || 'N/A',
+          data: v.data_venda,
+          plano: v.tipo_plano,
+          valor: v.valor_total || 0
+        });
       });
 
       // LANÇAMENTOS FINANCEIROS - DETALHADOS
@@ -283,13 +312,16 @@ export default function AssistenteIA() {
             por_forma_pagamento: Object.entries(vendasPorForma).map(([forma, dados]) => ({
               forma,
               quantidade: dados.quantidade,
-              valor_total: dados.valor_total
+              valor_total: dados.valor_total,
+              clientes: dados.clientes
             }))
           },
+          ordens_servico_detalhadas: ordensDetalhadas,
           ordens_servico_por_forma: Object.entries(formasPagamentoOS).map(([forma, dados]) => ({
             forma,
             quantidade: dados.quantidade,
-            valor_total: dados.valor_total
+            valor_total: dados.valor_total,
+            transacoes: dados.transacoes
           })),
           lancamentos_por_forma: Object.entries(formasPagamentoLancamentos).map(([forma, dados]) => ({
             forma,
@@ -443,16 +475,32 @@ ${dados.mes_atual.repasses_por_medico.map(r =>
 - Total de vendas: ${dados.mes_atual.vendas_cartao.total_vendas}
 - Valor total arrecadado: R$ ${dados.mes_atual.vendas_cartao.valor_total.toFixed(2)}
 ${dados.mes_atual.vendas_cartao.por_forma_pagamento.length > 0 ? `
-Detalhamento por forma de pagamento:
+Detalhamento por forma de pagamento com lista de clientes:
 ${dados.mes_atual.vendas_cartao.por_forma_pagamento.map(f => 
-  `  • ${f.forma}: ${f.quantidade} venda(s) - R$ ${f.valor_total.toFixed(2)}`
+  `  • ${f.forma}: ${f.quantidade} venda(s) - R$ ${f.valor_total.toFixed(2)}
+${f.clientes && f.clientes.length > 0 ? 
+  f.clientes.map(c => 
+    `      - ${c.titular} (CPF: ${c.cpf}) | ${c.data} | ${c.plano} | R$ ${c.valor.toFixed(2)}`
+  ).join('\n') 
+  : ''}`
 ).join('\n')}` : ''}
 
 💰 ORDENS DE SERVIÇO - ANÁLISE POR FORMA DE PAGAMENTO:
 ${dados.mes_atual.ordens_servico_por_forma.length > 0 ? 
   dados.mes_atual.ordens_servico_por_forma.map(f => 
-    `• ${f.forma}: ${f.quantidade} OS - Total: R$ ${f.valor_total.toFixed(2)}`
+    `• ${f.forma}: ${f.quantidade} OS - Total: R$ ${f.valor_total.toFixed(2)}
+${f.transacoes && f.transacoes.length > 0 ? 
+  f.transacoes.slice(0, 5).map(t => 
+    `    - ${t.paciente} (${t.data}): R$ ${t.valor.toFixed(2)} - ${t.tipo}`
+  ).join('\n') + (f.transacoes.length > 5 ? `\n    ... e mais ${f.transacoes.length - 5} transação(ões)` : '') 
+  : ''}`
   ).join('\n') : 'Nenhuma OS registrada'}
+
+📋 LISTA COMPLETA DE TODAS AS ${dados.mes_atual.ordens_servico_detalhadas.length} ORDENS DE SERVIÇO DO MÊS:
+${dados.mes_atual.ordens_servico_detalhadas.slice(0, 100).map(os => 
+  `• ${os.paciente_nome} | ${os.data} | ${os.tipo_servico} | ${os.forma_pagamento} | R$ ${os.valor.toFixed(2)}`
+).join('\n')}
+${dados.mes_atual.ordens_servico_detalhadas.length > 100 ? `\n... e mais ${dados.mes_atual.ordens_servico_detalhadas.length - 100} ordens` : ''}
 
 📊 LANÇAMENTOS FINANCEIROS - POR FORMA DE PAGAMENTO:
 ${dados.mes_atual.lancamentos_por_forma.length > 0 ? 
@@ -543,12 +591,18 @@ Para REPASSES MÉDICOS, use esta estrutura:
 - Adicione linha de TOTAL GERAL no final
 ` : ''}
 
-INSTRUÇÕES PARA SUA RESPOSTA:
-1. Seja DETALHADO e ESPECÍFICO
-2. Use os dados fornecidos para fundamentar sua análise
+INSTRUÇÕES CRÍTICAS PARA SUA RESPOSTA:
+1. Seja DETALHADO e ESPECÍFICO - use TODOS os dados fornecidos
+2. Quando o usuário pedir uma LISTA ou RELATÓRIO de pacientes/clientes:
+   - OBRIGATÓRIO: Crie uma TABELA HTML com TODAS as transações/clientes solicitados
+   - Inclua: Nome do paciente/cliente, Data, Valor, Forma de Pagamento, Tipo de Serviço
+   - NÃO resuma - mostre LINHA POR LINHA cada registro
 3. ${precisaTabela ? 'OBRIGATÓRIO: Inclua tabela HTML com os dados detalhados' : ''}
 4. Identifique PONTOS FORTES e PONTOS DE ATENÇÃO
 5. Forneça RECOMENDAÇÕES PRÁTICAS e ACIONÁVEIS
+6. Se o usuário perguntar sobre uma forma de pagamento específica (PIX, Cartão, Dinheiro):
+   - Filtre e mostre APENAS os registros dessa forma de pagamento
+   - Liste TODOS os pacientes/clientes que usaram essa forma
 
 Responda em JSON com:
 {
