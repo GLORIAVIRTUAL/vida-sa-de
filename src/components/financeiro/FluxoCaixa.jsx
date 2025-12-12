@@ -237,6 +237,7 @@ export default function FluxoCaixa({ lancamentos, ordensServico, pacientes, onUp
                   <SelectItem value="PIX">PIX</SelectItem>
                   <SelectItem value="Transferência">Transferência</SelectItem>
                   <SelectItem value="Boleto">Boleto</SelectItem>
+                  <SelectItem value="Múltiplas Formas">Múltiplas Formas</SelectItem>
                 </SelectContent>
               </Select>
             </div>
