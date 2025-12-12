@@ -83,7 +83,7 @@ export default function CartaoDigital({ venda, titular = true, dependente = null
           {/* Nome */}
           <div>
             <p className="text-[10px] text-white/70 uppercase tracking-wider mb-0.5">Nome do Portador</p>
-            <p className="text-base font-bold leading-tight" style={{ wordBreak: 'break-word', maxHeight: '2.5em', overflow: 'hidden' }}>
+            <p className="text-base font-bold leading-snug" style={{ wordBreak: 'break-word', minHeight: '2.4em', display: 'flex', alignItems: 'center' }}>
               {nomeTitular}
             </p>
           </div>
