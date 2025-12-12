@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TrendingUp, TrendingDown, Printer, Calendar } from "lucide-react";
 import {
   Table,
@@ -70,19 +71,22 @@ export default function FluxoCaixa({ lancamentos, ordensServico, pacientes, onUp
   // Filtros de data - padrão: mês atual
   const [dataInicio, setDataInicio] = useState(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
   const [dataFim, setDataFim] = useState(format(endOfMonth(new Date()), 'yyyy-MM-dd'));
+  const [formaPagamentoFiltro, setFormaPagamentoFiltro] = useState("todas");
 
   const abrirForm = (tipo) => {
     setTipoLancamento(tipo);
     setMostrarForm(true);
   };
 
-  // Filtrar lançamentos pelo período selecionado
+  // Filtrar lançamentos pelo período e forma de pagamento
   const lancamentosFiltrados = useMemo(() => {
     return lancamentos.filter(l => {
       if (!l.data_lancamento) return false;
-      return l.data_lancamento >= dataInicio && l.data_lancamento <= dataFim;
+      const dentroData = l.data_lancamento >= dataInicio && l.data_lancamento <= dataFim;
+      const formaMatch = formaPagamentoFiltro === "todas" || l.forma_pagamento === formaPagamentoFiltro;
+      return dentroData && formaMatch;
     });
-  }, [lancamentos, dataInicio, dataFim]);
+  }, [lancamentos, dataInicio, dataFim, formaPagamentoFiltro]);
 
   const { totalEntradas, totalSaidas, saldo } = useMemo(() => {
     const entradas = lancamentosFiltrados.filter(l => l.tipo === "Entrada").reduce((sum, l) => sum + l.valor, 0);
@@ -191,13 +195,13 @@ export default function FluxoCaixa({ lancamentos, ordensServico, pacientes, onUp
 
   return (
     <div className="space-y-6">
-      {/* Filtros de Período */}
+      {/* Filtros de Período e Forma de Pagamento */}
       <Card>
         <CardContent className="p-4">
           <div className="flex flex-wrap items-end gap-4">
             <div className="flex items-center gap-2">
               <Calendar className="w-5 h-5 text-gray-500" />
-              <span className="font-medium text-gray-700">Período:</span>
+              <span className="font-medium text-gray-700">Filtros:</span>
             </div>
             <div className="flex items-center gap-2">
               <Label htmlFor="dataInicio" className="text-sm text-gray-600">De:</Label>
@@ -218,6 +222,23 @@ export default function FluxoCaixa({ lancamentos, ordensServico, pacientes, onUp
                 onChange={(e) => setDataFim(e.target.value)}
                 className="w-40"
               />
+            </div>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="formaPagamento" className="text-sm text-gray-600">Forma:</Label>
+              <Select value={formaPagamentoFiltro} onValueChange={setFormaPagamentoFiltro}>
+                <SelectTrigger id="formaPagamento" className="w-48">
+                  <SelectValue placeholder="Todas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas as formas</SelectItem>
+                  <SelectItem value="Dinheiro">Dinheiro</SelectItem>
+                  <SelectItem value="Cartão Débito">Cartão Débito</SelectItem>
+                  <SelectItem value="Cartão Crédito">Cartão Crédito</SelectItem>
+                  <SelectItem value="PIX">PIX</SelectItem>
+                  <SelectItem value="Transferência">Transferência</SelectItem>
+                  <SelectItem value="Boleto">Boleto</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <Button
               variant="outline"
