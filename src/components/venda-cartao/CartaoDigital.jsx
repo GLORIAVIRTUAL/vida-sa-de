@@ -22,6 +22,10 @@ export default function CartaoDigital({ venda, titular = true, dependente = null
         scale: 3,
         backgroundColor: null,
         logging: false,
+        useCORS: true,
+        allowTaint: true,
+        imageTimeout: 15000,
+        removeContainer: true,
       });
 
       const link = document.createElement('a');
