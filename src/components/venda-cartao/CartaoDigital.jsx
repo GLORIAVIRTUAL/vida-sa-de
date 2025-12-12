@@ -56,30 +56,30 @@ export default function CartaoDigital({ venda, titular = true, dependente = null
         <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full -ml-16 -mb-16"></div>
 
         {/* Header - Logos */}
-        <div className="flex items-start justify-between mb-4 relative z-10">
+        <div className="flex items-start justify-between mb-2 relative z-10">
           <img 
             src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68b9fe84de5d54897629e61a/2b9859adb_Untitleddesign30.png" 
             alt="Cartão Mais Vida" 
-            className="h-14 w-auto object-contain"
+            className="h-12 w-auto object-contain"
             crossOrigin="anonymous"
           />
           <img 
             src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68b9fe84de5d54897629e61a/a0f6566fe_ImagemdoWhatsAppde2025-08-31s094100_18581e21.jpg" 
             alt="Centro Vida Saúde" 
-            className="h-9 w-auto object-contain bg-white rounded px-2 py-1"
+            className="h-8 w-auto object-contain bg-white rounded px-2 py-1"
             crossOrigin="anonymous"
           />
         </div>
 
         {/* Tipo de Cartão */}
-        <div className="mb-3 relative z-10">
+        <div className="mb-2 relative z-10">
           <div className="inline-block bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold uppercase">
             {tipoRelacao}
           </div>
         </div>
 
         {/* Informações do Portador */}
-        <div className="space-y-2 relative z-10">
+        <div className="space-y-1.5 relative z-10">
           {/* Nome */}
           <div>
             <p className="text-[10px] text-white/70 uppercase tracking-wider mb-0.5">Nome do Portador</p>
