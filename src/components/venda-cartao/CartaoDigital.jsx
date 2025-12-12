@@ -76,10 +76,10 @@ export default function CartaoDigital({ venda, titular = true, dependente = null
         </div>
 
         {/* Informações do Portador */}
-        <div className="space-y-3">
+        <div className="space-y-2">
           <div>
             <p className="text-xs text-white/70 uppercase tracking-wider mb-1">Nome do Portador</p>
-            <p className="text-lg font-bold truncate">{nomeTitular}</p>
+            <p className="text-base font-bold leading-tight break-words">{nomeTitular}</p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
