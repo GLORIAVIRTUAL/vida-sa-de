@@ -77,35 +77,74 @@ export default function AssistenteIA() {
       
       // Análise de formas de pagamento nas ordens de serviço - COM DETALHES DE PACIENTES
       const formasPagamentoOS = {};
-      const ordensDetalhadas = ordensMes.map(os => {
+      const ordensDetalhadas = [];
+      
+      ordensMes.forEach(os => {
         const pac = pacientes.find(p => p.id === os.paciente_id);
         const med = medicos.find(m => m.id === os.medico_id);
-        return {
-          os_id: os.id,
-          paciente_nome: pac?.nome || os.paciente_nome || 'N/A',
-          medico_nome: med?.nome || 'N/A',
-          data: os.data_execucao,
-          tipo_servico: os.tipo_servico,
-          forma_pagamento: os.forma_pagamento || 'Não informado',
-          valor: os.valor_final || 0,
-          status: os.status_pagamento
-        };
-      });
-
-      ordensMes.forEach(os => {
-        const forma = os.forma_pagamento || 'Não informado';
-        if (!formasPagamentoOS[forma]) {
-          formasPagamentoOS[forma] = { quantidade: 0, valor_total: 0, transacoes: [] };
+        
+        // Processar múltiplas formas de pagamento
+        if (os.forma_pagamento === "Múltiplas Formas" && os.pagamentos_detalhados && Array.isArray(os.pagamentos_detalhados)) {
+          os.pagamentos_detalhados.forEach(pag => {
+            const forma = pag.forma || "Não informado";
+            
+            // Adicionar aos detalhes
+            ordensDetalhadas.push({
+              os_id: os.id,
+              paciente_nome: pac?.nome || os.paciente_nome || 'N/A',
+              medico_nome: med?.nome || 'N/A',
+              data: os.data_execucao,
+              tipo_servico: os.tipo_servico,
+              forma_pagamento: forma,
+              valor: pag.valor || 0,
+              status: os.status_pagamento
+            });
+            
+            // Agrupar por forma
+            if (!formasPagamentoOS[forma]) {
+              formasPagamentoOS[forma] = { quantidade: 0, valor_total: 0, transacoes: [] };
+            }
+            formasPagamentoOS[forma].quantidade += 1;
+            formasPagamentoOS[forma].valor_total += (pag.valor || 0);
+            formasPagamentoOS[forma].transacoes.push({
+              paciente: pac?.nome || os.paciente_nome || 'N/A',
+              data: os.data_execucao,
+              valor: pag.valor || 0,
+              tipo: os.tipo_servico
+            });
+          });
+        } else {
+          // Forma única de pagamento
+          const forma = os.forma_pagamento || "Não informado";
+          
+          ordensDetalhadas.push({
+            os_id: os.id,
+            paciente_nome: pac?.nome || os.paciente_nome || 'N/A',
+            medico_nome: med?.nome || 'N/A',
+            data: os.data_execucao,
+            tipo_servico: os.tipo_servico,
+            forma_pagamento: forma,
+            valor: os.valor_final || 0,
+            status: os.status_pagamento
+          });
+          
+          if (!formasPagamentoOS[forma]) {
+            formasPagamentoOS[forma] = { quantidade: 0, valor_total: 0, transacoes: [] };
+          }
+          formasPagamentoOS[forma].quantidade += 1;
+          formasPagamentoOS[forma].valor_total += (os.valor_final || 0);
+          formasPagamentoOS[forma].transacoes.push({
+            paciente: pac?.nome || os.paciente_nome || 'N/A',
+            data: os.data_execucao,
+            valor: os.valor_final || 0,
+            tipo: os.tipo_servico
+          });
         }
-        const pac = pacientes.find(p => p.id === os.paciente_id);
-        formasPagamentoOS[forma].quantidade += 1;
-        formasPagamentoOS[forma].valor_total += (os.valor_final || 0);
-        formasPagamentoOS[forma].transacoes.push({
-          paciente: pac?.nome || os.paciente_nome || 'N/A',
-          data: os.data_execucao,
-          valor: os.valor_final || 0,
-          tipo: os.tipo_servico
-        });
+      });
+      
+      console.log(`📊 [AssistenteIA] Formas de pagamento processadas:`, Object.keys(formasPagamentoOS));
+      Object.entries(formasPagamentoOS).forEach(([forma, dados]) => {
+        console.log(`  ${forma}: ${dados.quantidade} transações = R$ ${dados.valor_total.toFixed(2)}`);
       });
 
       // VENDAS DE CARTÃO - ANÁLISE DETALHADA COM LISTA DE CLIENTES
