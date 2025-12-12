@@ -25,6 +25,7 @@ import { createPageUrl } from "@/utils";
 import FormularioVendaCartao from "../components/venda-cartao/FormularioVendaCartao";
 import ReciboVenda from "../components/venda-cartao/ReciboVenda";
 import ContratoAdesao from "../components/venda-cartao/ContratoAdesao";
+import GeradorCartoes from "../components/venda-cartao/GeradorCartoes";
 
 const SENHA_CANCELAMENTO = "123123";
 
@@ -63,6 +64,7 @@ export default function VendaCartaoPage() {
   const [erroCancelamento, setErroCancelamento] = useState('');
 
   const [contratoAberto, setContratoAberto] = useState(false);
+  const [cartoesAberto, setCartoesAberto] = useState(false);
 
   useEffect(() => {
     carregarVendas();
@@ -181,6 +183,11 @@ export default function VendaCartaoPage() {
   const handleVisualizarContrato = (venda) => {
     setVendaSelecionada(venda);
     setContratoAberto(true);
+  };
+
+  const handleAbrirCartoes = (venda) => {
+    setVendaSelecionada(venda);
+    setCartoesAberto(true);
   };
 
   const handleAbrirModalCancelar = (venda) => {
@@ -477,6 +484,16 @@ export default function VendaCartaoPage() {
                             <Printer className="w-4 h-4 mr-1" />
                             Imprimir Contrato
                           </Button>
+
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleAbrirCartoes(venda)}
+                            className="text-purple-600 hover:bg-purple-50 border-purple-200"
+                          >
+                            <CreditCard className="w-4 h-4 mr-1" />
+                            Gerar Cartões
+                          </Button>
                           
                           {venda.status !== 'Cancelado' && (
                             <Button
@@ -521,6 +538,14 @@ export default function VendaCartaoPage() {
         <ContratoAdesao
           venda={vendaSelecionada}
           onClose={() => setContratoAberto(false)}
+        />
+      )}
+
+      {cartoesAberto && vendaSelecionada && (
+        <GeradorCartoes
+          venda={vendaSelecionada}
+          open={cartoesAberto}
+          onClose={() => setCartoesAberto(false)}
         />
       )}
 
