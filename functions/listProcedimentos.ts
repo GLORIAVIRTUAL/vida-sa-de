@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
     );
 
     // Validar API Key no banco de dados
-    const apiKeys = await base44.asServiceRole.entities.ApiKey.filter({ status: "Ativo" });
+    const apiKeys = await base44.entities.ApiKey.filter({ status: "Ativo" });
     const validKey = apiKeys.find(k => k.key === apiKey);
 
     if (!validKey) {
@@ -59,16 +59,16 @@ Deno.serve(async (req) => {
     }
 
     // Buscar todos os procedimentos ativos
-    const procedimentos = await base44.asServiceRole.entities.Procedimento.filter(
+    const procedimentos = await base44.entities.Procedimento.filter(
       { status: "Ativo" },
       "nome"
     );
 
     // Buscar todas as categorias de preço
-    const categorias = await base44.asServiceRole.entities.CategoriaPreco.filter({});
+    const categorias = await base44.entities.CategoriaPreco.filter({});
     
     // Buscar tabela de preços
-    const tabelaPrecos = await base44.asServiceRole.entities.TabelaPreco.filter({});
+    const tabelaPrecos = await base44.entities.TabelaPreco.filter({});
 
     // Formatar resposta com preços por categoria
     const procedimentosFormatados = procedimentos.map(proc => {
