@@ -1,4 +1,4 @@
-import { createClient } from 'npm:@base44/sdk@0.8.4';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
 
 // Helper para CORS
 function handleCors(req) {
@@ -41,14 +41,11 @@ Deno.serve(async (req) => {
 
     const apiKey = authHeader.replace("Token ", "");
 
-    // Criar cliente Base44 com service role
-    const base44 = createClient(
-      Deno.env.get("BASE44_APP_ID"),
-      Deno.env.get("BASE44_SERVICE_ROLE_KEY")
-    );
+    // Criar cliente Base44
+    const base44 = createClientFromRequest(req);
 
     // Validar API Key no banco de dados
-    const apiKeys = await base44.entities.ApiKey.filter({ status: "Ativo" });
+    const apiKeys = await base44.asServiceRole.entities.ApiKey.filter({ status: "Ativo" });
     const validKey = apiKeys.find(k => k.key === apiKey);
 
     if (!validKey) {
@@ -59,16 +56,16 @@ Deno.serve(async (req) => {
     }
 
     // Buscar todos os procedimentos ativos
-    const procedimentos = await base44.entities.Procedimento.filter(
+    const procedimentos = await base44.asServiceRole.entities.Procedimento.filter(
       { status: "Ativo" },
       "nome"
     );
 
     // Buscar todas as categorias de preço
-    const categorias = await base44.entities.CategoriaPreco.filter({});
+    const categorias = await base44.asServiceRole.entities.CategoriaPreco.filter({});
     
     // Buscar tabela de preços
-    const tabelaPrecos = await base44.entities.TabelaPreco.filter({});
+    const tabelaPrecos = await base44.asServiceRole.entities.TabelaPreco.filter({});
 
     // Formatar resposta com preços por categoria
     const procedimentosFormatados = procedimentos.map(proc => {
