@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+import { createClient } from 'npm:@base44/sdk@0.8.4';
 
 // Helper para CORS
 function handleCors(req) {
@@ -41,8 +41,11 @@ Deno.serve(async (req) => {
 
     const apiKey = authHeader.replace("Token ", "");
 
-    // Criar cliente Base44
-    const base44 = createClientFromRequest(req);
+    // Criar cliente Base44 com service role
+    const base44 = createClient(
+      Deno.env.get("BASE44_APP_ID"),
+      Deno.env.get("BASE44_SERVICE_ROLE_KEY")
+    );
 
     // Validar API Key no banco de dados
     const apiKeys = await base44.asServiceRole.entities.ApiKey.filter({ status: "Ativo" });
