@@ -1,4 +1,4 @@
-import { createClient } from 'npm:@base44/sdk@0.8.4';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
 
 // Helper para CORS
 function handleCors(req) {
@@ -8,7 +8,7 @@ function handleCors(req) {
       headers: {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET, OPTIONS",
-        "Access-Control-Allow-Headers": "Authorization, Content-Type"
+        "Access-Control-Allow-Headers": "Content-Type"
       }
     });
   }
@@ -24,59 +24,23 @@ Deno.serve(async (req) => {
     // Headers CORS
     const headers = {
       "Content-Type": "application/json",
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, OPTIONS",
-      "Access-Control-Allow-Headers": "Authorization, Content-Type"
+      "Access-Control-Allow-Origin": "*"
     };
 
-    // Validar autenticação via API Key
-    const authHeader = req.headers.get("Authorization");
-    
-    if (!authHeader || !authHeader.startsWith("Token ")) {
-      return Response.json(
-        { error: "Autenticação necessária. Use: Authorization: Token <sua-api-key>" },
-        { status: 401, headers }
-      );
-    }
-
-    const apiKey = authHeader.replace("Token ", "");
-
-    // Criar cliente Base44 usando variáveis de ambiente (Service Role)
-    const appId = Deno.env.get("BASE44_APP_ID");
-    const serviceKey = Deno.env.get("BASE44_SERVICE_ROLE_KEY");
-    
-    if (!appId || !serviceKey) {
-      console.error("Variáveis de ambiente não configuradas:", { appId: !!appId, serviceKey: !!serviceKey });
-      return Response.json(
-        { error: "Configuração do servidor incompleta" },
-        { status: 500, headers }
-      );
-    }
-
-    const base44 = createClient(appId, serviceKey);
-
-    // Validar API Key no banco de dados
-    const apiKeys = await base44.entities.ApiKey.filter({ status: "Ativo" });
-    const validKey = apiKeys.find(k => k.key === apiKey);
-
-    if (!validKey) {
-      return Response.json(
-        { error: "API Key inválida" },
-        { status: 403, headers }
-      );
-    }
+    // Criar cliente Base44
+    const base44 = createClientFromRequest(req);
 
     // Buscar todos os procedimentos ativos
-    const procedimentos = await base44.entities.Procedimento.filter(
+    const procedimentos = await base44.asServiceRole.entities.Procedimento.filter(
       { status: "Ativo" },
       "nome"
     );
 
     // Buscar todas as categorias de preço
-    const categorias = await base44.entities.CategoriaPreco.filter({});
+    const categorias = await base44.asServiceRole.entities.CategoriaPreco.filter({});
     
     // Buscar tabela de preços
-    const tabelaPrecos = await base44.entities.TabelaPreco.filter({});
+    const tabelaPrecos = await base44.asServiceRole.entities.TabelaPreco.filter({});
 
     // Formatar resposta com preços por categoria
     const procedimentosFormatados = procedimentos.map(proc => {
