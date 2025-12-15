@@ -24,6 +24,7 @@ const diasSemana = [
 ];
 
 const recorrenciaOptions = [
+  { value: 'Apenas uma vez', label: 'Apenas uma vez' },
   { value: 'Toda Semana', label: 'Toda Semana' },
   { value: '1ª e 3ª Semana do Mês', label: '1ª e 3ª Semana do Mês' },
   { value: '2ª e 4ª Semana do Mês', label: '2ª e 4ª Semana do Mês' },
