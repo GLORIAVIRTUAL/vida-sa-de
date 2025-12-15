@@ -184,7 +184,8 @@ export default function FormularioMedico({ medico, open, onClose, onUpdate }) {
       dia_semana: 1,
       horario_inicio: '08:00',
       horario_fim: '12:00',
-      recorrencia: 'Toda Semana'
+      recorrencia: 'Toda Semana',
+      data_especifica: null
     };
     handleInputChange('horarios_atendimento', [...formData.horarios_atendimento, novoHorario]);
   };
@@ -522,59 +523,77 @@ export default function FormularioMedico({ medico, open, onClose, onUpdate }) {
               <CardContent className="space-y-4">
                 {formData.horarios_atendimento.map((horario, index) => (
                   <div key={index} className="flex gap-2 items-end p-3 border rounded-lg bg-gray-50">
-                    <div className="flex-1 grid grid-cols-4 gap-2">
-                      <div>
-                        <Label className="text-xs">Dia da Semana</Label>
-                        <Select 
-                          value={horario.dia_semana.toString()} 
-                          onValueChange={(value) => handleHorarioChange(index, 'dia_semana', value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {diasSemana.map(dia => (
-                              <SelectItem key={dia.value} value={dia.value.toString()}>
-                                {dia.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                    <div className="flex-1 space-y-2">
+                      <div className="grid grid-cols-5 gap-2">
+                        <div>
+                          <Label className="text-xs">Dia da Semana</Label>
+                          <Select 
+                            value={horario.dia_semana.toString()} 
+                            onValueChange={(value) => handleHorarioChange(index, 'dia_semana', value)}
+                            disabled={!!horario.data_especifica}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {diasSemana.map(dia => (
+                                <SelectItem key={dia.value} value={dia.value.toString()}>
+                                  {dia.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label className="text-xs">Início</Label>
+                          <Input
+                            type="time"
+                            value={horario.horario_inicio}
+                            onChange={(e) => handleHorarioChange(index, 'horario_inicio', e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Fim</Label>
+                          <Input
+                            type="time"
+                            value={horario.horario_fim}
+                            onChange={(e) => handleHorarioChange(index, 'horario_fim', e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Recorrência</Label>
+                          <Select 
+                            value={horario.recorrencia || 'Toda Semana'} 
+                            onValueChange={(value) => handleHorarioChange(index, 'recorrencia', value)}
+                            disabled={!!horario.data_especifica}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {recorrenciaOptions.map(opt => (
+                                <SelectItem key={opt.value} value={opt.value}>
+                                  {opt.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label className="text-xs">Data Específica</Label>
+                          <Input
+                            type="date"
+                            value={horario.data_especifica || ''}
+                            onChange={(e) => handleHorarioChange(index, 'data_especifica', e.target.value || null)}
+                            placeholder="Opcional"
+                          />
+                        </div>
                       </div>
-                      <div>
-                        <Label className="text-xs">Início</Label>
-                        <Input
-                          type="time"
-                          value={horario.horario_inicio}
-                          onChange={(e) => handleHorarioChange(index, 'horario_inicio', e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs">Fim</Label>
-                        <Input
-                          type="time"
-                          value={horario.horario_fim}
-                          onChange={(e) => handleHorarioChange(index, 'horario_fim', e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs">Recorrência</Label>
-                        <Select 
-                          value={horario.recorrencia || 'Toda Semana'} 
-                          onValueChange={(value) => handleHorarioChange(index, 'recorrencia', value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {recorrenciaOptions.map(opt => (
-                              <SelectItem key={opt.value} value={opt.value}>
-                                {opt.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                      {horario.data_especifica && (
+                        <p className="text-xs text-blue-600">
+                          ℹ️ Este horário é para a data específica: {new Date(horario.data_especifica + 'T00:00:00').toLocaleDateString('pt-BR')}
+                        </p>
+                      )}
                     </div>
                     <Button
                       type="button"
