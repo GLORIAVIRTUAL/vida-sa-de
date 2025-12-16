@@ -206,6 +206,12 @@ export default function FormularioMedico({ medico, open, onClose, onUpdate }) {
   };
 
   const handleSave = async () => {
+    console.log('🔍 Verificando campos obrigatórios...');
+    console.log('Nome:', formData.nome);
+    console.log('CRM:', formData.crm);
+    console.log('Especialidade:', formData.especialidade);
+    console.log('Horários:', formData.horarios_atendimento);
+
     if (!formData.nome || !formData.crm || !formData.especialidade) {
       setError("Preencha todos os campos obrigatórios: Nome, CRM e Especialidade");
       return;
@@ -243,13 +249,14 @@ export default function FormularioMedico({ medico, open, onClose, onUpdate }) {
       };
 
       console.log('💾 Salvando médico com dados:', dadosParaSalvar);
+      console.log('📋 Total de horários a salvar:', dadosParaSalvar.horarios_atendimento.length);
 
       if (medico) {
-        await Medico.update(medico.id, dadosParaSalvar);
-        console.log('✅ Médico atualizado com sucesso!');
+        const resultado = await Medico.update(medico.id, dadosParaSalvar);
+        console.log('✅ Médico atualizado com sucesso! Resultado:', resultado);
       } else {
-        await Medico.create(dadosParaSalvar);
-        console.log('✅ Médico criado com sucesso!');
+        const resultado = await Medico.create(dadosParaSalvar);
+        console.log('✅ Médico criado com sucesso! Resultado:', resultado);
       }
 
       setSuccess(medico ? 'Médico atualizado com sucesso!' : 'Médico cadastrado com sucesso!');
@@ -261,6 +268,7 @@ export default function FormularioMedico({ medico, open, onClose, onUpdate }) {
 
     } catch (error) {
       console.error("❌ Erro ao salvar médico:", error);
+      console.error("❌ Detalhes do erro:", error.stack);
       setError(`Erro ao salvar: ${error.message || 'Erro desconhecido'}`);
     } finally {
       setLoading(false);
