@@ -1,4 +1,3 @@
-
 import { createClientFromRequest } from 'npm:@base44/sdk@0.7.0';
 
 const diasSemanaMap = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
@@ -23,6 +22,9 @@ const getWeekOfMonth = (date) => {
 const checkRecorrencia = (recorrencia, date) => {
     if (!recorrencia || recorrencia === "Toda Semana") {
         return true;
+    }
+    if (recorrencia === "Apenas uma vez") {
+        return false; // Não deve aparecer em recorrências normais, só com data específica
     }
     const weekOfMonth = getWeekOfMonth(date);
     switch (recorrencia) {
@@ -203,15 +205,24 @@ Deno.serve(async (req) => {
                 
                 console.log(`📆 Processando dia ${i + 1}: ${dataFormatada} (${diasSemanaMap[diaSemana]})`);
                 
-                // Verificar se o médico atende neste dia da semana E com a recorrência correta
-                const horariosDoDia = horariosAtendimento.filter(h => 
-                    h.dia_semana === diaSemana && checkRecorrencia(h.recorrencia, dataConsulta)
-                );
+                // Verificar se há horários com data específica para este dia
+                const horariosDataEspecifica = horariosAtendimento.filter(h => h.data_especifica === dataFormatada);
+                
+                // Se houver horários com data específica, usar eles; senão, usar horários recorrentes
+                const horariosDoDia = horariosDataEspecifica.length > 0 
+                    ? horariosDataEspecifica 
+                    : horariosAtendimento.filter(h => 
+                        h.dia_semana === diaSemana && 
+                        !h.data_especifica && 
+                        checkRecorrencia(h.recorrencia, dataConsulta)
+                    );
                 
                 if (horariosDoDia.length === 0) {
                     console.log(`  ⏭️ Médico não atende ${diasSemanaMap[diaSemana]} ou fora da recorrência`);
                     continue; // Pula para o próximo dia
                 }
+                
+                console.log(`  📋 Horários encontrados (${horariosDataEspecifica.length > 0 ? 'data específica' : 'recorrentes'}):`, horariosDoDia);
 
                 console.log(`  ✅ Médico atende ${diasSemanaMap[diaSemana]} com recorrência válida:`, horariosDoDia);
 

@@ -1,4 +1,3 @@
-
 import { createClientFromRequest } from 'npm:@base44/sdk@0.7.0';
 
 const diasSemanaMap = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
@@ -64,8 +63,18 @@ Deno.serve(async (req) => {
             const horariosAtendimento = medico.horarios_atendimento || [];
             console.log('⏰ Horários configurados:', horariosAtendimento);
 
-            const horariosDoDia = horariosAtendimento.filter(h => h.dia_semana === diaSemana);
-            console.log('📋 Horários para o dia da semana:', horariosDoDia);
+            // Verificar se há horários com data específica para este dia
+            const horariosDataEspecifica = horariosAtendimento.filter(h => h.data_especifica === cleanData);
+            
+            // Se houver horários com data específica, usar eles; senão, usar horários recorrentes
+            const horariosDoDia = horariosDataEspecifica.length > 0 
+                ? horariosDataEspecifica 
+                : horariosAtendimento.filter(h => h.dia_semana === diaSemana && !h.data_especifica);
+            
+            console.log('📋 Horários filtrados:', {
+                data_especifica_encontrada: horariosDataEspecifica.length > 0,
+                horarios_do_dia: horariosDoDia
+            });
 
             if (horariosDoDia.length === 0) {
                 return Response.json({ 
