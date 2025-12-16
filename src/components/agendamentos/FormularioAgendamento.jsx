@@ -304,15 +304,54 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
     }
   };
 
-  // Memo para calcular os dias da semana que o médico atende
-  const diasDeAtendimento = useMemo(() => {
-    if (!formData.medico_id) return null;
-    const medicoSelecionado = medicos.find(m => m.id === formData.medico_id);
-    if (!medicoSelecionado || !medicoSelecionado.horarios_atendimento) return null;
+  // Helper para verificar semana do mês
+  const getWeekOfMonth = (date) => {
+    const adjustedDayOfMonth = date.getDate();
+    const dayOfWeekOfFirstDay = new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+    return Math.ceil((adjustedDayOfMonth + dayOfWeekOfFirstDay) / 7);
+  };
+
+  // Função para verificar se médico atende em uma data específica
+  const medicoAtendeNaDataCalendario = useCallback((date, medicoSelecionado) => {
+    if (!medicoSelecionado?.horarios_atendimento) return false;
     
-    // Cria um Set com os dias da semana (0-6) para checagem rápida
-    return new Set(medicoSelecionado.horarios_atendimento.map(h => h.dia_semana));
-  }, [formData.medico_id, medicos]);
+    const dataFormatada = format(date, 'yyyy-MM-dd');
+    const diaSemana = date.getDay();
+    
+    // 1. Verificar se há horário com data específica para esta data
+    const temDataEspecifica = medicoSelecionado.horarios_atendimento.some(h => 
+      h.data_especifica === dataFormatada
+    );
+    
+    if (temDataEspecifica) return true;
+    
+    // 2. Verificar horários recorrentes (sem data específica)
+    const horariosRecorrentes = medicoSelecionado.horarios_atendimento.filter(h => 
+      h.dia_semana === diaSemana && !h.data_especifica
+    );
+    
+    if (horariosRecorrentes.length === 0) return false;
+    
+    // 3. Verificar recorrência
+    return horariosRecorrentes.some(h => {
+      const recorrencia = h.recorrencia || 'Toda Semana';
+      
+      if (recorrencia === 'Toda Semana') return true;
+      if (recorrencia === 'Apenas uma vez') return false;
+      
+      const weekOfMonth = getWeekOfMonth(date);
+      
+      switch (recorrencia) {
+        case '1ª e 3ª Semana do Mês': return weekOfMonth === 1 || weekOfMonth === 3;
+        case '2ª e 4ª Semana do Mês': return weekOfMonth === 2 || weekOfMonth === 4;
+        case 'Apenas 1ª Semana do Mês': return weekOfMonth === 1;
+        case 'Apenas 2ª Semana do Mês': return weekOfMonth === 2;
+        case 'Apenas 3ª Semana do Mês': return weekOfMonth === 3;
+        case 'Apenas 4ª Semana do Mês': return weekOfMonth === 4;
+        default: return true;
+      }
+    });
+  }, []);
 
   // NOVO: Filtrar procedimentos baseado na busca
   const procedimentosFiltrados = useMemo(() => {
@@ -329,12 +368,13 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
   }, [procedimentos, buscaProcedimento]);
 
   // Modificadores para o calendário
-  const modifiers = {
+  const modifiers = useMemo(() => ({
     disponivel: (date) => {
-      if (!diasDeAtendimento) return false;
-      return diasDeAtendimento.has(date.getDay());
+      if (!formData.medico_id) return false;
+      const medicoSelecionado = medicos.find(m => m.id === formData.medico_id);
+      return medicoAtendeNaDataCalendario(date, medicoSelecionado);
     }
-  };
+  }), [formData.medico_id, medicos, medicoAtendeNaDataCalendario]);
 
   const modifiersClassNames = {
     disponivel: "bg-green-100 text-green-900 font-bold",
@@ -530,7 +570,13 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
       const dataObj = new Date(data + 'T00:00:00');
       const diaSemana = dataObj.getDay(); // 0=Domingo, 1=Segunda...
       
-      const horariosDoMedico = medicoSelecionado.horarios_atendimento.filter(h => h.dia_semana === diaSemana);
+      // Verificar se há horários com data específica para este dia
+      const horariosDataEspecifica = medicoSelecionado.horarios_atendimento.filter(h => h.data_especifica === data);
+      
+      // Se houver horários com data específica, usar eles; senão, usar horários recorrentes
+      const horariosDoMedico = horariosDataEspecifica.length > 0 
+        ? horariosDataEspecifica 
+        : medicoSelecionado.horarios_atendimento.filter(h => h.dia_semana === diaSemana && !h.data_especifica);
       
       if (horariosDoMedico.length === 0) {
         setHorariosDisponiveis([]);
@@ -667,7 +713,13 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
       const dataObj = new Date(formData.data_agendamento + 'T00:00:00');
       const diaSemana = dataObj.getDay();
       
-      const horariosDoMedico = medicoSelecionado.horarios_atendimento.filter(h => h.dia_semana === diaSemana);
+      // Verificar se há horários com data específica para este dia
+      const horariosDataEspecifica = medicoSelecionado.horarios_atendimento.filter(h => h.data_especifica === formData.data_agendamento);
+      
+      // Se houver horários com data específica, usar eles; senão, usar horários recorrentes
+      const horariosDoMedico = horariosDataEspecifica.length > 0 
+        ? horariosDataEspecifica 
+        : medicoSelecionado.horarios_atendimento.filter(h => h.dia_semana === diaSemana && !h.data_especifica);
       
       if (horariosDoMedico.length === 0) {
         setHorariosMultiplosServicos([]);
