@@ -148,12 +148,25 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
     if (!medicoId || !categoriaId) return 0;
 
     const medico = medicos.find(m => m.id === medicoId);
-    if (!medico) return 0;
+    if (!medico) {
+      console.warn('⚠️ Médico não encontrado:', medicoId);
+      return 0;
+    }
 
-    console.log(`🔍 Buscando preço para: ${medico.especialidade} - Categoria ID: ${categoriaId}`);
+    console.log(`🔍 Buscando preço para médico: ${medico.nome} (${medico.especialidade})`);
+    console.log(`📋 Categoria ID: ${categoriaId}`);
 
-    // Normalizar especialidade (Safe)
+    // Normalizar especialidade
     const especialidadeNorm = normalizeString(medico.especialidade);
+    console.log(`🔤 Especialidade normalizada: ${especialidadeNorm}`);
+
+    // Listar todos os procedimentos disponíveis para debug
+    console.log('📋 Procedimentos disponíveis:', procedimentos.map(p => ({
+      nome: p.nome,
+      nomeNorm: normalizeString(p.nome),
+      especialidade: p.especialidade,
+      id: p.id
+    })));
 
     // Buscar procedimento de consulta da especialidade
     const procedimentoConsulta = procedimentos.find(p => {
@@ -161,32 +174,44 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
       
       const temConsulta = nomeNorm.includes('CONSULTA');
       const temEspecialidade = nomeNorm.includes(especialidadeNorm);
-      
-      // Check for direct match on specialty if the procedure has a specialty field
       const especialidadeMatch = p.especialidade && normalizeString(p.especialidade) === especialidadeNorm;
+      
+      console.log(`  🔎 Verificando procedimento: ${p.nome}`);
+      console.log(`     - Tem CONSULTA: ${temConsulta}`);
+      console.log(`     - Tem especialidade no nome: ${temEspecialidade}`);
+      console.log(`     - Especialidade match: ${especialidadeMatch}`);
       
       return temConsulta && (temEspecialidade || especialidadeMatch);
     });
 
     if (!procedimentoConsulta) {
-      console.warn(`⚠️ Procedimento de consulta não encontrado para ${medico.especialidade}`);
+      console.error(`❌ PROCEDIMENTO NÃO ENCONTRADO para especialidade: ${medico.especialidade}`);
+      console.log(`💡 Procurei por: CONSULTA + "${especialidadeNorm}"`);
       return 0;
     }
 
     console.log(`✅ Procedimento encontrado: ${procedimentoConsulta.nome} (ID: ${procedimentoConsulta.id})`);
 
     // Buscar preço na tabela de preços
+    console.log('💰 Buscando preço na tabela...');
+    console.log('📋 Tabela de preços disponível:', tabelaPrecos.map(tp => ({
+      procedimento_id: tp.procedimento_id,
+      categoria_id: tp.categoria_id,
+      valor: tp.valor
+    })));
+
     const preco = tabelaPrecos.find(tp => 
       tp.procedimento_id === procedimentoConsulta.id && 
       tp.categoria_id === categoriaId
     );
 
     if (!preco) {
-      console.warn(`⚠️ Preço não encontrado na tabela para categoria ${categoriaId} para o procedimento ${procedimentoConsulta.nome}.`);
+      console.error(`❌ PREÇO NÃO ENCONTRADO na tabela`);
+      console.log(`   Procurei por: procedimento_id=${procedimentoConsulta.id}, categoria_id=${categoriaId}`);
       return 0;
     }
 
-    console.log(`💰 Preço encontrado: R$ ${preco.valor.toFixed(2)}`);
+    console.log(`✅💰 Preço encontrado: R$ ${preco.valor.toFixed(2)}`);
     return preco.valor;
   }, [medicos, procedimentos, tabelaPrecos]);
 
