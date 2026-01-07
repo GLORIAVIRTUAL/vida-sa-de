@@ -1,13 +1,17 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Download, CreditCard } from "lucide-react";
+import { Download, CreditCard, Send, Loader2 } from "lucide-react";
 import html2canvas from "html2canvas";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { base44 } from '@/api/base44Client';
+import { useToast } from '@/components/ui/use-toast';
 
 export default function CartaoDigital({ venda, titular = true, dependente = null }) {
   const cartaoRef = useRef(null);
+  const [enviando, setEnviando] = useState(false);
+  const { toast } = useToast();
 
   // Determinar dados do cartão
   const nomeTitular = titular ? venda.titular?.nome : dependente?.nome;
@@ -36,6 +40,66 @@ export default function CartaoDigital({ venda, titular = true, dependente = null
     } catch (error) {
       console.error('Erro ao gerar cartão:', error);
       alert('Erro ao gerar o cartão digital.');
+    }
+  };
+
+  const enviarCartaoWhatsapp = async () => {
+    setEnviando(true);
+    
+    try {
+      // Obter telefone do portador
+      const telefone = titular ? venda.titular?.telefone : (dependente?.telefone || venda.titular?.telefone);
+      const nomePaciente = titular ? venda.titular?.nome : dependente?.nome;
+
+      if (!telefone) {
+        toast({
+          title: "Erro",
+          description: "Telefone não encontrado. Atualize o cadastro.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Gerar imagem do cartão
+      const canvas = await html2canvas(cartaoRef.current, {
+        scale: 3,
+        backgroundColor: null,
+        logging: false,
+        useCORS: true,
+        allowTaint: true,
+        imageTimeout: 15000,
+        removeContainer: true,
+      });
+
+      const imagemBase64 = canvas.toDataURL('image/png');
+
+      // Enviar via backend
+      const response = await base44.functions.invoke('enviarCartaoWhatsapp', {
+        telefone,
+        imagemBase64,
+        nomePaciente
+      });
+
+      if (response.data.success) {
+        toast({
+          title: "Cartão Enviado! 🎉",
+          description: `Enviado com sucesso para ${telefone}`,
+          duration: 5000
+        });
+      } else {
+        throw new Error(response.data.error || 'Erro ao enviar');
+      }
+
+    } catch (error) {
+      console.error('❌ Erro ao enviar cartão:', error);
+      toast({
+        title: "Erro ao enviar",
+        description: error.message || "Não foi possível enviar o cartão. Verifique o telefone e tente novamente.",
+        variant: "destructive",
+        duration: 7000
+      });
+    } finally {
+      setEnviando(false);
     }
   };
 
@@ -119,11 +183,31 @@ export default function CartaoDigital({ venda, titular = true, dependente = null
         </div>
       </div>
 
-      {/* Botão para Baixar */}
-      <Button onClick={baixarCartao} className="w-full bg-blue-600 hover:bg-blue-700" size="lg">
-        <Download className="w-4 h-4 mr-2" />
-        Baixar Cartão Digital
-      </Button>
+      {/* Botões de Ação */}
+      <div className="grid grid-cols-2 gap-3">
+        <Button onClick={baixarCartao} className="bg-blue-600 hover:bg-blue-700" size="lg">
+          <Download className="w-4 h-4 mr-2" />
+          Baixar
+        </Button>
+        <Button 
+          onClick={enviarCartaoWhatsapp}
+          disabled={enviando}
+          className="bg-green-600 hover:bg-green-700" 
+          size="lg"
+        >
+          {enviando ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Enviando...
+            </>
+          ) : (
+            <>
+              <Send className="w-4 h-4 mr-2" />
+              Enviar WhatsApp
+            </>
+          )}
+        </Button>
+      </div>
     </div>
   );
 }
