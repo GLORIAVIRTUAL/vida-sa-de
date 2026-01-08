@@ -262,6 +262,30 @@ export default function FluxoCaixa({ lancamentos, ordensServico, pacientes, onUp
 
   return (
     <div className="space-y-6">
+      {/* Botão para desbloquear valores */}
+      {!valoresDesbloqueados && (
+        <Card className="bg-amber-50 border-amber-200">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Lock className="w-5 h-5 text-amber-600" />
+                <div>
+                  <p className="font-medium text-amber-900">Valores Protegidos</p>
+                  <p className="text-sm text-amber-700">Os valores financeiros estão ocultos por segurança</p>
+                </div>
+              </div>
+              <Button 
+                onClick={() => setMostrarDialogSenha(true)}
+                className="bg-amber-600 hover:bg-amber-700"
+              >
+                <Eye className="w-4 h-4 mr-2" />
+                Desbloquear Valores
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Filtros de Período e Forma de Pagamento */}
       <Card>
         <CardContent className="p-4">
