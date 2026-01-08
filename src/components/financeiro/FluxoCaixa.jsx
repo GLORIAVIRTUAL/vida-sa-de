@@ -161,6 +161,30 @@ export default function FluxoCaixa({ lancamentos, ordensServico, pacientes, onUp
             <p class="valor">R$ ${saldo.toFixed(2)}</p>
           </div>
         </div>
+
+        <div style="margin: 30px 0; padding: 20px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+          <h3 style="margin: 0 0 15px 0; color: #1e40af; font-size: 18px;">💰 Totais por Forma de Pagamento</h3>
+          <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr>
+                <th style="text-align: left; padding: 10px; background: #3b82f6; color: white; border: 1px solid #ddd;">Forma de Pagamento</th>
+                <th style="text-align: right; padding: 10px; background: #3b82f6; color: white; border: 1px solid #ddd;">Entradas</th>
+                <th style="text-align: right; padding: 10px; background: #3b82f6; color: white; border: 1px solid #ddd;">Saídas</th>
+                <th style="text-align: right; padding: 10px; background: #3b82f6; color: white; border: 1px solid #ddd;">Saldo</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${Object.entries(totaisPorFormaPagamento).map(([forma, valores], idx) => `
+                <tr style="${idx % 2 === 0 ? 'background: white;' : 'background: #f8fafc;'}">
+                  <td style="padding: 10px; border: 1px solid #ddd; font-weight: 600;">${forma}</td>
+                  <td style="padding: 10px; border: 1px solid #ddd; text-align: right; color: #166534;">R$ ${valores.entradas.toFixed(2)}</td>
+                  <td style="padding: 10px; border: 1px solid #ddd; text-align: right; color: #991b1b;">R$ ${valores.saidas.toFixed(2)}</td>
+                  <td style="padding: 10px; border: 1px solid #ddd; text-align: right; font-weight: bold; color: ${valores.total >= 0 ? '#166534' : '#991b1b'};">R$ ${valores.total.toFixed(2)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
         
         <table>
           <thead>
