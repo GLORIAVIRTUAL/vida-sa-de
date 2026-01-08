@@ -28,6 +28,13 @@ const tipoColors = {
 
 export default function FluxoCaixa({ lancamentos, ordensServico, pacientes, onUpdate }) {
   const [mostrarForm, setMostrarForm] = useState(false);
+  const [valoresDesbloqueados, setValoresDesbloqueados] = useState(false);
+  const [mostrarDialogSenha, setMostrarDialogSenha] = useState(false);
+  const [senhaDigitada, setSenhaDigitada] = useState('');
+  const [erroSenha, setErroSenha] = useState('');
+  
+  // Senha para desbloquear valores (pode ser alterada aqui)
+  const SENHA_VALORES = '1234';
 
   // Função auxiliar para enriquecer a descrição e limpar dados corrompidos
   const getDescricaoCompleta = (lancamento) => {
