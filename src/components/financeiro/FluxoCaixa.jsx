@@ -86,6 +86,25 @@ export default function FluxoCaixa({ lancamentos, ordensServico, pacientes, onUp
     setMostrarForm(true);
   };
 
+  const verificarSenha = () => {
+    if (senhaDigitada === SENHA_VALORES) {
+      setValoresDesbloqueados(true);
+      setMostrarDialogSenha(false);
+      setSenhaDigitada('');
+      setErroSenha('');
+    } else {
+      setErroSenha('Senha incorreta. Tente novamente.');
+      setSenhaDigitada('');
+    }
+  };
+
+  const formatarValor = (valor) => {
+    if (!valoresDesbloqueados) {
+      return '******';
+    }
+    return `R$ ${valor.toFixed(2)}`;
+  };
+
   // Filtrar lançamentos pelo período e forma de pagamento
   const lancamentosFiltrados = useMemo(() => {
     return lancamentos.filter(l => {
