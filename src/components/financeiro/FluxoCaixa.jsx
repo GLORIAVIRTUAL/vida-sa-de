@@ -493,7 +493,7 @@ export default function FluxoCaixa({ lancamentos, ordensServico, pacientes, onUp
               Desbloquear Valores Financeiros
             </DialogTitle>
             <DialogDescription>
-              Digite a senha para visualizar os valores. Senha padrão: <code className="bg-gray-100 px-2 py-1 rounded">1234</code>
+              Digite a senha para visualizar os valores financeiros do sistema.
             </DialogDescription>
           </DialogHeader>
           
