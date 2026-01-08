@@ -102,6 +102,22 @@ export default function FluxoCaixa({ lancamentos, ordensServico, pacientes, onUp
     const dataInicioFormatada = format(new Date(dataInicio + 'T00:00:00'), "dd/MM/yyyy", { locale: ptBR });
     const dataFimFormatada = format(new Date(dataFim + 'T00:00:00'), "dd/MM/yyyy", { locale: ptBR });
 
+    // Calcular totais por forma de pagamento
+    const totaisPorFormaPagamento = lancamentosFiltrados.reduce((acc, l) => {
+      const forma = l.forma_pagamento || 'Não especificado';
+      if (!acc[forma]) {
+        acc[forma] = { entradas: 0, saidas: 0, total: 0 };
+      }
+      if (l.tipo === 'Entrada') {
+        acc[forma].entradas += l.valor;
+        acc[forma].total += l.valor;
+      } else {
+        acc[forma].saidas += l.valor;
+        acc[forma].total -= l.valor;
+      }
+      return acc;
+    }, {});
+
     const conteudo = `
       <html>
       <head>
