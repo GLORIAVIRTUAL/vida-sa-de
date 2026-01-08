@@ -483,6 +483,66 @@ export default function FluxoCaixa({ lancamentos, ordensServico, pacientes, onUp
           onCancelar={() => setMostrarForm(false)}
         />
       )}
+
+      {/* Dialog para senha */}
+      <Dialog open={mostrarDialogSenha} onOpenChange={setMostrarDialogSenha}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lock className="w-5 h-5 text-amber-600" />
+              Desbloquear Valores Financeiros
+            </DialogTitle>
+            <DialogDescription>
+              Digite a senha para visualizar os valores. Senha padrão: <code className="bg-gray-100 px-2 py-1 rounded">1234</code>
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="senha">Senha</Label>
+              <Input
+                id="senha"
+                type="password"
+                placeholder="Digite a senha"
+                value={senhaDigitada}
+                onChange={(e) => {
+                  setSenhaDigitada(e.target.value);
+                  setErroSenha('');
+                }}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    verificarSenha();
+                  }
+                }}
+                autoFocus
+              />
+              {erroSenha && (
+                <p className="text-sm text-red-600 mt-2">{erroSenha}</p>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setMostrarDialogSenha(false);
+                setSenhaDigitada('');
+                setErroSenha('');
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={verificarSenha}
+              className="bg-amber-600 hover:bg-amber-700"
+            >
+              <Eye className="w-4 h-4 mr-2" />
+              Desbloquear
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
