@@ -352,7 +352,7 @@ export default function FluxoCaixa({ lancamentos, ordensServico, pacientes, onUp
               <div>
                 <p className="text-sm font-medium text-green-600">Total Entradas</p>
                 <p className="text-2xl font-bold text-green-700">
-                  R$ {totalEntradas.toFixed(2)}
+                  {formatarValor(totalEntradas)}
                 </p>
               </div>
               <TrendingUp className="w-8 h-8 text-green-600" />
