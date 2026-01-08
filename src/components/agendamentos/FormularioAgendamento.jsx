@@ -88,6 +88,9 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
     exames_ids: [],
     categoria_preco_id: '',
     valor_total: '0',
+    desconto_manual: '0',
+    acrescimo_manual: '0',
+    valor_final: '0',
     forma_pagamento: 'Dinheiro',
     status: 'Agendado',
     observacoes: '',
@@ -445,12 +448,15 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
           exames_ids: agendamento.exames_ids || [],
           categoria_preco_id: agendamento.categoria_preco_id || '',
           valor_total: agendamento.valor_total?.toString() || '0',
+          desconto_manual: agendamento.desconto_manual?.toString() || '0',
+          acrescimo_manual: agendamento.acrescimo_manual?.toString() || '0',
+          valor_final: agendamento.valor_final?.toString() || agendamento.valor_total?.toString() || '0',
           forma_pagamento: agendamento.forma_pagamento || 'Dinheiro',
           status: agendamento.status || 'Agendado',
           observacoes: agendamento.observacoes || '',
           lembrete_equipe: agendamento.lembrete_equipe || false,
           lembrete_dias_antes: agendamento.lembrete_dias_antes !== undefined ? agendamento.lembrete_dias_antes : 1
-        };
+          };
         
         // Ativar modo múltiplos serviços se já tiver itens
         if (agendamento.itens_servico && agendamento.itens_servico.length > 0) {
@@ -972,9 +978,18 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
     console.log('💰 ===== VALOR FINAL CALCULADO: R$', total.toFixed(2), '=====');
     // Only update if the value has actually changed to avoid unnecessary re-renders
     if (parseFloat(formData.valor_total).toFixed(2) !== total.toFixed(2)) {
-      setFormData(prev => ({ ...prev, valor_total: total.toFixed(2).toString() }));
+      setFormData(prev => {
+        const desconto = parseFloat(prev.desconto_manual) || 0;
+        const acrescimo = parseFloat(prev.acrescimo_manual) || 0;
+        const valorFinal = Math.max(0, total - desconto + acrescimo);
+        return { 
+          ...prev, 
+          valor_total: total.toFixed(2).toString(),
+          valor_final: valorFinal.toFixed(2).toString()
+        };
+      });
     }
-  }, [
+    }, [
     formData.tipo_servico,
     formData.medico_id,
     formData.procedimento_id,
@@ -992,7 +1007,7 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
     console.log(`📝 Campo alterado: ${field} = ${value}`);
     setFormData(prev => {
       const newData = { ...prev, [field]: value };
-      
+
       // Atualizar procedimento_id quando mudar médico ou tipo de serviço para 'Consulta'
       if (
         (field === 'medico_id' || field === 'tipo_servico') && 
@@ -1002,17 +1017,17 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
         const medico = medicos.find(m => m.id === newData.medico_id);
         if (medico) {
           const especialidadeNorm = normalizeString(medico.especialidade);
-          
+
           const procedimentoConsulta = procedimentos.find(p => {
             const nomeNorm = normalizeString(p.nome);
-            
+
             const temConsulta = nomeNorm.includes('CONSULTA');
             const temEspecialidade = nomeNorm.includes(especialidadeNorm);
             const especialidadeMatch = p.especialidade && normalizeString(p.especialidade) === especialidadeNorm;
-            
+
             return temConsulta && (temEspecialidade || especialidadeMatch);
           });
-          
+
           if (procedimentoConsulta) {
             newData.procedimento_id = procedimentoConsulta.id;
           } else {
@@ -1024,7 +1039,15 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
       } else if (field === 'tipo_servico' && newData.tipo_servico !== 'Consulta') {
         newData.procedimento_id = ''; // Clear if type changes from Consulta
       }
-      
+
+      // Recalcular valor final quando desconto ou acréscimo mudar
+      if (field === 'desconto_manual' || field === 'acrescimo_manual') {
+        const valorBase = parseFloat(newData.valor_total) || 0;
+        const desconto = parseFloat(newData.desconto_manual) || 0;
+        const acrescimo = parseFloat(newData.acrescimo_manual) || 0;
+        newData.valor_final = Math.max(0, valorBase - desconto + acrescimo).toFixed(2).toString();
+      }
+
       return newData;
     });
   };
@@ -1134,19 +1157,22 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
       const pacienteSelecionado = pacientesEncontrados.find(p => p.id === formData.paciente_id);
 
       const dados = {
-        paciente_id: formData.paciente_id,
-        paciente_nome: pacienteSelecionado ? pacienteSelecionado.nome : '',
-        data_agendamento: formData.data_agendamento,
-        horario: formData.horario,
-        tipo_servico: formData.tipo_servico,
-        categoria_preco_id: formData.categoria_preco_id, // CRÍTICO
-        valor_total: parseFloat(formData.valor_total) || 0,
-        status: formData.status || 'Agendado',
-        forma_pagamento: formData.forma_pagamento || 'Dinheiro',
-        is_encaixe: formData.is_encaixe || false,
-        is_recorrente: formData.is_recorrente || false,
-        lembrete_equipe: formData.lembrete_equipe || false,
-        lembrete_dias_antes: parseInt(formData.lembrete_dias_antes) || 0
+      paciente_id: formData.paciente_id,
+      paciente_nome: pacienteSelecionado ? pacienteSelecionado.nome : '',
+      data_agendamento: formData.data_agendamento,
+      horario: formData.horario,
+      tipo_servico: formData.tipo_servico,
+      categoria_preco_id: formData.categoria_preco_id, // CRÍTICO
+      valor_total: parseFloat(formData.valor_total) || 0,
+      desconto_manual: parseFloat(formData.desconto_manual) || 0,
+      acrescimo_manual: parseFloat(formData.acrescimo_manual) || 0,
+      valor_final: parseFloat(formData.valor_final) || parseFloat(formData.valor_total) || 0,
+      status: formData.status || 'Agendado',
+      forma_pagamento: formData.forma_pagamento || 'Dinheiro',
+      is_encaixe: formData.is_encaixe || false,
+      is_recorrente: formData.is_recorrente || false,
+      lembrete_equipe: formData.lembrete_equipe || false,
+      lembrete_dias_antes: parseInt(formData.lembrete_dias_antes) || 0
       };
 
       // Adicionar campos opcionais
@@ -2765,7 +2791,7 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                 </Select>
               </div>
               <div>
-                <Label htmlFor="valor_total">Valor Total (R$)</Label>
+                <Label htmlFor="valor_total">Valor Base (R$)</Label>
                 <Input 
                   id="valor_total" 
                   name="valor_total" 
@@ -2787,7 +2813,73 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                   </p>
                 )}
               </div>
-            </div>
+              </div>
+
+              {/* Campos de Desconto e Acréscimo Manual */}
+              <div className="p-4 border-2 border-amber-200 rounded-lg bg-amber-50 space-y-4">
+              <h4 className="font-medium text-amber-900 flex items-center gap-2">
+                💰 Ajustes no Valor do Orçamento
+              </h4>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="desconto_manual" className="text-amber-800">Desconto (R$)</Label>
+                  <Input 
+                    id="desconto_manual" 
+                    name="desconto_manual" 
+                    value={formData.desconto_manual} 
+                    onChange={(e) => handleChange('desconto_manual', e.target.value)} 
+                    type="number" 
+                    step="0.01"
+                    min="0"
+                    placeholder="0,00"
+                    className="border-amber-300 focus:border-amber-500"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="acrescimo_manual" className="text-amber-800">Acréscimo (R$)</Label>
+                  <Input 
+                    id="acrescimo_manual" 
+                    name="acrescimo_manual" 
+                    value={formData.acrescimo_manual} 
+                    onChange={(e) => handleChange('acrescimo_manual', e.target.value)} 
+                    type="number" 
+                    step="0.01"
+                    min="0"
+                    placeholder="0,00"
+                    className="border-amber-300 focus:border-amber-500"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="valor_final" className="text-amber-800 font-bold">Valor Final (R$)</Label>
+                  <Input 
+                    id="valor_final" 
+                    name="valor_final" 
+                    value={formData.valor_final} 
+                    readOnly
+                    className="bg-green-100 border-green-400 font-bold text-green-800 text-lg"
+                  />
+                </div>
+              </div>
+
+              {/* Resumo visual */}
+              {(parseFloat(formData.desconto_manual) > 0 || parseFloat(formData.acrescimo_manual) > 0) && (
+                <div className="pt-2 border-t border-amber-300 text-sm">
+                  <div className="flex flex-wrap gap-4 text-amber-900">
+                    <span>Valor Base: <strong>R$ {parseFloat(formData.valor_total).toFixed(2).replace('.', ',')}</strong></span>
+                    {parseFloat(formData.desconto_manual) > 0 && (
+                      <span className="text-red-600">- Desconto: <strong>R$ {parseFloat(formData.desconto_manual).toFixed(2).replace('.', ',')}</strong></span>
+                    )}
+                    {parseFloat(formData.acrescimo_manual) > 0 && (
+                      <span className="text-blue-600">+ Acréscimo: <strong>R$ {parseFloat(formData.acrescimo_manual).toFixed(2).replace('.', ',')}</strong></span>
+                    )}
+                    <span className="text-green-700">= Final: <strong>R$ {parseFloat(formData.valor_final).toFixed(2).replace('.', ',')}</strong></span>
+                  </div>
+                </div>
+              )}
+              </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="forma_pagamento">Forma de Pagamento</Label>
