@@ -2139,7 +2139,7 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                           handleChange('data_agendamento', format(date, 'yyyy-MM-dd'))
                         }
                       }}
-                      disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0) - 86400000)} // Disable dates before today
+                      // Permitir datas retroativas
                       modifiers={modifiers}
                       modifiersClassNames={modifiersClassNames}
                       initialFocus
