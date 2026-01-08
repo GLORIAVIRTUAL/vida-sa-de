@@ -454,7 +454,11 @@ export default function FluxoCaixa({ lancamentos, ordensServico, pacientes, onUp
                       <TableCell className={`text-right font-semibold ${
                         lancamento.tipo === "Entrada" ? 'text-green-600' : 'text-red-600'
                       }`}>
-                        {lancamento.tipo === "Entrada" ? '+' : '-'}R$ {lancamento.valor.toFixed(2)}
+                        {valoresDesbloqueados ? (
+                          <>{lancamento.tipo === "Entrada" ? '+' : '-'}R$ {lancamento.valor.toFixed(2)}</>
+                        ) : (
+                          '******'
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
