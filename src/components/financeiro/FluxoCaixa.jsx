@@ -382,7 +382,7 @@ export default function FluxoCaixa({ lancamentos, ordensServico, pacientes, onUp
                   Saldo Total
                 </p>
                 <p className={`text-2xl font-bold ${saldo >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
-                  R$ {saldo.toFixed(2)}
+                  {formatarValor(saldo)}
                 </p>
               </div>
             </div>
