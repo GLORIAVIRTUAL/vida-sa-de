@@ -53,6 +53,7 @@ Deno.serve(async (req) => {
 
       // Buscar ou criar paciente
       let pacienteId;
+      const base44 = createClientFromRequest(req);
       try {
         let pacientes = await base44.asServiceRole.entities.Paciente.filter({
           telefone: phoneNumber
