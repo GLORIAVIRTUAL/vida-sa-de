@@ -2,7 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 Deno.serve(async (req) => {
   // Verificar token do webhook (segurança)
-  const verifyToken = Deno.env.get('WHATSAPP_VERIFY_TOKEN') || 'seu_token_de_verificacao';
+  const verifyToken = Deno.env.get('META_VERIFY_TOKEN') || 'seu_token_de_verificacao';
   
   // GET - Verificação do webhook pela Meta
   if (req.method === 'GET') {
