@@ -1,55 +1,61 @@
-import Dashboard from './pages/Dashboard';
+import AgendamentoOnline from './pages/AgendamentoOnline';
 import Agendamentos from './pages/Agendamentos';
-import Pacientes from './pages/Pacientes';
-import Medicos from './pages/Medicos';
-import Procedimentos from './pages/Procedimentos';
-import Exames from './pages/Exames';
-import Financeiro from './pages/Financeiro';
-import PortalMedico from './pages/PortalMedico';
-import Atendimento from './pages/Atendimento';
-import Usuarios from './pages/Usuarios';
 import ApiIntegracoes from './pages/ApiIntegracoes';
 import ApiTest from './pages/ApiTest';
-import ordemServico from './pages/ordem-servico';
-import ProcessarRequisicao from './pages/ProcessarRequisicao';
-import AgendamentoOnline from './pages/AgendamentoOnline';
-import VerificacaoAssinatura from './pages/VerificacaoAssinatura';
+import Atendimento from './pages/Atendimento';
 import AuditoriaSeguranca from './pages/AuditoriaSeguranca';
-import ImportadorDados from './pages/ImportadorDados';
-import ImportarVendasCartao from './pages/ImportarVendasCartao';
-import VendaCartao from './pages/VendaCartao';
-import WebhookLogs from './pages/WebhookLogs';
-import Turmas from './pages/Turmas';
+import Dashboard from './pages/Dashboard';
 import Debug from './pages/Debug';
 import Diagnostico from './pages/Diagnostico';
+import Exames from './pages/Exames';
+import Financeiro from './pages/Financeiro';
+import Home from './pages/Home';
+import ImportadorDados from './pages/ImportadorDados';
+import ImportarVendasCartao from './pages/ImportarVendasCartao';
+import Medicos from './pages/Medicos';
+import Pacientes from './pages/Pacientes';
+import PortalMedico from './pages/PortalMedico';
+import Procedimentos from './pages/Procedimentos';
+import ProcessarRequisicao from './pages/ProcessarRequisicao';
+import Turmas from './pages/Turmas';
+import Usuarios from './pages/Usuarios';
+import VendaCartao from './pages/VendaCartao';
+import VerificacaoAssinatura from './pages/VerificacaoAssinatura';
+import WebhookLogs from './pages/WebhookLogs';
+import ordemServico from './pages/ordem-servico';
+import OrcamentoExames from './pages/OrcamentoExames';
+import ChatbotGerenciamento from './pages/ChatbotGerenciamento';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
-    "Dashboard": Dashboard,
+    "AgendamentoOnline": AgendamentoOnline,
     "Agendamentos": Agendamentos,
-    "Pacientes": Pacientes,
-    "Medicos": Medicos,
-    "Procedimentos": Procedimentos,
-    "Exames": Exames,
-    "Financeiro": Financeiro,
-    "PortalMedico": PortalMedico,
-    "Atendimento": Atendimento,
-    "Usuarios": Usuarios,
     "ApiIntegracoes": ApiIntegracoes,
     "ApiTest": ApiTest,
-    "ordem-servico": ordemServico,
-    "ProcessarRequisicao": ProcessarRequisicao,
-    "AgendamentoOnline": AgendamentoOnline,
-    "VerificacaoAssinatura": VerificacaoAssinatura,
+    "Atendimento": Atendimento,
     "AuditoriaSeguranca": AuditoriaSeguranca,
-    "ImportadorDados": ImportadorDados,
-    "ImportarVendasCartao": ImportarVendasCartao,
-    "VendaCartao": VendaCartao,
-    "WebhookLogs": WebhookLogs,
-    "Turmas": Turmas,
+    "Dashboard": Dashboard,
     "Debug": Debug,
     "Diagnostico": Diagnostico,
+    "Exames": Exames,
+    "Financeiro": Financeiro,
+    "Home": Home,
+    "ImportadorDados": ImportadorDados,
+    "ImportarVendasCartao": ImportarVendasCartao,
+    "Medicos": Medicos,
+    "Pacientes": Pacientes,
+    "PortalMedico": PortalMedico,
+    "Procedimentos": Procedimentos,
+    "ProcessarRequisicao": ProcessarRequisicao,
+    "Turmas": Turmas,
+    "Usuarios": Usuarios,
+    "VendaCartao": VendaCartao,
+    "VerificacaoAssinatura": VerificacaoAssinatura,
+    "WebhookLogs": WebhookLogs,
+    "ordem-servico": ordemServico,
+    "OrcamentoExames": OrcamentoExames,
+    "ChatbotGerenciamento": ChatbotGerenciamento,
 }
 
 export const pagesConfig = {
