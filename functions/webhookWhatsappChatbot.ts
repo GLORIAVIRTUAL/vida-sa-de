@@ -25,9 +25,10 @@ Deno.serve(async (req) => {
       const body = await req.json();
       console.log('📨 Webhooks da Meta recebido:', JSON.stringify(body, null, 2));
 
-      // Extrair dados da Meta
-      const messages = body?.entry?.[0]?.changes?.[0]?.value?.messages || [];
-      const contacts = body?.entry?.[0]?.changes?.[0]?.value?.contacts || [];
+      // Extrair dados da Meta (novo formato ou webhook direto)
+      const messages = body?.value?.messages || body?.entry?.[0]?.changes?.[0]?.value?.messages || [];
+      const contacts = body?.value?.contacts || body?.entry?.[0]?.changes?.[0]?.value?.contacts || [];
+      const phoneNumberId = body?.value?.metadata?.phone_number_id || body?.entry?.[0]?.changes?.[0]?.value?.metadata?.phone_number_id;
       
       if (messages.length === 0) {
         return Response.json({ success: true });
