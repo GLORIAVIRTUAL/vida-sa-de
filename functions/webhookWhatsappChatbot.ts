@@ -81,8 +81,6 @@ Deno.serve(async (req) => {
       // Invocar agente de IA (separado para não quebrar o webhook)
       console.log('🤖 Enviando para agente de IA...');
       try {
-        const base44 = createClientFromRequest(req);
-        
         // Criar conversa do agente
         const conversation = await base44.agents.createConversation({
           agent_name: 'chatbot_agendamentos',
