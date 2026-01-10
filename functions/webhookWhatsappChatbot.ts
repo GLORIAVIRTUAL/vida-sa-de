@@ -119,8 +119,8 @@ Deno.serve(async (req) => {
 // Função auxiliar para enviar mensagem via API oficial da Meta
 async function enviarMensagemMeta(phoneNumber, mensagem) {
   try {
-    const phoneNumberId = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID');
-    const accessToken = Deno.env.get('WHATSAPP_ACCESS_TOKEN');
+    const phoneNumberId = Deno.env.get('META_PHONE_NUMBER_ID');
+    const accessToken = Deno.env.get('META_ACCESS_TOKEN');
 
     if (!phoneNumberId || !accessToken) {
       console.warn('⚠️ Credenciais Meta WhatsApp não configuradas');
