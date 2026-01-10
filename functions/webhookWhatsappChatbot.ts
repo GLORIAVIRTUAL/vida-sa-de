@@ -51,8 +51,6 @@ Deno.serve(async (req) => {
         return Response.json({ success: true });
       }
 
-      const base44 = createClientFromRequest(req);
-
       // Buscar ou criar paciente
       let pacienteId;
       try {
@@ -74,48 +72,46 @@ Deno.serve(async (req) => {
           console.log(`🆕 Novo paciente criado: ${pacienteId}`);
         }
 
-        // Invocar agente de IA
-        console.log('🤖 Enviando para agente de IA...');
-        
-        try {
-          // Criar ou obter conversa do agente
-          const conversation = await base44.agents.createConversation({
-            agent_name: 'chatbot_agendamentos',
-            metadata: {
-              phone: phoneNumber,
-              pacienteId,
-              senderName
-            }
-          });
-
-          // Adicionar mensagem do usuário
-          await base44.agents.addMessage(conversation, {
-            role: 'user',
-            content: messageText
-          });
-
-          console.log('✅ Mensagem enviada para o agente');
-
-          // A resposta será processada automaticamente pelo agente
-          // Enviar resposta genérica ao usuário
-          await enviarMensagemMeta(
-            phoneNumber,
-            '✅ Sua mensagem foi recebida! Um assistente irá respondê-lo em breve.'
-          );
-        } catch (agentError) {
-          console.error('⚠️ Erro ao chamar agente:', agentError);
-          await enviarMensagemMeta(
-            phoneNumber,
-            'Sua mensagem foi recebida. Iremos processar em breve.'
-          );
-        }
-
       } catch (error) {
-        console.error('❌ Erro ao processar:', error);
+        console.error('❌ Erro ao processar paciente:', error);
+        return Response.json({ success: true });
+      }
+
+      // Invocar agente de IA (separado para não quebrar o webhook)
+      console.log('🤖 Enviando para agente de IA...');
+      try {
+        const base44 = createClientFromRequest(req);
+        
+        // Criar conversa do agente
+        const conversation = await base44.agents.createConversation({
+          agent_name: 'chatbot_agendamentos',
+          metadata: {
+            phone: phoneNumber,
+            pacienteId,
+            senderName
+          }
+        });
+
+        // Adicionar mensagem do usuário
+        await base44.agents.addMessage(conversation, {
+          role: 'user',
+          content: messageText
+        });
+
+        console.log('✅ Mensagem enviada para o agente');
+
+      } catch (agentError) {
+        console.error('⚠️ Erro ao chamar agente:', agentError.message);
+      }
+
+      // Sempre responder sucesso ao webhook da Meta
+      try {
         await enviarMensagemMeta(
           phoneNumber,
-          '❌ Desculpe, ocorreu um erro ao processar sua solicitação. Tente novamente.'
+          '✅ Sua mensagem foi recebida! Um assistente irá respondê-lo em breve.'
         );
+      } catch (metaError) {
+        console.error('❌ Erro ao enviar resposta Meta:', metaError.message);
       }
 
       return Response.json({ success: true });
