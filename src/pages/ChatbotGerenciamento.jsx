@@ -28,18 +28,25 @@ export default function ChatbotGerenciamento() {
     setTimeout(() => setCopiado(false), 2000);
   };
 
-  const instrucoesConfiguracaoZ = `
-1. Acesse https://z-api.io
-2. Faça login ou crie uma conta
-3. Crie uma nova instância de WhatsApp
-4. Configure o webhook:
-   - URL: ${webhookURL}
-   - Evento: Mensagens recebidas (message.received)
-5. Teste o webhook
-6. Copie sua Instance ID e API Key
-7. Adicione em Dashboard > Configurações > Variáveis de Ambiente:
-   - WHATSAPP_INSTANCE_ID = (seu instance ID)
-   - WHATSAPP_API_KEY = (sua API key)
+  const instrucoesConfiguracaoMeta = `
+PASSO 1: Configurar Webhook na Meta
+1. Acesse https://developers.facebook.com
+2. Vá para seu App > WhatsApp > Configuração
+3. Em "Configuração de Webhook":
+   - URL do callback: ${webhookURL}
+   - Token de verificação: seu_token_de_verificacao
+4. Inscreva-se nos eventos: messages
+5. Clique em "Verificar e salvar"
+
+PASSO 2: Obter Credenciais
+6. Vá para "Configurações da API" na sua Conta WhatsApp
+7. Copie:
+   - Phone Number ID (número do telefone da sua conta)
+   - Access Token (token de acesso do seu aplicativo)
+8. Salve como variáveis de ambiente:
+   - WHATSAPP_PHONE_NUMBER_ID = xxx
+   - WHATSAPP_ACCESS_TOKEN = xxx
+   - WHATSAPP_VERIFY_TOKEN = seu_token_de_verificacao
 `;
 
   return (
@@ -130,35 +137,48 @@ export default function ChatbotGerenciamento() {
           </CardContent>
         </Card>
 
-        {/* Z-API Configuration */}
+        {/* Meta API Configuration */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <ExternalLink className="w-5 h-5" />
-              Configurar Z-API
+              Configurar API da Meta
             </CardTitle>
             <CardDescription>
-              Siga os passos para conectar o WhatsApp da sua clínica
+              Conecte o WhatsApp Business da sua clínica
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-              <pre className="text-xs font-mono text-gray-800 overflow-auto">
-                {instrucoesConfiguracaoZ}
+              <pre className="text-xs font-mono text-gray-800 overflow-auto whitespace-pre-wrap">
+                {instrucoesConfiguracaoMeta}
               </pre>
             </div>
 
-            <a 
-              href="https://z-api.io" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="inline-block"
-            >
-              <Button className="bg-blue-600 hover:bg-blue-700 gap-2">
-                <ExternalLink className="w-4 h-4" />
-                Ir para Z-API
-              </Button>
-            </a>
+            <div className="space-y-2">
+              <a 
+                href="https://developers.facebook.com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-block"
+              >
+                <Button className="bg-blue-600 hover:bg-blue-700 gap-2 w-full">
+                  <ExternalLink className="w-4 h-4" />
+                  Ir para Developer Console
+                </Button>
+              </a>
+              <a 
+                href="https://business.facebook.com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-block w-full"
+              >
+                <Button variant="outline" className="w-full gap-2">
+                  <ExternalLink className="w-4 h-4" />
+                  Gerenciador de Empresas
+                </Button>
+              </a>
+            </div>
           </CardContent>
         </Card>
 
@@ -217,7 +237,12 @@ export default function ChatbotGerenciamento() {
         <Alert>
           <AlertCircle className="w-4 h-4 text-amber-600" />
           <AlertDescription className="text-amber-800">
-            <strong>Importante:</strong> Configure as variáveis de ambiente WHATSAPP_INSTANCE_ID e WHATSAPP_API_KEY para que o chatbot funcione corretamente. Sem isso, o sistema receberá mensagens mas não conseguirá responder.
+            <strong>Importante:</strong> Configure as 3 variáveis de ambiente para que o chatbot funcione:
+            <ul className="list-disc ml-5 mt-2 space-y-1">
+              <li>WHATSAPP_PHONE_NUMBER_ID</li>
+              <li>WHATSAPP_ACCESS_TOKEN</li>
+              <li>WHATSAPP_VERIFY_TOKEN</li>
+            </ul>
           </AlertDescription>
         </Alert>
       </div>
