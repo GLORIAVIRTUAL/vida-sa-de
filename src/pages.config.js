@@ -25,6 +25,7 @@ import WebhookLogs from './pages/WebhookLogs';
 import ordemServico from './pages/ordem-servico';
 import OrcamentoExames from './pages/OrcamentoExames';
 import ChatbotGerenciamento from './pages/ChatbotGerenciamento';
+import ChatbotsAtivos from './pages/ChatbotsAtivos';
 import __Layout from './Layout.jsx';
 
 
@@ -56,6 +57,7 @@ export const PAGES = {
     "ordem-servico": ordemServico,
     "OrcamentoExames": OrcamentoExames,
     "ChatbotGerenciamento": ChatbotGerenciamento,
+    "ChatbotsAtivos": ChatbotsAtivos,
 }
 
 export const pagesConfig = {
