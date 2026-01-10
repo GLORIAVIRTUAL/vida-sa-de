@@ -77,24 +77,37 @@ Deno.serve(async (req) => {
         // Invocar agente de IA
         console.log('🤖 Enviando para agente de IA...');
         
-        const agentResponse = await base44.agents.addMessage(
-          { agentName: 'chatbot_agendamentos' },
-          {
-            role: 'user',
-            content: messageText,
+        try {
+          // Criar ou obter conversa do agente
+          const conversation = await base44.agents.createConversation({
+            agent_name: 'chatbot_agendamentos',
             metadata: {
               phone: phoneNumber,
               pacienteId,
               senderName
             }
-          }
-        );
+          });
 
-        console.log('✅ Resposta do agente:', agentResponse);
+          // Adicionar mensagem do usuário
+          await base44.agents.addMessage(conversation, {
+            role: 'user',
+            content: messageText
+          });
 
-        // Enviar resposta via Meta
-        if (agentResponse?.content) {
-          await enviarMensagemMeta(phoneNumber, agentResponse.content);
+          console.log('✅ Mensagem enviada para o agente');
+
+          // A resposta será processada automaticamente pelo agente
+          // Enviar resposta genérica ao usuário
+          await enviarMensagemMeta(
+            phoneNumber,
+            '✅ Sua mensagem foi recebida! Um assistente irá respondê-lo em breve.'
+          );
+        } catch (agentError) {
+          console.error('⚠️ Erro ao chamar agente:', agentError);
+          await enviarMensagemMeta(
+            phoneNumber,
+            'Sua mensagem foi recebida. Iremos processar em breve.'
+          );
         }
 
       } catch (error) {
