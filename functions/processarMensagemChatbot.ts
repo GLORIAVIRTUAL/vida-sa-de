@@ -26,18 +26,6 @@ Deno.serve(async (req) => {
     });
     console.log('✅ Conversa criada:', conversation.id);
 
-    // Adicionar mensagem do usuário à conversa
-    console.log('💬 Adicionando mensagem à conversa...');
-    try {
-      await base44.asServiceRole.agents.addMessage(conversation, {
-        role: 'user',
-        content: messageText
-      });
-      console.log('✅ Mensagem adicionada à conversa');
-    } catch (msgError) {
-      console.log('⚠️ Erro ao adicionar mensagem:', msgError.message);
-    }
-
     // Criar entrada de contato para rastrear a conversa
     try {
       const contato = await base44.asServiceRole.entities.Contato.create({
@@ -53,7 +41,33 @@ Deno.serve(async (req) => {
       console.log('⚠️ Contato já existe ou erro ao criar:', contatoError.message);
     }
 
-    // Enviar resposta padrão enquanto o agente processa
+    // Adicionar mensagem do usuário e obter resposta do agente
+    console.log('💬 Enviando mensagem para o agente...');
+    try {
+      const conversaComResposta = await base44.asServiceRole.agents.addMessage(conversation, {
+        role: 'user',
+        content: messageText
+      });
+      console.log('✅ Resposta do agente recebida:', conversaComResposta?.messages?.length || 0, 'mensagens');
+      
+      // Se o agente respondeu, extrair a resposta
+      if (conversaComResposta?.messages && conversaComResposta.messages.length > 1) {
+        const ultimaMensagem = conversaComResposta.messages[conversaComResposta.messages.length - 1];
+        if (ultimaMensagem.role === 'assistant') {
+          console.log('📨 Enviando resposta do agente via WhatsApp...');
+          await enviarWhatsApp(phoneNumber, ultimaMensagem.content);
+          return Response.json({ 
+            success: true, 
+            conversationId: conversation.id,
+            message: 'Conversa criada e resposta do agente entregue'
+          });
+        }
+      }
+    } catch (msgError) {
+      console.log('⚠️ Erro ao processar com agente:', msgError.message);
+    }
+
+    // Se algo deu errado, enviar resposta padrão
     console.log('📤 Enviando resposta padrão...');
     await enviarWhatsApp(phoneNumber, '👋 Olá ' + senderName + '! Obrigado por entrar em contato. Um agente irá responder em breve.');
 
