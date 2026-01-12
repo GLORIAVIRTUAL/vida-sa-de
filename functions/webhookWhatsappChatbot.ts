@@ -94,8 +94,8 @@ Deno.serve(async (req) => {
 
         console.log('Conversa criada:', conversation?.id);
 
-        // Adicionar mensagem do usuário
-        const response = await base44.asServiceRole.agents.addMessage(conversation, {
+        // Adicionar mensagem do usuário usando o ID da conversa
+        await base44.asServiceRole.agents.addMessage(conversation.id, {
           role: 'user',
           content: messageText
         });
@@ -104,6 +104,7 @@ Deno.serve(async (req) => {
 
       } catch (agentError) {
         console.error('⚠️ Erro ao chamar agente:', agentError);
+        console.error('Error data:', JSON.stringify(agentError?.data || agentError?.message || agentError));
       }
 
       // Sempre responder sucesso ao webhook da Meta
