@@ -1,85 +1,95 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
-      Deno.serve(async (req) => {
-        try {
-          const base44 = createClientFromRequest(req);
-          const { phoneNumber, messageText, pacienteId, senderName } = await req.json();
+Deno.serve(async (req) => {
+  try {
+    const base44 = createClientFromRequest(req);
+    const { phoneNumber, messageText, pacienteId, senderName } = await req.json();
 
-          console.log('📝 Nova mensagem de:', senderName);
-          console.log('📱 Telefone:', phoneNumber);
-          console.log('💬 Mensagem:', messageText);
-          console.log('👤 Paciente ID:', pacienteId);
+    console.log('📝 Nova mensagem de:', senderName);
+    console.log('📱 Telefone:', phoneNumber);
+    console.log('💬 Mensagem:', messageText);
+    console.log('👤 Paciente ID:', pacienteId);
 
-          // Criar sempre nova conversa para teste
-          console.log('🆕 Criando nova conversa');
-          const conversation = await base44.asServiceRole.agents.createConversation({
-            agent_name: 'chatbot_agendamentos',
-            metadata: {
-              name: senderName,
-              phone: phoneNumber,
-              pacienteId: pacienteId || 'nao_identificado',
-              senderName,
-              source: 'whatsapp',
-              pipeline_stage: 'novo',
-              last_message_at: new Date().toISOString()
-            }
-          });
-          console.log('✅ Conversa criada:', conversation.id);
+    // Buscar conversa existente ou criar nova
+    console.log('🔍 Procurando conversa existente...');
+    let response = await base44.asServiceRole.functions.invoke('listarConversasChatbot');
+    const conversasExistentes = response.data?.conversas || [];
 
-    // Criar entrada de contato para rastrear a conversa
-    try {
-      const contato = await base44.asServiceRole.entities.Contato.create({
-        nome: senderName,
-        telefone: phoneNumber,
-        origem: 'WhatsApp',
-        status: 'Lead',
-        ultima_interacao: new Date().toISOString(),
-        observacoes: `ID Conversa: ${conversation.id}`
+    let conversation = conversasExistentes.find(c => c.metadata?.phone === phoneNumber);
+
+    if (conversation) {
+      console.log('✅ Conversa existente encontrada:', conversation.id);
+    } else {
+      console.log('🆕 Criando nova conversa');
+      conversation = await base44.asServiceRole.agents.createConversation({
+        agent_name: 'chatbot_agendamentos',
+        metadata: {
+          phone: phoneNumber,
+          pacienteId: pacienteId || 'nao_identificado',
+          senderName,
+          source: 'whatsapp',
+          pipeline_stage: 'novo',
+          last_message_at: new Date().toISOString()
+        }
       });
-      console.log('✅ Contato criado:', contato.id);
-    } catch (contatoError) {
-      console.log('⚠️ Contato já existe ou erro ao criar:', contatoError.message);
+      console.log('✅ Conversa criada:', conversation.id);
+
+      // Criar contato para rastrear
+      try {
+        await base44.asServiceRole.entities.Contato.create({
+          nome: senderName,
+          telefone: phoneNumber,
+          origem: 'WhatsApp',
+          status: 'Lead',
+          ultima_interacao: new Date().toISOString(),
+          observacoes: `ID Conversa: ${conversation.id}`
+        });
+        console.log('✅ Contato criado');
+      } catch (contatoError) {
+        console.log('⚠️ Contato já existe:', contatoError.message);
+      }
     }
 
-    // Adicionar a mensagem do usuário à conversa para que o agente processe
+    // Adicionar a mensagem do usuário
     console.log('💬 Adicionando mensagem do usuário à conversa...');
     try {
       await base44.asServiceRole.agents.addMessage(conversation, {
         role: 'user',
         content: messageText
       });
-      
+
       console.log('✅ Mensagem adicionada. Aguardando processamento do agente...');
-      
-      // Aguardar um pouco para o agente processar
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Buscar a conversa atualizada com a resposta do agente
-      const conversaComResposta = await base44.asServiceRole.agents.getConversation(conversation.id);
-      console.log('📊 Conversa atualizada. Total de mensagens:', conversaComResposta?.messages?.length || 0);
-      
-      // Procurar pela resposta do agente (última mensagem do assistente)
-      if (conversaComResposta?.messages && Array.isArray(conversaComResposta.messages) && conversaComResposta.messages.length > 1) {
-        const mensagensRevertidas = [...conversaComResposta.messages].reverse();
-        const respostaAgente = mensagensRevertidas.find(msg => msg.role === 'assistant');
-        
+
+      // Aguardar bastante tempo para o agente processar (até 5 segundos)
+      await new Promise(resolve => setTimeout(resolve, 5000));
+
+      // Buscar a conversa atualizada
+      const conversaAtualizada = await base44.asServiceRole.agents.getConversation(conversation.id);
+      console.log('📊 Conversa atualizada. Total de mensagens:', conversaAtualizada?.messages?.length || 0);
+
+      if (conversaAtualizada?.messages && Array.isArray(conversaAtualizada.messages)) {
+        console.log('📋 Mensagens na conversa:', conversaAtualizada.messages.map((m, i) => `${i}: ${m.role} - ${m.content?.substring(0, 30)}...`).join(' | '));
+
+        // Procurar pela resposta do agente (última mensagem do assistente)
+        const respostaAgente = [...conversaAtualizada.messages].reverse().find(msg => msg.role === 'assistant');
+
         if (respostaAgente && respostaAgente.content) {
           console.log('📨 Resposta do agente encontrada:', respostaAgente.content.substring(0, 50) + '...');
           await enviarWhatsApp(phoneNumber, respostaAgente.content);
           return Response.json({ 
             success: true, 
             conversationId: conversation.id,
-            message: 'Conversa criada e resposta do agente entregue',
-            messageCount: conversaComResposta.messages.length
+            message: 'Resposta do agente entregue',
+            messageCount: conversaAtualizada.messages.length
           });
         } else {
-          console.log('⚠️ Nenhuma resposta do assistente encontrada ainda');
+          console.log('⚠️ Nenhuma resposta do assistente encontrada');
         }
       } else {
-        console.log('⚠️ Nenhuma mensagem na conversa ou conversa com menos de 2 mensagens');
+        console.log('⚠️ Nenhuma mensagem na conversa');
       }
     } catch (agentError) {
-      console.log('⚠️ Erro ao processar com agente:', agentError.message);
+      console.error('❌ Erro ao processar com agente:', agentError.message);
     }
 
     // Se algo deu errado, enviar resposta padrão
@@ -89,7 +99,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
     return Response.json({ 
       success: true, 
       conversationId: conversation.id,
-      message: 'Conversa criada e resposta enviada'
+      message: 'Conversa processada'
     });
 
   } catch (error) {
@@ -99,7 +109,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
       code: error.code,
       stack: error.stack
     });
-    
+
     return Response.json({ 
       error: error.message,
       errorType: error.name,
@@ -107,6 +117,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
     }, { status: 500 });
   }
 });
+
 
 async function enviarWhatsApp(phoneNumber, mensagem) {
   const phoneNumberId = Deno.env.get('META_PHONE_NUMBER_ID');
