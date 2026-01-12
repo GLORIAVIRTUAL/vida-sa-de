@@ -4,6 +4,8 @@ import ApiIntegracoes from './pages/ApiIntegracoes';
 import ApiTest from './pages/ApiTest';
 import Atendimento from './pages/Atendimento';
 import AuditoriaSeguranca from './pages/AuditoriaSeguranca';
+import ChatbotGerenciamento from './pages/ChatbotGerenciamento';
+import ChatbotsAtivos from './pages/ChatbotsAtivos';
 import Dashboard from './pages/Dashboard';
 import Debug from './pages/Debug';
 import Diagnostico from './pages/Diagnostico';
@@ -13,6 +15,7 @@ import Home from './pages/Home';
 import ImportadorDados from './pages/ImportadorDados';
 import ImportarVendasCartao from './pages/ImportarVendasCartao';
 import Medicos from './pages/Medicos';
+import OrcamentoExames from './pages/OrcamentoExames';
 import Pacientes from './pages/Pacientes';
 import PortalMedico from './pages/PortalMedico';
 import Procedimentos from './pages/Procedimentos';
@@ -23,9 +26,7 @@ import VendaCartao from './pages/VendaCartao';
 import VerificacaoAssinatura from './pages/VerificacaoAssinatura';
 import WebhookLogs from './pages/WebhookLogs';
 import ordemServico from './pages/ordem-servico';
-import OrcamentoExames from './pages/OrcamentoExames';
-import ChatbotGerenciamento from './pages/ChatbotGerenciamento';
-import ChatbotsAtivos from './pages/ChatbotsAtivos';
+import ConfiguracaoChatbot from './pages/ConfiguracaoChatbot';
 import __Layout from './Layout.jsx';
 
 
@@ -36,6 +37,8 @@ export const PAGES = {
     "ApiTest": ApiTest,
     "Atendimento": Atendimento,
     "AuditoriaSeguranca": AuditoriaSeguranca,
+    "ChatbotGerenciamento": ChatbotGerenciamento,
+    "ChatbotsAtivos": ChatbotsAtivos,
     "Dashboard": Dashboard,
     "Debug": Debug,
     "Diagnostico": Diagnostico,
@@ -45,6 +48,7 @@ export const PAGES = {
     "ImportadorDados": ImportadorDados,
     "ImportarVendasCartao": ImportarVendasCartao,
     "Medicos": Medicos,
+    "OrcamentoExames": OrcamentoExames,
     "Pacientes": Pacientes,
     "PortalMedico": PortalMedico,
     "Procedimentos": Procedimentos,
@@ -55,9 +59,7 @@ export const PAGES = {
     "VerificacaoAssinatura": VerificacaoAssinatura,
     "WebhookLogs": WebhookLogs,
     "ordem-servico": ordemServico,
-    "OrcamentoExames": OrcamentoExames,
-    "ChatbotGerenciamento": ChatbotGerenciamento,
-    "ChatbotsAtivos": ChatbotsAtivos,
+    "ConfiguracaoChatbot": ConfiguracaoChatbot,
 }
 
 export const pagesConfig = {
