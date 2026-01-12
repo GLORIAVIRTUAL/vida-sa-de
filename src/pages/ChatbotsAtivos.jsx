@@ -36,10 +36,6 @@ export default function ChatbotsAtivos() {
     };
 
     carregarConversas();
-    
-    // Atualizar conversas a cada 3 segundos
-    const interval = setInterval(carregarConversas, 3000);
-    return () => clearInterval(interval);
   }, []);
 
   if (carregando) {
