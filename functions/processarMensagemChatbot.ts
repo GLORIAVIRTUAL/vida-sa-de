@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
     return Response.json({ 
       success: true, 
       conversationId: conversation.id,
-      messages: conversaAtualizada.messages?.length || 0
+      message: 'Conversa criada e resposta enviada'
     });
 
   } catch (error) {
