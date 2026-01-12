@@ -110,16 +110,16 @@ Deno.serve(async (req) => {
           console.log('🆕 Nova conversa criada:', conversation.id);
         }
 
-        // Recarregar a conversa completa para ter certeza de ter todos os dados
-        const conversaCompleta = await base44.asServiceRole.agents.getConversation(conversation.id);
-
-        // Adicionar mensagem do usuário - passa o objeto completo
-        await base44.asServiceRole.agents.addMessage(conversaCompleta, {
-          role: 'user',
-          content: messageText
+        // Usar a função invoke para processar a mensagem via backend function dedicada
+        // Isso evita problemas com o SDK e permite processamento assíncrono
+        await base44.asServiceRole.functions.invoke('processarMensagemChatbot', {
+          conversationId: conversation.id,
+          messageText,
+          phoneNumber,
+          senderName
         });
 
-        console.log('✅ Mensagem enviada para o agente');
+        console.log('✅ Mensagem enviada para processamento');
 
       } catch (agentError) {
         console.error('⚠️ Erro ao chamar agente:', agentError);
