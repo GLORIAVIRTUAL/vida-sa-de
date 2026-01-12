@@ -206,7 +206,7 @@ function MainLayout({ children, currentPageName, currentUser, onUserUpdate }) {
                     <img 
                       src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/696256b5ef59ea2bed1bd7ea/bed877093_Untitleddesign14.png" 
                       alt="Glória Virtual" 
-                      className="h-5 object-contain"
+                      className="h-8 object-contain"
                     />
                   ) : (
                     <>
