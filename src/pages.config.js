@@ -27,6 +27,7 @@ import VerificacaoAssinatura from './pages/VerificacaoAssinatura';
 import WebhookLogs from './pages/WebhookLogs';
 import ordemServico from './pages/ordem-servico';
 import ConfiguracaoChatbot from './pages/ConfiguracaoChatbot';
+import ChatbotDashboard from './pages/ChatbotDashboard';
 import __Layout from './Layout.jsx';
 
 
@@ -60,6 +61,7 @@ export const PAGES = {
     "WebhookLogs": WebhookLogs,
     "ordem-servico": ordemServico,
     "ConfiguracaoChatbot": ConfiguracaoChatbot,
+    "ChatbotDashboard": ChatbotDashboard,
 }
 
 export const pagesConfig = {
