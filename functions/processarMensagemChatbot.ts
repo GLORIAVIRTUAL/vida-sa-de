@@ -11,11 +11,16 @@ Deno.serve(async (req) => {
     console.log('👤 Paciente ID:', pacienteId);
 
     // Buscar conversas existentes
-    const conversasExistentes = await base44.asServiceRole.agents.listConversations({
-      agent_name: 'chatbot_agendamentos'
-    });
-
-    console.log(`📋 Total conversas: ${conversasExistentes?.length || 0}`);
+    let conversasExistentes;
+    try {
+      conversasExistentes = await base44.asServiceRole.agents.listConversations({
+        agent_name: 'chatbot_agendamentos'
+      });
+      console.log(`📋 Total conversas: ${conversasExistentes?.length || 0}`);
+    } catch (error) {
+      console.error('❌ Erro ao listar conversas:', error.message);
+      conversasExistentes = [];
+    }
 
     let conversation = conversasExistentes?.find(
       c => c.metadata?.phone === phoneNumber && c.metadata?.source === 'whatsapp'
