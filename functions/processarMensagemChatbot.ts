@@ -123,7 +123,10 @@ async function enviarWhatsApp(phoneNumber, mensagem) {
   const phoneNumberId = Deno.env.get('META_PHONE_NUMBER_ID');
   const accessToken = Deno.env.get('META_ACCESS_TOKEN');
 
-  if (!phoneNumberId || !accessToken) return;
+  if (!phoneNumberId || !accessToken) {
+    console.warn('⚠️ WhatsApp não configurado');
+    return;
+  }
 
   const url = `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`;
 
@@ -145,5 +148,7 @@ async function enviarWhatsApp(phoneNumber, mensagem) {
 
   if (!response.ok) {
     console.error('❌ Erro WhatsApp:', result);
+  } else {
+    console.log('✅ Mensagem enviada via WhatsApp');
   }
 }
