@@ -6,6 +6,8 @@ Deno.serve(async (req) => {
     const { phoneNumber, messageText, pacienteId, senderName } = await req.json();
 
     console.log('📝 Processando mensagem de:', senderName);
+    console.log('📱 Telefone:', phoneNumber);
+    console.log('💬 Mensagem:', messageText);
 
     // Buscar ou criar conversa
     console.log('🔍 Buscando conversas existentes...');
@@ -34,38 +36,44 @@ Deno.serve(async (req) => {
         }
       });
       console.log('✅ Conversa criada:', conversation.id);
-      console.log('📋 Metadata:', conversation.metadata);
     } else {
       console.log('📞 Conversa existente encontrada:', conversation.id);
     }
 
-    // Adicionar mensagem do usuário
-    console.log('📤 Adicionando mensagem à conversa...');
-
-    // Buscar conversa completa novamente para ter todos os dados
-    const conversaCompleta = await base44.asServiceRole.agents.getConversation(conversation.id);
+    // Enviar mensagem diretamente via API HTTP (evita problemas do SDK)
+    console.log('📤 Enviando mensagem via API HTTP...');
     
-    console.log('📊 Conversa completa:', {
-      id: conversaCompleta.id,
-      messages: conversaCompleta.messages?.length || 0,
-      agent_name: conversaCompleta.agent_name
+    const apiUrl = `${Deno.env.get('BASE44_API_URL') || 'https://api.base44.com'}/v1/agents/conversations/${conversation.id}/messages`;
+    const appId = Deno.env.get('BASE44_APP_ID');
+    
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-app-id': appId
+      },
+      body: JSON.stringify({
+        role: 'user',
+        content: messageText
+      })
     });
 
-    // Adicionar mensagem
-    await base44.asServiceRole.agents.addMessage(conversaCompleta, {
-      role: 'user',
-      content: messageText
-    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Erro da API:', errorText);
+      throw new Error(`API Error: ${response.status} - ${errorText}`);
+    }
 
-    console.log('✅ Mensagem adicionada');
+    const resultado = await response.json();
+    console.log('✅ Mensagem adicionada, aguardando resposta do agente...');
 
-    // Aguardar processamento do agente (tempo maior)
+    // Aguardar processamento do agente
     await new Promise(resolve => setTimeout(resolve, 5000));
 
-    // Buscar conversa atualizada
+    // Buscar resposta atualizada
     const conversaAtualizada = await base44.asServiceRole.agents.getConversation(conversation.id);
     
-    console.log('📊 Conversa depois:', {
+    console.log('📊 Conversa atualizada:', {
       id: conversaAtualizada.id,
       messages: conversaAtualizada.messages?.length || 0
     });
@@ -90,7 +98,8 @@ Deno.serve(async (req) => {
 
     return Response.json({ 
       success: true, 
-      conversationId: conversation.id
+      conversationId: conversation.id,
+      messagesCount: conversaAtualizada.messages?.length || 0
     });
 
   } catch (error) {
