@@ -11,11 +11,12 @@ Deno.serve(async (req) => {
     console.log('👤 Paciente ID:', pacienteId);
 
     // Buscar conversa existente ou criar nova
-    console.log('🔍 Procurando conversa existente...');
+    console.log('🔍 Procurando conversa existente para:', phoneNumber);
     let response = await base44.asServiceRole.functions.invoke('listarConversasChatbot');
-    const conversasExistentes = response.data?.conversas || [];
+    const conversasExistentes = response.data?.conversations || [];
 
     let conversation = conversasExistentes.find(c => c.metadata?.phone === phoneNumber);
+    console.log('📊 Conversas encontradas:', conversasExistentes.length, '| Match:', conversation ? 'SIM' : 'NÃO');
 
     if (conversation) {
       console.log('✅ Conversa existente encontrada:', conversation.id);
