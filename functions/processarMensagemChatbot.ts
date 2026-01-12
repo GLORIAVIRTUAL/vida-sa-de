@@ -3,48 +3,80 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const { conversationId, messageText, phoneNumber, senderName } = await req.json();
+    const { phoneNumber, messageText, pacienteId, senderName } = await req.json();
 
-    console.log('📝 Processando mensagem para conversa:', conversationId);
+    console.log('📝 Processando mensagem de:', senderName);
 
-    // Buscar conversa completa
-    const conversation = await base44.asServiceRole.agents.getConversation(conversationId);
-    
+    // Buscar ou criar conversa
+    const conversasExistentes = await base44.asServiceRole.agents.listConversations({
+      agent_name: 'chatbot_agendamentos'
+    });
+
+    let conversation = conversasExistentes?.find(
+      c => c.metadata?.phone === phoneNumber && c.metadata?.source === 'whatsapp'
+    );
+
     if (!conversation) {
-      throw new Error('Conversa não encontrada');
+      console.log('🆕 Criando nova conversa');
+      conversation = await base44.asServiceRole.agents.createConversation({
+        agent_name: 'chatbot_agendamentos',
+        metadata: {
+          phone: phoneNumber,
+          pacienteId,
+          senderName,
+          source: 'whatsapp',
+          pipeline_stage: 'novo'
+        }
+      });
+    } else {
+      console.log('📞 Usando conversa existente:', conversation.id);
     }
 
-    // Garantir que messages existe
-    if (!conversation.messages) {
-      conversation.messages = [];
+    // Fazer chamada HTTP direta para adicionar mensagem (evita problemas do SDK)
+    const apiUrl = `https://api.base44.com/v1/agents/conversations/${conversation.id}/messages`;
+    const serviceToken = Deno.env.get('BASE44_SERVICE_ROLE_KEY') || base44.serviceRoleKey;
+
+    console.log('📤 Enviando mensagem para API...');
+
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${serviceToken}`
+      },
+      body: JSON.stringify({
+        role: 'user',
+        content: messageText
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Erro na API: ${error}`);
     }
 
-    console.log('📊 Conversa atual:', {
-      id: conversation.id,
-      messageCount: conversation.messages.length
-    });
+    const resultado = await response.json();
+    console.log('✅ Mensagem processada com sucesso');
 
-    // Adicionar mensagem do usuário
-    const resultado = await base44.asServiceRole.agents.addMessage(conversation, {
-      role: 'user',
-      content: messageText
-    });
+    // Aguardar um pouco para o agente processar
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
-    console.log('✅ Mensagem adicionada com sucesso');
+    // Buscar a última resposta do assistente
+    const conversaAtualizada = await base44.asServiceRole.agents.getConversation(conversation.id);
+    const ultimaMensagem = conversaAtualizada.messages?.[conversaAtualizada.messages.length - 1];
 
-    // Enviar resposta automática via WhatsApp (opcional)
-    if (phoneNumber) {
+    // Enviar resposta via WhatsApp
+    if (ultimaMensagem && ultimaMensagem.role === 'assistant') {
       try {
-        await enviarRespostaWhatsApp(phoneNumber, resultado);
+        await enviarRespostaWhatsApp(phoneNumber, ultimaMensagem.content);
       } catch (error) {
-        console.error('⚠️ Erro ao enviar resposta WhatsApp:', error.message);
+        console.error('⚠️ Erro ao enviar WhatsApp:', error.message);
       }
     }
 
     return Response.json({ 
       success: true, 
-      conversationId,
-      messageCount: conversation.messages.length + 1
+      conversationId: conversation.id
     });
 
   } catch (error) {
@@ -56,20 +88,11 @@ Deno.serve(async (req) => {
   }
 });
 
-async function enviarRespostaWhatsApp(phoneNumber, resultado) {
+async function enviarRespostaWhatsApp(phoneNumber, mensagem) {
   const phoneNumberId = Deno.env.get('META_PHONE_NUMBER_ID');
   const accessToken = Deno.env.get('META_ACCESS_TOKEN');
 
-  if (!phoneNumberId || !accessToken) {
-    console.warn('⚠️ Credenciais Meta não configuradas');
-    return;
-  }
-
-  // Extrair última mensagem do assistente
-  const ultimaMensagem = resultado?.messages?.[resultado.messages.length - 1];
-  
-  if (!ultimaMensagem || ultimaMensagem.role !== 'assistant') {
-    console.log('ℹ️ Nenhuma resposta do assistente para enviar');
+  if (!phoneNumberId || !accessToken || !mensagem) {
     return;
   }
 
@@ -85,18 +108,15 @@ async function enviarRespostaWhatsApp(phoneNumber, resultado) {
       messaging_product: 'whatsapp',
       to: phoneNumber,
       type: 'text',
-      text: {
-        body: ultimaMensagem.content
-      }
+      text: { body: mensagem }
     })
   });
 
   const result = await response.json();
 
-  if (!response.ok) {
-    console.error('❌ Erro ao enviar resposta Meta:', result);
-    return;
+  if (response.ok) {
+    console.log('✅ Resposta enviada via Meta:', result.messages?.[0]?.id);
+  } else {
+    console.error('❌ Erro ao enviar Meta:', result);
   }
-
-  console.log('✅ Resposta enviada via Meta:', result.messages?.[0]?.id);
 }

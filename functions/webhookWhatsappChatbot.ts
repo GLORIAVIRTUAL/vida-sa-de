@@ -78,52 +78,23 @@ Deno.serve(async (req) => {
         return Response.json({ success: true });
       }
 
-      // Invocar agente de IA (separado para não quebrar o webhook)
-      console.log('🤖 Enviando para agente de IA...');
+      // Processar mensagem de forma assíncrona via função dedicada
+      console.log('🤖 Delegando processamento para função backend...');
       try {
-        // Buscar ou criar conversa existente para este telefone
-        let conversation;
-        const conversasExistentes = await base44.asServiceRole.agents.listConversations({
-          agent_name: 'chatbot_agendamentos'
-        });
-
-        // Procurar conversa ativa deste telefone
-        const conversaAtiva = conversasExistentes?.find(
-          c => c.metadata?.phone === phoneNumber && c.metadata?.source === 'whatsapp'
-        );
-
-        if (conversaAtiva) {
-          conversation = conversaAtiva;
-          console.log('📞 Conversa existente encontrada:', conversation.id);
-        } else {
-          // Criar nova conversa
-          conversation = await base44.asServiceRole.agents.createConversation({
-            agent_name: 'chatbot_agendamentos',
-            metadata: {
-              phone: phoneNumber,
-              pacienteId,
-              senderName,
-              source: 'whatsapp',
-              pipeline_stage: 'novo'
-            }
-          });
-          console.log('🆕 Nova conversa criada:', conversation.id);
-        }
-
-        // Usar a função invoke para processar a mensagem via backend function dedicada
-        // Isso evita problemas com o SDK e permite processamento assíncrono
-        await base44.asServiceRole.functions.invoke('processarMensagemChatbot', {
-          conversationId: conversation.id,
-          messageText,
+        // Não esperar pela resposta - processar em background
+        base44.asServiceRole.functions.invoke('processarMensagemChatbot', {
           phoneNumber,
+          messageText,
+          pacienteId,
           senderName
+        }).catch(err => {
+          console.error('⚠️ Erro no processamento assíncrono:', err);
         });
 
-        console.log('✅ Mensagem enviada para processamento');
+        console.log('✅ Mensagem delegada para processamento');
 
-      } catch (agentError) {
-        console.error('⚠️ Erro ao chamar agente:', agentError);
-        console.error('Error data:', JSON.stringify(agentError?.data || agentError?.message || agentError));
+      } catch (error) {
+        console.error('⚠️ Erro ao delegar:', error);
       }
 
       // Sempre responder sucesso ao webhook da Meta
