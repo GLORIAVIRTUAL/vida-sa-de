@@ -19,6 +19,7 @@ export default function ChatInterface({ conversationId, pacienteName, pacientePh
       
       try {
         const conversation = await base44.agents.getConversation(conversationId);
+        console.log('Conversa carregada:', conversationId, 'Mensagens:', conversation?.messages?.length || 0);
         if (conversation?.messages) {
           setMessages(conversation.messages);
         }
@@ -29,14 +30,26 @@ export default function ChatInterface({ conversationId, pacienteName, pacientePh
 
     carregarConversa();
 
-    // Subscrever a atualizações
-    const unsubscribe = base44.agents.subscribeToConversation(conversationId, (data) => {
-      if (data?.messages) {
-        setMessages(data.messages);
-      }
-    });
+    // Atualizar conversa a cada 2 segundos para novas respostas do agente
+    const pollInterval = setInterval(carregarConversa, 2000);
 
-    return () => unsubscribe?.();
+    // Subscrever a atualizações em tempo real (se disponível)
+    let unsubscribe;
+    try {
+      unsubscribe = base44.agents.subscribeToConversation(conversationId, (data) => {
+        console.log('Atualização em tempo real:', data?.messages?.length || 0, 'mensagens');
+        if (data?.messages) {
+          setMessages(data.messages);
+        }
+      });
+    } catch (e) {
+      console.log('Subscrição não disponível, usando polling');
+    }
+
+    return () => {
+      clearInterval(pollInterval);
+      unsubscribe?.();
+    };
   }, [conversationId]);
 
   // Auto-scroll para última mensagem
