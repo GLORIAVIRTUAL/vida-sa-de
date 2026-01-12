@@ -41,42 +41,42 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
       console.log('⚠️ Contato já existe ou erro ao criar:', contatoError.message);
     }
 
-    // Processar com o agente via API interna
-    console.log('💬 Enviando para processamento do agente...');
+    // Adicionar a mensagem do usuário à conversa para que o agente processe
+    console.log('💬 Adicionando mensagem do usuário à conversa...');
     try {
-      // Fazer requisição ao agente para processar a mensagem
-      const agentResponse = await fetch(`${Deno.env.get('BASE44_API_URL') || 'https://api.base44.com'}/agents/chatbot_agendamentos/conversations/${conversation.id}/messages`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${Deno.env.get('BASE44_SERVICE_TOKEN') || ''}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          role: 'user',
-          content: messageText
-        })
+      const conversaAtualizada = await base44.asServiceRole.agents.addMessage(conversation, {
+        role: 'user',
+        content: messageText
       });
-
-      if (agentResponse.ok) {
-        const agentData = await agentResponse.json();
-        console.log('✅ Agente processou a mensagem');
+      
+      console.log('✅ Mensagem adicionada e agente acionado. Mensagens na conversa:', conversaAtualizada?.messages?.length || 0);
+      
+      // Aguardar um pouco para o agente processar
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Buscar a conversa atualizada com a resposta do agente
+      const conversaComResposta = await base44.asServiceRole.agents.getConversation(conversation.id);
+      console.log('📊 Conversa atualizada. Total de mensagens:', conversaComResposta?.messages?.length || 0);
+      
+      // Procurar pela resposta do agente (última mensagem do assistente)
+      if (conversaComResposta?.messages && conversaComResposta.messages.length > 1) {
+        const respostaAgente = conversaComResposta.messages
+          .reverse()
+          .find(msg => msg.role === 'assistant');
         
-        // Se houver resposta do agente, enviar via WhatsApp
-        if (agentData?.messages) {
-          const ultimaMensagem = agentData.messages[agentData.messages.length - 1];
-          if (ultimaMensagem?.role === 'assistant' && ultimaMensagem?.content) {
-            console.log('📨 Enviando resposta do agente...');
-            await enviarWhatsApp(phoneNumber, ultimaMensagem.content);
-            return Response.json({ 
-              success: true, 
-              conversationId: conversation.id,
-              message: 'Conversa criada e resposta entregue'
-            });
-          }
+        if (respostaAgente && respostaAgente.content) {
+          console.log('📨 Resposta do agente encontrada. Enviando via WhatsApp...');
+          await enviarWhatsApp(phoneNumber, respostaAgente.content);
+          return Response.json({ 
+            success: true, 
+            conversationId: conversation.id,
+            message: 'Conversa criada e resposta do agente entregue',
+            messageCount: conversaComResposta.messages.length
+          });
         }
       }
     } catch (agentError) {
-      console.log('⚠️ Erro ao chamar agente:', agentError.message);
+      console.log('⚠️ Erro ao processar com agente:', agentError.message);
     }
 
     // Se algo deu errado, enviar resposta padrão
