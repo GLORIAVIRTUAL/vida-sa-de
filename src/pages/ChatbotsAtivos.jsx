@@ -18,6 +18,9 @@ export default function ChatbotsAtivos() {
         const lista = await base44.agents.listConversations({
           agent_name: 'chatbot_agendamentos'
         });
+        
+        console.log('Conversas carregadas:', lista);
+        
         setConversas(Array.isArray(lista) ? lista : []);
         
         // Selecionar primeira conversa automaticamente
@@ -32,6 +35,10 @@ export default function ChatbotsAtivos() {
     };
 
     carregarConversas();
+    
+    // Atualizar conversas a cada 5 segundos
+    const interval = setInterval(carregarConversas, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   if (carregando) {
@@ -83,10 +90,10 @@ export default function ChatbotsAtivos() {
                         }`}
                       >
                         <p className="font-medium truncate">
-                          {conversa.metadata?.name || `Chat ${conversa.id.slice(0, 8)}`}
+                          {conversa.metadata?.senderName || conversa.metadata?.name || `Chat ${conversa.id.slice(0, 8)}`}
                         </p>
                         <p className="text-xs text-gray-500 truncate">
-                          {conversa.metadata?.description || 'Sem descrição'}
+                          {conversa.metadata?.phone || 'Sem telefone'}
                         </p>
                         <Badge className="mt-1 text-xs">
                           {conversa.messages?.length || 0} msg
@@ -105,7 +112,7 @@ export default function ChatbotsAtivos() {
               <ChatInterface
                 key={conversaSelecionada}
                 conversationId={conversaSelecionada}
-                pacienteName={conversaSelecionadaDados.metadata?.paciente_nome || 'Cliente'}
+                pacienteName={conversaSelecionadaDados.metadata?.senderName || conversaSelecionadaDados.metadata?.name || 'Cliente'}
                 pacientePhone={conversaSelecionadaDados.metadata?.phone || 'N/A'}
               />
             ) : (
