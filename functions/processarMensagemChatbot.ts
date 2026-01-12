@@ -26,22 +26,26 @@ Deno.serve(async (req) => {
       console.log('✅ Conversa existente encontrada:', conversation.id);
     }
 
-    if (conversation) {
-      console.log('✅ Conversa existente encontrada:', conversation.id);
-    } else {
+    if (!conversation) {
       console.log('🆕 Criando nova conversa');
+      const recifeTz = new Date().toLocaleString('pt-BR', { timeZone: 'America/Recife' });
       conversation = await base44.asServiceRole.agents.createConversation({
         agent_name: 'chatbot_agendamentos',
         metadata: {
           phone: phoneNumber,
+          phoneNumber: phoneNumber,
+          telefone: phoneNumber,
           pacienteId: pacienteId || 'nao_identificado',
           senderName,
           source: 'whatsapp',
           pipeline_stage: 'novo',
-          last_message_at: new Date().toISOString()
+          created_at: recifeTz,
+          last_message_at: recifeTz
         }
       });
       console.log('✅ Conversa criada:', conversation.id);
+    } else {
+      console.log('✅ Usando conversa existente:', conversation.id);
 
       // Criar contato para rastrear
       try {
