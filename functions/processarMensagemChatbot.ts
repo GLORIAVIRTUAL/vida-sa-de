@@ -38,13 +38,6 @@ Deno.serve(async (req) => {
       console.log('✅ Conversa criada:', conversation.id);
     } else {
       console.log('📞 Conversa encontrada:', conversation.id);
-      // Atualizar timestamp
-      await base44.asServiceRole.agents.updateConversation(conversation.id, {
-        metadata: {
-          ...conversation.metadata,
-          last_message_at: new Date().toISOString()
-        }
-      });
     }
 
     // ADICIONAR MENSAGEM VIA SDK (versão corrigida)
