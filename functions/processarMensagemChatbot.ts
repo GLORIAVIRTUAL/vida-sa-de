@@ -13,12 +13,14 @@ Deno.serve(async (req) => {
     // Buscar conversas existentes
     let conversasExistentes;
     try {
-      conversasExistentes = await base44.asServiceRole.agents.listConversations({
+      const result = await base44.asServiceRole.agents.listConversations({
         agent_name: 'chatbot_agendamentos'
       });
+      console.log('📦 Resultado listConversations:', JSON.stringify(result).substring(0, 200));
+      conversasExistentes = Array.isArray(result) ? result : (result?.data || []);
       console.log(`📋 Total conversas: ${conversasExistentes?.length || 0}`);
     } catch (error) {
-      console.error('❌ Erro ao listar conversas:', error.message);
+      console.error('❌ Erro ao listar conversas:', error.message, error.stack);
       conversasExistentes = [];
     }
 
