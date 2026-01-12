@@ -81,8 +81,8 @@ Deno.serve(async (req) => {
       // Invocar agente de IA (separado para não quebrar o webhook)
       console.log('🤖 Enviando para agente de IA...');
       try {
-        // Criar conversa do agente - o SDK cuida da autenticação de serviço automaticamente
-        const conversation = await base44.agents.createConversation({
+        // Criar conversa do agente usando service role para webhooks
+        const conversation = await base44.asServiceRole.agents.createConversation({
           agent_name: 'chatbot_agendamentos',
           metadata: {
             phone: phoneNumber,
@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
         console.log('Conversa criada:', conversation?.id);
 
         // Adicionar mensagem do usuário
-        const response = await base44.agents.addMessage(conversation, {
+        const response = await base44.asServiceRole.agents.addMessage(conversation, {
           role: 'user',
           content: messageText
         });
