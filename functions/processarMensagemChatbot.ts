@@ -86,15 +86,7 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('❌ Erro:', error.message);
-    
-    // Enviar mensagem de erro ao usuário
-    const { phoneNumber } = await req.json().catch(() => ({}));
-    if (phoneNumber) {
-      await enviarWhatsApp(
-        phoneNumber, 
-        'Desculpe, tive um problema ao processar sua mensagem. Por favor, tente novamente.'
-      ).catch(() => {});
-    }
+    console.error('Stack:', error.stack);
     
     return Response.json({ 
       error: error.message
