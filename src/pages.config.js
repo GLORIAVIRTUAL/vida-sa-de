@@ -28,6 +28,7 @@ import WebhookLogs from './pages/WebhookLogs';
 import ordemServico from './pages/ordem-servico';
 import ConfiguracaoChatbot from './pages/ConfiguracaoChatbot';
 import ChatbotDashboard from './pages/ChatbotDashboard';
+import ChatbotPipeline from './pages/ChatbotPipeline';
 import __Layout from './Layout.jsx';
 
 
@@ -62,6 +63,7 @@ export const PAGES = {
     "ordem-servico": ordemServico,
     "ConfiguracaoChatbot": ConfiguracaoChatbot,
     "ChatbotDashboard": ChatbotDashboard,
+    "ChatbotPipeline": ChatbotPipeline,
 }
 
 export const pagesConfig = {

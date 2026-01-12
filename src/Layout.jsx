@@ -110,6 +110,7 @@ function MainLayout({ children, currentPageName, currentUser, onUserUpdate }) {
     { name: "Ordens de Serviço", page: "ordem-servico", icon: ClipboardList, roles: ["admin", "user"] },
     { name: "Painel TV", page: "Atendimento", icon: Computer, roles: ["admin", "user"] },
     { name: "Chatbot", page: "ChatbotsAtivos", icon: MessageSquare, roles: ["admin", "user"] },
+    { name: "Pipeline Chatbot", page: "ChatbotPipeline", icon: BarChart3, roles: ["admin", "user"] },
     { name: "Dashboard Chatbot", page: "ChatbotDashboard", icon: Activity, roles: ["admin", "user"] },
     { name: "Config. Chatbot", page: "ConfiguracaoChatbot", icon: Settings, roles: ["admin", "user"] },
     { name: "Portal do Médico", page: "PortalMedico", icon: Stethoscope, roles: ["medico"] },
