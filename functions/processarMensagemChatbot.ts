@@ -37,14 +37,6 @@ Deno.serve(async (req) => {
       console.log('📋 Metadata:', conversation.metadata);
     } else {
       console.log('📞 Conversa existente encontrada:', conversation.id);
-      // Atualizar metadata da conversa
-      await base44.asServiceRole.agents.updateConversation(conversation.id, {
-        metadata: {
-          ...conversation.metadata,
-          last_message_at: new Date().toISOString()
-        }
-      });
-      console.log('✅ Metadata atualizada');
     }
 
     // Adicionar mensagem do usuário usando o SDK (corrigido)
