@@ -42,19 +42,16 @@ Deno.serve(async (req) => {
     // Adicionar mensagem do usuário
     console.log('📤 Adicionando mensagem à conversa...');
 
-    // Garantir que a conversa tem estrutura correta
-    const conversaCompleta = {
-      id: conversation.id,
-      agent_name: 'chatbot_agendamentos',
-      messages: conversation.messages || []
-    };
+    // Buscar conversa completa novamente para ter todos os dados
+    const conversaCompleta = await base44.asServiceRole.agents.getConversation(conversation.id);
     
-    console.log('📊 Conversa antes:', {
+    console.log('📊 Conversa completa:', {
       id: conversaCompleta.id,
-      messages: conversaCompleta.messages.length
+      messages: conversaCompleta.messages?.length || 0,
+      agent_name: conversaCompleta.agent_name
     });
 
-    // Adicionar mensagem manualmente
+    // Adicionar mensagem
     await base44.asServiceRole.agents.addMessage(conversaCompleta, {
       role: 'user',
       content: messageText
