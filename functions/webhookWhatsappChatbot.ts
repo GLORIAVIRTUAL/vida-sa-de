@@ -81,21 +81,40 @@ Deno.serve(async (req) => {
       // Invocar agente de IA (separado para não quebrar o webhook)
       console.log('🤖 Enviando para agente de IA...');
       try {
-        // Criar conversa do agente usando service role para webhooks
-        const conversation = await base44.asServiceRole.agents.createConversation({
-          agent_name: 'chatbot_agendamentos',
-          metadata: {
-            phone: phoneNumber,
-            pacienteId,
-            senderName,
-            source: 'whatsapp'
-          }
+        // Buscar ou criar conversa existente para este telefone
+        let conversation;
+        const conversasExistentes = await base44.asServiceRole.agents.listConversations({
+          agent_name: 'chatbot_agendamentos'
         });
 
-        console.log('Conversa criada:', conversation?.id);
+        // Procurar conversa ativa deste telefone
+        const conversaAtiva = conversasExistentes?.find(
+          c => c.metadata?.phone === phoneNumber && c.metadata?.source === 'whatsapp'
+        );
 
-        // Adicionar mensagem do usuário - passa o objeto conversation completo, não o ID
-        await base44.asServiceRole.agents.addMessage(conversation, {
+        if (conversaAtiva) {
+          conversation = conversaAtiva;
+          console.log('📞 Conversa existente encontrada:', conversation.id);
+        } else {
+          // Criar nova conversa
+          conversation = await base44.asServiceRole.agents.createConversation({
+            agent_name: 'chatbot_agendamentos',
+            metadata: {
+              phone: phoneNumber,
+              pacienteId,
+              senderName,
+              source: 'whatsapp',
+              pipeline_stage: 'novo'
+            }
+          });
+          console.log('🆕 Nova conversa criada:', conversation.id);
+        }
+
+        // Recarregar a conversa completa para ter certeza de ter todos os dados
+        const conversaCompleta = await base44.asServiceRole.agents.getConversation(conversation.id);
+
+        // Adicionar mensagem do usuário - passa o objeto completo
+        await base44.asServiceRole.agents.addMessage(conversaCompleta, {
           role: 'user',
           content: messageText
         });
@@ -139,7 +158,7 @@ async function enviarMensagemMeta(phoneNumber, mensagem) {
       return;
     }
 
-    const metaUrl = `https://graph.instagram.com/v18.0/${phoneNumberId}/messages`;
+    const metaUrl = `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`;
 
     const response = await fetch(metaUrl, {
       method: 'POST',
