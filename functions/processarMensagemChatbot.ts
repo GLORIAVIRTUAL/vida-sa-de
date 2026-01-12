@@ -8,16 +8,19 @@ Deno.serve(async (req) => {
     console.log('📝 Processando mensagem de:', senderName);
 
     // Buscar ou criar conversa
+    console.log('🔍 Buscando conversas existentes...');
     const conversasExistentes = await base44.asServiceRole.agents.listConversations({
       agent_name: 'chatbot_agendamentos'
     });
+
+    console.log(`📋 Total de conversas: ${conversasExistentes?.length || 0}`);
 
     let conversation = conversasExistentes?.find(
       c => c.metadata?.phone === phoneNumber && c.metadata?.source === 'whatsapp'
     );
 
     if (!conversation) {
-      console.log('🆕 Criando nova conversa');
+      console.log('🆕 Criando nova conversa para:', phoneNumber);
       conversation = await base44.asServiceRole.agents.createConversation({
         agent_name: 'chatbot_agendamentos',
         metadata: {
@@ -30,8 +33,10 @@ Deno.serve(async (req) => {
           last_message_at: new Date().toISOString()
         }
       });
+      console.log('✅ Conversa criada:', conversation.id);
+      console.log('📋 Metadata:', conversation.metadata);
     } else {
-      console.log('📞 Usando conversa existente:', conversation.id);
+      console.log('📞 Conversa existente encontrada:', conversation.id);
       // Atualizar metadata da conversa
       await base44.asServiceRole.agents.updateConversation(conversation.id, {
         metadata: {
@@ -39,6 +44,7 @@ Deno.serve(async (req) => {
           last_message_at: new Date().toISOString()
         }
       });
+      console.log('✅ Metadata atualizada');
     }
 
     // Adicionar mensagem do usuário usando o SDK (corrigido)
