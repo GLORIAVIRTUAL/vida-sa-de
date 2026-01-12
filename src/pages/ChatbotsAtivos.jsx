@@ -17,7 +17,7 @@ export default function ChatbotsAtivos() {
         setCarregando(true);
         // Usar função backend para listar conversas
         const response = await base44.functions.invoke('listarConversasChatbot');
-        const lista = response.data?.conversas || [];
+        const lista = response.data?.conversations || response.data?.conversas || [];
         
         console.log('Conversas carregadas:', lista);
         
@@ -29,6 +29,7 @@ export default function ChatbotsAtivos() {
         }
       } catch (error) {
         console.error('Erro ao carregar conversas:', error);
+        setConversas([]);
       } finally {
         setCarregando(false);
       }
