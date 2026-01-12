@@ -44,28 +44,27 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
     // Adicionar a mensagem do usuário à conversa para que o agente processe
     console.log('💬 Adicionando mensagem do usuário à conversa...');
     try {
-      const conversaAtualizada = await base44.asServiceRole.agents.addMessage(conversation, {
+      await base44.asServiceRole.agents.addMessage(conversation, {
         role: 'user',
         content: messageText
       });
       
-      console.log('✅ Mensagem adicionada e agente acionado. Mensagens na conversa:', conversaAtualizada?.messages?.length || 0);
+      console.log('✅ Mensagem adicionada. Aguardando processamento do agente...');
       
       // Aguardar um pouco para o agente processar
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
       // Buscar a conversa atualizada com a resposta do agente
       const conversaComResposta = await base44.asServiceRole.agents.getConversation(conversation.id);
       console.log('📊 Conversa atualizada. Total de mensagens:', conversaComResposta?.messages?.length || 0);
       
       // Procurar pela resposta do agente (última mensagem do assistente)
-      if (conversaComResposta?.messages && conversaComResposta.messages.length > 1) {
-        const respostaAgente = conversaComResposta.messages
-          .reverse()
-          .find(msg => msg.role === 'assistant');
+      if (conversaComResposta?.messages && Array.isArray(conversaComResposta.messages) && conversaComResposta.messages.length > 1) {
+        const mensagensRevertidas = [...conversaComResposta.messages].reverse();
+        const respostaAgente = mensagensRevertidas.find(msg => msg.role === 'assistant');
         
         if (respostaAgente && respostaAgente.content) {
-          console.log('📨 Resposta do agente encontrada. Enviando via WhatsApp...');
+          console.log('📨 Resposta do agente encontrada:', respostaAgente.content.substring(0, 50) + '...');
           await enviarWhatsApp(phoneNumber, respostaAgente.content);
           return Response.json({ 
             success: true, 
@@ -73,7 +72,11 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
             message: 'Conversa criada e resposta do agente entregue',
             messageCount: conversaComResposta.messages.length
           });
+        } else {
+          console.log('⚠️ Nenhuma resposta do assistente encontrada ainda');
         }
+      } else {
+        console.log('⚠️ Nenhuma mensagem na conversa ou conversa com menos de 2 mensagens');
       }
     } catch (agentError) {
       console.log('⚠️ Erro ao processar com agente:', agentError.message);
