@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
     // Enviar mensagem diretamente via API HTTP (evita problemas do SDK)
     console.log('📤 Enviando mensagem via API HTTP...');
     
-    const apiUrl = `${Deno.env.get('BASE44_API_URL') || 'https://api.base44.com'}/v1/agents/conversations/${conversation.id}/messages`;
+    const apiUrl = `https://api.base44.com/v1/agents/conversations/${conversation.id}/messages`;
     const appId = Deno.env.get('BASE44_APP_ID');
     
     const response = await fetch(apiUrl, {
