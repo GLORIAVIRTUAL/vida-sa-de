@@ -1,30 +1,30 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
-Deno.serve(async (req) => {
-  try {
-    const base44 = createClientFromRequest(req);
-    const { phoneNumber, messageText, pacienteId, senderName } = await req.json();
+      Deno.serve(async (req) => {
+        try {
+          const base44 = createClientFromRequest(req);
+          const { phoneNumber, messageText, pacienteId, senderName } = await req.json();
 
-    console.log('📝 Nova mensagem de:', senderName);
-    console.log('📱 Telefone:', phoneNumber);
-    console.log('💬 Mensagem:', messageText);
-    console.log('👤 Paciente ID:', pacienteId);
+          console.log('📝 Nova mensagem de:', senderName);
+          console.log('📱 Telefone:', phoneNumber);
+          console.log('💬 Mensagem:', messageText);
+          console.log('👤 Paciente ID:', pacienteId);
 
-    // Criar sempre nova conversa para teste
-    console.log('🆕 Criando nova conversa');
-    const conversation = await base44.asServiceRole.agents.createConversation({
-      agent_name: 'chatbot_agendamentos',
-      metadata: {
-        name: senderName,
-        phone: phoneNumber,
-        pacienteId,
-        senderName,
-        source: 'whatsapp',
-        pipeline_stage: 'novo',
-        last_message_at: new Date().toISOString()
-      }
-    });
-    console.log('✅ Conversa criada:', conversation.id);
+          // Criar sempre nova conversa para teste
+          console.log('🆕 Criando nova conversa');
+          const conversation = await base44.asServiceRole.agents.createConversation({
+            agent_name: 'chatbot_agendamentos',
+            metadata: {
+              name: senderName,
+              phone: phoneNumber,
+              pacienteId: pacienteId || 'nao_identificado',
+              senderName,
+              source: 'whatsapp',
+              pipeline_stage: 'novo',
+              last_message_at: new Date().toISOString()
+            }
+          });
+          console.log('✅ Conversa criada:', conversation.id);
 
     // Criar entrada de contato para rastrear a conversa
     try {
