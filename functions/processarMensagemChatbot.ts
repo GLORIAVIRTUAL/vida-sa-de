@@ -49,17 +49,18 @@ Deno.serve(async (req) => {
 
       // Criar contato para rastrear
       try {
+        const recifeTz = new Date().toLocaleString('pt-BR', { timeZone: 'America/Recife' });
         await base44.asServiceRole.entities.Contato.create({
           nome: senderName,
           telefone: phoneNumber,
           origem: 'WhatsApp',
           status: 'Lead',
-          ultima_interacao: new Date().toISOString(),
-          observacoes: `ID Conversa: ${conversation.id}`
+          ultima_interacao: recifeTz,
+          observacoes: `ID Conversa: ${conversation.id} | Criado em: ${recifeTz}`
         });
         console.log('✅ Contato criado');
       } catch (contatoError) {
-        console.log('⚠️ Contato já existe:', contatoError.message);
+        console.log('⚠️ Contato já existe ou erro:', contatoError.message);
       }
     }
 
