@@ -15,8 +15,16 @@ Deno.serve(async (req) => {
     let response = await base44.asServiceRole.functions.invoke('listarConversasChatbot');
     const conversasExistentes = response.data?.conversations || [];
 
-    let conversation = conversasExistentes.find(c => c.metadata?.phone === phoneNumber);
-    console.log('📊 Conversas encontradas:', conversasExistentes.length, '| Match:', conversation ? 'SIM' : 'NÃO');
+    // Buscar a conversa por telefone no metadata
+    let conversation = conversasExistentes.find(c => {
+      const phone = c.metadata?.phone || c.metadata?.phoneNumber || c.metadata?.telefone;
+      return phone === phoneNumber;
+    });
+    
+    console.log('📊 Conversas encontradas:', conversasExistentes.length);
+    if (conversation) {
+      console.log('✅ Conversa existente encontrada:', conversation.id);
+    }
 
     if (conversation) {
       console.log('✅ Conversa existente encontrada:', conversation.id);
