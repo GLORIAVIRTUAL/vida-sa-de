@@ -15,9 +15,9 @@ export default function ChatbotsAtivos() {
     const carregarConversas = async () => {
       try {
         setCarregando(true);
-        const lista = await base44.agents.listConversations({
-          agent_name: 'chatbot_agendamentos'
-        });
+        // Usar função backend para listar conversas
+        const response = await base44.functions.invoke('listarConversasChatbot');
+        const lista = response.data?.conversas || [];
         
         console.log('Conversas carregadas:', lista);
         
@@ -36,8 +36,8 @@ export default function ChatbotsAtivos() {
 
     carregarConversas();
     
-    // Atualizar conversas a cada 5 segundos
-    const interval = setInterval(carregarConversas, 5000);
+    // Atualizar conversas a cada 3 segundos
+    const interval = setInterval(carregarConversas, 3000);
     return () => clearInterval(interval);
   }, []);
 
