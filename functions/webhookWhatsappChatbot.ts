@@ -94,8 +94,8 @@ Deno.serve(async (req) => {
 
         console.log('Conversa criada:', conversation?.id);
 
-        // Adicionar mensagem do usuário usando o ID da conversa
-        await base44.asServiceRole.agents.addMessage(conversation.id, {
+        // Adicionar mensagem do usuário - passa o objeto conversation completo, não o ID
+        await base44.asServiceRole.agents.addMessage(conversation, {
           role: 'user',
           content: messageText
         });
