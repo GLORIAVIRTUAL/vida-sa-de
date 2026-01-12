@@ -50,55 +50,39 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Adicionar a mensagem do usuário via HTTP direto
+    // Adicionar a mensagem do usuário
     console.log('💬 Adicionando mensagem do usuário à conversa...');
     try {
-      // Usar a API interna do agente diretamente
-      const internalApiUrl = `https://agents.base44.io/v1/conversations/${conversation.id}/messages`;
-
-      const addMessageResponse = await fetch(internalApiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${Deno.env.get('BASE44_SERVICE_ROLE_KEY') || ''}`
-        },
-        body: JSON.stringify({
-          role: 'user',
-          content: messageText
-        })
+      await base44.asServiceRole.agents.addMessage(conversation, {
+        role: 'user',
+        content: messageText
       });
 
-      if (addMessageResponse.ok) {
-        console.log('✅ Mensagem adicionada via API');
-      } else {
-        console.log('⚠️ Status ao adicionar mensagem:', addMessageResponse.status);
-      }
+      console.log('✅ Mensagem adicionada. Aguardando processamento...');
 
-      // Aguardar tempo para o agente processar
+      // Aguardar para o agente processar
       await new Promise(resolve => setTimeout(resolve, 3000));
 
       // Buscar a conversa atualizada
       const conversaAtualizada = await base44.asServiceRole.agents.getConversation(conversation.id);
-      console.log('📊 Conversa atualizada. Total de mensagens:', conversaAtualizada?.messages?.length || 0);
+      console.log('📊 Conversa atualizada. Mensagens:', conversaAtualizada?.messages?.length || 0);
 
       if (conversaAtualizada?.messages && Array.isArray(conversaAtualizada.messages) && conversaAtualizada.messages.length > 0) {
-        console.log('📋 Mensagens:', conversaAtualizada.messages.map((m, i) => `${i}: ${m.role}`).join(' | '));
-
-        // Procurar pela resposta do agente
+        // Procurar resposta do agente
         const respostaAgente = [...conversaAtualizada.messages].reverse().find(msg => msg.role === 'assistant');
 
-        if (respostaAgente && respostaAgente.content) {
-          console.log('📨 Resposta do agente encontrada');
+        if (respostaAgente?.content) {
+          console.log('📨 Resposta encontrada, enviando para WhatsApp');
           await enviarWhatsApp(phoneNumber, respostaAgente.content);
           return Response.json({ 
             success: true, 
             conversationId: conversation.id,
-            message: 'Resposta do agente entregue'
+            message: 'Resposta entregue'
           });
         }
       }
 
-      console.log('⚠️ Agente não respondeu ainda, enviando resposta padrão');
+      console.log('⚠️ Agente não respondeu, enviando padrão');
     } catch (agentError) {
       console.error('❌ Erro:', agentError.message);
     }
