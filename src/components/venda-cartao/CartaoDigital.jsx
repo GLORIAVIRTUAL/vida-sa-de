@@ -128,8 +128,8 @@ export default function CartaoDigital({ venda, titular = true, dependente = null
             crossOrigin="anonymous"
           />
           <img 
-            src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68b9fe84de5d54897629e61a/a0f6566fe_ImagemdoWhatsAppde2025-08-31s094100_18581e21.jpg" 
-            alt="Centro Vida Saúde" 
+            src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/696256b5ef59ea2bed1bd7ea/8ca927e40_Untitleddesign27.png" 
+            alt="Glória Clinica" 
             className="h-8 w-auto object-contain bg-white rounded px-2 py-0.5"
             crossOrigin="anonymous"
           />
@@ -179,7 +179,7 @@ export default function CartaoDigital({ venda, titular = true, dependente = null
 
         {/* Rodapé */}
         <div className="absolute bottom-3 right-5 z-10">
-          <p className="text-[10px] text-white/60">Centro Vida Saúde</p>
+          <p className="text-[10px] text-white/60">Glória Clinica</p>
         </div>
       </div>
 
