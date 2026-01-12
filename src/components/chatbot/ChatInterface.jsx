@@ -30,8 +30,8 @@ export default function ChatInterface({ conversationId, pacienteName, pacientePh
 
     carregarConversa();
 
-    // Atualizar conversa a cada 2 segundos para novas respostas do agente
-    const pollInterval = setInterval(carregarConversa, 2000);
+    // Atualizar conversa a cada 1 segundo para novas respostas do agente
+    const pollInterval = setInterval(carregarConversa, 1000);
 
     // Subscrever a atualizações em tempo real (se disponível)
     let unsubscribe;
