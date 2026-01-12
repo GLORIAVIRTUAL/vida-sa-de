@@ -77,8 +77,9 @@ Deno.serve(async (req) => {
     }
 
     // Encontrar última mensagem do assistente
-    const assistantMessage = conversaAtualizada.messages
-      ?.slice()
+    const messages = conversaAtualizada.messages || [];
+    const assistantMessage = messages
+      .slice()
       .reverse()
       .find(msg => msg.role === 'assistant');
 
