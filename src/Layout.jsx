@@ -109,7 +109,7 @@ function MainLayout({ children, currentPageName, currentUser, onUserUpdate }) {
     { name: "Pacientes", page: "Pacientes", icon: Users, roles: ["admin", "user"] },
     { name: "Ordens de Serviço", page: "ordem-servico", icon: ClipboardList, roles: ["admin", "user"] },
     { name: "Painel TV", page: "Atendimento", icon: Computer, roles: ["admin", "user"] },
-    { name: "Chatbot", page: "ChatbotsAtivos", icon: MessageSquare, roles: ["admin", "user"] },
+    { name: "Chatbot", page: "ChatbotsAtivos", icon: MessageSquare, roles: ["admin", "user"], customLogo: true },
     { name: "Pipeline Chatbot", page: "ChatbotPipeline", icon: BarChart3, roles: ["admin", "user"] },
     { name: "Dashboard Chatbot", page: "ChatbotDashboard", icon: Activity, roles: ["admin", "user"] },
     { name: "Config. Chatbot", page: "ConfiguracaoChatbot", icon: Settings, roles: ["admin", "user"] },
@@ -202,8 +202,18 @@ function MainLayout({ children, currentPageName, currentUser, onUserUpdate }) {
                   }`}
                   onClick={() => setSidebarOpen(false)}
                   >
-                  <item.icon className="w-5 h-5 mr-3 flex-shrink-0" />
-                  <span>{item.name}</span>
+                  {item.customLogo ? (
+                    <img 
+                      src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/696256b5ef59ea2bed1bd7ea/bed877093_Untitleddesign14.png" 
+                      alt="Glória Virtual" 
+                      className="h-5 object-contain"
+                    />
+                  ) : (
+                    <>
+                      <item.icon className="w-5 h-5 mr-3 flex-shrink-0" />
+                      <span>{item.name}</span>
+                    </>
+                  )}
                   </Link>
               );
             })}
