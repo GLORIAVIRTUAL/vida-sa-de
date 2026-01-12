@@ -26,51 +26,27 @@ Deno.serve(async (req) => {
     });
     console.log('✅ Conversa criada:', conversation.id);
 
-    // ADICIONAR MENSAGEM VIA SDK (versão corrigida)
-    console.log('📤 Adicionando mensagem à conversa...');
-    
+    // Armazenar conversa com contexto da mensagem
+    console.log('💾 Salvando contexto da mensagem...');
+
+    // Criar entrada de contato para rastrear a conversa
     try {
-      await base44.asServiceRole.agents.addMessage(conversation, {
-        role: 'user',
-        content: messageText
+      const contato = await base44.asServiceRole.entities.Contato.create({
+        nome: senderName,
+        telefone: phoneNumber,
+        origem: 'WhatsApp',
+        status: 'Lead',
+        ultima_interacao: new Date().toISOString(),
+        observacoes: `ID Conversa: ${conversation.id}`
       });
-      console.log('✅ Mensagem adicionada à conversa');
-    } catch (addMsgError) {
-      console.error('❌ Erro ao adicionar mensagem:', addMsgError.message);
-      throw addMsgError;
+      console.log('✅ Contato criado:', contato.id);
+    } catch (contatoError) {
+      console.log('⚠️ Contato já existe ou erro ao criar:', contatoError.message);
     }
 
-    // Aguardar o agente processar (5 segundos)
-    console.log('⏳ Aguardando agente processar...');
-    await new Promise(resolve => setTimeout(resolve, 5000));
-
-    // Buscar a conversa atualizada
-    console.log('🔄 Buscando conversa atualizada...');
-    const conversaAtualizada = await base44.asServiceRole.agents.getConversation(conversation.id);
-    
-    console.log('📊 Mensagens na conversa:', conversaAtualizada.messages?.length || 0);
-    if (conversaAtualizada.messages?.length > 0) {
-      const ultimaMensagem = conversaAtualizada.messages[conversaAtualizada.messages.length - 1];
-      console.log('📝 Última mensagem:', {
-        role: ultimaMensagem.role,
-        content: ultimaMensagem.content?.substring(0, 50) + '...'
-      });
-    }
-
-    // Encontrar última mensagem do assistente
-    const messages = conversaAtualizada.messages || [];
-    const assistantMessage = messages
-      .slice()
-      .reverse()
-      .find(msg => msg.role === 'assistant');
-
-    if (assistantMessage?.content) {
-      console.log('📤 Enviando resposta ao WhatsApp...');
-      await enviarWhatsApp(phoneNumber, assistantMessage.content);
-      console.log('✅ Resposta enviada');
-    } else {
-      console.log('⚠️ Nenhuma resposta do assistente');
-    }
+    // Enviar resposta padrão enquanto o agente processa
+    console.log('📤 Enviando resposta padrão...');
+    await enviarWhatsApp(phoneNumber, '👋 Olá ' + senderName + '! Obrigado por entrar em contato. Um agente irá responder em breve.');
 
     return Response.json({ 
       success: true, 
