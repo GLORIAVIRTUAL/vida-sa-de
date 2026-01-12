@@ -26,8 +26,13 @@ Deno.serve(async (req) => {
     });
     console.log('✅ Conversa criada:', conversation.id);
 
-    // Armazenar conversa com contexto da mensagem
-    console.log('💾 Salvando contexto da mensagem...');
+    // Adicionar mensagem do usuário à conversa
+    console.log('💬 Adicionando mensagem à conversa...');
+    await base44.asServiceRole.agents.addMessage(conversation.id, {
+      role: 'user',
+      content: messageText
+    });
+    console.log('✅ Mensagem adicionada');
 
     // Criar entrada de contato para rastrear a conversa
     try {
