@@ -10,42 +10,21 @@ Deno.serve(async (req) => {
     console.log('💬 Mensagem:', messageText);
     console.log('👤 Paciente ID:', pacienteId);
 
-    // Buscar conversas existentes
-    let conversasExistentes;
-    try {
-      const result = await base44.asServiceRole.agents.listConversations({
-        agent_name: 'chatbot_agendamentos'
-      });
-      console.log('📦 Resultado listConversations:', JSON.stringify(result).substring(0, 200));
-      conversasExistentes = Array.isArray(result) ? result : (result?.data || []);
-      console.log(`📋 Total conversas: ${conversasExistentes?.length || 0}`);
-    } catch (error) {
-      console.error('❌ Erro ao listar conversas:', error.message, error.stack);
-      conversasExistentes = [];
-    }
-
-    let conversation = conversasExistentes?.find(
-      c => c.metadata?.phone === phoneNumber && c.metadata?.source === 'whatsapp'
-    );
-
-    if (!conversation) {
-      console.log('🆕 Criando nova conversa');
-      conversation = await base44.asServiceRole.agents.createConversation({
-        agent_name: 'chatbot_agendamentos',
-        metadata: {
-          name: senderName,
-          phone: phoneNumber,
-          pacienteId,
-          senderName,
-          source: 'whatsapp',
-          pipeline_stage: 'novo',
-          last_message_at: new Date().toISOString()
-        }
-      });
-      console.log('✅ Conversa criada:', conversation.id);
-    } else {
-      console.log('📞 Conversa encontrada:', conversation.id);
-    }
+    // Criar sempre nova conversa para teste
+    console.log('🆕 Criando nova conversa');
+    const conversation = await base44.asServiceRole.agents.createConversation({
+      agent_name: 'chatbot_agendamentos',
+      metadata: {
+        name: senderName,
+        phone: phoneNumber,
+        pacienteId,
+        senderName,
+        source: 'whatsapp',
+        pipeline_stage: 'novo',
+        last_message_at: new Date().toISOString()
+      }
+    });
+    console.log('✅ Conversa criada:', conversation.id);
 
     // ADICIONAR MENSAGEM VIA SDK (versão corrigida)
     console.log('📤 Adicionando mensagem à conversa...');
