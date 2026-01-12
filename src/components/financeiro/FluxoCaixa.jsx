@@ -171,7 +171,7 @@ export default function FluxoCaixa({ lancamentos, ordensServico, pacientes, onUp
         </style>
       </head>
       <body>
-        <h1>🏥 Centro Vida Saúde</h1>
+        <h1>🏥 GLÓRIA CLINICA</h1>
         <h2>Fluxo de Caixa: ${dataInicioFormatada} a ${dataFimFormatada}</h2>
         
         <div class="summary">
@@ -244,7 +244,7 @@ export default function FluxoCaixa({ lancamentos, ordensServico, pacientes, onUp
         
         <div class="footer">
           <p>Impresso em: ${format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</p>
-          <p><strong>Centro Vida Saúde</strong> - Sistema de Gestão Clínica</p>
+          <p><strong>GLÓRIA CLINICA</strong> - Sistema de Gestão Clínica</p>
         </div>
       </body>
       </html>
