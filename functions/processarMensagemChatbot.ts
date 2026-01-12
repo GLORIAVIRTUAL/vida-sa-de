@@ -45,32 +45,15 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ADICIONAR MENSAGEM VIA API HTTP DIRETA (evita bug do SDK)
-    console.log('📤 Enviando mensagem via HTTP...');
+    // ADICIONAR MENSAGEM VIA SDK (versão corrigida)
+    console.log('📤 Adicionando mensagem à conversa...');
     
-    const appId = Deno.env.get('BASE44_APP_ID');
-    const apiUrl = `https://api.base44.com/v1/agents/conversations/${conversation.id}/messages`;
-    
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-app-id': appId
-      },
-      body: JSON.stringify({
-        role: 'user',
-        content: messageText
-      })
+    await base44.asServiceRole.agents.addMessage(conversation, {
+      role: 'user',
+      content: messageText
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ Erro HTTP API:', response.status, errorText);
-      throw new Error(`API Error: ${response.status} - ${errorText}`);
-    }
-
-    const resultado = await response.json();
-    console.log('✅ Mensagem adicionada via HTTP');
+    console.log('✅ Mensagem adicionada à conversa');
 
     // Aguardar o agente processar (5 segundos)
     console.log('⏳ Aguardando agente processar...');
