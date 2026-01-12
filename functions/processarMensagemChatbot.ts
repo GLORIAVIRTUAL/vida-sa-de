@@ -50,46 +50,57 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Adicionar a mensagem do usuário
+    // Adicionar a mensagem do usuário via HTTP direto
     console.log('💬 Adicionando mensagem do usuário à conversa...');
     try {
-      await base44.asServiceRole.agents.addMessage(conversation, {
-        role: 'user',
-        content: messageText
+      // Usar a API interna do agente diretamente
+      const internalApiUrl = `https://agents.base44.io/v1/conversations/${conversation.id}/messages`;
+
+      const addMessageResponse = await fetch(internalApiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${Deno.env.get('BASE44_SERVICE_ROLE_KEY') || ''}`
+        },
+        body: JSON.stringify({
+          role: 'user',
+          content: messageText
+        })
       });
 
-      console.log('✅ Mensagem adicionada. Aguardando processamento do agente...');
+      if (addMessageResponse.ok) {
+        console.log('✅ Mensagem adicionada via API');
+      } else {
+        console.log('⚠️ Status ao adicionar mensagem:', addMessageResponse.status);
+      }
 
-      // Aguardar bastante tempo para o agente processar (até 5 segundos)
-      await new Promise(resolve => setTimeout(resolve, 5000));
+      // Aguardar tempo para o agente processar
+      await new Promise(resolve => setTimeout(resolve, 3000));
 
       // Buscar a conversa atualizada
       const conversaAtualizada = await base44.asServiceRole.agents.getConversation(conversation.id);
       console.log('📊 Conversa atualizada. Total de mensagens:', conversaAtualizada?.messages?.length || 0);
 
-      if (conversaAtualizada?.messages && Array.isArray(conversaAtualizada.messages)) {
-        console.log('📋 Mensagens na conversa:', conversaAtualizada.messages.map((m, i) => `${i}: ${m.role} - ${m.content?.substring(0, 30)}...`).join(' | '));
+      if (conversaAtualizada?.messages && Array.isArray(conversaAtualizada.messages) && conversaAtualizada.messages.length > 0) {
+        console.log('📋 Mensagens:', conversaAtualizada.messages.map((m, i) => `${i}: ${m.role}`).join(' | '));
 
-        // Procurar pela resposta do agente (última mensagem do assistente)
+        // Procurar pela resposta do agente
         const respostaAgente = [...conversaAtualizada.messages].reverse().find(msg => msg.role === 'assistant');
 
         if (respostaAgente && respostaAgente.content) {
-          console.log('📨 Resposta do agente encontrada:', respostaAgente.content.substring(0, 50) + '...');
+          console.log('📨 Resposta do agente encontrada');
           await enviarWhatsApp(phoneNumber, respostaAgente.content);
           return Response.json({ 
             success: true, 
             conversationId: conversation.id,
-            message: 'Resposta do agente entregue',
-            messageCount: conversaAtualizada.messages.length
+            message: 'Resposta do agente entregue'
           });
-        } else {
-          console.log('⚠️ Nenhuma resposta do assistente encontrada');
         }
-      } else {
-        console.log('⚠️ Nenhuma mensagem na conversa');
       }
+
+      console.log('⚠️ Agente não respondeu ainda, enviando resposta padrão');
     } catch (agentError) {
-      console.error('❌ Erro ao processar com agente:', agentError.message);
+      console.error('❌ Erro:', agentError.message);
     }
 
     // Se algo deu errado, enviar resposta padrão
