@@ -32,41 +32,43 @@ Deno.serve(async (req) => {
       console.log('📞 Usando conversa existente:', conversation.id);
     }
 
-    // Fazer chamada HTTP direta para adicionar mensagem (evita problemas do SDK)
-    const apiUrl = `https://api.base44.com/v1/agents/conversations/${conversation.id}/messages`;
-    const serviceToken = Deno.env.get('BASE44_SERVICE_ROLE_KEY') || base44.serviceRoleKey;
+    // Adicionar mensagem do usuário usando o SDK (corrigido)
+    console.log('📤 Adicionando mensagem à conversa...');
 
-    console.log('📤 Enviando mensagem para API...');
-
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${serviceToken}`
-      },
-      body: JSON.stringify({
-        role: 'user',
-        content: messageText
-      })
+    // Recarregar conversa completa com todas as mensagens
+    const conversaCompleta = await base44.asServiceRole.agents.getConversation(conversation.id);
+    
+    console.log('📊 Conversa antes:', {
+      id: conversaCompleta.id,
+      messages: conversaCompleta.messages?.length || 0
     });
 
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Erro na API: ${error}`);
-    }
+    // Adicionar mensagem - SDK tratará a resposta do agente automaticamente
+    await base44.asServiceRole.agents.addMessage(conversaCompleta, {
+      role: 'user',
+      content: messageText
+    });
 
-    const resultado = await response.json();
-    console.log('✅ Mensagem processada com sucesso');
+    console.log('✅ Mensagem adicionada ao agente');
 
-    // Aguardar um pouco para o agente processar
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // Aguardar processamento do agente
+    await new Promise(resolve => setTimeout(resolve, 3000));
 
-    // Buscar a última resposta do assistente
+    // Buscar resposta atualizada
     const conversaAtualizada = await base44.asServiceRole.agents.getConversation(conversation.id);
-    const ultimaMensagem = conversaAtualizada.messages?.[conversaAtualizada.messages.length - 1];
+    
+    console.log('📊 Conversa depois:', {
+      id: conversaAtualizada.id,
+      messages: conversaAtualizada.messages?.length || 0
+    });
 
-    // Enviar resposta via WhatsApp
-    if (ultimaMensagem && ultimaMensagem.role === 'assistant') {
+    // Encontrar última mensagem do assistente
+    const ultimaMensagem = conversaAtualizada.messages?.findLast(
+      msg => msg.role === 'assistant'
+    );
+
+    // Enviar resposta via WhatsApp se houver
+    if (ultimaMensagem?.content) {
       try {
         await enviarRespostaWhatsApp(phoneNumber, ultimaMensagem.content);
       } catch (error) {
