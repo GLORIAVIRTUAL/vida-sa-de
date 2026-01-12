@@ -43,11 +43,11 @@ function LoginPage() {
         <CardContent className="p-8">
           <div className="text-center mb-8">
             <img 
-              src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68b9fe84de5d54897629e61a/a0f6566fe_ImagemdoWhatsAppde2025-08-31s094100_18581e21.jpg" 
-              alt="CENTRO VIDA SAÚDE" 
+              src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/696256b5ef59ea2bed1bd7ea/8ca927e40_Untitleddesign27.png" 
+              alt="GLÓRIA CLINICA" 
               className="h-16 object-contain mx-auto mb-4" 
             />
-            <h1 className="text-2xl font-bold text-gray-800 tracking-tight">CENTRO VIDA SAÚDE</h1>
+            <h1 className="text-2xl font-bold text-gray-800 tracking-tight">GLÓRIA CLINICA</h1>
             <p className="text-gray-500">Sistema de Gestão Clínica</p>
           </div>
           
@@ -158,12 +158,12 @@ function MainLayout({ children, currentPageName, currentUser, onUserUpdate }) {
       <aside className={`w-64 bg-white border-r border-gray-200 flex flex-col transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 md:relative fixed h-full z-20`}>
         <div className="h-16 flex items-center gap-2 border-b px-3">
           <img 
-            src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68b9fe84de5d54897629e61a/a0f6566fe_ImagemdoWhatsAppde2025-08-31s094100_18581e21.jpg" 
-            alt="CENTRO VIDA SAÚDE" 
+            src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/696256b5ef59ea2bed1bd7ea/8ca927e40_Untitleddesign27.png" 
+            alt="GLÓRIA CLINICA" 
             className="h-10 object-contain" 
           />
           <span className="font-semibold text-base text-gray-700 leading-tight">
-            CENTRO<br/>VIDA SAÚDE
+            GLÓRIA<br/>CLINICA
           </span>
         </div>
         

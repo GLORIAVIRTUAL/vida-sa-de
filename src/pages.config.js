@@ -4,8 +4,11 @@ import ApiIntegracoes from './pages/ApiIntegracoes';
 import ApiTest from './pages/ApiTest';
 import Atendimento from './pages/Atendimento';
 import AuditoriaSeguranca from './pages/AuditoriaSeguranca';
+import ChatbotDashboard from './pages/ChatbotDashboard';
 import ChatbotGerenciamento from './pages/ChatbotGerenciamento';
+import ChatbotPipeline from './pages/ChatbotPipeline';
 import ChatbotsAtivos from './pages/ChatbotsAtivos';
+import ConfiguracaoChatbot from './pages/ConfiguracaoChatbot';
 import Dashboard from './pages/Dashboard';
 import Debug from './pages/Debug';
 import Diagnostico from './pages/Diagnostico';
@@ -26,9 +29,6 @@ import VendaCartao from './pages/VendaCartao';
 import VerificacaoAssinatura from './pages/VerificacaoAssinatura';
 import WebhookLogs from './pages/WebhookLogs';
 import ordemServico from './pages/ordem-servico';
-import ConfiguracaoChatbot from './pages/ConfiguracaoChatbot';
-import ChatbotDashboard from './pages/ChatbotDashboard';
-import ChatbotPipeline from './pages/ChatbotPipeline';
 import __Layout from './Layout.jsx';
 
 
@@ -39,8 +39,11 @@ export const PAGES = {
     "ApiTest": ApiTest,
     "Atendimento": Atendimento,
     "AuditoriaSeguranca": AuditoriaSeguranca,
+    "ChatbotDashboard": ChatbotDashboard,
     "ChatbotGerenciamento": ChatbotGerenciamento,
+    "ChatbotPipeline": ChatbotPipeline,
     "ChatbotsAtivos": ChatbotsAtivos,
+    "ConfiguracaoChatbot": ConfiguracaoChatbot,
     "Dashboard": Dashboard,
     "Debug": Debug,
     "Diagnostico": Diagnostico,
@@ -61,9 +64,6 @@ export const PAGES = {
     "VerificacaoAssinatura": VerificacaoAssinatura,
     "WebhookLogs": WebhookLogs,
     "ordem-servico": ordemServico,
-    "ConfiguracaoChatbot": ConfiguracaoChatbot,
-    "ChatbotDashboard": ChatbotDashboard,
-    "ChatbotPipeline": ChatbotPipeline,
 }
 
 export const pagesConfig = {
