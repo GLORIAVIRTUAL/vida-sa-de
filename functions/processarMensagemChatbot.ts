@@ -7,6 +7,8 @@ Deno.serve(async (req) => {
 
     console.log('📝 Nova mensagem de:', senderName);
     console.log('📱 Telefone:', phoneNumber);
+    console.log('💬 Mensagem:', messageText);
+    console.log('👤 Paciente ID:', pacienteId);
 
     // Buscar conversas existentes
     const conversasExistentes = await base44.asServiceRole.agents.listConversations({
@@ -48,21 +50,33 @@ Deno.serve(async (req) => {
     // ADICIONAR MENSAGEM VIA SDK (versão corrigida)
     console.log('📤 Adicionando mensagem à conversa...');
     
-    await base44.asServiceRole.agents.addMessage(conversation, {
-      role: 'user',
-      content: messageText
-    });
-
-    console.log('✅ Mensagem adicionada à conversa');
+    try {
+      await base44.asServiceRole.agents.addMessage(conversation, {
+        role: 'user',
+        content: messageText
+      });
+      console.log('✅ Mensagem adicionada à conversa');
+    } catch (addMsgError) {
+      console.error('❌ Erro ao adicionar mensagem:', addMsgError.message);
+      throw addMsgError;
+    }
 
     // Aguardar o agente processar (5 segundos)
     console.log('⏳ Aguardando agente processar...');
     await new Promise(resolve => setTimeout(resolve, 5000));
 
     // Buscar a conversa atualizada
+    console.log('🔄 Buscando conversa atualizada...');
     const conversaAtualizada = await base44.asServiceRole.agents.getConversation(conversation.id);
     
     console.log('📊 Mensagens na conversa:', conversaAtualizada.messages?.length || 0);
+    if (conversaAtualizada.messages?.length > 0) {
+      const ultimaMensagem = conversaAtualizada.messages[conversaAtualizada.messages.length - 1];
+      console.log('📝 Última mensagem:', {
+        role: ultimaMensagem.role,
+        content: ultimaMensagem.content?.substring(0, 50) + '...'
+      });
+    }
 
     // Encontrar última mensagem do assistente
     const assistantMessage = conversaAtualizada.messages
@@ -85,11 +99,17 @@ Deno.serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('❌ Erro:', error.message);
-    console.error('Stack:', error.stack);
+    console.error('❌ Erro completo:', {
+      message: error.message,
+      name: error.name,
+      code: error.code,
+      stack: error.stack
+    });
     
     return Response.json({ 
-      error: error.message
+      error: error.message,
+      errorType: error.name,
+      errorCode: error.code
     }, { status: 500 });
   }
 });
