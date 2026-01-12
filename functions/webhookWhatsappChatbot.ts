@@ -79,32 +79,29 @@ Deno.serve(async (req) => {
       }
 
       // Processar mensagem de forma assíncrona via função dedicada
-      console.log('🤖 Delegando processamento para função backend...');
+      console.log('🤖 Processando mensagem...');
       try {
-        // Não esperar pela resposta - processar em background
-        base44.asServiceRole.functions.invoke('processarMensagemChatbot', {
+        // Processar e aguardar resposta
+        const resultado = await base44.asServiceRole.functions.invoke('processarMensagemChatbot', {
           phoneNumber,
           messageText,
           pacienteId,
           senderName
-        }).catch(err => {
-          console.error('⚠️ Erro no processamento assíncrono:', err);
         });
 
-        console.log('✅ Mensagem delegada para processamento');
+        console.log('✅ Processamento concluído:', resultado.data);
 
       } catch (error) {
-        console.error('⚠️ Erro ao delegar:', error);
-      }
-
-      // Sempre responder sucesso ao webhook da Meta
-      try {
-        await enviarMensagemMeta(
-          phoneNumber,
-          '✅ Sua mensagem foi recebida! Um assistente irá respondê-lo em breve.'
-        );
-      } catch (metaError) {
-        console.error('❌ Erro ao enviar resposta Meta:', metaError.message);
+        console.error('❌ Erro ao processar:', error);
+        // Enviar mensagem de erro ao usuário
+        try {
+          await enviarMensagemMeta(
+            phoneNumber,
+            'Desculpe, tive um problema ao processar sua mensagem. Por favor, tente novamente.'
+          );
+        } catch (metaError) {
+          console.error('❌ Erro ao enviar erro Meta:', metaError.message);
+        }
       }
 
       return Response.json({ success: true });
