@@ -21,15 +21,24 @@ Deno.serve(async (req) => {
       conversation = await base44.asServiceRole.agents.createConversation({
         agent_name: 'chatbot_agendamentos',
         metadata: {
+          name: senderName,
           phone: phoneNumber,
           pacienteId,
           senderName,
           source: 'whatsapp',
-          pipeline_stage: 'novo'
+          pipeline_stage: 'novo',
+          last_message_at: new Date().toISOString()
         }
       });
     } else {
       console.log('📞 Usando conversa existente:', conversation.id);
+      // Atualizar metadata da conversa
+      await base44.asServiceRole.agents.updateConversation(conversation.id, {
+        metadata: {
+          ...conversation.metadata,
+          last_message_at: new Date().toISOString()
+        }
+      });
     }
 
     // Adicionar mensagem do usuário usando o SDK (corrigido)
