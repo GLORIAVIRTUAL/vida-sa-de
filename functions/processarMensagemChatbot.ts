@@ -73,30 +73,38 @@ Deno.serve(async (req) => {
       });
 
       console.log('✅ Mensagem adicionada. Aguardando processamento...');
-
+      
       // Aguardar para o agente processar
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
       // Buscar a conversa atualizada
       const conversaAtualizada = await base44.asServiceRole.agents.getConversation(conversation.id);
-      console.log('📊 Conversa atualizada. Mensagens:', conversaAtualizada?.messages?.length || 0);
+      console.log('📊 Conversa atualizada. Total de mensagens:', conversaAtualizada?.messages?.length || 0);
+      
+      if (conversaAtualizada?.messages) {
+        console.log('📋 Mensagens na conversa:', conversaAtualizada.messages.map((m, i) => `${i}: ${m.role} - ${(m.content || '').substring(0, 30)}`).join(' | '));
+      }
 
       if (conversaAtualizada?.messages && Array.isArray(conversaAtualizada.messages) && conversaAtualizada.messages.length > 0) {
-        // Procurar resposta do agente
+        // Procurar resposta do agente (a mais recente)
         const respostaAgente = [...conversaAtualizada.messages].reverse().find(msg => msg.role === 'assistant');
 
         if (respostaAgente?.content) {
-          console.log('📨 Resposta encontrada, enviando para WhatsApp');
+          console.log('📨 Resposta do agente encontrada, enviando para WhatsApp');
           await enviarWhatsApp(phoneNumber, respostaAgente.content);
           return Response.json({ 
             success: true, 
             conversationId: conversation.id,
             message: 'Resposta entregue'
           });
+        } else {
+          console.log('⚠️ Nenhuma resposta do agente encontrada ainda');
         }
+      } else {
+        console.log('⚠️ Nenhuma mensagem na conversa após atualização');
       }
 
-      console.log('⚠️ Agente não respondeu, enviando padrão');
+      console.log('📤 Enviando resposta padrão enquanto aguarda o agente...');
     } catch (agentError) {
       console.error('❌ Erro:', agentError.message);
     }
