@@ -28,11 +28,15 @@ Deno.serve(async (req) => {
 
     // Adicionar mensagem do usuário à conversa
     console.log('💬 Adicionando mensagem à conversa...');
-    await base44.asServiceRole.agents.addMessage(conversation, {
-      role: 'user',
-      content: messageText
-    });
-    console.log('✅ Mensagem adicionada à conversa');
+    try {
+      await base44.asServiceRole.agents.addMessage(conversation, {
+        role: 'user',
+        content: messageText
+      });
+      console.log('✅ Mensagem adicionada à conversa');
+    } catch (msgError) {
+      console.log('⚠️ Erro ao adicionar mensagem:', msgError.message);
+    }
 
     // Criar entrada de contato para rastrear a conversa
     try {
