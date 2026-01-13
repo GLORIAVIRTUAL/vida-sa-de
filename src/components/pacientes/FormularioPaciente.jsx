@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Save, Printer } from "lucide-react";
 import { CategoriaPreco } from "@/entities/all";
 
-export default function FormularioPaciente({ paciente, onSalvar, onCancelar }) {
+export default function FormularioPaciente({ paciente, dadosIniciais, onSalvar, onCancelar }) {
   const [formData, setFormData] = useState({
     nome: '',
     cpf: '',
@@ -76,8 +76,15 @@ export default function FormularioPaciente({ paciente, onSalvar, onCancelar }) {
         como_conheceu: paciente.como_conheceu || '',
         como_conheceu_outro: paciente.como_conheceu_outro || ''
       });
+    } else if (dadosIniciais) {
+      // Preencher dados iniciais vindos da URL (ex: do chat)
+      setFormData(prev => ({
+        ...prev,
+        nome: dadosIniciais.nome || prev.nome,
+        telefone: dadosIniciais.telefone || prev.telefone
+      }));
     }
-  }, [paciente]);
+  }, [paciente, dadosIniciais]);
 
   const handleChange = (field, value) => {
     if (field.startsWith('endereco.')) {
