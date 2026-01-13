@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,6 +19,72 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import ContatosTab from '../components/gloria/ContatosTab';
 
+// Função para renderizar conteúdo de mensagem (texto, imagem, documento, áudio)
+function renderMensagemContent(content, isUser) {
+  if (!content) return null;
+  
+  // Detectar URLs de mídia no conteúdo
+  const urlMatch = content.match(/(https?:\/\/[^\s]+\.(jpg|jpeg|png|gif|webp|pdf|doc|docx|mp3|ogg|wav|webm|m4a))/i);
+  
+  // Detectar padrões de mídia enviada
+  const isImage = /\[.*📷.*\]|📷 Imagem|\.(?:jpg|jpeg|png|gif|webp)/i.test(content);
+  const isDocument = /\[.*📎.*\]|📄 Documento|Arquivo:|\.(?:pdf|doc|docx)/i.test(content);
+  const isAudio = /\[.*🎤.*\]|🎤 Áudio|Áudio enviado/i.test(content);
+  
+  // Se encontrou URL de mídia
+  if (urlMatch) {
+    const url = urlMatch[1];
+    const ext = urlMatch[2].toLowerCase();
+    
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
+      return (
+        <div className="space-y-2">
+          <img src={url} alt="Imagem" className="max-w-full rounded-lg max-h-64 object-contain" />
+          {content.replace(url, '').trim() && (
+            <p className="text-sm">{content.replace(url, '').trim()}</p>
+          )}
+        </div>
+      );
+    }
+    
+    if (ext === 'pdf' || ext === 'doc' || ext === 'docx') {
+      return (
+        <div className="space-y-2">
+          <a 
+            href={url} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className={`flex items-center gap-2 p-2 rounded ${isUser ? 'bg-gray-100 hover:bg-gray-200' : 'bg-blue-500 hover:bg-blue-400'}`}
+          >
+            <span>📄</span>
+            <span className="text-sm underline">Abrir documento</span>
+          </a>
+        </div>
+      );
+    }
+    
+    if (['mp3', 'ogg', 'wav', 'webm', 'm4a'].includes(ext)) {
+      return (
+        <div className="space-y-2">
+          <audio controls className="max-w-full">
+            <source src={url} type={`audio/${ext === 'm4a' ? 'mp4' : ext}`} />
+          </audio>
+        </div>
+      );
+    }
+  }
+  
+  // Se é indicação de mídia mas sem URL visível, mostrar como está
+  if (isImage || isDocument || isAudio) {
+    // Tentar extrair URL do histórico formatado [👤 Nome]: conteúdo
+    const cleanContent = content.replace(/\[👤[^\]]*\]:\s*/, '');
+    return <p className="text-sm">{cleanContent}</p>;
+  }
+  
+  // Texto normal - usar ReactMarkdown
+  return null; // Retorna null para usar ReactMarkdown padrão
+}
+
 // ========== COMPONENTE: CHAT ==========
 function ChatTab() {
   const [contatos, setContatos] = useState([]);
@@ -27,6 +93,16 @@ function ChatTab() {
   const [inputMsg, setInputMsg] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [modoHumano, setModoHumano] = useState(false);
+  const messagesEndRef = useRef(null);
+  
+  // Scroll para última mensagem
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+  
+  useEffect(() => {
+    scrollToBottom();
+  }, [contatoSelecionado?.historico_mensagens]);
 
   const buscarContatos = async () => {
     try {
@@ -227,32 +303,52 @@ function ChatTab() {
                   </div>
                 )}
               </CardHeader>
-              <CardContent className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
+              <CardContent className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50 flex flex-col">
                 {mensagens.length === 0 ? (
                   <div className="flex items-center justify-center h-full text-gray-400">
                     <MessageCircle className="w-12 h-12 opacity-30" />
                   </div>
                 ) : (
-                  mensagens.map((msg, i) => (
-                    <div key={i} className={`flex ${msg.role === 'user' ? 'justify-start' : 'justify-end'}`}>
-                      <div className={`max-w-md rounded-lg shadow-sm ${
-                        msg.role === 'user' ? 'bg-white text-gray-900 border' : 'bg-blue-600 text-white'
-                      }`}>
-                        {msg.content && (
-                          <div className="p-3">
-                            <ReactMarkdown className="text-sm prose prose-sm max-w-none [&>p]:m-0">
-                              {msg.content}
-                            </ReactMarkdown>
+                  <>
+                    {mensagens.map((msg, i) => {
+                      const isHumano = msg.humano || msg.content?.includes('[👤');
+                      const customRender = renderMensagemContent(msg.content, msg.role === 'user');
+                      
+                      return (
+                        <div key={i} className={`flex ${msg.role === 'user' ? 'justify-start' : 'justify-end'}`}>
+                          <div className={`max-w-md rounded-lg shadow-sm ${
+                            msg.role === 'user' 
+                              ? 'bg-white text-gray-900 border' 
+                              : isHumano 
+                                ? 'bg-orange-500 text-white' 
+                                : 'bg-blue-600 text-white'
+                          }`}>
+                            {msg.content && (
+                              <div className="p-3">
+                                {customRender || (
+                                  <ReactMarkdown className={`text-sm prose prose-sm max-w-none [&>p]:m-0 ${msg.role !== 'user' ? 'prose-invert' : ''}`}>
+                                    {msg.content}
+                                  </ReactMarkdown>
+                                )}
+                              </div>
+                            )}
+                            {msg.timestamp && (
+                              <div className={`px-3 pb-2 text-[10px] ${
+                                msg.role === 'user' 
+                                  ? 'text-gray-400' 
+                                  : isHumano 
+                                    ? 'text-orange-200' 
+                                    : 'text-blue-200'
+                              }`}>
+                                {format(new Date(msg.timestamp), 'HH:mm', { locale: ptBR })}
+                              </div>
+                            )}
                           </div>
-                        )}
-                        {msg.timestamp && (
-                          <div className={`px-3 pb-2 text-[10px] ${msg.role === 'user' ? 'text-gray-400' : 'text-blue-200'}`}>
-                            {format(new Date(msg.timestamp), 'HH:mm', { locale: ptBR })}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))
+                        </div>
+                      );
+                    })}
+                    <div ref={messagesEndRef} />
+                  </>
                 )}
               </CardContent>
               <div className="border-t p-3 bg-white space-y-2">
