@@ -82,6 +82,7 @@ Deno.serve(async (req) => {
         initial_message: { role: 'user', content: messageText }
       });
       console.log('✅ Criada:', conversation.id.substring(0, 8));
+      console.log('📦 Conversa completa:', JSON.stringify(conversation, null, 2));
     } else {
       // Adicionar mensagem via fetch direto (evita bug do SDK)
       console.log('📝 Msg existente:', conversation.id.substring(0, 8));
@@ -117,7 +118,10 @@ Deno.serve(async (req) => {
       const msgs = conversaAtualizada.messages || [];
       const ultimaMensagem = msgs[msgs.length - 1];
 
-      console.log(`🔍 Tentativa ${i+1}/${delays.length}: ${msgs.length} msgs | Última: ${ultimaMensagem?.role || 'nenhuma'}`);
+      console.log(`🔍 Tentativa ${i+1}/${delays.length}: ${msgs.length} msgs`);
+      if (msgs.length > 0) {
+        console.log('📝 Mensagens:', msgs.map(m => `${m.role}: ${m.content?.substring(0, 50) || 'sem conteúdo'}`));
+      }
 
       if (ultimaMensagem?.role === 'assistant' && ultimaMensagem.content) {
         resposta = ultimaMensagem.content;
