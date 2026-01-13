@@ -70,18 +70,54 @@ function ChatTab() {
     const texto = inputMsg;
     setInputMsg('');
     try {
-      await base44.functions.invoke('processarMensagemAgente', {
-        phoneNumber: contatoSelecionado.telefone,
-        messageText: texto,
-        senderName: 'Operador',
-        pacienteId: contatoSelecionado.paciente_id
-      });
+      if (modoHumano) {
+        // Modo humano: enviar direto pelo WhatsApp sem passar pela IA
+        await base44.functions.invoke('enviarMensagemHumano', {
+          phoneNumber: contatoSelecionado.telefone,
+          messageText: texto,
+          contatoId: contatoSelecionado.id
+        });
+      } else {
+        await base44.functions.invoke('processarMensagemAgente', {
+          phoneNumber: contatoSelecionado.telefone,
+          messageText: texto,
+          senderName: 'Operador',
+          pacienteId: contatoSelecionado.paciente_id
+        });
+      }
       await buscarContatos();
     } catch (error) {
       alert('Erro: ' + error.message);
       setInputMsg(texto);
     } finally {
       setEnviando(false);
+    }
+  };
+
+  const finalizarConversa = async () => {
+    if (!contatoSelecionado) return;
+    try {
+      await base44.entities.Contato.update(contatoSelecionado.id, {
+        status: 'Inativo',
+        conversa_finalizada: true,
+        atendimento_humano: false
+      });
+      await buscarContatos();
+    } catch (error) {
+      alert('Erro ao finalizar: ' + error.message);
+    }
+  };
+
+  const toggleAtendimentoHumano = async () => {
+    if (!contatoSelecionado) return;
+    const novoModo = !modoHumano;
+    try {
+      await base44.entities.Contato.update(contatoSelecionado.id, {
+        atendimento_humano: novoModo
+      });
+      setModoHumano(novoModo);
+    } catch (error) {
+      alert('Erro: ' + error.message);
     }
   };
 
