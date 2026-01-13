@@ -296,7 +296,7 @@ Retorne um JSON com os dados ou null se faltarem dados.`;
 
               await base44.asServiceRole.entities.Notification.create({
                 type: 'novo_agendamento',
-                message: `${extracao.nome_paciente} - ${medicoEncontrado.especialidade} com ${medicoEncontrado.nome} em ${dataFormatadaNotif} às ${extracao.horario} (Agendado pela Glória)`,
+                message: `🆕 ${extracao.nome_paciente} - ${medicoEncontrado.especialidade} com ${medicoEncontrado.nome} em ${dataFormatadaNotif} às ${extracao.horario}`,
                 data: {
                   agendamento_id: novoAgendamento.id,
                   paciente_nome: extracao.nome_paciente,
@@ -310,7 +310,7 @@ Retorne um JSON com os dados ou null se faltarem dados.`;
                 is_read: false
               });
 
-              console.log('🔔 Notificação criada para novo agendamento');
+              console.log('🔔 Notificação criada para novo agendamento via Glória');
               agendamentoCriado = true;
               
               // Formatar data para exibição
