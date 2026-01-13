@@ -191,7 +191,7 @@ Deno.serve(async (req) => {
     console.log('📞 Chamando função processarMensagemAgente...');
     const resultado = await base44.asServiceRole.functions.invoke('processarMensagemAgente', {
       phoneNumber,
-      messageText,
+      messageText: textoParaProcessar,
       senderName,
       pacienteId
     });
