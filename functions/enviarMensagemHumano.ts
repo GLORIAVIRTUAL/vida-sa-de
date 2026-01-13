@@ -14,8 +14,12 @@ Deno.serve(async (req) => {
     if (!phoneNumber) {
       return Response.json({ error: 'phoneNumber é obrigatório' }, { status: 400 });
     }
+    
+    if (!messageText && !mediaUrl) {
+      return Response.json({ error: 'messageText ou mediaUrl é obrigatório' }, { status: 400 });
+    }
 
-    console.log('📤 Enviando mensagem humana para:', phoneNumber, 'tipo:', messageType || 'text');
+    console.log('📤 Enviando mensagem humana para:', phoneNumber, 'texto:', messageText, 'tipo:', messageType || 'text');
 
     // Enviar mensagem via WhatsApp (Meta)
     const phoneId = Deno.env.get("META_PHONE_NUMBER_ID");
