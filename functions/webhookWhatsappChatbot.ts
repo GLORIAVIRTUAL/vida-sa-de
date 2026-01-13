@@ -106,29 +106,32 @@ Deno.serve(async (req) => {
       console.log('✅ Msg adicionada');
     }
 
-    // Aguardar e buscar resposta do agente (tentativas múltiplas)
+    // Aguardar resposta do agente com polling progressivo
     let resposta = null;
-    for (let i = 0; i < 6; i++) {
-      await new Promise(resolve => setTimeout(resolve, 2000));
+    const delays = [3000, 3000, 4000, 5000, 5000, 5000]; // Total: 25s
+
+    for (let i = 0; i < delays.length; i++) {
+      await new Promise(resolve => setTimeout(resolve, delays[i]));
 
       const conversaAtualizada = await base44.asServiceRole.agents.getConversation(conversation.id);
-      const ultimaMensagem = conversaAtualizada.messages?.[conversaAtualizada.messages.length - 1];
+      const msgs = conversaAtualizada.messages || [];
+      const ultimaMensagem = msgs[msgs.length - 1];
 
-      console.log(`🔍 Tentativa ${i+1}: ${conversaAtualizada.messages?.length || 0} mensagens`);
+      console.log(`🔍 Tentativa ${i+1}/${delays.length}: ${msgs.length} msgs | Última: ${ultimaMensagem?.role || 'nenhuma'}`);
 
       if (ultimaMensagem?.role === 'assistant' && ultimaMensagem.content) {
         resposta = ultimaMensagem.content;
-        console.log('✅ Resposta do agente recebida');
+        console.log('✅ Agente respondeu');
         break;
       }
     }
 
     if (resposta) {
       await enviarWhatsApp(phoneNumber, resposta);
-      console.log('✅ Resposta enviada ao WhatsApp');
+      console.log('✅ WhatsApp enviado');
     } else {
-      console.log('⚠️ Timeout: agente não respondeu em 12s');
-      await enviarWhatsApp(phoneNumber, 'Desculpe, estou processando sua mensagem. Por favor, aguarde um momento.');
+      console.log('⚠️ Timeout 25s - enviando fallback');
+      await enviarWhatsApp(phoneNumber, 'Olá! Estou processando sua solicitação. Um momento, por favor.');
     }
 
     return Response.json({ success: true });
