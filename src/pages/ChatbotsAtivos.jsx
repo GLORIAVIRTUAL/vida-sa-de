@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   MessageCircle, Loader2, Send, RefreshCw, User, Phone, Calendar,
-  TrendingUp, Clock, CheckCircle, XCircle, Activity, Users, Settings
+  TrendingUp, Clock, CheckCircle, XCircle, Activity, Users, Settings, Bot
 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import ReactMarkdown from 'react-markdown';
