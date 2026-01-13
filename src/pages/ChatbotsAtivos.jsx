@@ -16,24 +16,35 @@ export default function ChatbotsAtivos() {
   useEffect(() => {
     const carregarConversas = async () => {
       try {
-        setCarregando(true);
+        if (!carregando) {
+          setCarregando(true);
+        }
         
-        // Usar função backend para listar conversas
-        const response = await base44.functions.invoke('listarConversasChatbot');
-        const lista = response.data?.conversations || response.data?.conversas || [];
+        // Listar conversas diretamente do SDK
+        const result = await base44.agents.listConversations({ agent_name: 'chatbot_agendamentos' });
+        const lista = result?.conversations || [];
         
-        console.log('✅ Total conversas retornadas:', lista.length);
-        console.log('📊 Conversas com mensagens:', lista.filter(c => (c.messages?.length || 0) > 0).length);
-        console.log('📊 Conversas vazias:', lista.filter(c => (c.messages?.length || 0) === 0).length);
+        console.log('✅ Conversas carregadas:', lista.length);
         
-        setConversas(Array.isArray(lista) ? lista : []);
+        // Buscar detalhes de cada conversa para ter as mensagens
+        const conversasDetalhadas = await Promise.all(
+          lista.map(async (conv) => {
+            try {
+              const detalhes = await base44.agents.getConversation(conv.id);
+              return detalhes;
+            } catch (err) {
+              console.error('Erro ao buscar conversa:', conv.id, err);
+              return conv;
+            }
+          })
+        );
         
-        // Selecionar primeira conversa COM MENSAGENS automaticamente
-        if (Array.isArray(lista) && lista.length > 0 && !conversaSelecionada) {
-          const conversaComMensagens = lista.find(c => (c.messages?.length || 0) > 0);
-          if (conversaComMensagens) {
-            setConversaSelecionada(conversaComMensagens.id);
-          }
+        console.log('📊 Conversas detalhadas:', conversasDetalhadas.length);
+        setConversas(conversasDetalhadas);
+        
+        // Selecionar primeira conversa automaticamente
+        if (conversasDetalhadas.length > 0 && !conversaSelecionada) {
+          setConversaSelecionada(conversasDetalhadas[0].id);
         }
       } catch (error) {
         console.error('Erro ao carregar conversas:', error);
@@ -45,8 +56,8 @@ export default function ChatbotsAtivos() {
 
     carregarConversas();
     
-    // Recarregar conversas a cada 10 segundos
-    const interval = setInterval(carregarConversas, 10000);
+    // Recarregar a cada 5 segundos
+    const interval = setInterval(carregarConversas, 5000);
     
     return () => clearInterval(interval);
   }, []);
@@ -61,9 +72,10 @@ export default function ChatbotsAtivos() {
 
   const conversaSelecionadaDados = conversas.find(c => c.id === conversaSelecionada);
 
-  const conversasFiltradas = mostrarVazias 
-    ? conversas 
-    : conversas.filter(c => (c.messages?.length || 0) > 0);
+  const conversasFiltradas = conversas.filter(c => {
+    if (mostrarVazias) return true;
+    return (c.messages?.length || 0) > 0;
+  });
 
   const limparConversasVazias = async () => {
     if (!confirm('Deseja limpar todas as conversas sem mensagens?')) return;
@@ -81,9 +93,9 @@ export default function ChatbotsAtivos() {
       }
       
       // Recarregar lista
-      const response = await base44.functions.invoke('listarConversasChatbot');
-      const lista = response.data?.conversations || response.data?.conversas || [];
-      setConversas(Array.isArray(lista) ? lista : []);
+      const result = await base44.agents.listConversations({ agent_name: 'chatbot_agendamentos' });
+      const lista = result?.conversations || [];
+      setConversas(lista);
       setConversaSelecionada(null);
       
     } catch (error) {
@@ -114,7 +126,7 @@ export default function ChatbotsAtivos() {
                 <div>
                   <CardTitle className="text-lg">Conversas Ativas</CardTitle>
                   <CardDescription>
-                    {conversasFiltradas.length} conversa(s) • {conversas.filter(c => (c.messages?.length || 0) === 0).length} vazias
+                    Total: {conversas.length} • Com mensagens: {conversas.filter(c => (c.messages?.length || 0) > 0).length}
                   </CardDescription>
                 </div>
                 <div className="flex gap-2">
