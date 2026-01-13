@@ -238,11 +238,13 @@ function ChatTab() {
                       <div className={`max-w-md rounded-lg shadow-sm ${
                         msg.role === 'user' ? 'bg-white text-gray-900 border' : 'bg-blue-600 text-white'
                       }`}>
-                        <div className="p-3">
-                          <ReactMarkdown className="text-sm prose prose-sm max-w-none [&>p]:m-0">
-                            {msg.content}
-                          </ReactMarkdown>
-                        </div>
+                        {msg.content && (
+                          <div className="p-3">
+                            <ReactMarkdown className="text-sm prose prose-sm max-w-none [&>p]:m-0">
+                              {msg.content}
+                            </ReactMarkdown>
+                          </div>
+                        )}
                         {msg.timestamp && (
                           <div className={`px-3 pb-2 text-[10px] ${msg.role === 'user' ? 'text-gray-400' : 'text-blue-200'}`}>
                             {format(new Date(msg.timestamp), 'HH:mm', { locale: ptBR })}
