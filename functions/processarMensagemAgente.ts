@@ -627,7 +627,7 @@ Confirme o recebimento e pergunte como pode ajudar.`;
 INFORMAÇÃO DE HORÁRIO ATUAL (Fuso: Recife/Brasil):
 - Horário atual: ${horaAtual}
 - Saudação apropriada: ${saudacaoHorario}
-- Use essa saudação APENAS se for a primeira mensagem da conversa.
+- Use essa saudação APENAS se o histórico estiver vazio (primeira mensagem). Se já houver histórico, NÃO cumprimente novamente, vá direto ao ponto.
 
 ---
 HISTÓRICO DA CONVERSA (últimas mensagens):
