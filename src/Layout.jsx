@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { User } from "@/entities/all";
-import { Loader2, User as UserIcon, Menu, LogOut, Calendar, BarChart3, Users, Stethoscope, DollarSign, FileText, Computer, AlertCircle, Edit, ClipboardList, Upload, MessageSquare, CreditCard, Activity, Wrench, Settings } from "lucide-react";
+      import { Loader2, User as UserIcon, Menu, LogOut, Calendar, BarChart3, Users, Stethoscope, DollarSign, FileText, Computer, AlertCircle, Edit, ClipboardList, Upload, MessageSquare, CreditCard, Activity, Wrench, Settings, ChevronLeft, ChevronRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -83,8 +83,9 @@ function LoginPage() {
 
 // Layout Principal
 function MainLayout({ children, currentPageName, currentUser, onUserUpdate }) {
-  const [isSidebarOpen, setSidebarOpen] = useState(false);
-  const [isProfileModalOpen, setProfileModalOpen] = useState(false);
+        const [isSidebarOpen, setSidebarOpen] = useState(false);
+        const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
+        const [isProfileModalOpen, setProfileModalOpen] = useState(false);
 
   // Páginas que não devem mostrar o layout (menu lateral e header)
   const paginasSemLayout = ['Atendimento'];
@@ -120,7 +121,7 @@ function MainLayout({ children, currentPageName, currentUser, onUserUpdate }) {
     { name: "Usuários", page: "Usuarios", icon: Users, roles: ["admin"] },
     
     { name: "CRM", url: "https://vidasaude.chatbotsystem.ai/w/pipeline-opportunities", icon: Users, roles: ["admin", "user"], external: true },
-    { name: "Contatos", page: "ListaContatos", icon: Users, roles: ["admin", "user"] }
+    
   ];
 
   const menuSistemaBase = [
@@ -153,16 +154,28 @@ function MainLayout({ children, currentPageName, currentUser, onUserUpdate }) {
   return (
     <div className="min-h-screen bg-gray-100 flex">
       {/* Sidebar */}
-      <aside className={`w-64 bg-white border-r border-gray-200 flex flex-col transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 md:relative fixed h-full z-20`}>
-        <div className="h-16 flex items-center gap-2 border-b px-3">
-          <img 
-            src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/696256b5ef59ea2bed1bd7ea/8ca927e40_Untitleddesign27.png" 
-            alt="GLÓRIA CLÍNICA" 
-            className="h-10 object-contain" 
-          />
-          <span className="font-semibold text-base text-gray-700">
-            GLÓRIA CLÍNICA
-          </span>
+      <aside className={`${isSidebarCollapsed ? 'w-16' : 'w-64'} bg-white border-r border-gray-200 flex flex-col transition-all duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 md:relative fixed h-full z-20`}>
+        <div className="h-16 flex items-center gap-2 border-b px-3 justify-between">
+          <div className="flex items-center gap-2 overflow-hidden">
+            <img 
+              src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/696256b5ef59ea2bed1bd7ea/8ca927e40_Untitleddesign27.png" 
+              alt="GLÓRIA CLÍNICA" 
+              className="h-10 object-contain flex-shrink-0" 
+            />
+            {!isSidebarCollapsed && (
+              <span className="font-semibold text-base text-gray-700 whitespace-nowrap">
+                GLÓRIA CLÍNICA
+              </span>
+            )}
+          </div>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => setSidebarCollapsed(!isSidebarCollapsed)}
+            className="hidden md:flex h-8 w-8 flex-shrink-0"
+          >
+            {isSidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+          </Button>
         </div>
         
         {/* Navegação com layout flexível */}
@@ -191,28 +204,29 @@ function MainLayout({ children, currentPageName, currentUser, onUserUpdate }) {
               const isActive = currentPageName === item.page;
               return (
                 <Link
-                  key={item.name}
-                  to={createPageUrl(item.page)}
-                  className={`flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                    isActive
-                      ? "bg-blue-100 text-blue-700"
-                      : "text-gray-700 hover:bg-gray-100"
-                  }`}
-                  onClick={() => setSidebarOpen(false)}
-                  >
-                  {item.customLogo ? (
-                    <img 
-                      src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/696256b5ef59ea2bed1bd7ea/bed877093_Untitleddesign14.png" 
-                      alt="Glória Virtual" 
-                      className="h-8 object-contain"
-                    />
-                  ) : (
-                    <>
-                      <item.icon className="w-5 h-5 mr-3 flex-shrink-0" />
-                      <span>{item.name}</span>
-                    </>
-                  )}
-                  </Link>
+                key={item.name}
+                to={createPageUrl(item.page)}
+                className={`flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  isActive
+                    ? "bg-blue-100 text-blue-700"
+                    : "text-gray-700 hover:bg-gray-100"
+                } ${isSidebarCollapsed ? 'justify-center' : ''}`}
+                onClick={() => setSidebarOpen(false)}
+                title={isSidebarCollapsed ? item.name : ''}
+                >
+                {item.customLogo ? (
+                  <img 
+                    src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/696256b5ef59ea2bed1bd7ea/bed877093_Untitleddesign14.png" 
+                    alt="Glória Virtual" 
+                    className={isSidebarCollapsed ? "h-6 object-contain" : "h-8 object-contain"}
+                  />
+                ) : (
+                  <>
+                    <item.icon className={`w-5 h-5 flex-shrink-0 ${isSidebarCollapsed ? '' : 'mr-3'}`} />
+                    {!isSidebarCollapsed && <span>{item.name}</span>}
+                  </>
+                )}
+                </Link>
               );
             })}
           </nav>
@@ -223,9 +237,11 @@ function MainLayout({ children, currentPageName, currentUser, onUserUpdate }) {
           {/* Menu do Sistema - apenas se houver itens para mostrar */}
           {menuSistemaFiltrado.length > 0 && (
             <div className="p-4 border-t border-gray-200 bg-gray-50">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 px-2">
-                Sistema & Integrações
-              </p>
+              {!isSidebarCollapsed && (
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 px-2">
+                  Sistema & Integrações
+                </p>
+              )}
               <div className="space-y-1">
                 {menuSistemaFiltrado.map((item) => {
                   const isActive = currentPageName === item.page;
@@ -237,11 +253,12 @@ function MainLayout({ children, currentPageName, currentUser, onUserUpdate }) {
                         isActive
                           ? "bg-purple-100 text-purple-700"
                           : "text-gray-600 hover:bg-gray-100"
-                      }`}
+                      } ${isSidebarCollapsed ? 'justify-center' : ''}`}
                       onClick={() => setSidebarOpen(false)}
+                      title={isSidebarCollapsed ? item.name : ''}
                       >
-                      <item.icon className="w-4 h-4 mr-3 flex-shrink-0" />
-                      <span>{item.name}</span>
+                      <item.icon className={`w-4 h-4 flex-shrink-0 ${isSidebarCollapsed ? '' : 'mr-3'}`} />
+                      {!isSidebarCollapsed && <span>{item.name}</span>}
                       </Link>
                   );
                 })}
