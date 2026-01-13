@@ -74,38 +74,36 @@ Deno.serve(async (req) => {
     let conversation = conversas.conversations?.find(c => c.metadata?.phone === phoneNumber);
 
     if (!conversation) {
-      // Criar conversa COM mensagem inicial
+      // Criar conversa VAZIA
       console.log('🆕 Nova conversa');
       conversation = await base44.asServiceRole.agents.createConversation({
         agent_name: 'chatbot_agendamentos',
-        metadata: { phone: phoneNumber, senderName, pacienteId },
-        initial_message: { role: 'user', content: messageText }
+        metadata: { phone: phoneNumber, senderName, pacienteId }
       });
       console.log('✅ Criada:', conversation.id.substring(0, 8));
-      console.log('📦 Conversa completa:', JSON.stringify(conversation, null, 2));
-    } else {
-      // Adicionar mensagem via fetch direto (evita bug do SDK)
-      console.log('📝 Msg existente:', conversation.id.substring(0, 8));
-
-      const url = `https://api.base44.com/agents/conversations/${conversation.id}/messages`;
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${Deno.env.get('BASE44_SERVICE_ROLE_KEY')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          role: 'user',
-          content: messageText
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`Erro API: ${response.status}`);
-      }
-
-      console.log('✅ Msg adicionada');
     }
+
+    // Adicionar mensagem via API REST (funciona sempre)
+    console.log('📝 Adicionando mensagem...');
+    const url = `https://api.base44.com/agents/conversations/${conversation.id}/messages`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${Deno.env.get('BASE44_SERVICE_ROLE_KEY')}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        role: 'user',
+        content: messageText
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`API erro ${response.status}: ${errorText}`);
+    }
+
+    console.log('✅ Mensagem adicionada');
 
     // Aguardar resposta do agente com polling progressivo
     let resposta = null;
