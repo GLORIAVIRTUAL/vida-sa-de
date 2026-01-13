@@ -3,47 +3,35 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { MessageCircle, Loader2, Send, RefreshCw } from 'lucide-react';
+import { MessageCircle, Loader2, Send, RefreshCw, User } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import ReactMarkdown from 'react-markdown';
 
 export default function ChatbotsAtivos() {
-  const [conversas, setConversas] = useState([]);
-  const [conversaSelecionada, setConversaSelecionada] = useState(null);
-  const [mensagens, setMensagens] = useState([]);
+  const [contatos, setContatos] = useState([]);
+  const [contatoSelecionado, setContatoSelecionado] = useState(null);
   const [carregando, setCarregando] = useState(true);
   const [inputMsg, setInputMsg] = useState('');
   const [enviando, setEnviando] = useState(false);
 
-  // Buscar todas as conversas
-  const buscarConversas = async () => {
+  // Buscar todos os contatos com histórico
+  const buscarContatos = async () => {
     try {
-      console.log('🔍 Buscando conversas...');
-      const result = await base44.agents.listConversations({ agent_name: 'chatbot_agendamentos' });
-      const lista = result?.conversations || [];
+      console.log('🔍 Buscando contatos...');
+      const lista = await base44.entities.Contato.list('-updated_date', 50);
       
-      console.log('✅ Total conversas:', lista.length);
+      // Filtrar apenas contatos que têm histórico de mensagens
+      const comHistorico = lista.filter(c => 
+        (c.historico_mensagens && c.historico_mensagens.length > 0) ||
+        c.ultima_mensagem
+      );
       
-      // Buscar detalhes de cada uma COM LOGS
-      const detalhadas = [];
-      for (const conv of lista) {
-        try {
-          const detalhes = await base44.agents.getConversation(conv.id);
-          detalhadas.push(detalhes);
-          console.log(`📊 ID: ${conv.id.substring(0, 8)}... | Msgs: ${detalhes.messages?.length || 0}`);
-        } catch (err) {
-          console.error('Erro ao buscar conversa:', conv.id, err.message);
-        }
-      }
+      console.log('✅ Total contatos com histórico:', comHistorico.length);
+      setContatos(comHistorico);
       
-      setConversas(detalhadas);
-      
-      // Auto-selecionar primeira
-      if (detalhadas.length > 0 && !conversaSelecionada) {
-        const primeira = detalhadas[0];
-        setConversaSelecionada(primeira.id);
-        setMensagens(primeira.messages || []);
-        console.log('✅ Selecionada:', primeira.id.substring(0, 8));
+      // Auto-selecionar primeiro se nenhum selecionado
+      if (comHistorico.length > 0 && !contatoSelecionado) {
+        setContatoSelecionado(comHistorico[0]);
       }
       
     } catch (error) {
@@ -55,50 +43,49 @@ export default function ChatbotsAtivos() {
 
   // Carregar inicial
   useEffect(() => {
-    buscarConversas();
+    buscarContatos();
   }, []);
-
-  // Inscrição em tempo real
-  useEffect(() => {
-    if (conversaSelecionada) {
-      console.log('📡 Inscrevendo em:', conversaSelecionada.substring(0, 8));
-      
-      const unsubscribe = base44.agents.subscribeToConversation(conversaSelecionada, (data) => {
-        console.log('🔔 Update recebido:', data.messages?.length || 0, 'mensagens');
-        setMensagens(data.messages || []);
-      });
-      
-      return () => {
-        console.log('🔌 Desinscrevendo');
-        unsubscribe();
-      };
-    }
-  }, [conversaSelecionada]);
 
   // Atualizar lista a cada 10s
   useEffect(() => {
     const interval = setInterval(() => {
-      console.log('🔄 Auto-refresh');
-      buscarConversas();
+      buscarContatos();
     }, 10000);
     return () => clearInterval(interval);
   }, []);
 
-  // Enviar mensagem
+  // Atualizar contato selecionado quando a lista atualiza
+  useEffect(() => {
+    if (contatoSelecionado && contatos.length > 0) {
+      const atualizado = contatos.find(c => c.id === contatoSelecionado.id);
+      if (atualizado) {
+        setContatoSelecionado(atualizado);
+      }
+    }
+  }, [contatos]);
+
+  // Enviar mensagem via função backend
   const enviarMensagem = async () => {
-    if (!inputMsg.trim() || !conversaSelecionada) return;
+    if (!inputMsg.trim() || !contatoSelecionado) return;
 
     setEnviando(true);
     const texto = inputMsg;
     setInputMsg('');
 
     try {
-      const conv = conversas.find(c => c.id === conversaSelecionada);
-      await base44.agents.addMessage(conv, {
-        role: 'user',
-        content: texto
+      // Chamar função que processa e envia WhatsApp
+      const response = await base44.functions.invoke('processarMensagemAgente', {
+        phoneNumber: contatoSelecionado.telefone,
+        messageText: texto,
+        senderName: 'Operador',
+        pacienteId: contatoSelecionado.paciente_id
       });
-      console.log('✅ Mensagem enviada');
+      
+      console.log('✅ Resposta:', response.data);
+      
+      // Atualizar lista
+      await buscarContatos();
+      
     } catch (error) {
       console.error('❌ Erro:', error);
       alert('Erro: ' + error.message);
@@ -106,6 +93,26 @@ export default function ChatbotsAtivos() {
     } finally {
       setEnviando(false);
     }
+  };
+
+  // Montar mensagens a partir do contato
+  const getMensagens = (contato) => {
+    if (!contato) return [];
+    
+    // Se tem histórico estruturado
+    if (contato.historico_mensagens && contato.historico_mensagens.length > 0) {
+      return contato.historico_mensagens;
+    }
+    
+    // Fallback: montar a partir de ultima_mensagem/ultima_resposta
+    const msgs = [];
+    if (contato.ultima_mensagem) {
+      msgs.push({ role: 'user', content: contato.ultima_mensagem });
+    }
+    if (contato.ultima_resposta) {
+      msgs.push({ role: 'assistant', content: contato.ultima_resposta });
+    }
+    return msgs;
   };
 
   if (carregando) {
@@ -119,7 +126,7 @@ export default function ChatbotsAtivos() {
     );
   }
 
-  const conversaAtual = conversas.find(c => c.id === conversaSelecionada);
+  const mensagens = getMensagens(contatoSelecionado);
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -128,13 +135,13 @@ export default function ChatbotsAtivos() {
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-2">
               <MessageCircle className="w-8 h-8 text-green-600" />
-              Chatbot Agendamentos
+              Chatbot WhatsApp
             </h1>
             <p className="text-gray-600 mt-1">
-              {conversas.length} conversa(s) ativa(s)
+              {contatos.length} conversa(s) ativa(s)
             </p>
           </div>
-          <Button onClick={buscarConversas} variant="outline">
+          <Button onClick={buscarContatos} variant="outline">
             <RefreshCw className="w-4 h-4 mr-2" />
             Atualizar
           </Button>
@@ -148,34 +155,37 @@ export default function ChatbotsAtivos() {
                 <CardTitle className="text-sm">Conversas</CardTitle>
               </CardHeader>
               <CardContent className="p-0 max-h-[600px] overflow-y-auto">
-                {conversas.length === 0 ? (
+                {contatos.length === 0 ? (
                   <div className="p-4 text-center text-gray-500">
                     <p className="text-sm">Nenhuma conversa</p>
                     <p className="text-xs mt-1">Envie uma mensagem pelo WhatsApp</p>
                   </div>
                 ) : (
                   <div className="divide-y">
-                    {conversas.map((conv) => (
+                    {contatos.map((contato) => (
                       <button
-                        key={conv.id}
-                        onClick={() => {
-                          setConversaSelecionada(conv.id);
-                          setMensagens(conv.messages || []);
-                        }}
+                        key={contato.id}
+                        onClick={() => setContatoSelecionado(contato)}
                         className={`w-full text-left p-3 hover:bg-gray-50 transition ${
-                          conversaSelecionada === conv.id ? 'bg-blue-50 border-l-2 border-blue-600' : ''
+                          contatoSelecionado?.id === contato.id ? 'bg-blue-50 border-l-2 border-blue-600' : ''
                         }`}
                       >
-                        <p className="font-medium text-sm truncate">
-                          {conv.metadata?.senderName || conv.metadata?.name || 'Cliente'}
+                        <div className="flex items-center gap-2">
+                          <User className="w-4 h-4 text-gray-400" />
+                          <p className="font-medium text-sm truncate">
+                            {contato.nome || 'Cliente'}
+                          </p>
+                        </div>
+                        <p className="text-xs text-gray-500 truncate mt-1">
+                          {contato.telefone}
                         </p>
-                        <p className="text-xs text-gray-500 truncate">
-                          {conv.metadata?.phone || 'Sem telefone'}
-                        </p>
-                        <Badge className="mt-1 text-xs" variant={
-                          (conv.messages?.length || 0) > 0 ? 'default' : 'secondary'
-                        }>
-                          {conv.messages?.length || 0} msgs
+                        {contato.ultima_mensagem && (
+                          <p className="text-xs text-gray-400 truncate mt-1">
+                            {contato.ultima_mensagem.substring(0, 30)}...
+                          </p>
+                        )}
+                        <Badge className="mt-1 text-xs" variant="default">
+                          {contato.status || 'Novo'}
                         </Badge>
                       </button>
                     ))}
@@ -188,14 +198,14 @@ export default function ChatbotsAtivos() {
           {/* Chat */}
           <div className="lg:col-span-3">
             <Card className="h-[600px] flex flex-col">
-              {conversaAtual ? (
+              {contatoSelecionado ? (
                 <>
                   <CardHeader className="border-b bg-gradient-to-r from-blue-50 to-green-50">
                     <CardTitle className="flex items-center justify-between">
                       <div>
-                        <p className="text-lg">{conversaAtual.metadata?.senderName || 'Cliente'}</p>
+                        <p className="text-lg">{contatoSelecionado.nome || 'Cliente'}</p>
                         <p className="text-xs text-gray-500 font-normal">
-                          {conversaAtual.metadata?.phone}
+                          {contatoSelecionado.telefone}
                         </p>
                       </div>
                       <Badge>{mensagens.length} mensagens</Badge>
@@ -208,7 +218,6 @@ export default function ChatbotsAtivos() {
                         <div className="text-center text-gray-400">
                           <MessageCircle className="w-12 h-12 mx-auto mb-2 opacity-50" />
                           <p className="text-sm">Sem mensagens ainda</p>
-                          <p className="text-xs">Aguardando resposta do agente...</p>
                         </div>
                       </div>
                     ) : (
@@ -220,17 +229,17 @@ export default function ChatbotsAtivos() {
                           <div
                             className={`max-w-md p-3 rounded-lg shadow-sm ${
                               msg.role === 'user'
-                                ? 'bg-blue-600 text-white'
+                                ? 'bg-green-600 text-white'
                                 : 'bg-white text-gray-900 border'
                             }`}
                           >
-                            <ReactMarkdown className="text-sm prose prose-sm max-w-none">
+                            <ReactMarkdown className="text-sm prose prose-sm max-w-none [&>p]:m-0">
                               {msg.content}
                             </ReactMarkdown>
-                            {msg.role === 'assistant' && msg.tool_calls && (
-                              <div className="text-xs opacity-70 mt-2">
-                                🔧 {msg.tool_calls.length} ação(ões)
-                              </div>
+                            {msg.timestamp && (
+                              <p className="text-xs opacity-60 mt-1">
+                                {new Date(msg.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                              </p>
                             )}
                           </div>
                         </div>
@@ -251,7 +260,7 @@ export default function ChatbotsAtivos() {
                       <Button
                         onClick={enviarMensagem}
                         disabled={enviando || !inputMsg.trim()}
-                        className="bg-blue-600 hover:bg-blue-700"
+                        className="bg-green-600 hover:bg-green-700"
                       >
                         {enviando ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
