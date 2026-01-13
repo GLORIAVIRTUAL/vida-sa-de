@@ -325,26 +325,30 @@ Retorne um JSON com os dados encontrados.`;
               console.log('✅ AGENDAMENTO CRIADO:', novoAgendamento.id);
 
               // Criar notificação para a equipe
-              const dataObj = new Date(extracao.data_agendamento + 'T12:00:00');
-              const dataFormatadaNotif = dataObj.toLocaleDateString('pt-BR');
+              try {
+                const dataObjNotif = new Date(extracao.data_agendamento + 'T12:00:00');
+                const dataFormatadaNotif = dataObjNotif.toLocaleDateString('pt-BR');
 
-              await base44.asServiceRole.entities.Notification.create({
-                type: 'novo_agendamento',
-                message: `🆕 ${extracao.nome_paciente} - ${medicoEncontrado.especialidade} com ${medicoEncontrado.nome} em ${dataFormatadaNotif} às ${extracao.horario}`,
-                data: {
-                  agendamento_id: novoAgendamento.id,
-                  paciente_nome: extracao.nome_paciente,
-                  medico_nome: medicoEncontrado.nome,
-                  especialidade: medicoEncontrado.especialidade,
-                  data: extracao.data_agendamento,
-                  horario: extracao.horario,
-                  agendado_por: 'Glória',
-                  agendado_por_tipo: 'chatbot'
-                },
-                is_read: false
-              });
+                const notificacao = await base44.asServiceRole.entities.Notification.create({
+                  type: 'novo_agendamento',
+                  message: `🆕 ${extracao.nome_paciente} - ${medicoEncontrado.especialidade} com ${medicoEncontrado.nome} em ${dataFormatadaNotif} às ${extracao.horario}`,
+                  data: {
+                    agendamento_id: novoAgendamento.id,
+                    paciente_nome: extracao.nome_paciente,
+                    medico_nome: medicoEncontrado.nome,
+                    especialidade: medicoEncontrado.especialidade,
+                    data: extracao.data_agendamento,
+                    horario: extracao.horario,
+                    agendado_por: 'Glória',
+                    agendado_por_tipo: 'chatbot'
+                  },
+                  is_read: false
+                });
+                console.log('🔔 Notificação criada com sucesso:', notificacao?.id);
+              } catch (notifError) {
+                console.error('⚠️ Erro ao criar notificação:', notifError.message);
+              }
 
-              console.log('🔔 Notificação criada para novo agendamento via Glória');
               agendamentoCriado = true;
               
               // Formatar data para exibição
