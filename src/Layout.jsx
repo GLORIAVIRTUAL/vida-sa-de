@@ -119,7 +119,8 @@ function MainLayout({ children, currentPageName, currentUser, onUserUpdate }) {
     { name: "Financeiro", page: "Financeiro", icon: DollarSign, roles: ["admin"] },
     { name: "Usuários", page: "Usuarios", icon: Users, roles: ["admin"] },
     { name: "Chat ao Vivo", url: "https://vidasaude.chatbotsystem.ai/w/inbox", icon: MessageSquare, roles: ["admin", "user"], external: true },
-    { name: "CRM", url: "https://vidasaude.chatbotsystem.ai/w/pipeline-opportunities", icon: Users, roles: ["admin", "user"], external: true }
+    { name: "CRM", url: "https://vidasaude.chatbotsystem.ai/w/pipeline-opportunities", icon: Users, roles: ["admin", "user"], external: true },
+    { name: "Contatos Site", page: "ListaContatos", icon: Users, roles: ["admin", "user"] }
   ];
 
   const menuSistemaBase = [
