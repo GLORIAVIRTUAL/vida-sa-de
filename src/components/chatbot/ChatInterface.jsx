@@ -12,43 +12,38 @@ export default function ChatInterface({ conversationId, pacienteName, pacientePh
   const [enviando, setEnviando] = useState(false);
   const messagesEndRef = useRef(null);
 
-  // Carregar conversa em tempo real
+  // Carregar conversa diretamente do SDK
   useEffect(() => {
     if (!conversationId) return;
 
-    console.log('🔄 Iniciando monitoramento da conversa:', conversationId);
-
-    // Carregar conversa inicial usando backend function
     const carregarConversa = async () => {
       try {
-        const response = await base44.functions.invoke('obterConversaChatbot', { conversationId });
-        const conversation = response.data?.conversation;
+        const conversation = await base44.agents.getConversation(conversationId);
         
         console.log('✅ Conversa carregada:', conversationId);
-        console.log('📨 Total mensagens:', conversation?.messages?.length || 0);
+        console.log('📨 Mensagens:', conversation?.messages?.length || 0);
         
-        if (conversation?.messages) {
+        if (conversation?.messages && Array.isArray(conversation.messages)) {
           setMessages(conversation.messages);
+        } else {
+          console.log('⚠️ Conversa sem mensagens');
+          setMessages([]);
         }
       } catch (error) {
         console.error('❌ Erro ao carregar conversa:', error);
+        setMessages([]);
       }
     };
 
     carregarConversa();
 
-    // Polling a cada 2 segundos para novas mensagens
-    const pollInterval = setInterval(() => {
-      carregarConversa();
-    }, 2000);
+    // Polling a cada 3 segundos
+    const pollInterval = setInterval(carregarConversa, 3000);
 
-    return () => {
-      console.log('🛑 Limpando polling da conversa:', conversationId);
-      clearInterval(pollInterval);
-    };
+    return () => clearInterval(pollInterval);
   }, [conversationId]);
 
-  // Auto-scroll para última mensagem
+  // Auto-scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -60,25 +55,25 @@ export default function ChatInterface({ conversationId, pacienteName, pacientePh
     const textoEnviado = inputValue;
     setInputValue('');
 
-    // Adicionar mensagem imediatamente na UI
-    const novaMensagem = {
-      role: 'user',
-      content: textoEnviado,
-      created_at: new Date().toISOString()
-    };
-    setMessages(prev => [...prev, novaMensagem]);
-
     try {
-      // Usar backend function para adicionar mensagem
-      await base44.functions.invoke('adicionarMensagemChatbot', {
-        conversationId,
-        message: textoEnviado
+      // Buscar conversa completa
+      const conversation = await base44.agents.getConversation(conversationId);
+      
+      // Adicionar mensagem
+      await base44.agents.addMessage(conversation, {
+        role: 'user',
+        content: textoEnviado
       });
+
+      // Recarregar imediatamente
+      const conversaAtualizada = await base44.agents.getConversation(conversationId);
+      if (conversaAtualizada?.messages) {
+        setMessages(conversaAtualizada.messages);
+      }
 
     } catch (error) {
       console.error('Erro ao enviar:', error);
-      // Remover mensagem se falhou
-      setMessages(prev => prev.filter(m => m.content !== textoEnviado));
+      alert('Erro ao enviar mensagem: ' + error.message);
       setInputValue(textoEnviado);
     } finally {
       setEnviando(false);
