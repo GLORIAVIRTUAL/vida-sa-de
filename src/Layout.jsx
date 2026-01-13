@@ -103,16 +103,13 @@ function MainLayout({ children, currentPageName, currentUser, onUserUpdate }) {
 
   // Menu base para todos os usuários
   const menuBase = [
-    { name: "Dashboard", page: "Dashboard", icon: BarChart3, roles: ["admin", "user"] }, // Removido "medico"
+    { name: "Dashboard", page: "Dashboard", icon: BarChart3, roles: ["admin", "user"] },
     { name: "Agendamentos", page: "Agendamentos", icon: Calendar, roles: ["admin", "user"] },
-    { name: "Turmas e Grupos", page: "Turmas", icon: Users, roles: ["admin", "user"] }, // NOVO: Link para turmas
+    { name: "Turmas e Grupos", page: "Turmas", icon: Users, roles: ["admin", "user"] },
     { name: "Pacientes", page: "Pacientes", icon: Users, roles: ["admin", "user"] },
     { name: "Ordens de Serviço", page: "ordem-servico", icon: ClipboardList, roles: ["admin", "user"] },
     { name: "Painel TV", page: "Atendimento", icon: Computer, roles: ["admin", "user"] },
-    { name: "Chatbot", page: "ChatbotsAtivos", icon: MessageSquare, roles: ["admin", "user"], customLogo: true },
-    { name: "Pipeline Chatbot", page: "ChatbotPipeline", icon: BarChart3, roles: ["admin", "user"] },
-    { name: "Dashboard Chatbot", page: "ChatbotDashboard", icon: Activity, roles: ["admin", "user"] },
-    { name: "Config. Chatbot", page: "ConfiguracaoChatbot", icon: Settings, roles: ["admin", "user"] },
+    { name: "Glória", page: "ChatbotsAtivos", icon: MessageSquare, roles: ["admin", "user"], customLogo: true },
     { name: "Portal do Médico", page: "PortalMedico", icon: Stethoscope, roles: ["medico"] },
     { name: "Médicos", page: "Medicos", icon: Stethoscope, roles: ["admin", "user"] },
     { name: "Procedimentos", page: "Procedimentos", icon: FileText, roles: ["admin", "user"] },
