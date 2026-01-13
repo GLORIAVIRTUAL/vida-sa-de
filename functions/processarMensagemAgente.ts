@@ -173,6 +173,176 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Verificar se cliente está confirmando agendamento (tem data de nascimento no formato dd/mm/yyyy)
+    const regexDataNascimento = /(\d{2}\/\d{2}\/\d{4})/;
+    const matchNascimento = messageText.match(regexDataNascimento);
+    
+    // Verificar no histórico se já temos médico, data e horário escolhidos
+    let agendamentoCriado = false;
+    let mensagemAgendamento = '';
+    
+    if (matchNascimento && historicoConversa) {
+      console.log('📝 Detectada data de nascimento, verificando se pode criar agendamento...');
+      
+      try {
+        // Usar LLM para extrair dados do agendamento do histórico
+        const promptExtracao = `Analise o histórico da conversa e extraia os dados do agendamento se TODOS estiverem presentes.
+
+HISTÓRICO:
+${historicoConversa}
+
+ÚLTIMA MENSAGEM DO CLIENTE:
+${messageText}
+
+Extraia APENAS se TODOS os dados estiverem claros:
+- nome_paciente: nome completo do paciente
+- data_nascimento: data de nascimento (formato DD/MM/YYYY)
+- medico_nome: nome do médico escolhido
+- data_agendamento: data da consulta (formato YYYY-MM-DD)
+- horario: horário escolhido (formato HH:MM)
+
+Retorne um JSON com os dados ou null se faltarem dados.`;
+
+        const extracao = await base44.asServiceRole.integrations.Core.InvokeLLM({
+          prompt: promptExtracao,
+          add_context_from_internet: false,
+          response_json_schema: {
+            type: "object",
+            properties: {
+              dados_completos: { type: "boolean" },
+              nome_paciente: { type: "string" },
+              data_nascimento: { type: "string" },
+              medico_nome: { type: "string" },
+              data_agendamento: { type: "string" },
+              horario: { type: "string" }
+            }
+          }
+        });
+
+        console.log('📊 Extração:', JSON.stringify(extracao));
+
+        if (extracao && extracao.dados_completos && extracao.nome_paciente && extracao.data_agendamento && extracao.horario) {
+          // Buscar médico pelo nome
+          const medicos = await base44.asServiceRole.entities.Medico.filter({ status: 'Ativo' });
+          const medicoEncontrado = medicos.find(m => 
+            m.nome.toLowerCase().includes(extracao.medico_nome?.toLowerCase() || '') ||
+            extracao.medico_nome?.toLowerCase().includes(m.nome.toLowerCase())
+          );
+
+          if (medicoEncontrado) {
+            // Converter data de nascimento para formato ISO
+            let dataNascimentoISO = null;
+            if (extracao.data_nascimento) {
+              const partes = extracao.data_nascimento.split('/');
+              if (partes.length === 3) {
+                dataNascimentoISO = `${partes[2]}-${partes[1]}-${partes[0]}`;
+              }
+            }
+
+            // Buscar ou criar paciente
+            let paciente = null;
+            const pacientesExistentes = await base44.asServiceRole.entities.Paciente.filter({ telefone: phoneNumber });
+            
+            if (pacientesExistentes.length > 0) {
+              paciente = pacientesExistentes[0];
+              // Atualizar dados se necessário
+              await base44.asServiceRole.entities.Paciente.update(paciente.id, {
+                nome: extracao.nome_paciente,
+                data_nascimento: dataNascimentoISO
+              });
+            } else {
+              paciente = await base44.asServiceRole.entities.Paciente.create({
+                nome: extracao.nome_paciente,
+                telefone: phoneNumber,
+                cpf: 'NÃO INFORMADO',
+                data_nascimento: dataNascimentoISO,
+                observacoes: 'Criado via WhatsApp'
+              });
+            }
+
+            // Verificar se horário ainda está disponível
+            const agendamentosExistentes = await base44.asServiceRole.entities.Agendamento.filter({
+              medico_id: medicoEncontrado.id,
+              data_agendamento: extracao.data_agendamento,
+              horario: extracao.horario,
+              status: { $ne: 'Cancelado' }
+            });
+
+            if (agendamentosExistentes.length === 0) {
+              // Criar agendamento
+              const novoAgendamento = await base44.asServiceRole.entities.Agendamento.create({
+                paciente_id: paciente.id,
+                paciente_nome: extracao.nome_paciente,
+                medico_id: medicoEncontrado.id,
+                data_agendamento: extracao.data_agendamento,
+                horario: extracao.horario,
+                tipo_servico: 'Consulta',
+                status: 'Agendado',
+                observacoes: 'Agendado via WhatsApp'
+              });
+
+              console.log('✅ AGENDAMENTO CRIADO:', novoAgendamento.id);
+              agendamentoCriado = true;
+              
+              // Formatar data para exibição
+              const dataObj = new Date(extracao.data_agendamento + 'T12:00:00');
+              const dataFormatada = dataObj.toLocaleDateString('pt-BR', { 
+                weekday: 'long', 
+                day: '2-digit', 
+                month: '2-digit',
+                year: 'numeric'
+              });
+              
+              mensagemAgendamento = `✅ Agendamento confirmado!\n\n📋 Resumo:\n• Paciente: ${extracao.nome_paciente}\n• Médico: ${medicoEncontrado.nome} (${medicoEncontrado.especialidade})\n• Data: ${dataFormatada}\n• Horário: ${extracao.horario}\n\n📍 Endereço: Av. Isabel, 29 – Sobreloja, Santa Cruz, Rio de Janeiro – RJ\n\n⚠️ Lembre-se de trazer documento original com foto.\n\nTe aguardamos! 😊`;
+            } else {
+              console.log('⚠️ Horário já ocupado');
+              mensagemAgendamento = `😔 Poxa, esse horário acabou de ser preenchido. Vou verificar outras opções disponíveis para você!`;
+            }
+          }
+        }
+      } catch (extracaoError) {
+        console.error('⚠️ Erro na extração:', extracaoError.message);
+      }
+    }
+
+    // Se agendamento foi criado, retornar mensagem de confirmação
+    if (agendamentoCriado) {
+      console.log('🎉 Retornando confirmação de agendamento');
+      
+      // Salvar no histórico
+      try {
+        const contatos = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
+        const timestamp = new Date().toISOString();
+        
+        if (contatos.length > 0) {
+          const contato = contatos[0];
+          const historicoAtual = contato.historico_mensagens || [];
+          historicoAtual.push(
+            { role: 'user', content: messageText, timestamp },
+            { role: 'assistant', content: mensagemAgendamento, timestamp }
+          );
+          
+          await base44.asServiceRole.entities.Contato.update(contato.id, {
+            ultima_mensagem: messageText,
+            ultima_resposta: mensagemAgendamento,
+            historico_mensagens: historicoAtual.slice(-50),
+            ultima_interacao: timestamp,
+            total_mensagens: (contato.total_mensagens || 0) + 2,
+            agendamentos_realizados: (contato.agendamentos_realizados || 0) + 1
+          });
+        }
+      } catch (e) {
+        console.error('⚠️ Erro ao salvar histórico:', e.message);
+      }
+      
+      return Response.json({ 
+        success: true, 
+        resposta: mensagemAgendamento,
+        conversationId: null,
+        agendamento_criado: true
+      });
+    }
+
     // Usar InvokeLLM diretamente para gerar resposta
     console.log('🤖 Chamando LLM...');
     
