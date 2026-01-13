@@ -253,7 +253,16 @@ function ChatTab() {
                   ))
                 )}
               </CardContent>
-              <div className="border-t p-3 bg-white">
+              <div className="border-t p-3 bg-white space-y-2">
+                {modoHumano && (
+                  <ChatToolbar
+                    onSendMessage={enviarMensagem}
+                    inputValue={inputMsg}
+                    onInputChange={setInputMsg}
+                    disabled={enviando}
+                    phoneNumber={contatoSelecionado.telefone}
+                  />
+                )}
                 <div className="flex gap-2">
                   <Input
                     placeholder="Digite uma mensagem..."
@@ -262,7 +271,7 @@ function ChatTab() {
                     onKeyPress={(e) => e.key === 'Enter' && !enviando && enviarMensagem()}
                     disabled={enviando}
                   />
-                  <Button onClick={enviarMensagem} disabled={enviando || !inputMsg.trim()} className="bg-purple-600 hover:bg-purple-700">
+                  <Button onClick={() => enviarMensagem()} disabled={enviando || !inputMsg.trim()} className="bg-purple-600 hover:bg-purple-700">
                     {enviando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                   </Button>
                 </div>
