@@ -50,6 +50,39 @@ export default function ChatbotsAtivos() {
 
   const conversaSelecionadaDados = conversas.find(c => c.id === conversaSelecionada);
 
+  const conversasFiltradas = mostrarVazias 
+    ? conversas 
+    : conversas.filter(c => (c.messages?.length || 0) > 0);
+
+  const limparConversasVazias = async () => {
+    if (!confirm('Deseja limpar todas as conversas sem mensagens?')) return;
+    
+    setLimpando(true);
+    try {
+      const vazias = conversas.filter(c => (c.messages?.length || 0) === 0);
+      
+      for (const conversa of vazias) {
+        try {
+          await base44.agents.deleteConversation(conversa.id);
+        } catch (err) {
+          console.error('Erro ao deletar conversa:', conversa.id, err);
+        }
+      }
+      
+      // Recarregar lista
+      const response = await base44.functions.invoke('listarConversasChatbot');
+      const lista = response.data?.conversations || response.data?.conversas || [];
+      setConversas(Array.isArray(lista) ? lista : []);
+      setConversaSelecionada(null);
+      
+    } catch (error) {
+      console.error('Erro ao limpar conversas:', error);
+      alert('Erro ao limpar conversas: ' + error.message);
+    } finally {
+      setLimpando(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
