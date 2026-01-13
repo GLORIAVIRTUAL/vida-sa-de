@@ -120,7 +120,7 @@ function MainLayout({ children, currentPageName, currentUser, onUserUpdate }) {
     { name: "Financeiro", page: "Financeiro", icon: DollarSign, roles: ["admin"] },
     { name: "Usuários", page: "Usuarios", icon: Users, roles: ["admin"] },
     
-    { name: "CRM", url: "https://vidasaude.chatbotsystem.ai/w/pipeline-opportunities", icon: Users, roles: ["admin", "user"], external: true },
+    
     
   ];
 
