@@ -319,3 +319,40 @@ async function enviarWhatsApp(phoneNumber, mensagem) {
     console.log('✅ WhatsApp enviado:', result);
   }
 }
+
+async function enviarWhatsAppDocumento(phoneNumber, documentUrl, fileName) {
+  const phoneNumberId = Deno.env.get('META_PHONE_NUMBER_ID');
+  const accessToken = Deno.env.get('META_ACCESS_TOKEN');
+
+  if (!phoneNumberId || !accessToken) {
+    console.warn('⚠️ WhatsApp não configurado');
+    return;
+  }
+
+  const url = `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      messaging_product: 'whatsapp',
+      to: phoneNumber,
+      type: 'document',
+      document: {
+        link: documentUrl,
+        filename: fileName || 'Resultado_Exame.pdf'
+      }
+    })
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    console.error('❌ Erro envio documento WhatsApp:', result);
+  } else {
+    console.log('✅ Documento WhatsApp enviado:', result);
+  }
+}
