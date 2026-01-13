@@ -152,10 +152,9 @@ Deno.serve(async (req) => {
         }
 
         if (disponibilidadesEncontradas.length > 0) {
-          const disps = resultadoHorarios.data.disponibilidades;
           infoDisponibilidade = '\n\n📅 DISPONIBILIDADES ENCONTRADAS:\n';
           
-          for (const medico of disps.slice(0, 3)) {
+          for (const medico of disponibilidadesEncontradas.slice(0, 3)) {
             infoDisponibilidade += `\n👨‍⚕️ ${medico.medico_nome} (${medico.especialidade}):\n`;
             infoDisponibilidade += `   ID do médico: ${medico.medico_id}\n`;
             
@@ -165,6 +164,7 @@ Deno.serve(async (req) => {
           }
           
           infoDisponibilidade += '\n⚠️ Para confirmar agendamento, preciso: nome completo e data de nascimento do paciente.';
+          console.log('✅ Disponibilidades encontradas:', disponibilidadesEncontradas.length, 'médicos');
         } else {
           infoDisponibilidade = '\n\n⚠️ Não encontrei disponibilidades no momento. Solicite que o cliente entre em contato pelo WhatsApp.';
         }
