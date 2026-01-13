@@ -64,6 +64,14 @@ export default function ChatInterface({ conversationId, pacienteName, pacientePh
     const textoEnviado = inputValue;
     setInputValue('');
 
+    // Adicionar mensagem imediatamente na UI
+    const novaMensagem = {
+      role: 'user',
+      content: textoEnviado,
+      created_at: new Date().toISOString()
+    };
+    setMessages(prev => [...prev, novaMensagem]);
+
     try {
       const conversation = await base44.agents.getConversation(conversationId);
       
@@ -74,6 +82,8 @@ export default function ChatInterface({ conversationId, pacienteName, pacientePh
 
     } catch (error) {
       console.error('Erro ao enviar:', error);
+      // Remover mensagem se falhou
+      setMessages(prev => prev.filter(m => m.content !== textoEnviado));
       setInputValue(textoEnviado);
     } finally {
       setEnviando(false);
