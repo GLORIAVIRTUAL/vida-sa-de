@@ -12,7 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon, Loader2, Search, Clock, X, Plus, User, Stethoscope, Save, FileScan, Printer, Repeat, AlertCircle, Trash2, Layers } from "lucide-react";
-import { Agendamento, Paciente, Notification } from "@/entities/all";
+import { Agendamento, Paciente, Notification, User as UserEntity } from "@/entities/all";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/components/ui/use-toast";
 import { UploadFile, ExtractDataFromUploadedFile } from "@/integrations/Core";
@@ -1266,6 +1266,15 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
               const medico = medicos.find(m => m.id === formData.medico_id);
               const procedimento = procedimentos.find(p => p.id === formData.procedimento_id);
               
+              // Buscar usuário atual para saber quem criou o agendamento
+              let nomeUsuarioCriador = 'Sistema';
+              try {
+                const usuarioAtual = await UserEntity.me();
+                nomeUsuarioCriador = usuarioAtual?.display_name || usuarioAtual?.full_name || 'Usuário';
+              } catch (e) {
+                console.log('⚠️ Não foi possível obter usuário atual');
+              }
+              
               let nomeServico = formData.tipo_servico;
               if (medico) {
                 nomeServico += ` com Dr(a). ${medico.nome}`;
@@ -1277,15 +1286,23 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
               
               await Notification.create({
                 type: 'novo_agendamento',
-                message: `📅 Novo agendamento: ${paciente?.nome || 'Paciente'} - ${nomeServico} - ${formData.data_agendamento} às ${formData.horario}`,
+                message: `🆕 ${paciente?.nome || 'Paciente'} - ${nomeServico} - ${formData.data_agendamento} às ${formData.horario}`,
                 data: {
                   agendamentoId: resultado.id,
                   paciente_nome: paciente?.nome || 'Paciente',
                   medico_nome: medico?.nome || 'N/A',
                   data_agendamento: formData.data_agendamento,
                   horario: formData.horario,
-                  tipo_servico: formData.tipo_servico
+                  tipo_servico: formData.tipo_servico,
+                  agendado_por: nomeUsuarioCriador,
+                  agendado_por_tipo: 'usuario'
                 }
+              });
+              
+              // Atualizar o agendamento com quem criou
+              await Agendamento.update(resultado.id, {
+                agendado_por: nomeUsuarioCriador,
+                agendado_por_tipo: 'usuario'
               });
               
               console.log('✅ Notificação criada com sucesso!');
