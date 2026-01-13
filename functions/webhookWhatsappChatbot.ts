@@ -74,23 +74,55 @@ Deno.serve(async (req) => {
     let conversation = conversas.conversations?.find(c => c.metadata?.phone === phoneNumber);
 
     if (!conversation) {
-      // Criar conversa COM a primeira mensagem
+      // Criar conversa COM a primeira mensagem via REST API
       console.log('🆕 Nova conversa com mensagem');
-      conversation = await base44.asServiceRole.agents.createConversation({
-        agent_name: 'chatbot_agendamentos',
-        metadata: { phone: phoneNumber, senderName, pacienteId },
-        messages: [{ role: 'user', content: messageText }]
+      
+      const appId = Deno.env.get('BASE44_APP_ID');
+      const token = req.headers.get('authorization')?.split(' ')[1];
+      
+      const response = await fetch(`https://api.base44.com/apps/${appId}/agents/chatbot_agendamentos/conversations`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          metadata: { phone: phoneNumber, senderName, pacienteId },
+          initial_message: { role: 'user', content: messageText }
+        })
       });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Erro ao criar conversa: ${response.status} - ${errorText}`);
+      }
+      
+      conversation = await response.json();
       console.log('✅ Criada:', conversation.id.substring(0, 8));
     } else {
-      // Buscar conversa completa e adicionar mensagem
+      // Adicionar mensagem via REST API
       console.log('📝 Conversa existente:', conversation.id.substring(0, 8));
-      const conversaCompleta = await base44.asServiceRole.agents.getConversation(conversation.id);
       
-      await base44.asServiceRole.agents.addMessage(conversaCompleta, {
-        role: 'user',
-        content: messageText
+      const appId = Deno.env.get('BASE44_APP_ID');
+      const token = req.headers.get('authorization')?.split(' ')[1];
+      
+      const response = await fetch(`https://api.base44.com/apps/${appId}/agents/chatbot_agendamentos/conversations/${conversation.id}/messages`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          role: 'user',
+          content: messageText
+        })
       });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Erro ao adicionar mensagem: ${response.status} - ${errorText}`);
+      }
+      
       console.log('✅ Mensagem adicionada');
     }
 
