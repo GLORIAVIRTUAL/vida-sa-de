@@ -186,6 +186,9 @@ Deno.serve(async (req) => {
       
       try {
         // Usar LLM para extrair dados do agendamento do histórico
+        const hoje = new Date();
+        const anoAtual = hoje.getFullYear();
+        
         const promptExtracao = `Analise o histórico da conversa e extraia os dados do agendamento se TODOS estiverem presentes.
 
 HISTÓRICO:
@@ -194,11 +197,13 @@ ${historicoConversa}
 ÚLTIMA MENSAGEM DO CLIENTE:
 ${messageText}
 
+DATA DE HOJE: ${hoje.toISOString().split('T')[0]} (use ${anoAtual} como ano para datas de agendamento)
+
 Extraia APENAS se TODOS os dados estiverem claros:
-- nome_paciente: nome completo do paciente
+- nome_paciente: nome completo do paciente (pode ser o nome usado na conversa)
 - data_nascimento: data de nascimento (formato DD/MM/YYYY)
 - medico_nome: nome do médico escolhido
-- data_agendamento: data da consulta (formato YYYY-MM-DD)
+- data_agendamento: data da consulta (formato YYYY-MM-DD, use ano ${anoAtual})
 - horario: horário escolhido (formato HH:MM)
 
 Retorne um JSON com os dados ou null se faltarem dados.`;
