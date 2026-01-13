@@ -283,10 +283,34 @@ Retorne um JSON com os dados ou null se faltarem dados.`;
                 horario: extracao.horario,
                 tipo_servico: 'Consulta',
                 status: 'Agendado',
-                observacoes: 'Agendado via WhatsApp'
+                observacoes: 'Agendado via WhatsApp',
+                agendado_por: 'Glória',
+                agendado_por_tipo: 'chatbot'
               });
 
               console.log('✅ AGENDAMENTO CRIADO:', novoAgendamento.id);
+
+              // Criar notificação para a equipe
+              const dataObj = new Date(extracao.data_agendamento + 'T12:00:00');
+              const dataFormatadaNotif = dataObj.toLocaleDateString('pt-BR');
+
+              await base44.asServiceRole.entities.Notification.create({
+                type: 'novo_agendamento',
+                message: `${extracao.nome_paciente} - ${medicoEncontrado.especialidade} com ${medicoEncontrado.nome} em ${dataFormatadaNotif} às ${extracao.horario} (Agendado pela Glória)`,
+                data: {
+                  agendamento_id: novoAgendamento.id,
+                  paciente_nome: extracao.nome_paciente,
+                  medico_nome: medicoEncontrado.nome,
+                  especialidade: medicoEncontrado.especialidade,
+                  data: extracao.data_agendamento,
+                  horario: extracao.horario,
+                  agendado_por: 'Glória',
+                  agendado_por_tipo: 'chatbot'
+                },
+                is_read: false
+              });
+
+              console.log('🔔 Notificação criada para novo agendamento');
               agendamentoCriado = true;
               
               // Formatar data para exibição
