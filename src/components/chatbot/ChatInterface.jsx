@@ -16,16 +16,21 @@ export default function ChatInterface({ conversationId, pacienteName, pacientePh
   useEffect(() => {
     if (!conversationId) return;
 
+    console.log('🔄 Iniciando monitoramento da conversa:', conversationId);
+
     // Carregar conversa inicial
     const carregarConversa = async () => {
       try {
         const conversation = await base44.agents.getConversation(conversationId);
-        console.log('Conversa carregada:', conversationId, 'Mensagens:', conversation?.messages?.length || 0);
+        console.log('✅ Conversa carregada:', conversationId);
+        console.log('📨 Total mensagens:', conversation?.messages?.length || 0);
+        console.log('📋 Mensagens:', JSON.stringify(conversation?.messages || [], null, 2));
+        
         if (conversation?.messages) {
           setMessages(conversation.messages);
         }
       } catch (error) {
-        console.error('Erro ao carregar conversa:', error);
+        console.error('❌ Erro ao carregar conversa:', error);
       }
     };
 
@@ -33,13 +38,24 @@ export default function ChatInterface({ conversationId, pacienteName, pacientePh
 
     // Subscrever a atualizações em tempo real
     const unsubscribe = base44.agents.subscribeToConversation(conversationId, (data) => {
-      console.log('⚡ Atualização em tempo real:', data?.messages?.length || 0, 'mensagens');
+      console.log('⚡ ATUALIZAÇÃO EM TEMPO REAL RECEBIDA!');
+      console.log('📨 Total mensagens:', data?.messages?.length || 0);
+      console.log('📋 Mensagens:', JSON.stringify(data?.messages || [], null, 2));
+      
       if (data?.messages) {
         setMessages(data.messages);
       }
     });
 
+    // Polling de backup a cada 3 segundos
+    const pollInterval = setInterval(() => {
+      console.log('🔄 Polling backup...');
+      carregarConversa();
+    }, 3000);
+
     return () => {
+      console.log('🛑 Limpando subscriptions da conversa:', conversationId);
+      clearInterval(pollInterval);
       unsubscribe();
     };
   }, [conversationId]);
