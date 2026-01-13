@@ -492,33 +492,27 @@ Retorne um JSON com os dados encontrados.`;
       instrucoesMidia = `\n\n📷 MÍDIA RECEBIDA: O cliente enviou uma IMAGEM.
       
 ANALISE A IMAGEM cuidadosamente:
-- Se for uma REQUISIÇÃO/PEDIDO MÉDICO: identifique os procedimentos/exames solicitados
+- Se for uma REQUISIÇÃO/PEDIDO MÉDICO: identifique os procedimentos/exames solicitados e FAÇA O ORÇAMENTO
 - Se for um RESULTADO DE EXAME: descreva o que você observa
 - Se for uma FOTO de algo relacionado à saúde: descreva o que vê
 
-${infoProcedimentosExames}
-
-RESPOSTA ESPERADA:
+RESPOSTA PARA REQUISIÇÃO/PEDIDO:
 1. Confirme que recebeu e analisou a imagem
-2. Identifique os itens da requisição
-3. Informe quais procedimentos/exames a clínica FAZ e os valores
-4. Informe quais NÃO são realizados na clínica
-5. Ofereça para agendar os disponíveis`;
+2. Monte o ORÇAMENTO conforme formato das regras acima
+3. SEMPRE inclua o VALOR TOTAL no final
+4. Pergunte se deseja agendar`;
     } else if (mediaType === 'document') {
       instrucoesMidia = `\n\n📄 MÍDIA RECEBIDA: O cliente enviou um DOCUMENTO (PDF ou arquivo).
       
 ANALISE O DOCUMENTO:
-- Se for uma REQUISIÇÃO/PEDIDO MÉDICO: identifique os procedimentos/exames solicitados
+- Se for uma REQUISIÇÃO/PEDIDO MÉDICO: identifique os procedimentos/exames e FAÇA O ORÇAMENTO
 - Se for um LAUDO/RESULTADO: descreva as informações relevantes
 
-${infoProcedimentosExames}
-
-RESPOSTA ESPERADA:
+RESPOSTA PARA REQUISIÇÃO/PEDIDO:
 1. Confirme que recebeu e analisou o documento
-2. Liste os procedimentos/exames identificados
-3. Informe quais a clínica REALIZA e os respectivos valores
-4. Informe quais NÃO são realizados
-5. Pergunte se deseja agendar os disponíveis`;
+2. Monte o ORÇAMENTO conforme formato das regras acima
+3. SEMPRE inclua o VALOR TOTAL no final
+4. Pergunte se deseja agendar`;
     } else if (mediaType === 'audio') {
       instrucoesMidia = `\n\n🎤 MÍDIA RECEBIDA: O cliente enviou um ÁUDIO.
       
