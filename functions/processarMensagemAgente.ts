@@ -8,82 +8,68 @@ Deno.serve(async (req) => {
     
     console.log('📨 Processando:', { phoneNumber, messageText });
     
-    // Buscar conversa existente via SDK
-    const conversas = await base44.asServiceRole.agents.listConversations({ 
-      agent_name: 'chatbot_agendamentos' 
-    });
+    // Buscar configuração do chatbot
+    const configs = await base44.asServiceRole.entities.ChatbotConfig.filter({ ativo: true });
+    const config = configs[0];
     
-    let conversation = conversas.conversations?.find(c => c.metadata?.phone === phoneNumber);
-    let conversationId;
-    
-    if (!conversation) {
-      // Criar nova conversa COM mensagem inicial
-      console.log('🆕 Nova conversa com mensagem');
-      const newConv = await base44.asServiceRole.agents.createConversation({
-        agent_name: 'chatbot_agendamentos',
-        metadata: { phone: phoneNumber, senderName, pacienteId },
-        initial_message: { role: 'user', content: messageText }
+    if (!config) {
+      console.log('❌ ChatbotConfig não encontrado');
+      return Response.json({ 
+        success: true, 
+        resposta: 'Olá! Estou com dificuldades técnicas. Por favor, entre em contato pelo WhatsApp.',
+        conversationId: null
       });
-      conversationId = newConv.id;
-      console.log('✅ Criada:', conversationId.substring(0, 8));
-    } else {
-      conversationId = conversation.id;
-      console.log('📝 Conversa existente:', conversationId.substring(0, 8));
-      
-      // Buscar conversa completa
-      const fullConv = await base44.asServiceRole.agents.getConversation(conversationId);
-      
-      // Forçar array de mensagens para evitar erro 'map'
-      const conversaParaAddMsg = {
-        ...fullConv,
-        messages: fullConv.messages || []
-      };
-      
-      console.log('➕ Adicionando mensagem...');
-      try {
-        await base44.asServiceRole.agents.addMessage(conversaParaAddMsg, {
-          role: 'user',
-          content: messageText
-        });
-        console.log('✅ Mensagem adicionada');
-      } catch (addErr) {
-        console.error('⚠️ Erro addMessage:', addErr.message);
-        // Tentar criar nova conversa se falhar
-        console.log('🔄 Criando nova conversa...');
-        const newConv = await base44.asServiceRole.agents.createConversation({
-          agent_name: 'chatbot_agendamentos',
-          metadata: { phone: phoneNumber, senderName, pacienteId },
-          initial_message: { role: 'user', content: messageText }
-        });
-        conversationId = newConv.id;
-        console.log('✅ Nova conversa:', conversationId.substring(0, 8));
-      }
     }
     
-    // Aguardar resposta do agente com polling
-    let resposta = null;
-    const delays = [3000, 3000, 4000, 5000, 5000, 5000]; // Total: 25s
+    console.log('✅ Config encontrada:', config.nome);
     
-    for (let i = 0; i < delays.length; i++) {
-      await new Promise(resolve => setTimeout(resolve, delays[i]));
-      
-      const conversaAtualizada = await base44.asServiceRole.agents.getConversation(conversationId);
-      const msgs = conversaAtualizada.messages || [];
-      const ultimaMensagem = msgs[msgs.length - 1];
-      
-      console.log(`🔍 Tentativa ${i+1}/${delays.length}: ${msgs.length} msgs`);
-      
-      if (ultimaMensagem?.role === 'assistant' && ultimaMensagem.content) {
-        resposta = ultimaMensagem.content;
-        console.log('✅ Agente respondeu');
-        break;
+    // Usar InvokeLLM diretamente para gerar resposta
+    console.log('🤖 Chamando LLM...');
+    
+    const promptCompleto = `${config.prompt_sistema}
+
+---
+MENSAGEM DO CLIENTE (${senderName}, telefone ${phoneNumber}):
+${messageText}
+
+---
+Responda de forma natural e amigável, seguindo as instruções do prompt acima.`;
+
+    const llmResponse = await base44.asServiceRole.integrations.Core.InvokeLLM({
+      prompt: promptCompleto,
+      add_context_from_internet: false
+    });
+    
+    console.log('✅ LLM respondeu');
+    
+    // Salvar conversa no histórico (opcional - criar entidade Contato se não existir)
+    try {
+      const contatos = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
+      if (contatos.length > 0) {
+        // Atualizar último contato
+        await base44.asServiceRole.entities.Contato.update(contatos[0].id, {
+          ultima_mensagem: messageText,
+          ultima_resposta: llmResponse,
+          updated_date: new Date().toISOString()
+        });
+      } else {
+        // Criar novo contato
+        await base44.asServiceRole.entities.Contato.create({
+          nome: senderName,
+          telefone: phoneNumber,
+          paciente_id: pacienteId,
+          ultima_mensagem: messageText,
+          ultima_resposta: llmResponse
+        });
       }
+    } catch (e) {
+      console.log('⚠️ Não foi possível salvar histórico:', e.message);
     }
     
     return Response.json({ 
       success: true, 
-      resposta,
-      conversationId
+      resposta: llmResponse,
+      conversationId: null
     });
     
   } catch (error) {
