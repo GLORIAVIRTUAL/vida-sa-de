@@ -83,26 +83,12 @@ Deno.serve(async (req) => {
       console.log('✅ Criada:', conversation.id.substring(0, 8));
     }
 
-    // Adicionar mensagem via API REST (funciona sempre)
+    // Adicionar mensagem via SDK
     console.log('📝 Adicionando mensagem...');
-    const url = `https://api.base44.com/agents/conversations/${conversation.id}/messages`;
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${Deno.env.get('BASE44_SERVICE_ROLE_KEY')}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        role: 'user',
-        content: messageText
-      })
+    await base44.asServiceRole.agents.addMessage(conversation, {
+      role: 'user',
+      content: messageText
     });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`API erro ${response.status}: ${errorText}`);
-    }
-
     console.log('✅ Mensagem adicionada');
 
     // Aguardar resposta do agente com polling progressivo
