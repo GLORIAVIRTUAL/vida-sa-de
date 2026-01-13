@@ -556,17 +556,16 @@ Retorne um JSON com os dados encontrados.`;
             }
           }
           
-          infoProcedimentosExames += `\n⚠️ REGRAS OBRIGATÓRIAS PARA ORÇAMENTO:
-1. Analise a requisição/pedido médico enviado
-2. Identifique TODOS os procedimentos/exames solicitados
-3. Para cada item, verifique na lista acima se a clínica realiza
-4. Monte o orçamento no formato:
+          infoProcedimentosExames += `\n⚠️ REGRAS OBRIGATÓRIAS:
+1. NUNCA INVENTE PREÇOS! Use APENAS os valores listados acima.
+2. Se o cliente perguntar sobre um exame específico, PROCURE NA LISTA ACIMA o valor exato.
+3. Se o exame NÃO estiver na lista, informe que não realizamos esse exame.
+4. Para orçamentos de requisições médicas, use o formato:
 
 📋 *ORÇAMENTO*
 ━━━━━━━━━━━━━━━━━━━━
 ✅ Itens que realizamos:
-• [Nome do item] - R$ XX,XX
-• [Nome do item] - R$ XX,XX
+• [Nome do item] - R$ XX,XX (valor da lista)
 
 ❌ Itens que NÃO realizamos:
 • [Nome do item]
@@ -575,8 +574,8 @@ Retorne um JSON com os dados encontrados.`;
 💰 *VALOR TOTAL: R$ XX,XX*
 ━━━━━━━━━━━━━━━━━━━━
 
-5. SEMPRE inclua o VALOR TOTAL somando todos os itens que realizamos
-6. Pergunte se deseja agendar os exames/procedimentos disponíveis`;
+5. SEMPRE inclua o VALOR TOTAL somando todos os itens
+6. Pergunte se deseja agendar`;
         }
       } catch (e) {
         console.error('⚠️ Erro ao buscar procedimentos/exames:', e.message);
