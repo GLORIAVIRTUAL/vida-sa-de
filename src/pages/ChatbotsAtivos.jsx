@@ -22,13 +22,18 @@ export default function ChatbotsAtivos() {
         const response = await base44.functions.invoke('listarConversasChatbot');
         const lista = response.data?.conversations || response.data?.conversas || [];
         
-        console.log('Conversas carregadas:', lista);
+        console.log('✅ Total conversas retornadas:', lista.length);
+        console.log('📊 Conversas com mensagens:', lista.filter(c => (c.messages?.length || 0) > 0).length);
+        console.log('📊 Conversas vazias:', lista.filter(c => (c.messages?.length || 0) === 0).length);
         
         setConversas(Array.isArray(lista) ? lista : []);
         
-        // Selecionar primeira conversa automaticamente
+        // Selecionar primeira conversa COM MENSAGENS automaticamente
         if (Array.isArray(lista) && lista.length > 0 && !conversaSelecionada) {
-          setConversaSelecionada(lista[0].id);
+          const conversaComMensagens = lista.find(c => (c.messages?.length || 0) > 0);
+          if (conversaComMensagens) {
+            setConversaSelecionada(conversaComMensagens.id);
+          }
         }
       } catch (error) {
         console.error('Erro ao carregar conversas:', error);
@@ -39,6 +44,11 @@ export default function ChatbotsAtivos() {
     };
 
     carregarConversas();
+    
+    // Recarregar conversas a cada 10 segundos
+    const interval = setInterval(carregarConversas, 10000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   if (carregando) {
