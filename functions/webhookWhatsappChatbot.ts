@@ -74,38 +74,24 @@ Deno.serve(async (req) => {
     let conversation = conversas.conversations?.find(c => c.metadata?.phone === phoneNumber);
 
     if (!conversation) {
-      // Criar conversa VAZIA
-      console.log('🆕 Nova conversa');
+      // Criar conversa COM a primeira mensagem
+      console.log('🆕 Nova conversa com mensagem');
       conversation = await base44.asServiceRole.agents.createConversation({
         agent_name: 'chatbot_agendamentos',
-        metadata: { phone: phoneNumber, senderName, pacienteId }
+        metadata: { phone: phoneNumber, senderName, pacienteId },
+        messages: [{ role: 'user', content: messageText }]
       });
       console.log('✅ Criada:', conversation.id.substring(0, 8));
-    }
-
-    // Adicionar mensagem - IMPORTANTE: addMessage precisa da conversa COMPLETA
-    console.log('📝 Adicionando mensagem...');
-    
-    // Buscar conversa completa com mensagens
-    const conversaCompleta = await base44.asServiceRole.agents.getConversation(conversation.id);
-    
-    try {
-      await base44.agents.addMessage(conversaCompleta, {
+    } else {
+      // Buscar conversa completa e adicionar mensagem
+      console.log('📝 Conversa existente:', conversation.id.substring(0, 8));
+      const conversaCompleta = await base44.asServiceRole.agents.getConversation(conversation.id);
+      
+      await base44.asServiceRole.agents.addMessage(conversaCompleta, {
         role: 'user',
         content: messageText
       });
-      console.log('✅ Mensagem adicionada via SDK');
-    } catch (sdkError) {
-      console.warn('⚠️ SDK falhou:', sdkError.message);
-      console.log('🔄 Tentando criar conversa nova com initial_message...');
-      
-      // Se falhar, recriar conversa com mensagem inicial
-      conversation = await base44.asServiceRole.agents.createConversation({
-        agent_name: 'chatbot_agendamentos',
-        metadata: { phone: phoneNumber, senderName, pacienteId, retry: true },
-        messages: [{ role: 'user', content: messageText }]
-      });
-      console.log('✅ Conversa recriada:', conversation.id.substring(0, 8));
+      console.log('✅ Mensagem adicionada');
     }
 
     // Aguardar resposta do agente com polling progressivo
