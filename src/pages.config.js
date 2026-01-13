@@ -30,6 +30,7 @@ import VerificacaoAssinatura from './pages/VerificacaoAssinatura';
 import WebhookLogs from './pages/WebhookLogs';
 import ordemServico from './pages/ordem-servico';
 import ListaContatos from './pages/ListaContatos';
+import ResultadosExames from './pages/ResultadosExames';
 import __Layout from './Layout.jsx';
 
 
@@ -66,6 +67,7 @@ export const PAGES = {
     "WebhookLogs": WebhookLogs,
     "ordem-servico": ordemServico,
     "ListaContatos": ListaContatos,
+    "ResultadosExames": ResultadosExames,
 }
 
 export const pagesConfig = {

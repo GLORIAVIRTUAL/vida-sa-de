@@ -114,11 +114,11 @@ function MainLayout({ children, currentPageName, currentUser, onUserUpdate }) {
     { name: "Médicos", page: "Medicos", icon: Stethoscope, roles: ["admin", "user"] },
     { name: "Procedimentos", page: "Procedimentos", icon: FileText, roles: ["admin", "user"] },
     { name: "Exames", page: "Exames", icon: FileText, roles: ["admin", "user"] },
-    { name: "Resultados Exames", url: "https://baserow.io/database/282536/table/659653/1248899", icon: FileText, roles: ["admin", "user"], external: true },
+    { name: "Resultados Exames", page: "ResultadosExames", icon: FileText, roles: ["admin", "user"] },
     { name: "Venda Cartão", page: "VendaCartao", icon: CreditCard, roles: ["admin", "user"] },
     { name: "Financeiro", page: "Financeiro", icon: DollarSign, roles: ["admin"] },
     { name: "Usuários", page: "Usuarios", icon: Users, roles: ["admin"] },
-    { name: "Chat ao Vivo", url: "https://vidasaude.chatbotsystem.ai/w/inbox", icon: MessageSquare, roles: ["admin", "user"], external: true },
+    
     { name: "CRM", url: "https://vidasaude.chatbotsystem.ai/w/pipeline-opportunities", icon: Users, roles: ["admin", "user"], external: true },
     { name: "Contatos", page: "ListaContatos", icon: Users, roles: ["admin", "user"] }
   ];
