@@ -38,15 +38,80 @@ Deno.serve(async (req) => {
 
     const message = messages[0];
     const phoneNumber = message.from;
-    const messageText = message.text?.body;
     const senderName = value?.contacts?.[0]?.profile?.name || 'Usuário';
+    
+    // Processar diferentes tipos de mídia
+    let messageText = '';
+    let mediaUrl = null;
+    let mediaType = 'text';
+    let mediaId = null;
+    
+    if (message.text?.body) {
+      messageText = message.text.body;
+      mediaType = 'text';
+    } else if (message.image) {
+      mediaType = 'image';
+      mediaId = message.image.id;
+      messageText = message.image.caption || '[Imagem recebida]';
+    } else if (message.document) {
+      mediaType = 'document';
+      mediaId = message.document.id;
+      messageText = `[Documento: ${message.document.filename || 'arquivo'}]`;
+    } else if (message.audio) {
+      mediaType = 'audio';
+      mediaId = message.audio.id;
+      messageText = '[Áudio recebido]';
+    } else if (message.video) {
+      mediaType = 'video';
+      mediaId = message.video.id;
+      messageText = message.video.caption || '[Vídeo recebido]';
+    } else if (message.sticker) {
+      mediaType = 'sticker';
+      messageText = '[Sticker/Figurinha recebida]';
+    } else if (message.location) {
+      mediaType = 'location';
+      messageText = `[Localização: ${message.location.latitude}, ${message.location.longitude}]`;
+    }
+    
+    // Baixar mídia se houver mediaId
+    if (mediaId) {
+      try {
+        const accessToken = Deno.env.get('META_ACCESS_TOKEN');
+        
+        // Obter URL da mídia
+        const mediaInfoResponse = await fetch(`https://graph.facebook.com/v18.0/${mediaId}`, {
+          headers: { 'Authorization': `Bearer ${accessToken}` }
+        });
+        const mediaInfo = await mediaInfoResponse.json();
+        
+        if (mediaInfo.url) {
+          // Baixar o arquivo
+          const mediaDownload = await fetch(mediaInfo.url, {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+          });
+          
+          if (mediaDownload.ok) {
+            const mediaBlob = await mediaDownload.blob();
+            const fileName = `whatsapp_${mediaType}_${Date.now()}.${mediaInfo.mime_type?.split('/')[1] || 'bin'}`;
+            const file = new File([mediaBlob], fileName, { type: mediaInfo.mime_type });
+            
+            // Upload para o Base44
+            const uploadResult = await base44.asServiceRole.integrations.Core.UploadFile({ file });
+            mediaUrl = uploadResult.file_url;
+            console.log('📁 Mídia salva:', mediaUrl);
+          }
+        }
+      } catch (mediaError) {
+        console.error('⚠️ Erro ao processar mídia:', mediaError.message);
+      }
+    }
 
-    if (!phoneNumber || !messageText) {
+    if (!phoneNumber) {
       console.log('⚠️ Mensagem inválida');
       return Response.json({ success: true });
     }
 
-    console.log('💬 Mensagem:', { phoneNumber, senderName, messageText });
+    console.log('💬 Mensagem:', { phoneNumber, senderName, messageText, mediaType, mediaUrl });
 
     // Sistema de acumulação de mensagens (debounce de 5 segundos)
     // Armazena a mensagem e aguarda para ver se o cliente envia mais
