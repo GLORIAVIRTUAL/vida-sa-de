@@ -541,6 +541,7 @@ ${historicoConversa || '(primeira mensagem)'}
 NOVA MENSAGEM DO CLIENTE (${senderName}, telefone ${phoneNumber}):
 ${messageText}
 ${infoDisponibilidade}
+${infoProcedimentosExames}
 ${instrucoesMidia}
 
 ---
