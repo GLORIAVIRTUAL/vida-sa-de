@@ -48,20 +48,123 @@ Deno.serve(async (req) => {
 
     console.log('💬 Mensagem:', { phoneNumber, senderName, messageText });
 
-    // Reativar conversa se estava finalizada (cliente voltou a falar)
+    // Sistema de acumulação de mensagens (debounce de 5 segundos)
+    // Armazena a mensagem e aguarda para ver se o cliente envia mais
+    const DEBOUNCE_SECONDS = 5;
+    const agora = new Date().toISOString();
+    
     try {
       const contatos = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
-      if (contatos.length > 0 && contatos[0].conversa_finalizada) {
-        console.log('🔄 Reativando conversa finalizada');
-        await base44.asServiceRole.entities.Contato.update(contatos[0].id, {
-          conversa_finalizada: false,
-          status: 'Lead',
-          nome: contatos[0].nome || senderName
+      
+      if (contatos.length > 0) {
+        const contato = contatos[0];
+        
+        // Reativar conversa se estava finalizada
+        if (contato.conversa_finalizada) {
+          console.log('🔄 Reativando conversa finalizada');
+        }
+        
+        // Verificar se há mensagem pendente (não processada)
+        const mensagensPendentes = contato.mensagens_pendentes || [];
+        const ultimoTimestamp = contato.ultimo_timestamp_pendente;
+        
+        // Adicionar nova mensagem ao buffer
+        mensagensPendentes.push({
+          texto: messageText,
+          timestamp: agora
         });
+        
+        // Atualizar contato com mensagem pendente
+        await base44.asServiceRole.entities.Contato.update(contato.id, {
+          mensagens_pendentes: mensagensPendentes,
+          ultimo_timestamp_pendente: agora,
+          conversa_finalizada: false,
+          status: contato.conversa_finalizada ? 'Lead' : contato.status,
+          nome: contato.nome || senderName
+        });
+        
+        // Se já havia mensagens pendentes, verificar se passou tempo suficiente
+        if (ultimoTimestamp) {
+          const ultimaData = new Date(ultimoTimestamp);
+          const agoraData = new Date(agora);
+          const diferencaSegundos = (agoraData - ultimaData) / 1000;
+          
+          // Se a última mensagem foi há menos de 5 segundos, apenas acumular e sair
+          if (diferencaSegundos < DEBOUNCE_SECONDS) {
+            console.log(`⏳ Acumulando mensagem (${diferencaSegundos.toFixed(1)}s desde última). Total pendentes: ${mensagensPendentes.length}`);
+            return Response.json({ success: true, status: 'acumulando' });
+          }
+        }
+        
+        // Aguardar 5 segundos para ver se chegam mais mensagens
+        console.log(`⏳ Aguardando ${DEBOUNCE_SECONDS}s para acumular mensagens...`);
+        await new Promise(resolve => setTimeout(resolve, DEBOUNCE_SECONDS * 1000));
+        
+        // Recarregar contato para pegar todas as mensagens acumuladas
+        const contatoAtualizado = (await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber }))[0];
+        const todasMensagens = contatoAtualizado?.mensagens_pendentes || [];
+        
+        // Verificar se esta chamada é a mais recente (evitar duplicatas)
+        if (contatoAtualizado?.ultimo_timestamp_pendente !== agora && todasMensagens.length > mensagensPendentes.length) {
+          console.log('⏭️ Outra mensagem mais recente vai processar. Saindo...');
+          return Response.json({ success: true, status: 'delegado' });
+        }
+        
+        // Juntar todas as mensagens pendentes em uma só
+        const mensagemCompleta = todasMensagens.map(m => m.texto).join('\n');
+        console.log(`📝 Processando ${todasMensagens.length} mensagens acumuladas`);
+        
+        // Limpar mensagens pendentes
+        await base44.asServiceRole.entities.Contato.update(contatoAtualizado.id, {
+          mensagens_pendentes: [],
+          ultimo_timestamp_pendente: null
+        });
+        
+        // Continuar com a mensagem completa
+        var mensagemFinal = mensagemCompleta;
+        
+      } else {
+        // Novo contato - criar com mensagem pendente e aguardar
+        await base44.asServiceRole.entities.Contato.create({
+          nome: senderName,
+          telefone: phoneNumber,
+          origem: 'WhatsApp',
+          status: 'Novo',
+          mensagens_pendentes: [{ texto: messageText, timestamp: agora }],
+          ultimo_timestamp_pendente: agora
+        });
+        
+        // Aguardar debounce
+        console.log(`⏳ Novo contato. Aguardando ${DEBOUNCE_SECONDS}s...`);
+        await new Promise(resolve => setTimeout(resolve, DEBOUNCE_SECONDS * 1000));
+        
+        // Recarregar
+        const contatoCriado = (await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber }))[0];
+        const todasMensagens = contatoCriado?.mensagens_pendentes || [];
+        
+        if (contatoCriado?.ultimo_timestamp_pendente !== agora && todasMensagens.length > 1) {
+          console.log('⏭️ Outra mensagem mais recente vai processar. Saindo...');
+          return Response.json({ success: true, status: 'delegado' });
+        }
+        
+        const mensagemCompleta = todasMensagens.map(m => m.texto).join('\n');
+        console.log(`📝 Processando ${todasMensagens.length} mensagens acumuladas (novo contato)`);
+        
+        await base44.asServiceRole.entities.Contato.update(contatoCriado.id, {
+          mensagens_pendentes: [],
+          ultimo_timestamp_pendente: null
+        });
+        
+        var mensagemFinal = mensagemCompleta;
       }
     } catch (e) {
-      console.log('⚠️ Erro ao verificar conversa:', e.message);
+      console.log('⚠️ Erro no debounce:', e.message);
+      var mensagemFinal = messageText; // Fallback para mensagem original
     }
+
+    // Usar mensagemFinal em vez de messageText daqui em diante
+    const textoParaProcessar = typeof mensagemFinal !== 'undefined' ? mensagemFinal : messageText;
+    console.log('📨 Texto final para processar:', textoParaProcessar.substring(0, 100));
 
     // Buscar ou criar paciente
     let pacienteId = null;
