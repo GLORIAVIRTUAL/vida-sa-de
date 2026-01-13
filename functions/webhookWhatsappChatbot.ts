@@ -258,7 +258,9 @@ Deno.serve(async (req) => {
       phoneNumber,
       messageText: textoParaProcessar,
       senderName,
-      pacienteId
+      pacienteId,
+      mediaType,
+      mediaUrl
     });
 
     if (resultado.data?.resposta) {
