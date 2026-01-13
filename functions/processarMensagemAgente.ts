@@ -25,7 +25,8 @@ Deno.serve(async (req) => {
         historico_mensagens: historicoAtual.slice(-50),
         ultima_interacao: timestamp,
         total_mensagens: (contato.total_mensagens || 0) + 1,
-        status: 'Lead' // Reativa conversa se estava finalizada
+        status: 'Lead',
+        conversa_finalizada: false // Reativa conversa
       });
       
       return Response.json({ 
@@ -452,7 +453,9 @@ INSTRUÇÕES ADICIONAIS:
           ultima_resposta: llmResponse,
           historico_mensagens: historicoLimitado,
           ultima_interacao: timestamp,
-          total_mensagens: (contato.total_mensagens || 0) + 2
+          total_mensagens: (contato.total_mensagens || 0) + 2,
+          status: contato.conversa_finalizada ? 'Lead' : contato.status,
+          conversa_finalizada: false // Reativa conversa se cliente mandou mensagem
         });
         console.log('✅ Contato atualizado:', contato.id.substring(0, 8));
       } else {
