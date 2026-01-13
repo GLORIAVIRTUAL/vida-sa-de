@@ -16,7 +16,7 @@ export default function ChatbotsAtivos() {
   useEffect(() => {
     const carregarConversas = async () => {
       try {
-        if (conversas.length === 0) setCarregando(true);
+        setCarregando(true);
         
         // Usar função backend para listar conversas
         const response = await base44.functions.invoke('listarConversasChatbot');
@@ -26,7 +26,7 @@ export default function ChatbotsAtivos() {
         
         setConversas(Array.isArray(lista) ? lista : []);
         
-        // Selecionar primeira conversa automaticamente (apenas no primeiro load)
+        // Selecionar primeira conversa automaticamente
         if (Array.isArray(lista) && lista.length > 0 && !conversaSelecionada) {
           setConversaSelecionada(lista[0].id);
         }
@@ -39,11 +39,6 @@ export default function ChatbotsAtivos() {
     };
 
     carregarConversas();
-    
-    // Atualizar lista de conversas a cada 5 segundos
-    const interval = setInterval(carregarConversas, 5000);
-    
-    return () => clearInterval(interval);
   }, []);
 
   if (carregando) {

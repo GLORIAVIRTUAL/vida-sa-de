@@ -12,11 +12,12 @@ export default function ChatInterface({ conversationId, pacienteName, pacientePh
   const [enviando, setEnviando] = useState(false);
   const messagesEndRef = useRef(null);
 
-  // Carregar conversa
+  // Carregar conversa em tempo real
   useEffect(() => {
+    if (!conversationId) return;
+
+    // Carregar conversa inicial
     const carregarConversa = async () => {
-      if (!conversationId) return;
-      
       try {
         const conversation = await base44.agents.getConversation(conversationId);
         console.log('Conversa carregada:', conversationId, 'Mensagens:', conversation?.messages?.length || 0);
@@ -30,25 +31,16 @@ export default function ChatInterface({ conversationId, pacienteName, pacientePh
 
     carregarConversa();
 
-    // Atualizar conversa a cada 1 segundo para novas respostas do agente
-    const pollInterval = setInterval(carregarConversa, 1000);
-
-    // Subscrever a atualizações em tempo real (se disponível)
-    let unsubscribe;
-    try {
-      unsubscribe = base44.agents.subscribeToConversation(conversationId, (data) => {
-        console.log('Atualização em tempo real:', data?.messages?.length || 0, 'mensagens');
-        if (data?.messages) {
-          setMessages(data.messages);
-        }
-      });
-    } catch (e) {
-      console.log('Subscrição não disponível, usando polling');
-    }
+    // Subscrever a atualizações em tempo real
+    const unsubscribe = base44.agents.subscribeToConversation(conversationId, (data) => {
+      console.log('⚡ Atualização em tempo real:', data?.messages?.length || 0, 'mensagens');
+      if (data?.messages) {
+        setMessages(data.messages);
+      }
+    });
 
     return () => {
-      clearInterval(pollInterval);
-      unsubscribe?.();
+      unsubscribe();
     };
   }, [conversationId]);
 
