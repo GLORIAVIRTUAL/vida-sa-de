@@ -58,13 +58,100 @@ Deno.serve(async (req) => {
       }
 
       try {
-        // Buscar horários disponíveis
-        const resultadoHorarios = await base44.asServiceRole.functions.invoke('chatbotAgendarConsulta', {
-          acao: 'buscar_horarios',
-          especialidade: especialidadeDetectada
-        });
+        // Buscar médicos e disponibilidades diretamente
+        let medicosParaBuscar = [];
+        
+        if (especialidadeDetectada) {
+          medicosParaBuscar = await base44.asServiceRole.entities.Medico.filter({ 
+            status: 'Ativo',
+            especialidade: especialidadeDetectada 
+          });
+        } else {
+          medicosParaBuscar = await base44.asServiceRole.entities.Medico.filter({ status: 'Ativo' });
+        }
 
-        if (resultadoHorarios.data?.disponibilidades?.length > 0) {
+        const disponibilidadesEncontradas = [];
+        const diasAfrente = 15;
+        const diasSemanaMap = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
+
+        for (const medico of medicosParaBuscar.slice(0, 5)) {
+          const horariosAtendimento = medico.horarios_atendimento || [];
+          if (horariosAtendimento.length === 0) continue;
+
+          const disponibilidadesMedico = [];
+
+          for (let i = 0; i < diasAfrente; i++) {
+            const dataConsulta = new Date();
+            dataConsulta.setHours(0, 0, 0, 0);
+            dataConsulta.setDate(dataConsulta.getDate() + i);
+            
+            const dataFormatada = dataConsulta.toISOString().split('T')[0];
+            const diaSemana = dataConsulta.getDay();
+
+            const horariosDoDia = horariosAtendimento.filter(h => 
+              h.dia_semana === diaSemana && !h.data_especifica
+            );
+
+            if (horariosDoDia.length === 0) continue;
+
+            const agendamentosExistentes = await base44.asServiceRole.entities.Agendamento.filter({
+              medico_id: medico.id,
+              data_agendamento: dataFormatada,
+              status: { $ne: 'Cancelado' }
+            });
+
+            const horariosOcupados = agendamentosExistentes.map(ag => ag.horario);
+            const horariosDisponiveis = [];
+            const tempoConsulta = medico.tempo_consulta_minutos || 30;
+
+            for (const periodo of horariosDoDia) {
+              const [inicioH, inicioM] = periodo.horario_inicio.split(':').map(Number);
+              const [fimH, fimM] = periodo.horario_fim.split(':').map(Number);
+              
+              const inicioMinutos = inicioH * 60 + inicioM;
+              const fimMinutos = fimH * 60 + fimM;
+
+              for (let minutos = inicioMinutos; minutos < fimMinutos; minutos += tempoConsulta) {
+                const horas = Math.floor(minutos / 60);
+                const mins = minutos % 60;
+                const horarioStr = `${String(horas).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+
+                const agora = new Date();
+                const horarioDateTime = new Date(`${dataFormatada}T${horarioStr}:00`);
+                const isPast = (dataConsulta.toDateString() === agora.toDateString() && horarioDateTime < agora);
+
+                if (!isPast && !horariosOcupados.includes(horarioStr)) {
+                  horariosDisponiveis.push(horarioStr);
+                }
+              }
+            }
+
+            if (horariosDisponiveis.length > 0) {
+              disponibilidadesMedico.push({
+                data: dataFormatada,
+                data_formatada: dataConsulta.toLocaleDateString('pt-BR', { 
+                  weekday: 'long', 
+                  day: '2-digit', 
+                  month: '2-digit'
+                }),
+                horarios: horariosDisponiveis.sort().slice(0, 5)
+              });
+
+              if (disponibilidadesMedico.length >= 3) break;
+            }
+          }
+
+          if (disponibilidadesMedico.length > 0) {
+            disponibilidadesEncontradas.push({
+              medico_id: medico.id,
+              medico_nome: medico.nome,
+              especialidade: medico.especialidade,
+              disponibilidades: disponibilidadesMedico
+            });
+          }
+        }
+
+        if (disponibilidadesEncontradas.length > 0) {
           const disps = resultadoHorarios.data.disponibilidades;
           infoDisponibilidade = '\n\n📅 DISPONIBILIDADES ENCONTRADAS:\n';
           
