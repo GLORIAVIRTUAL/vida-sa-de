@@ -2,20 +2,32 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { MessageSquare, X, Send, Loader2, Bot, User as UserIcon, Sparkles } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MessageSquare, X, Send, Loader2, Bot, User as UserIcon, Sparkles, CheckCircle } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import ReactMarkdown from 'react-markdown';
 
+const especialidades = [
+  "Cardiologia", "Clínico Geral", "Dermatologia", "Endocrinologia",
+  "Gastroenterologia", "Geriatria", "Ginecologia", "Neurologia",
+  "Nutricionista", "Oftalmologia", "Ortopedia", "Otorrinolaringologia",
+  "Pediatria", "Psicologia", "Psiquiatria", "Urologia"
+];
+
 export default function ChatbotAjuda() {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState([
-    {
-      role: 'bot',
-      content: '👋 Olá! Sou o assistente virtual do **Centro Vida Saúde**. Como posso ajudá-lo a usar o sistema hoje?',
-      timestamp: new Date()
-    }
-  ]);
+  const [etapa, setEtapa] = useState('form'); // form ou chat
+  const [dadosContato, setDadosContato] = useState({
+    nome: '',
+    telefone: '',
+    motivo: '',
+    especialidade: ''
+  });
+  const [salvandoContato, setSalvandoContato] = useState(false);
+  
+  const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef(null);
@@ -25,6 +37,75 @@ export default function ChatbotAjuda() {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  const formatarTelefone = (valor) => {
+    const numeros = valor.replace(/\D/g, '');
+    if (numeros.length <= 2) return numeros;
+    if (numeros.length <= 7) return `(${numeros.slice(0, 2)}) ${numeros.slice(2)}`;
+    if (numeros.length <= 11) return `(${numeros.slice(0, 2)}) ${numeros.slice(2, 7)}-${numeros.slice(7)}`;
+    return `(${numeros.slice(0, 2)}) ${numeros.slice(2, 7)}-${numeros.slice(7, 11)}`;
+  };
+
+  const iniciarChat = async () => {
+    if (!dadosContato.nome || !dadosContato.telefone || !dadosContato.motivo) {
+      alert('Por favor, preencha todos os campos obrigatórios');
+      return;
+    }
+
+    setSalvandoContato(true);
+    
+    try {
+      // Salvar contato na entidade Contato
+      const telefoneFormatado = dadosContato.telefone.replace(/\D/g, '');
+      
+      // Verificar se já existe
+      const contatosExistentes = await base44.entities.Contato.filter({ telefone: telefoneFormatado });
+      
+      let motivoCompleto = dadosContato.motivo;
+      if (dadosContato.motivo === 'consulta' && dadosContato.especialidade) {
+        motivoCompleto = `Consulta - ${dadosContato.especialidade}`;
+      }
+
+      if (contatosExistentes.length === 0) {
+        await base44.entities.Contato.create({
+          nome: dadosContato.nome,
+          telefone: telefoneFormatado,
+          origem: 'Site',
+          status: 'Novo',
+          interesses: [motivoCompleto],
+          observacoes: `Motivo: ${motivoCompleto}`,
+          ultima_interacao: new Date().toISOString()
+        });
+      } else {
+        // Atualizar contato existente
+        await base44.entities.Contato.update(contatosExistentes[0].id, {
+          nome: dadosContato.nome,
+          interesses: [...(contatosExistentes[0].interesses || []), motivoCompleto],
+          ultima_interacao: new Date().toISOString()
+        });
+      }
+
+      // Iniciar chat com mensagem de boas-vindas personalizada
+      setMessages([{
+        role: 'bot',
+        content: `👋 Olá **${dadosContato.nome}**! Sou a assistente virtual do **Centro Vida Saúde**.\n\nVi que você tem interesse em: **${motivoCompleto}**\n\nComo posso ajudá-lo hoje?`,
+        timestamp: new Date()
+      }]);
+      
+      setEtapa('chat');
+    } catch (error) {
+      console.error('Erro ao salvar contato:', error);
+      // Mesmo com erro, permite continuar
+      setMessages([{
+        role: 'bot',
+        content: `👋 Olá **${dadosContato.nome}**! Sou a assistente virtual do **Centro Vida Saúde**. Como posso ajudá-lo?`,
+        timestamp: new Date()
+      }]);
+      setEtapa('chat');
+    } finally {
+      setSalvandoContato(false);
+    }
+  };
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
@@ -40,137 +121,44 @@ export default function ChatbotAjuda() {
     setIsLoading(true);
 
     try {
-      const contextoSistema = `Você é um assistente virtual especializado EXCLUSIVAMENTE em ajudar os usuários do sistema de gestão clínica "Centro Vida Saúde".
+      const contextoSistema = `Você é um assistente virtual do Centro Vida Saúde para PACIENTES e VISITANTES do site.
 
-⚠️ IMPORTANTE: Você DEVE responder APENAS perguntas sobre o funcionamento deste sistema. 
-- Se a pergunta NÃO for relacionada ao sistema, responda educadamente: "Desculpe, sou especializado apenas em ajudar com o sistema Centro Vida Saúde. Por favor, faça perguntas sobre como usar o sistema de gestão da clínica. 😊"
-- NÃO responda perguntas gerais, receitas, curiosidades, ou qualquer assunto fora do escopo do sistema.
+DADOS DO CLIENTE:
+- Nome: ${dadosContato.nome}
+- Telefone: ${dadosContato.telefone}
+- Motivo do contato: ${dadosContato.motivo}${dadosContato.especialidade ? ` (${dadosContato.especialidade})` : ''}
 
-FUNCIONALIDADES DO SISTEMA:
+VOCÊ DEVE:
+1. Sempre usar o nome do cliente (${dadosContato.nome}) de forma natural na conversa
+2. Ajudar com informações sobre agendamento de consultas
+3. Informar sobre especialidades, exames e procedimentos
+4. Orientar sobre localização e horários de funcionamento
+5. Ser educado, prestativo e profissional
 
-📅 AGENDAMENTOS:
-- Para criar agendamento: vá em "Agendamentos" → botão "Novo Agendamento"
-- Preencha: paciente, médico, data, horário, tipo de serviço
-- Pode filtrar por dia, semana ou mês
-- Visualização em lista ou calendário
-- Pode criar reservas de horário (sem paciente definido)
-- Pode fazer encaixes (horários duplicados)
-- Opção de agendamentos recorrentes (semanal, quinzenal, mensal)
-- Enviar notificações por WhatsApp/SMS
-- No modo calendário: clique em um dia para ver os agendamentos
-- Para imprimir agenda: use o botão "Imprimir Agenda" (imprime o dia selecionado)
+INFORMAÇÕES DA CLÍNICA:
+- Endereço: Av. Isabel, 29 – Sobreloja, Santa Cruz, Rio de Janeiro – RJ
+- Funcionamento: Segunda a Sexta das 7h às 18h, Sábado das 7h às 12h
+- Telefone/WhatsApp: (21) XXXX-XXXX
 
-👥 PACIENTES:
-- Para cadastrar: vá em "Pacientes" → botão "Novo Paciente"
-- Dados obrigatórios: nome, CPF, telefone
-- Campos importantes: data nascimento, endereço, convênio
-- Pode definir prioridade (idoso, gestante, deficiente, etc.)
-- Pode importar dados de planilha Excel
-- Visualizar histórico completo de consultas do paciente
+ESPECIALIDADES DISPONÍVEIS:
+Cardiologia, Clínico Geral, Dermatologia, Endocrinologia, Gastroenterologia, Geriatria, Ginecologia, Neurologia, Nutricionista, Oftalmologia, Ortopedia, Otorrinolaringologia, Pediatria, Psicologia, Psiquiatria, Urologia
 
-👨‍⚕️ MÉDICOS:
-- Para cadastrar: vá em "Médicos" → botão "Novo Médico"
-- Configure horários de atendimento por dia da semana
-- Defina recorrência (toda semana, quinzenal, etc.)
-- Configure tipo de atendimento: Horários Marcados ou Ordem de Chegada
-- Defina repasse (percentual ou valor fixo)
-- Associe a um usuário do sistema para login
-- Pode fazer upload de assinatura digital
+EXAMES:
+- Laboratoriais: sangue, urina, fezes, etc.
+- De Imagem: raio-x, ultrassom, eletrocardiograma
 
-💼 ORDENS DE SERVIÇO (Check-in/Pagamento):
-- Criadas automaticamente após check-in (pagamento)
-- Registra valores, repasses, formas de pagamento
-- Pode aplicar descontos e juros
-- Gera comprovante de pagamento
-- Para fazer check-in: vá em "Ordens de Serviço" → selecione o agendamento
-
-💰 FINANCEIRO:
-- Dashboard com visão geral
-- Fluxo de caixa (entradas e saídas)
-- DRE (Demonstrativo de Resultado)
-- Controle de repasses aos médicos
-- Lançamentos manuais
-- Relatórios de repasses por médico
-
-📋 PROCEDIMENTOS E EXAMES:
-- Cadastre procedimentos com código, duração e repasse
-- Cadastre exames com laboratórios parceiros
-- Configure tabela de preços por categoria (Particular, Convênio, etc.)
-- Associe procedimentos às especialidades médicas
-
-🖥️ PAINEL TV (Atendimento):
-- Tela para chamar pacientes na recepção
-- Mostra próximo paciente automaticamente
-- Som e notificação visual
-- Atualização em tempo real
-
-👨‍⚕️ PORTAL DO MÉDICO:
-- Acesso exclusivo para médicos (role: medico)
-- Fila de pacientes aguardando atendimento
-- Prontuário eletrônico completo
-- Prescrição de medicamentos (simples e controlados)
-- Solicitação de exames
-- Assinatura digital nos documentos
-- Upload de arquivos do paciente
-- Modelos de prescrição salvos
-
-💳 VENDA DE CARTÃO:
-- Sistema de venda do Cartão Mais Vida
-- Planos Individual, Familiar (até 4 dependentes) ou Grupo (até 9)
-- Opção à vista ou parcelado
-- Gera contrato automático personalizado
-- Emissão de recibo de venda
-
-🔑 USUÁRIOS E PERMISSÕES:
-- Admin: acesso total ao sistema
-- User: acesso operacional (agendamentos, pacientes, financeiro, etc.)
-- Médico: acesso apenas ao Portal do Médico
-
-🔧 RECURSOS TÉCNICOS:
-- API de integração para agendamento online
-- Webhooks para notificações automáticas
-- Importador de dados (Excel/CSV)
-- Verificação de assinatura digital
-- Auditoria de segurança
-
-DICAS IMPORTANTES:
-- Use filtros para encontrar informações rapidamente
-- Imprima relatórios e agendas quando necessário
-- Configure notificações automáticas para lembrar pacientes
-- Use o Assistente IA no Dashboard para análises estratégicas
-- Backup dos dados é feito automaticamente
-
-REGRAS DE RESPOSTA:
-1. Responda APENAS sobre o sistema Centro Vida Saúde
-2. Se a pergunta não for sobre o sistema, recuse educadamente
-3. Seja claro, objetivo e use passo a passo quando necessário
-4. Use emojis para deixar as respostas mais visuais
-5. Se não souber algo específico do sistema, seja honesto
-6. IMPORTANTE: Use markdown com **negrito** para destacar palavras-chave, botões, nomes de telas e ações importantes
-7. Exemplo de boa formatação: "Para criar um agendamento, vá em **Agendamentos** → clique no botão **Novo Agendamento** → preencha os campos **obrigatórios** (paciente, médico, data, horário)"`;
+REGRAS:
+- Use **negrito** para destacar informações importantes
+- Seja conciso e objetivo
+- Se não souber algo específico, sugira ligar ou ir presencialmente
+- SEMPRE personalize usando o nome do cliente`;
 
       const response = await base44.integrations.Core.InvokeLLM({
         prompt: `${contextoSistema}
 
-PERGUNTA DO USUÁRIO: ${inputValue}
+MENSAGEM DO CLIENTE (${dadosContato.nome}): ${inputValue}
 
-Primeiro, verifique se a pergunta é sobre o sistema Centro Vida Saúde. Se NÃO for, responda: "Desculpe, sou especializado apenas em ajudar com o sistema Centro Vida Saúde. Por favor, faça perguntas sobre como usar o sistema de gestão da clínica. 😊"
-
-Se a pergunta FOR sobre o sistema, responda de forma clara e objetiva, com passo a passo quando necessário.
-
-MUITO IMPORTANTE: Use **negrito** (com dois asteriscos) para destacar:
-- Nomes de telas/páginas (ex: **Agendamentos**, **Dashboard**)
-- Botões (ex: **Novo Agendamento**, **Salvar**)
-- Campos importantes (ex: **paciente**, **médico**, **data**)
-- Ações chave (ex: **clique**, **preencha**, **selecione**)
-- Palavras de destaque (ex: **obrigatório**, **importante**, **atenção**)
-
-Exemplo de resposta bem formatada:
-"Para criar um agendamento:
-1. Acesse a tela **Agendamentos**
-2. Clique no botão **Novo Agendamento**
-3. Preencha os campos **obrigatórios**: paciente, médico, data e horário
-4. Clique em **Salvar**"`,
+Responda de forma personalizada, usando o nome do cliente quando apropriado.`,
         add_context_from_internet: false
       });
 
@@ -185,7 +173,7 @@ Exemplo de resposta bem formatada:
       console.error('Erro ao consultar IA:', error);
       const errorMessage = {
         role: 'bot',
-        content: '😔 Desculpe, ocorreu um erro ao processar sua pergunta. Por favor, tente novamente ou entre em contato com o **suporte técnico**.',
+        content: `😔 Desculpe ${dadosContato.nome}, ocorreu um erro. Por favor, tente novamente ou entre em contato pelo WhatsApp.`,
         timestamp: new Date()
       };
       setMessages(prev => [...prev, errorMessage]);
@@ -197,19 +185,19 @@ Exemplo de resposta bem formatada:
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSendMessage();
+      if (etapa === 'form') {
+        iniciarChat();
+      } else {
+        handleSendMessage();
+      }
     }
   };
 
-  const sugestoesPergunta = [
-    "Como criar um novo agendamento?",
-    "Como cadastrar um paciente?",
-    "Como configurar horários de um médico?",
-    "Como fazer check-in de um paciente?",
-    "Como gerar relatórios financeiros?",
-    "Como usar o Portal do Médico?",
-    "Como vender o Cartão Mais Vida?"
-  ];
+  const resetChat = () => {
+    setEtapa('form');
+    setDadosContato({ nome: '', telefone: '', motivo: '', especialidade: '' });
+    setMessages([]);
+  };
 
   return (
     <>
@@ -248,113 +236,193 @@ Exemplo de resposta bem formatada:
           </CardHeader>
 
           <CardContent className="flex-1 p-0 flex flex-col overflow-hidden">
-            {/* Área de Mensagens */}
-            <ScrollArea className="flex-1 p-4" ref={scrollRef}>
-              <div className="space-y-4">
-                {messages.map((message, index) => (
-                  <div
-                    key={index}
-                    className={`flex gap-2 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    {message.role === 'bot' && (
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-center flex-shrink-0">
-                        <Bot className="w-5 h-5 text-white" />
-                      </div>
-                    )}
-                    <div
-                      className={`max-w-[75%] rounded-2xl p-3 ${
-                        message.role === 'user'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-100 text-gray-900'
-                      }`}
-                    >
-                      {message.role === 'bot' ? (
-                        <ReactMarkdown
-                          className="text-sm prose prose-sm max-w-none"
-                          components={{
-                            p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-                            strong: ({ children }) => <strong className="font-bold text-blue-700">{children}</strong>,
-                            ul: ({ children }) => <ul className="list-disc ml-4 my-2">{children}</ul>,
-                            ol: ({ children }) => <ol className="list-decimal ml-4 my-2">{children}</ol>,
-                            li: ({ children }) => <li className="mb-1">{children}</li>,
-                          }}
-                        >
-                          {message.content}
-                        </ReactMarkdown>
-                      ) : (
-                        <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                      )}
-                      <p className={`text-xs mt-1 ${message.role === 'user' ? 'text-blue-100' : 'text-gray-500'}`}>
-                        {message.timestamp.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                    </div>
-                    {message.role === 'user' && (
-                      <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0">
-                        <UserIcon className="w-5 h-5 text-gray-600" />
-                      </div>
-                    )}
-                  </div>
-                ))}
-
-                {isLoading && (
-                  <div className="flex gap-2 justify-start">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-center flex-shrink-0">
-                      <Bot className="w-5 h-5 text-white" />
-                    </div>
-                    <div className="bg-gray-100 rounded-2xl p-3">
-                      <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
-                    </div>
-                  </div>
-                )}
-              </div>
-            </ScrollArea>
-
-            {/* Sugestões de Perguntas */}
-            {messages.length === 1 && !isLoading && (
-              <div className="px-4 py-2 border-t bg-gray-50">
-                <p className="text-xs text-gray-600 mb-2 flex items-center gap-1">
-                  <Sparkles className="w-3 h-3" />
-                  Perguntas sugeridas:
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {sugestoesPergunta.slice(0, 3).map((sugestao, index) => (
-                    <button
-                      key={index}
-                      onClick={() => setInputValue(sugestao)}
-                      className="text-xs bg-white border border-gray-200 rounded-full px-3 py-1 hover:bg-gray-100 transition-colors"
-                    >
-                      {sugestao}
-                    </button>
-                  ))}
+            {etapa === 'form' ? (
+              /* Formulário de Contato */
+              <div className="p-4 space-y-4 overflow-y-auto">
+                <div className="text-center mb-4">
+                  <h3 className="font-semibold text-gray-800">Olá! 👋</h3>
+                  <p className="text-sm text-gray-600">Para iniciar, preencha seus dados:</p>
                 </div>
-              </div>
-            )}
 
-            {/* Área de Input */}
-            <div className="p-4 border-t bg-white">
-              <div className="flex gap-2">
-                <Input
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder="Digite sua dúvida..."
-                  disabled={isLoading}
-                  className="flex-1"
-                />
-                <Button
-                  onClick={handleSendMessage}
-                  disabled={isLoading || !inputValue.trim()}
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-                  size="icon"
+                <div className="space-y-3">
+                  <div>
+                    <Label htmlFor="nome" className="text-sm">Nome completo *</Label>
+                    <Input
+                      id="nome"
+                      placeholder="Seu nome"
+                      value={dadosContato.nome}
+                      onChange={(e) => setDadosContato({...dadosContato, nome: e.target.value})}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="telefone" className="text-sm">Telefone/WhatsApp *</Label>
+                    <Input
+                      id="telefone"
+                      placeholder="(00) 00000-0000"
+                      value={dadosContato.telefone}
+                      onChange={(e) => setDadosContato({...dadosContato, telefone: formatarTelefone(e.target.value)})}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="motivo" className="text-sm">Motivo do contato *</Label>
+                    <Select 
+                      value={dadosContato.motivo} 
+                      onValueChange={(value) => setDadosContato({...dadosContato, motivo: value, especialidade: ''})}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o motivo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="consulta">Consulta médica</SelectItem>
+                        <SelectItem value="exame_lab">Exames laboratoriais</SelectItem>
+                        <SelectItem value="exame_imagem">Exames de imagem</SelectItem>
+                        <SelectItem value="outros">Outros</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {dadosContato.motivo === 'consulta' && (
+                    <div>
+                      <Label htmlFor="especialidade" className="text-sm">Especialidade</Label>
+                      <Select 
+                        value={dadosContato.especialidade} 
+                        onValueChange={(value) => setDadosContato({...dadosContato, especialidade: value})}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione a especialidade" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {especialidades.map(esp => (
+                            <SelectItem key={esp} value={esp}>{esp}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
+
+                <Button 
+                  onClick={iniciarChat} 
+                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                  disabled={salvandoContato || !dadosContato.nome || !dadosContato.telefone || !dadosContato.motivo}
                 >
-                  {isLoading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                  {salvandoContato ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Iniciando...
+                    </>
                   ) : (
-                    <Send className="w-4 h-4" />
+                    <>
+                      <MessageSquare className="w-4 h-4 mr-2" />
+                      Iniciar Conversa
+                    </>
                   )}
                 </Button>
+
+                <p className="text-xs text-gray-500 text-center">
+                  Seus dados serão usados apenas para melhor atendê-lo.
+                </p>
               </div>
-            </div>
+            ) : (
+              /* Chat */
+              <>
+                <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+                  <div className="space-y-4">
+                    {messages.map((message, index) => (
+                      <div
+                        key={index}
+                        className={`flex gap-2 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                      >
+                        {message.role === 'bot' && (
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-center flex-shrink-0">
+                            <Bot className="w-5 h-5 text-white" />
+                          </div>
+                        )}
+                        <div
+                          className={`max-w-[75%] rounded-2xl p-3 ${
+                            message.role === 'user'
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-gray-100 text-gray-900'
+                          }`}
+                        >
+                          {message.role === 'bot' ? (
+                            <ReactMarkdown
+                              className="text-sm prose prose-sm max-w-none"
+                              components={{
+                                p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                                strong: ({ children }) => <strong className="font-bold text-blue-700">{children}</strong>,
+                                ul: ({ children }) => <ul className="list-disc ml-4 my-2">{children}</ul>,
+                                ol: ({ children }) => <ol className="list-decimal ml-4 my-2">{children}</ol>,
+                                li: ({ children }) => <li className="mb-1">{children}</li>,
+                              }}
+                            >
+                              {message.content}
+                            </ReactMarkdown>
+                          ) : (
+                            <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                          )}
+                          <p className={`text-xs mt-1 ${message.role === 'user' ? 'text-blue-100' : 'text-gray-500'}`}>
+                            {message.timestamp.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
+                        {message.role === 'user' && (
+                          <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0">
+                            <UserIcon className="w-5 h-5 text-gray-600" />
+                          </div>
+                        )}
+                      </div>
+                    ))}
+
+                    {isLoading && (
+                      <div className="flex gap-2 justify-start">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-center flex-shrink-0">
+                          <Bot className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="bg-gray-100 rounded-2xl p-3">
+                          <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </ScrollArea>
+
+                {/* Info do usuário */}
+                <div className="px-4 py-2 bg-gray-50 border-t text-xs text-gray-600 flex items-center justify-between">
+                  <span>👤 {dadosContato.nome}</span>
+                  <button onClick={resetChat} className="text-blue-600 hover:underline">
+                    Nova conversa
+                  </button>
+                </div>
+
+                {/* Área de Input */}
+                <div className="p-4 border-t bg-white">
+                  <div className="flex gap-2">
+                    <Input
+                      value={inputValue}
+                      onChange={(e) => setInputValue(e.target.value)}
+                      onKeyPress={handleKeyPress}
+                      placeholder="Digite sua mensagem..."
+                      disabled={isLoading}
+                      className="flex-1"
+                    />
+                    <Button
+                      onClick={handleSendMessage}
+                      disabled={isLoading || !inputValue.trim()}
+                      className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                      size="icon"
+                    >
+                      {isLoading ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Send className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       )}
