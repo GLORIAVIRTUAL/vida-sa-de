@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
       const pacientes = await base44.asServiceRole.entities.Paciente.filter({ telefone: phoneNumber });
       if (pacientes && pacientes.length > 0) {
         pacienteId = pacientes[0].id;
-        console.log('✅ Paciente encontrado:', pacienteId);
+        console.log('✅ Paciente:', pacienteId.substring(0, 8));
       } else {
         const novoPaciente = await base44.asServiceRole.entities.Paciente.create({
           nome: senderName,
@@ -63,10 +63,10 @@ Deno.serve(async (req) => {
           observacoes: 'Criado via WhatsApp'
         });
         pacienteId = novoPaciente.id;
-        console.log('✅ Novo paciente criado:', pacienteId);
+        console.log('✅ Novo paciente:', pacienteId.substring(0, 8));
       }
     } catch (error) {
-      console.error('❌ Erro com paciente:', error);
+      console.error('❌ Erro paciente:', error.message);
     }
 
     // Buscar conversa existente
@@ -74,28 +74,37 @@ Deno.serve(async (req) => {
     let conversation = conversas.conversations?.find(c => c.metadata?.phone === phoneNumber);
 
     if (!conversation) {
-      // Criar nova conversa SEM mensagem
-      console.log('🆕 Criando conversa nova');
+      // Criar conversa COM mensagem inicial
+      console.log('🆕 Nova conversa');
       conversation = await base44.asServiceRole.agents.createConversation({
         agent_name: 'chatbot_agendamentos',
-        metadata: {
-          phone: phoneNumber,
-          senderName,
-          pacienteId
-        }
+        metadata: { phone: phoneNumber, senderName, pacienteId },
+        initial_message: { role: 'user', content: messageText }
       });
-      console.log('✅ Conversa criada:', conversation.id);
+      console.log('✅ Criada:', conversation.id.substring(0, 8));
+    } else {
+      // Adicionar mensagem via fetch direto (evita bug do SDK)
+      console.log('📝 Msg existente:', conversation.id.substring(0, 8));
+
+      const url = `https://api.base44.com/agents/conversations/${conversation.id}/messages`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${Deno.env.get('BASE44_SERVICE_ROLE_KEY')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          role: 'user',
+          content: messageText
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erro API: ${response.status}`);
+      }
+
+      console.log('✅ Msg adicionada');
     }
-
-    // Buscar conversa completa e adicionar mensagem
-    console.log('📝 Adicionando mensagem à conversa:', conversation.id);
-    const conversaCompleta = await base44.asServiceRole.agents.getConversation(conversation.id);
-
-    await base44.asServiceRole.agents.addMessage(conversaCompleta, {
-      role: 'user',
-      content: messageText
-    });
-    console.log('✅ Mensagem adicionada');
 
     // Aguardar e buscar resposta do agente (tentativas múltiplas)
     let resposta = null;
