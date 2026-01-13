@@ -23,6 +23,7 @@ function ChatTab() {
   const [carregando, setCarregando] = useState(true);
   const [inputMsg, setInputMsg] = useState('');
   const [enviando, setEnviando] = useState(false);
+  const [modoHumano, setModoHumano] = useState(false);
 
   const buscarContatos = async () => {
     try {
