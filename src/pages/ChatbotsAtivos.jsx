@@ -6,8 +6,10 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   MessageCircle, Loader2, Send, RefreshCw, User, Phone, Calendar,
-  TrendingUp, Clock, CheckCircle, XCircle, Activity, Users, Settings, Bot
+  TrendingUp, Clock, CheckCircle, XCircle, Activity, Users, Settings, Bot,
+  Image, Paperclip, Mic, Smile
 } from 'lucide-react';
+import ChatToolbar from '../components/gloria/ChatToolbar';
 import { base44 } from '@/api/base44Client';
 import ReactMarkdown from 'react-markdown';
 import { format } from 'date-fns';

@@ -9,15 +9,15 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { phoneNumber, messageText, contatoId } = await req.json();
+    const { phoneNumber, messageText, contatoId, messageType, mediaUrl, fileName } = await req.json();
     
-    if (!phoneNumber || !messageText) {
-      return Response.json({ error: 'phoneNumber e messageText são obrigatórios' }, { status: 400 });
+    if (!phoneNumber) {
+      return Response.json({ error: 'phoneNumber é obrigatório' }, { status: 400 });
     }
 
-    console.log('📤 Enviando mensagem humana para:', phoneNumber);
+    console.log('📤 Enviando mensagem humana para:', phoneNumber, 'tipo:', messageType || 'text');
 
-    // Enviar mensagem via WhatsApp (Z-API ou Meta)
+    // Enviar mensagem via WhatsApp (Meta)
     const phoneId = Deno.env.get("META_PHONE_NUMBER_ID");
     const accessToken = Deno.env.get("META_ACCESS_TOKEN");
 
@@ -26,22 +26,58 @@ Deno.serve(async (req) => {
       let numero = phoneNumber.replace(/\D/g, '');
       if (!numero.startsWith('55')) numero = '55' + numero;
 
+      let messageBody;
+      
+      // Montar body baseado no tipo de mensagem
+      if (messageType === 'image' && mediaUrl) {
+        messageBody = {
+          messaging_product: 'whatsapp',
+          to: numero,
+          type: 'image',
+          image: { link: mediaUrl }
+        };
+      } else if (messageType === 'document' && mediaUrl) {
+        messageBody = {
+          messaging_product: 'whatsapp',
+          to: numero,
+          type: 'document',
+          document: { 
+            link: mediaUrl,
+            filename: fileName || 'arquivo'
+          }
+        };
+      } else if (messageType === 'audio' && mediaUrl) {
+        messageBody = {
+          messaging_product: 'whatsapp',
+          to: numero,
+          type: 'audio',
+          audio: { link: mediaUrl }
+        };
+      } else {
+        // Mensagem de texto padrão
+        messageBody = {
+          messaging_product: 'whatsapp',
+          to: numero,
+          type: 'text',
+          text: { body: messageText || '' }
+        };
+      }
+
       const response = await fetch(`https://graph.facebook.com/v18.0/${phoneId}/messages`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          messaging_product: 'whatsapp',
-          to: numero,
-          type: 'text',
-          text: { body: messageText }
-        })
+        body: JSON.stringify(messageBody)
       });
 
       const result = await response.json();
       console.log('📱 WhatsApp response:', result);
+      
+      if (!response.ok) {
+        console.error('❌ Erro WhatsApp:', result);
+      }
     }
 
     // Atualizar histórico do contato
