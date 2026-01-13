@@ -23,17 +23,90 @@ Deno.serve(async (req) => {
     
     console.log('✅ Config encontrada:', config.nome);
     
+    // Buscar histórico de conversa
+    let historicoConversa = '';
+    try {
+      const contatos = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
+      if (contatos.length > 0 && contatos[0].historico_mensagens) {
+        const ultimas = contatos[0].historico_mensagens.slice(-10);
+        historicoConversa = ultimas.map(m => `${m.role === 'user' ? 'CLIENTE' : 'ASSISTENTE'}: ${m.content}`).join('\n');
+      }
+    } catch (e) {
+      console.log('⚠️ Não foi possível buscar histórico');
+    }
+
+    // Verificar se cliente quer agendar - buscar disponibilidades
+    let infoDisponibilidade = '';
+    const querAgendar = /agendar|marcar|consulta|atend|hor[áa]rio|dispon[íi]vel|vaga/i.test(messageText);
+    
+    if (querAgendar) {
+      console.log('📅 Cliente quer agendar - buscando disponibilidades...');
+      
+      // Detectar especialidade mencionada
+      const especialidades = [
+        'Cardiologia', 'Clínico Geral', 'Dermatologia', 'Endocrinologia', 
+        'Ginecologia', 'Nutrição', 'Psicologia', 'Ortopedia', 'Urologia',
+        'Geriatria', 'Gastroenterologia', 'Reumatologia'
+      ];
+      
+      let especialidadeDetectada = null;
+      for (const esp of especialidades) {
+        if (messageText.toLowerCase().includes(esp.toLowerCase().split(' ')[0])) {
+          especialidadeDetectada = esp;
+          break;
+        }
+      }
+
+      try {
+        // Buscar horários disponíveis
+        const resultadoHorarios = await base44.asServiceRole.functions.invoke('chatbotAgendarConsulta', {
+          acao: 'buscar_horarios',
+          especialidade: especialidadeDetectada
+        });
+
+        if (resultadoHorarios.data?.disponibilidades?.length > 0) {
+          const disps = resultadoHorarios.data.disponibilidades;
+          infoDisponibilidade = '\n\n📅 DISPONIBILIDADES ENCONTRADAS:\n';
+          
+          for (const medico of disps.slice(0, 3)) {
+            infoDisponibilidade += `\n👨‍⚕️ ${medico.medico_nome} (${medico.especialidade}):\n`;
+            infoDisponibilidade += `   ID do médico: ${medico.medico_id}\n`;
+            
+            for (const dia of medico.disponibilidades.slice(0, 2)) {
+              infoDisponibilidade += `   • ${dia.data_formatada}: ${dia.horarios.slice(0, 3).join(', ')}\n`;
+            }
+          }
+          
+          infoDisponibilidade += '\n⚠️ Para confirmar agendamento, preciso: nome completo e data de nascimento do paciente.';
+        } else {
+          infoDisponibilidade = '\n\n⚠️ Não encontrei disponibilidades no momento. Solicite que o cliente entre em contato pelo WhatsApp.';
+        }
+      } catch (e) {
+        console.error('⚠️ Erro ao buscar disponibilidades:', e.message);
+      }
+    }
+
     // Usar InvokeLLM diretamente para gerar resposta
     console.log('🤖 Chamando LLM...');
     
     const promptCompleto = `${config.prompt_sistema}
 
 ---
-MENSAGEM DO CLIENTE (${senderName}, telefone ${phoneNumber}):
-${messageText}
+HISTÓRICO DA CONVERSA (últimas mensagens):
+${historicoConversa || '(primeira mensagem)'}
 
 ---
-Responda de forma natural e amigável, seguindo as instruções do prompt acima.`;
+NOVA MENSAGEM DO CLIENTE (${senderName}, telefone ${phoneNumber}):
+${messageText}
+${infoDisponibilidade}
+
+---
+INSTRUÇÕES ADICIONAIS:
+1. Se o cliente quer agendar e há disponibilidades acima, apresente as opções de forma clara e amigável.
+2. Pergunte qual médico, dia e horário o cliente prefere.
+3. Confirme os dados do paciente antes de finalizar (nome completo e data de nascimento).
+4. Se o cliente já confirmou todos os dados (médico, data, horário, nome, nascimento), diga que está confirmando e peça para aguardar.
+5. Responda de forma natural, seguindo o tom do prompt_sistema.`;
 
     const llmResponse = await base44.asServiceRole.integrations.Core.InvokeLLM({
       prompt: promptCompleto,
