@@ -51,9 +51,18 @@ function ChatTab() {
   useEffect(() => {
     if (contatoSelecionado && contatos.length > 0) {
       const atualizado = contatos.find(c => c.id === contatoSelecionado.id);
-      if (atualizado) setContatoSelecionado(atualizado);
+      if (atualizado) {
+        setContatoSelecionado(atualizado);
+        setModoHumano(atualizado.atendimento_humano || false);
+      }
     }
   }, [contatos]);
+
+  useEffect(() => {
+    if (contatoSelecionado) {
+      setModoHumano(contatoSelecionado.atendimento_humano || false);
+    }
+  }, [contatoSelecionado?.id]);
 
   const enviarMensagem = async () => {
     if (!inputMsg.trim() || !contatoSelecionado) return;
