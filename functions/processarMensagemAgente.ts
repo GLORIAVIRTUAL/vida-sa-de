@@ -424,6 +424,95 @@ Retorne um JSON com os dados encontrados.`;
     } else if (horaNumero >= 18 || horaNumero < 5) {
       saudacaoHorario = 'Boa-noite';
     }
+
+    // Buscar procedimentos e exames disponíveis para orçamento
+    let infoProcedimentosExames = '';
+    if (mediaType === 'image' || mediaType === 'document') {
+      console.log('📋 Mídia recebida - carregando lista de procedimentos e exames para orçamento...');
+      
+      try {
+        const procedimentos = await base44.asServiceRole.entities.Procedimento.filter({ status: 'Ativo' });
+        const exames = await base44.asServiceRole.entities.Exame.filter({ status: 'Ativo' });
+        const categoriasPreco = await base44.asServiceRole.entities.CategoriaPreco.filter({ status: 'Ativo' });
+        const tabelaPrecos = await base44.asServiceRole.entities.TabelaPreco.list();
+        
+        if (procedimentos.length > 0 || exames.length > 0) {
+          infoProcedimentosExames = `\n\n📋 PROCEDIMENTOS E EXAMES DISPONÍVEIS NA CLÍNICA:\n`;
+          
+          if (procedimentos.length > 0) {
+            infoProcedimentosExames += '\n🏥 PROCEDIMENTOS:\n';
+            for (const proc of procedimentos.slice(0, 30)) {
+              // Buscar preço na tabela
+              const preco = tabelaPrecos.find(tp => tp.procedimento_id === proc.id);
+              const valorStr = preco ? `R$ ${preco.valor?.toFixed(2)}` : 'consultar';
+              infoProcedimentosExames += `• ${proc.nome}${proc.especialidade ? ` (${proc.especialidade})` : ''} - ${valorStr}\n`;
+            }
+          }
+          
+          if (exames.length > 0) {
+            infoProcedimentosExames += '\n🔬 EXAMES:\n';
+            for (const exame of exames.slice(0, 30)) {
+              const valorStr = exame.valor_particular ? `R$ ${exame.valor_particular.toFixed(2)}` : 'consultar';
+              infoProcedimentosExames += `• ${exame.nome}${exame.tipo ? ` (${exame.tipo})` : ''} - ${valorStr}\n`;
+            }
+          }
+          
+          infoProcedimentosExames += '\n⚠️ INSTRUÇÕES PARA ORÇAMENTO:\n';
+          infoProcedimentosExames += '- Analise a imagem/documento recebido\n';
+          infoProcedimentosExames += '- Identifique os procedimentos/exames solicitados\n';
+          infoProcedimentosExames += '- Compare com a lista acima para verificar se a clínica realiza\n';
+          infoProcedimentosExames += '- Informe quais a clínica FAZ e quais NÃO FAZ\n';
+          infoProcedimentosExames += '- Forneça os valores dos que são realizados\n';
+        }
+      } catch (e) {
+        console.error('⚠️ Erro ao buscar procedimentos/exames:', e.message);
+      }
+    }
+
+    // Instruções especiais para mídia
+    let instrucoesMidia = '';
+    if (mediaType === 'image') {
+      instrucoesMidia = `\n\n📷 MÍDIA RECEBIDA: O cliente enviou uma IMAGEM.
+      
+ANALISE A IMAGEM cuidadosamente:
+- Se for uma REQUISIÇÃO/PEDIDO MÉDICO: identifique os procedimentos/exames solicitados
+- Se for um RESULTADO DE EXAME: descreva o que você observa
+- Se for uma FOTO de algo relacionado à saúde: descreva o que vê
+
+${infoProcedimentosExames}
+
+RESPOSTA ESPERADA:
+1. Confirme que recebeu e analisou a imagem
+2. Identifique os itens da requisição
+3. Informe quais procedimentos/exames a clínica FAZ e os valores
+4. Informe quais NÃO são realizados na clínica
+5. Ofereça para agendar os disponíveis`;
+    } else if (mediaType === 'document') {
+      instrucoesMidia = `\n\n📄 MÍDIA RECEBIDA: O cliente enviou um DOCUMENTO (PDF ou arquivo).
+      
+ANALISE O DOCUMENTO:
+- Se for uma REQUISIÇÃO/PEDIDO MÉDICO: identifique os procedimentos/exames solicitados
+- Se for um LAUDO/RESULTADO: descreva as informações relevantes
+
+${infoProcedimentosExames}
+
+RESPOSTA ESPERADA:
+1. Confirme que recebeu e analisou o documento
+2. Liste os procedimentos/exames identificados
+3. Informe quais a clínica REALIZA e os respectivos valores
+4. Informe quais NÃO são realizados
+5. Pergunte se deseja agendar os disponíveis`;
+    } else if (mediaType === 'audio') {
+      instrucoesMidia = `\n\n🎤 MÍDIA RECEBIDA: O cliente enviou um ÁUDIO.
+      
+O áudio foi transcrito (se possível). Responda naturalmente ao conteúdo.
+Se não conseguir entender, peça gentilmente para o cliente escrever a mensagem.`;
+    } else if (mediaType === 'video') {
+      instrucoesMidia = `\n\n🎥 MÍDIA RECEBIDA: O cliente enviou um VÍDEO.
+      
+Analise o conteúdo do vídeo se relevante para o atendimento.
+Confirme o recebimento e pergunte como pode ajudar.`;
+    }
     
     const promptCompleto = `${config.prompt_sistema}
 
@@ -441,6 +530,7 @@ ${historicoConversa || '(primeira mensagem)'}
 NOVA MENSAGEM DO CLIENTE (${senderName}, telefone ${phoneNumber}):
 ${messageText}
 ${infoDisponibilidade}
+${instrucoesMidia}
 
 ---
 INSTRUÇÕES ADICIONAIS:
@@ -450,10 +540,19 @@ INSTRUÇÕES ADICIONAIS:
 4. Se o cliente já confirmou todos os dados (médico, data, horário, nome, nascimento), diga que está confirmando e peça para aguardar.
 5. Responda de forma natural, seguindo o tom do prompt_sistema.`;
 
-    const llmResponse = await base44.asServiceRole.integrations.Core.InvokeLLM({
+    // Preparar parâmetros do LLM
+    const llmParams = {
       prompt: promptCompleto,
       add_context_from_internet: false
-    });
+    };
+    
+    // Se tiver mídia (imagem/documento/vídeo), enviar para análise visual
+    if (mediaUrl && (mediaType === 'image' || mediaType === 'document' || mediaType === 'video')) {
+      llmParams.file_urls = [mediaUrl];
+      console.log('🖼️ Enviando mídia para análise:', mediaUrl);
+    }
+
+    const llmResponse = await base44.asServiceRole.integrations.Core.InvokeLLM(llmParams);
     
     console.log('✅ LLM respondeu');
     
