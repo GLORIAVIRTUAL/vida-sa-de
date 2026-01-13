@@ -19,10 +19,11 @@ export default function Procedimentos() {
     setLoading(true);
     try {
       const [procedimentosData, categoriasData, precosData] = await Promise.all([
-        Procedimento.list(),
-        CategoriaPreco.list(),
-        TabelaPreco.list()
+        Procedimento.list('-created_date', 1000),
+        CategoriaPreco.list('-created_date', 100),
+        TabelaPreco.list('-created_date', 5000)
       ]);
+      console.log('TabelaPreco carregada:', precosData?.length, 'registros');
       setProcedimentos(procedimentosData || []);
       setCategorias(categoriasData || []);
       setTabelaPrecos(precosData || []);
