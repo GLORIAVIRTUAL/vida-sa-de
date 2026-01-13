@@ -317,7 +317,7 @@ Retorne um JSON com os dados encontrados.`;
                 horario: extracao.horario,
                 tipo_servico: 'Consulta',
                 status: 'Agendado',
-                observacoes: 'Agendado via WhatsApp',
+                observacoes: 'Agendado pela Glória',
                 agendado_por: 'Glória',
                 agendado_por_tipo: 'chatbot'
               });
