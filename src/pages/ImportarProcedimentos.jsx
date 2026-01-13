@@ -256,13 +256,13 @@ export default function ImportarProcedimentos() {
 
           {dadosPreview.length > 0 && (
             <div className="space-y-4">
-              <h3 className="font-semibold">Preview dos dados ({dadosPreview.length} primeiras linhas)</h3>
-              <div className="overflow-x-auto border rounded-lg">
+              <h3 className="font-semibold">Preview dos dados ({dadosPreview.length} primeiras linhas) - {Object.keys(dadosPreview[0]).length} colunas</h3>
+              <div className="overflow-x-auto border rounded-lg max-h-96">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      {Object.keys(dadosPreview[0]).slice(0, 8).map((col, i) => (
-                        <TableHead key={i} className="text-xs whitespace-nowrap">
+                      {Object.keys(dadosPreview[0]).map((col, i) => (
+                        <TableHead key={i} className="text-xs whitespace-nowrap bg-gray-100 sticky top-0">
                           {col || `Coluna ${i + 1}`}
                         </TableHead>
                       ))}
@@ -271,9 +271,9 @@ export default function ImportarProcedimentos() {
                   <TableBody>
                     {dadosPreview.map((row, i) => (
                       <TableRow key={i}>
-                        {Object.values(row).slice(0, 8).map((val, j) => (
-                          <TableCell key={j} className="text-xs">
-                            {val?.substring(0, 30) || '-'}
+                        {Object.values(row).map((val, j) => (
+                          <TableCell key={j} className="text-xs whitespace-nowrap">
+                            {val?.toString().substring(0, 40) || '-'}
                           </TableCell>
                         ))}
                       </TableRow>
