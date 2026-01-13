@@ -32,9 +32,17 @@ function ChatTab() {
       const comHistorico = lista.filter(c => 
         (c.historico_mensagens && c.historico_mensagens.length > 0) || c.ultima_mensagem
       );
-      setContatos(comHistorico);
-      if (comHistorico.length > 0 && !contatoSelecionado) {
-        setContatoSelecionado(comHistorico[0]);
+      // Ordenar: ativos primeiro (não finalizados), finalizados por último
+      const ordenados = [...comHistorico].sort((a, b) => {
+        const aFinalizado = a.conversa_finalizada === true;
+        const bFinalizado = b.conversa_finalizada === true;
+        if (aFinalizado && !bFinalizado) return 1;
+        if (!aFinalizado && bFinalizado) return -1;
+        return 0;
+      });
+      setContatos(ordenados);
+      if (ordenados.length > 0 && !contatoSelecionado) {
+        setContatoSelecionado(ordenados[0]);
       }
     } catch (error) {
       console.error('Erro:', error);
@@ -99,12 +107,15 @@ function ChatTab() {
     if (!contatoSelecionado) return;
     try {
       await base44.entities.Contato.update(contatoSelecionado.id, {
-        status: 'Inativo',
+        status: 'Cliente',
         conversa_finalizada: true,
         atendimento_humano: false
       });
+      // Atualizar o contato selecionado localmente para refletir a mudança imediata
+      setContatoSelecionado({...contatoSelecionado, conversa_finalizada: true, status: 'Cliente', atendimento_humano: false});
       await buscarContatos();
     } catch (error) {
+      console.error('Erro ao finalizar:', error);
       alert('Erro ao finalizar: ' + error.message);
     }
   };
@@ -164,9 +175,14 @@ function ChatTab() {
                     onClick={() => setContatoSelecionado(contato)}
                     className={`w-full text-left p-3 hover:bg-gray-50 transition ${
                       contatoSelecionado?.id === contato.id ? 'bg-purple-50 border-l-2 border-purple-600' : ''
-                    }`}
+                    } ${contato.conversa_finalizada ? 'opacity-60' : ''}`}
                   >
-                    <p className="font-medium text-sm truncate">{contato.nome || 'Cliente'}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-sm truncate flex-1">{contato.nome || 'Cliente'}</p>
+                      {contato.conversa_finalizada && (
+                        <Badge className="bg-gray-200 text-gray-600 text-[10px] px-1 py-0">Concluído</Badge>
+                      )}
+                    </div>
                     <p className="text-xs text-gray-500 truncate">{contato.telefone}</p>
                   </button>
                 ))}
