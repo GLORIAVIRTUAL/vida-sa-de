@@ -8,6 +8,34 @@ Deno.serve(async (req) => {
     
     console.log('📨 Processando:', { phoneNumber, messageText });
     
+    // Verificar se o contato está em atendimento humano
+    const contatosCheck = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
+    if (contatosCheck.length > 0 && contatosCheck[0].atendimento_humano) {
+      console.log('⚠️ Contato em atendimento humano - ignorando IA');
+      
+      // Apenas salvar a mensagem no histórico sem responder com IA
+      const contato = contatosCheck[0];
+      const historicoAtual = contato.historico_mensagens || [];
+      const timestamp = new Date().toISOString();
+      
+      historicoAtual.push({ role: 'user', content: messageText, timestamp });
+      
+      await base44.asServiceRole.entities.Contato.update(contato.id, {
+        ultima_mensagem: messageText,
+        historico_mensagens: historicoAtual.slice(-50),
+        ultima_interacao: timestamp,
+        total_mensagens: (contato.total_mensagens || 0) + 1,
+        status: 'Lead' // Reativa conversa se estava finalizada
+      });
+      
+      return Response.json({ 
+        success: true, 
+        resposta: null,
+        atendimento_humano: true,
+        message: 'Mensagem salva - atendimento humano ativo'
+      });
+    }
+    
     // Buscar configuração do chatbot
     const configs = await base44.asServiceRole.entities.ChatbotConfig.filter({ ativo: true });
     const config = configs[0];
