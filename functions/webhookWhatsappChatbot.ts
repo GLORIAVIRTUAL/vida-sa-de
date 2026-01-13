@@ -266,6 +266,13 @@ Deno.serve(async (req) => {
     if (resultado.data?.resposta) {
       await enviarWhatsApp(phoneNumber, resultado.data.resposta);
       console.log('✅ WhatsApp enviado');
+      
+      // Se houver arquivo para enviar (resultado de exame)
+      if (resultado.data?.arquivoParaEnviar) {
+        const arquivo = resultado.data.arquivoParaEnviar;
+        console.log('📎 Enviando arquivo de resultado:', arquivo.url);
+        await enviarWhatsAppDocumento(phoneNumber, arquivo.url, arquivo.nome);
+      }
     } else {
       console.log('⚠️ Sem resposta - enviando fallback');
       await enviarWhatsApp(phoneNumber, 'Olá! Estou processando sua solicitação. Um momento, por favor.');
