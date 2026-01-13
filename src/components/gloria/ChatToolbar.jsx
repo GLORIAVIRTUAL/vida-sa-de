@@ -37,7 +37,8 @@ export default function ChatToolbar({
   inputValue, 
   onInputChange, 
   disabled,
-  phoneNumber 
+  phoneNumber,
+  contatoId 
 }) {
   const [uploading, setUploading] = useState(false);
   const [recording, setRecording] = useState(false);
@@ -58,6 +59,7 @@ export default function ChatToolbar({
       // Enviar via WhatsApp
       await base44.functions.invoke('enviarMensagemHumano', {
         phoneNumber,
+        contatoId,
         messageType: type === 'image' ? 'image' : 'document',
         mediaUrl: file_url,
         fileName: file.name,
@@ -91,6 +93,7 @@ export default function ChatToolbar({
           
           await base44.functions.invoke('enviarMensagemHumano', {
             phoneNumber,
+            contatoId,
             messageType: 'audio',
             mediaUrl: file_url,
             messageText: '🎤 Áudio enviado'

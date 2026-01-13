@@ -263,6 +263,7 @@ function ChatTab() {
                     onInputChange={setInputMsg}
                     disabled={enviando}
                     phoneNumber={contatoSelecionado.telefone}
+                    contatoId={contatoSelecionado.id}
                   />
                 )}
                 <div className="flex gap-2">
