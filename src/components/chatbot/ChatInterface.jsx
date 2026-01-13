@@ -18,13 +18,14 @@ export default function ChatInterface({ conversationId, pacienteName, pacientePh
 
     console.log('🔄 Iniciando monitoramento da conversa:', conversationId);
 
-    // Carregar conversa inicial
+    // Carregar conversa inicial usando backend function
     const carregarConversa = async () => {
       try {
-        const conversation = await base44.agents.getConversation(conversationId);
+        const response = await base44.functions.invoke('obterConversaChatbot', { conversationId });
+        const conversation = response.data?.conversation;
+        
         console.log('✅ Conversa carregada:', conversationId);
         console.log('📨 Total mensagens:', conversation?.messages?.length || 0);
-        console.log('📋 Mensagens:', JSON.stringify(conversation?.messages || [], null, 2));
         
         if (conversation?.messages) {
           setMessages(conversation.messages);
@@ -36,27 +37,14 @@ export default function ChatInterface({ conversationId, pacienteName, pacientePh
 
     carregarConversa();
 
-    // Subscrever a atualizações em tempo real
-    const unsubscribe = base44.agents.subscribeToConversation(conversationId, (data) => {
-      console.log('⚡ ATUALIZAÇÃO EM TEMPO REAL RECEBIDA!');
-      console.log('📨 Total mensagens:', data?.messages?.length || 0);
-      console.log('📋 Mensagens:', JSON.stringify(data?.messages || [], null, 2));
-      
-      if (data?.messages) {
-        setMessages(data.messages);
-      }
-    });
-
-    // Polling de backup a cada 3 segundos
+    // Polling a cada 2 segundos para novas mensagens
     const pollInterval = setInterval(() => {
-      console.log('🔄 Polling backup...');
       carregarConversa();
-    }, 3000);
+    }, 2000);
 
     return () => {
-      console.log('🛑 Limpando subscriptions da conversa:', conversationId);
+      console.log('🛑 Limpando polling da conversa:', conversationId);
       clearInterval(pollInterval);
-      unsubscribe();
     };
   }, [conversationId]);
 
@@ -81,11 +69,10 @@ export default function ChatInterface({ conversationId, pacienteName, pacientePh
     setMessages(prev => [...prev, novaMensagem]);
 
     try {
-      const conversation = await base44.agents.getConversation(conversationId);
-      
-      await base44.agents.addMessage(conversation, {
-        role: 'user',
-        content: textoEnviado
+      // Usar backend function para adicionar mensagem
+      await base44.functions.invoke('adicionarMensagemChatbot', {
+        conversationId,
+        message: textoEnviado
       });
 
     } catch (error) {
