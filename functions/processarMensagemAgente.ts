@@ -631,6 +631,7 @@ ${messageText}
 ${infoDisponibilidade}
 ${infoProcedimentosExames}
 ${instrucoesMidia}
+${infoResultadoExame}
 
 ---
 INSTRUÇÕES ADICIONAIS:
