@@ -88,9 +88,19 @@ Deno.serve(async (req) => {
         const historicoAtual = contato.historico_mensagens || [];
         const timestamp = new Date().toISOString();
         
+        // Salvar conteúdo da mensagem - se for mídia, indicar o tipo
+        let conteudoMensagem = messageText || '';
+        if (messageType === 'image') {
+          conteudoMensagem = conteudoMensagem || '📷 Imagem enviada';
+        } else if (messageType === 'document') {
+          conteudoMensagem = conteudoMensagem || `📄 Documento: ${fileName || 'arquivo'}`;
+        } else if (messageType === 'audio') {
+          conteudoMensagem = conteudoMensagem || '🎤 Áudio enviado';
+        }
+        
         historicoAtual.push({
           role: 'assistant',
-          content: `[👤 ${user.full_name || 'Recepção'}]: ${messageText}`,
+          content: `[👤 ${user.full_name || 'Recepção'}]: ${conteudoMensagem}`,
           timestamp,
           humano: true
         });
