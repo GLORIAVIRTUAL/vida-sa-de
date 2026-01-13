@@ -48,6 +48,21 @@ Deno.serve(async (req) => {
 
     console.log('💬 Mensagem:', { phoneNumber, senderName, messageText });
 
+    // Reativar conversa se estava finalizada (cliente voltou a falar)
+    try {
+      const contatos = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
+      if (contatos.length > 0 && contatos[0].conversa_finalizada) {
+        console.log('🔄 Reativando conversa finalizada');
+        await base44.asServiceRole.entities.Contato.update(contatos[0].id, {
+          conversa_finalizada: false,
+          status: 'Lead',
+          nome: contatos[0].nome || senderName
+        });
+      }
+    } catch (e) {
+      console.log('⚠️ Erro ao verificar conversa:', e.message);
+    }
+
     // Buscar ou criar paciente
     let pacienteId = null;
     try {
