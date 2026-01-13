@@ -72,38 +72,44 @@ Deno.serve(async (req) => {
     if (querResultado) {
       console.log('📄 Cliente quer resultado de exame...');
       
-      // Verificar se temos CPF na mensagem
-      const cpfMatch = messageText.match(/\d{3}\.?\d{3}\.?\d{3}-?\d{2}/);
-      
-      // Buscar no histórico se já temos nome e CPF
-      let nomeCliente = null;
+      // Verificar se temos CPF na mensagem ou no histórico - aceita vários formatos
+      const cpfMatch = messageText.match(/(\d{11}|\d{3}\.?\d{3}\.?\d{3}[-.]?\d{2})/);
       let cpfCliente = cpfMatch ? cpfMatch[0].replace(/\D/g, '') : null;
       
-      // Tentar extrair nome do histórico ou mensagem
-      if (historicoConversa) {
-        const nomeMatch = historicoConversa.match(/(?:meu nome [eé]|me chamo|sou o|sou a)\s+([A-Za-zÀ-ÿ\s]+)/i) ||
-                          messageText.match(/(?:meu nome [eé]|me chamo|sou o|sou a)\s+([A-Za-zÀ-ÿ\s]+)/i);
-        if (nomeMatch) {
-          nomeCliente = nomeMatch[1].trim();
+      // Se não achou na mensagem, procurar no histórico
+      if (!cpfCliente && historicoConversa) {
+        const cpfHistorico = historicoConversa.match(/(\d{11}|\d{3}\.?\d{3}\.?\d{3}[-.]?\d{2})/);
+        if (cpfHistorico) {
+          cpfCliente = cpfHistorico[0].replace(/\D/g, '');
         }
       }
       
-      if (cpfCliente) {
+      console.log('🔍 CPF detectado:', cpfCliente);
+      
+      if (cpfCliente && cpfCliente.length === 11) {
         // Buscar resultado pelo CPF
         try {
-          const resultados = await base44.asServiceRole.entities.ResultadoExame.filter({ 
-            paciente_cpf: cpfCliente 
+          console.log('🔎 Buscando resultados para CPF:', cpfCliente);
+          const resultados = await base44.asServiceRole.entities.ResultadoExame.list();
+          console.log('📊 Total de resultados no sistema:', resultados.length);
+          
+          // Filtrar pelo CPF (comparar sem formatação)
+          const resultadosFiltrados = resultados.filter(r => {
+            const cpfResultado = (r.paciente_cpf || '').replace(/\D/g, '');
+            return cpfResultado === cpfCliente;
           });
           
-          if (resultados.length > 0) {
+          console.log('📊 Resultados encontrados para o CPF:', resultadosFiltrados.length);
+          
+          if (resultadosFiltrados.length > 0) {
             // Pegar o resultado mais recente
-            const resultadoMaisRecente = resultados.sort((a, b) => 
+            const resultadoMaisRecente = resultadosFiltrados.sort((a, b) => 
               new Date(b.created_date) - new Date(a.created_date)
             )[0];
             
             arquivoParaEnviar = {
               url: resultadoMaisRecente.arquivo_url,
-              nome: resultadoMaisRecente.nome_arquivo || 'Resultado de Exame',
+              nome: resultadoMaisRecente.nome_arquivo || 'Resultado_Exame.pdf',
               paciente: resultadoMaisRecente.paciente_nome,
               descricao: resultadoMaisRecente.descricao,
               data: resultadoMaisRecente.data_exame
@@ -113,12 +119,13 @@ Deno.serve(async (req) => {
 Paciente: ${resultadoMaisRecente.paciente_nome}
 Exame: ${resultadoMaisRecente.descricao || 'Resultado de exame'}
 Data: ${resultadoMaisRecente.data_exame || 'N/A'}
+Arquivo: ${resultadoMaisRecente.nome_arquivo}
 
-📎 O arquivo será enviado junto com esta mensagem.
+📎 O arquivo será enviado automaticamente junto com esta mensagem.
 
-Informe ao cliente que o resultado está sendo enviado.`;
+RESPONDA confirmando que encontrou o resultado e que está enviando o arquivo agora.`;
             
-            console.log('✅ Resultado encontrado:', resultadoMaisRecente.id);
+            console.log('✅ Resultado encontrado! Arquivo:', arquivoParaEnviar.url);
           } else {
             infoResultadoExame = `\n\n❌ RESULTADO NÃO ENCONTRADO
 CPF informado: ${cpfCliente}
@@ -127,11 +134,12 @@ Não encontramos resultados de exames para este CPF no sistema.
 
 Peça para o cliente:
 1. Verificar se o CPF está correto
-2. Informar se o exame foi realizado há mais de 30 dias (pode ter sido arquivado)
-3. Entrar em contato com a clínica para mais informações`;
+2. Informar se o exame foi realizado recentemente
+3. Entrar em contato com a clínica pelo telefone para mais informações`;
           }
         } catch (e) {
           console.error('⚠️ Erro ao buscar resultado:', e.message);
+          infoResultadoExame = `\n\n⚠️ Erro ao buscar resultado. Peça desculpas e solicite que o cliente entre em contato pelo telefone.`;
         }
       } else {
         // Não temos CPF ainda - instruir IA a pedir
@@ -141,12 +149,12 @@ Para localizar o resultado, você PRECISA do CPF do paciente.
 
 PEÇA ao cliente:
 1. Nome completo
-2. CPF (apenas números ou com pontos e traço)
+2. CPF (apenas números, exemplo: 04252828481)
 
 Exemplo de resposta:
 "Para localizar seu resultado, preciso de algumas informações:
 📝 Seu nome completo
-📝 Seu CPF
+📝 Seu CPF (apenas números)
 
 Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
       }
