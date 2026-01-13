@@ -427,42 +427,59 @@ Retorne um JSON com os dados encontrados.`;
 
     // Buscar procedimentos e exames disponíveis para orçamento
     let infoProcedimentosExames = '';
-    if (mediaType === 'image' || mediaType === 'document') {
-      console.log('📋 Mídia recebida - carregando lista de procedimentos e exames para orçamento...');
+    
+    // Carregar lista de procedimentos e exames para qualquer mensagem sobre orçamento/preço ou mídia
+    const querOrcamento = /or[çc]amento|pre[çc]o|valor|quanto|custa|faz|realiza|exame|procedimento|requisição|pedido/i.test(messageText);
+    
+    if (mediaType === 'image' || mediaType === 'document' || querOrcamento) {
+      console.log('📋 Carregando lista de procedimentos e exames para orçamento...');
       
       try {
         const procedimentos = await base44.asServiceRole.entities.Procedimento.filter({ status: 'Ativo' });
         const exames = await base44.asServiceRole.entities.Exame.filter({ status: 'Ativo' });
-        const categoriasPreco = await base44.asServiceRole.entities.CategoriaPreco.filter({ status: 'Ativo' });
         const tabelaPrecos = await base44.asServiceRole.entities.TabelaPreco.list();
         
         if (procedimentos.length > 0 || exames.length > 0) {
-          infoProcedimentosExames = `\n\n📋 PROCEDIMENTOS E EXAMES DISPONÍVEIS NA CLÍNICA:\n`;
+          infoProcedimentosExames = `\n\n📋 BASE DE DADOS - PROCEDIMENTOS E EXAMES COM PREÇOS:\n`;
           
           if (procedimentos.length > 0) {
-            infoProcedimentosExames += '\n🏥 PROCEDIMENTOS:\n';
-            for (const proc of procedimentos.slice(0, 30)) {
-              // Buscar preço na tabela
+            infoProcedimentosExames += '\n🏥 PROCEDIMENTOS DISPONÍVEIS:\n';
+            for (const proc of procedimentos) {
               const preco = tabelaPrecos.find(tp => tp.procedimento_id === proc.id);
-              const valorStr = preco ? `R$ ${preco.valor?.toFixed(2)}` : 'consultar';
-              infoProcedimentosExames += `• ${proc.nome}${proc.especialidade ? ` (${proc.especialidade})` : ''} - ${valorStr}\n`;
+              const valorNum = preco?.valor || 0;
+              infoProcedimentosExames += `• ${proc.nome}${proc.especialidade ? ` (${proc.especialidade})` : ''} - R$ ${valorNum.toFixed(2)}\n`;
             }
           }
           
           if (exames.length > 0) {
-            infoProcedimentosExames += '\n🔬 EXAMES:\n';
-            for (const exame of exames.slice(0, 30)) {
-              const valorStr = exame.valor_particular ? `R$ ${exame.valor_particular.toFixed(2)}` : 'consultar';
-              infoProcedimentosExames += `• ${exame.nome}${exame.tipo ? ` (${exame.tipo})` : ''} - ${valorStr}\n`;
+            infoProcedimentosExames += '\n🔬 EXAMES DISPONÍVEIS:\n';
+            for (const exame of exames) {
+              const valorNum = exame.valor_particular || 0;
+              infoProcedimentosExames += `• ${exame.nome}${exame.tipo ? ` (${exame.tipo})` : ''} - R$ ${valorNum.toFixed(2)}\n`;
             }
           }
           
-          infoProcedimentosExames += '\n⚠️ INSTRUÇÕES PARA ORÇAMENTO:\n';
-          infoProcedimentosExames += '- Analise a imagem/documento recebido\n';
-          infoProcedimentosExames += '- Identifique os procedimentos/exames solicitados\n';
-          infoProcedimentosExames += '- Compare com a lista acima para verificar se a clínica realiza\n';
-          infoProcedimentosExames += '- Informe quais a clínica FAZ e quais NÃO FAZ\n';
-          infoProcedimentosExames += '- Forneça os valores dos que são realizados\n';
+          infoProcedimentosExames += `\n⚠️ REGRAS OBRIGATÓRIAS PARA ORÇAMENTO:
+1. Analise a requisição/pedido médico enviado
+2. Identifique TODOS os procedimentos/exames solicitados
+3. Para cada item, verifique na lista acima se a clínica realiza
+4. Monte o orçamento no formato:
+
+📋 *ORÇAMENTO*
+━━━━━━━━━━━━━━━━━━━━
+✅ Itens que realizamos:
+• [Nome do item] - R$ XX,XX
+• [Nome do item] - R$ XX,XX
+
+❌ Itens que NÃO realizamos:
+• [Nome do item]
+
+━━━━━━━━━━━━━━━━━━━━
+💰 *VALOR TOTAL: R$ XX,XX*
+━━━━━━━━━━━━━━━━━━━━
+
+5. SEMPRE inclua o VALOR TOTAL somando todos os itens que realizamos
+6. Pergunte se deseja agendar os exames/procedimentos disponíveis`;
         }
       } catch (e) {
         console.error('⚠️ Erro ao buscar procedimentos/exames:', e.message);
