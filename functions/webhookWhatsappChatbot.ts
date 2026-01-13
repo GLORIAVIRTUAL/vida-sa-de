@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
     let conversation = conversas.conversations?.find(c => c.metadata?.phone === phoneNumber);
 
     if (!conversation) {
-      // Criar nova conversa COM a mensagem inicial
+      // Criar nova conversa SEM mensagem
       console.log('🆕 Criando conversa nova');
       conversation = await base44.asServiceRole.agents.createConversation({
         agent_name: 'chatbot_agendamentos',
@@ -82,27 +82,20 @@ Deno.serve(async (req) => {
           phone: phoneNumber,
           senderName,
           pacienteId
-        },
-        initial_message: {
-          role: 'user',
-          content: messageText
         }
       });
       console.log('✅ Conversa criada:', conversation.id);
-    } else {
-      // Adicionar mensagem à conversa existente
-      console.log('📝 Adicionando à conversa:', conversation.id);
-      
-      // Buscar conversa completa
-      const conversaCompleta = await base44.asServiceRole.agents.getConversation(conversation.id);
-      
-      // Adicionar mensagem
-      await base44.asServiceRole.agents.addMessage(conversaCompleta, {
-        role: 'user',
-        content: messageText
-      });
-      console.log('✅ Mensagem adicionada');
     }
+
+    // Buscar conversa completa e adicionar mensagem
+    console.log('📝 Adicionando mensagem à conversa:', conversation.id);
+    const conversaCompleta = await base44.asServiceRole.agents.getConversation(conversation.id);
+
+    await base44.asServiceRole.agents.addMessage(conversaCompleta, {
+      role: 'user',
+      content: messageText
+    });
+    console.log('✅ Mensagem adicionada');
 
     // Aguardar e buscar resposta do agente (tentativas múltiplas)
     let resposta = null;
