@@ -534,10 +534,14 @@ export default function ChatbotsAtivos() {
         </div>
 
         <Tabs defaultValue="chat" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="chat" className="flex items-center gap-2">
               <MessageCircle className="w-4 h-4" />
               Conversas
+            </TabsTrigger>
+            <TabsTrigger value="contatos" className="flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              Contatos
             </TabsTrigger>
             <TabsTrigger value="pipeline" className="flex items-center gap-2">
               <TrendingUp className="w-4 h-4" />
@@ -551,6 +555,10 @@ export default function ChatbotsAtivos() {
 
           <TabsContent value="chat" className="mt-4">
             <ChatTab />
+          </TabsContent>
+
+          <TabsContent value="contatos" className="mt-4">
+            <ContatosTab />
           </TabsContent>
 
           <TabsContent value="pipeline" className="mt-4">
