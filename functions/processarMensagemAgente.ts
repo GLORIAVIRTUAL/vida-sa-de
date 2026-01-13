@@ -42,16 +42,32 @@ Responda de forma natural e amigável, seguindo as instruções do prompt acima.
     
     console.log('✅ LLM respondeu');
     
-    // Salvar conversa no histórico (opcional - criar entidade Contato se não existir)
+    // Salvar conversa no histórico
     try {
       const contatos = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
+      const timestamp = new Date().toISOString();
+      
       if (contatos.length > 0) {
-        // Atualizar último contato
-        await base44.asServiceRole.entities.Contato.update(contatos[0].id, {
+        const contato = contatos[0];
+        const historicoAtual = contato.historico_mensagens || [];
+        
+        // Adicionar novas mensagens ao histórico
+        historicoAtual.push(
+          { role: 'user', content: messageText, timestamp },
+          { role: 'assistant', content: llmResponse, timestamp }
+        );
+        
+        // Manter apenas as últimas 50 mensagens
+        const historicoLimitado = historicoAtual.slice(-50);
+        
+        await base44.asServiceRole.entities.Contato.update(contato.id, {
           ultima_mensagem: messageText,
           ultima_resposta: llmResponse,
-          updated_date: new Date().toISOString()
+          historico_mensagens: historicoLimitado,
+          ultima_interacao: timestamp,
+          total_mensagens: (contato.total_mensagens || 0) + 2
         });
+        console.log('✅ Contato atualizado:', contato.id.substring(0, 8));
       } else {
         // Criar novo contato
         await base44.asServiceRole.entities.Contato.create({
@@ -59,11 +75,20 @@ Responda de forma natural e amigável, seguindo as instruções do prompt acima.
           telefone: phoneNumber,
           paciente_id: pacienteId,
           ultima_mensagem: messageText,
-          ultima_resposta: llmResponse
+          ultima_resposta: llmResponse,
+          historico_mensagens: [
+            { role: 'user', content: messageText, timestamp },
+            { role: 'assistant', content: llmResponse, timestamp }
+          ],
+          ultima_interacao: timestamp,
+          total_mensagens: 2,
+          origem: 'WhatsApp',
+          status: 'Novo'
         });
+        console.log('✅ Novo contato criado');
       }
     } catch (e) {
-      console.log('⚠️ Não foi possível salvar histórico:', e.message);
+      console.error('⚠️ Erro ao salvar histórico:', e.message);
     }
     
     return Response.json({ 
