@@ -404,7 +404,25 @@ Retorne um JSON com os dados ou null se faltarem dados.`;
     // Usar InvokeLLM diretamente para gerar resposta
     console.log('🤖 Chamando LLM...');
     
+    // Obter horário atual no fuso de Recife (America/Recife)
+    const agoraRecife = new Date().toLocaleString('pt-BR', { timeZone: 'America/Recife' });
+    const horaAtual = new Date().toLocaleTimeString('pt-BR', { timeZone: 'America/Recife', hour: '2-digit', minute: '2-digit' });
+    const horaNumero = parseInt(new Date().toLocaleTimeString('pt-BR', { timeZone: 'America/Recife', hour: '2-digit', hour12: false }));
+    
+    let saudacaoHorario = 'Bom-dia';
+    if (horaNumero >= 12 && horaNumero < 18) {
+      saudacaoHorario = 'Boa-tarde';
+    } else if (horaNumero >= 18 || horaNumero < 5) {
+      saudacaoHorario = 'Boa-noite';
+    }
+    
     const promptCompleto = `${config.prompt_sistema}
+
+---
+INFORMAÇÃO DE HORÁRIO ATUAL (Fuso: Recife/Brasil):
+- Horário atual: ${horaAtual}
+- Saudação apropriada: ${saudacaoHorario}
+- Use essa saudação APENAS se for a primeira mensagem da conversa.
 
 ---
 HISTÓRICO DA CONVERSA (últimas mensagens):

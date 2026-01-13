@@ -233,12 +233,19 @@ function ChatTab() {
                 ) : (
                   mensagens.map((msg, i) => (
                     <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-md p-3 rounded-lg shadow-sm ${
+                      <div className={`max-w-md rounded-lg shadow-sm ${
                         msg.role === 'user' ? 'bg-purple-600 text-white' : 'bg-white text-gray-900 border'
                       }`}>
-                        <ReactMarkdown className="text-sm prose prose-sm max-w-none [&>p]:m-0">
-                          {msg.content}
-                        </ReactMarkdown>
+                        <div className="p-3">
+                          <ReactMarkdown className="text-sm prose prose-sm max-w-none [&>p]:m-0">
+                            {msg.content}
+                          </ReactMarkdown>
+                        </div>
+                        {msg.timestamp && (
+                          <div className={`px-3 pb-2 text-[10px] ${msg.role === 'user' ? 'text-purple-200' : 'text-gray-400'}`}>
+                            {format(new Date(msg.timestamp), 'HH:mm', { locale: ptBR })}
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))

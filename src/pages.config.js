@@ -17,20 +17,20 @@ import Financeiro from './pages/Financeiro';
 import Home from './pages/Home';
 import ImportadorDados from './pages/ImportadorDados';
 import ImportarVendasCartao from './pages/ImportarVendasCartao';
+import ListaContatos from './pages/ListaContatos';
 import Medicos from './pages/Medicos';
 import OrcamentoExames from './pages/OrcamentoExames';
 import Pacientes from './pages/Pacientes';
 import PortalMedico from './pages/PortalMedico';
 import Procedimentos from './pages/Procedimentos';
 import ProcessarRequisicao from './pages/ProcessarRequisicao';
+import ResultadosExames from './pages/ResultadosExames';
 import Turmas from './pages/Turmas';
 import Usuarios from './pages/Usuarios';
 import VendaCartao from './pages/VendaCartao';
 import VerificacaoAssinatura from './pages/VerificacaoAssinatura';
 import WebhookLogs from './pages/WebhookLogs';
 import ordemServico from './pages/ordem-servico';
-import ListaContatos from './pages/ListaContatos';
-import ResultadosExames from './pages/ResultadosExames';
 import __Layout from './Layout.jsx';
 
 
@@ -54,20 +54,20 @@ export const PAGES = {
     "Home": Home,
     "ImportadorDados": ImportadorDados,
     "ImportarVendasCartao": ImportarVendasCartao,
+    "ListaContatos": ListaContatos,
     "Medicos": Medicos,
     "OrcamentoExames": OrcamentoExames,
     "Pacientes": Pacientes,
     "PortalMedico": PortalMedico,
     "Procedimentos": Procedimentos,
     "ProcessarRequisicao": ProcessarRequisicao,
+    "ResultadosExames": ResultadosExames,
     "Turmas": Turmas,
     "Usuarios": Usuarios,
     "VendaCartao": VendaCartao,
     "VerificacaoAssinatura": VerificacaoAssinatura,
     "WebhookLogs": WebhookLogs,
     "ordem-servico": ordemServico,
-    "ListaContatos": ListaContatos,
-    "ResultadosExames": ResultadosExames,
 }
 
 export const pagesConfig = {
