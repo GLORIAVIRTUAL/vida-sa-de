@@ -15,6 +15,7 @@ import { ptBR } from 'date-fns/locale';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
+import ContatosTab from '../components/gloria/ContatosTab';
 
 // ========== COMPONENTE: CHAT ==========
 function ChatTab() {
