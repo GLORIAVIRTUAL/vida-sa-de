@@ -1,168 +1,162 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 Deno.serve(async (req) => {
-  // Verificar token do webhook (segurança)
-  const verifyToken = Deno.env.get('META_VERIFY_TOKEN') || 'seu_token_de_verificacao';
-  
-  // GET - Verificação do webhook pela Meta
+  // Verificação do webhook (GET)
   if (req.method === 'GET') {
     const url = new URL(req.url);
+    const mode = url.searchParams.get('hub.mode');
     const token = url.searchParams.get('hub.verify_token');
     const challenge = url.searchParams.get('hub.challenge');
 
-    if (token === verifyToken) {
-      console.log('✅ Webhook verificado pela Meta');
-      return new Response(challenge);
-    } else {
-      console.error('❌ Token inválido');
-      return new Response('Invalid token', { status: 403 });
+    const verifyToken = Deno.env.get('META_VERIFY_TOKEN');
+
+    if (mode === 'subscribe' && token === verifyToken) {
+      console.log('✅ Webhook verificado');
+      return new Response(challenge, { status: 200 });
     }
+
+    return new Response('Forbidden', { status: 403 });
   }
 
-  // POST - Receber mensagens
-  if (req.method === 'POST') {
-    try {
-      const body = await req.json();
-      console.log('📨 Webhook da Meta recebido:', JSON.stringify(body, null, 2));
-
-      // Extrair dados da Meta - suporta múltiplos formatos
-      // Formato 1: body.value.messages (direto)
-      // Formato 2: body.entry[0].changes[0].value.messages (webhook padrão Meta)
-      const value = body?.value || body?.entry?.[0]?.changes?.[0]?.value;
-      
-      if (!value) {
-        console.log('⚠️ Nenhum value encontrado no webhook');
-        return Response.json({ success: true });
-      }
-
-      const messages = value.messages || [];
-      const contacts = value.contacts || [];
-      const phoneNumberId = value.metadata?.phone_number_id;
-      
-      if (messages.length === 0) {
-        return Response.json({ success: true });
-      }
-
-      const message = messages[0];
-      const contact = contacts[0];
-
-      // Apenas processar mensagens de texto
-      if (message.type !== 'text') {
-        console.log('⏭️ Tipo de mensagem não suportado:', message.type);
-        return Response.json({ success: true });
-      }
-
-      const phoneNumber = message.from;
-      const messageText = message.text?.body;
-      const senderName = contact?.profile?.name || 'Cliente WhatsApp';
-
-      if (!phoneNumber || !messageText) {
-        return Response.json({ success: true });
-      }
-
-      // Buscar ou criar paciente
-      let pacienteId;
-      const base44 = createClientFromRequest(req);
-      try {
-        let pacientes = await base44.asServiceRole.entities.Paciente.filter({
-          telefone: phoneNumber
-        });
-
-        if (Array.isArray(pacientes) && pacientes.length > 0) {
-          pacienteId = pacientes[0].id;
-          console.log(`✅ Paciente encontrado: ${pacienteId}`);
-        } else {
-          const novoPaciente = await base44.asServiceRole.entities.Paciente.create({
-            nome: senderName,
-            telefone: phoneNumber,
-            cpf: '',
-            convenio: 'Particular'
-          });
-          pacienteId = novoPaciente.id;
-          console.log(`🆕 Novo paciente criado: ${pacienteId}`);
-        }
-
-      } catch (error) {
-        console.error('❌ Erro ao processar paciente:', error);
-        return Response.json({ success: true });
-      }
-
-      // Processar mensagem de forma assíncrona via função dedicada
-      console.log('🤖 Processando mensagem...');
-      try {
-        // Processar e aguardar resposta
-        const resultado = await base44.asServiceRole.functions.invoke('processarMensagemChatbot', {
-          phoneNumber,
-          messageText,
-          pacienteId,
-          senderName
-        });
-
-        console.log('✅ Processamento concluído:', resultado.data);
-
-      } catch (error) {
-        console.error('❌ Erro ao processar:', error);
-        // Enviar mensagem de erro ao usuário
-        try {
-          await enviarMensagemMeta(
-            phoneNumber,
-            'Desculpe, tive um problema ao processar sua mensagem. Por favor, tente novamente.'
-          );
-        } catch (metaError) {
-          console.error('❌ Erro ao enviar erro Meta:', metaError.message);
-        }
-      }
-
-      return Response.json({ success: true });
-
-    } catch (error) {
-      console.error('❌ Erro no webhook:', error);
-      return Response.json({ error: error.message }, { status: 500 });
-    }
-  }
-
-  return Response.json({ error: 'Método não permitido' }, { status: 405 });
-});
-
-// Função auxiliar para enviar mensagem via API oficial da Meta
-async function enviarMensagemMeta(phoneNumber, mensagem) {
+  // Processamento de mensagens (POST)
+  const base44 = createClientFromRequest(req);
+  
   try {
-    const phoneNumberId = Deno.env.get('META_PHONE_NUMBER_ID');
-    const accessToken = Deno.env.get('META_ACCESS_TOKEN');
+    const body = await req.json();
+    console.log('📨 Webhook recebido:', JSON.stringify(body, null, 2));
 
-    if (!phoneNumberId || !accessToken) {
-      console.warn('⚠️ Credenciais Meta WhatsApp não configuradas');
-      return;
+    const entry = body.entry?.[0];
+    const changes = entry?.changes?.[0];
+    const value = changes?.value;
+    const messages = value?.messages;
+
+    // Ignorar se não for mensagem
+    if (!messages || messages.length === 0) {
+      console.log('ℹ️ Sem mensagens para processar');
+      return Response.json({ success: true });
     }
 
-    const metaUrl = `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`;
+    const message = messages[0];
+    const phoneNumber = message.from;
+    const messageText = message.text?.body;
+    const senderName = value?.contacts?.[0]?.profile?.name || 'Usuário';
 
-    const response = await fetch(metaUrl, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        messaging_product: 'whatsapp',
-        to: phoneNumber,
-        type: 'text',
-        text: {
-          body: mensagem
+    if (!phoneNumber || !messageText) {
+      console.log('⚠️ Mensagem inválida');
+      return Response.json({ success: true });
+    }
+
+    console.log('💬 Mensagem:', { phoneNumber, senderName, messageText });
+
+    // Buscar ou criar paciente
+    let pacienteId = null;
+    try {
+      const pacientes = await base44.asServiceRole.entities.Paciente.filter({ telefone: phoneNumber });
+      if (pacientes && pacientes.length > 0) {
+        pacienteId = pacientes[0].id;
+        console.log('✅ Paciente encontrado:', pacienteId);
+      } else {
+        const novoPaciente = await base44.asServiceRole.entities.Paciente.create({
+          nome: senderName,
+          telefone: phoneNumber,
+          cpf: 'NÃO INFORMADO',
+          observacoes: 'Criado via WhatsApp'
+        });
+        pacienteId = novoPaciente.id;
+        console.log('✅ Novo paciente criado:', pacienteId);
+      }
+    } catch (error) {
+      console.error('❌ Erro com paciente:', error);
+    }
+
+    // Buscar conversa existente
+    const conversas = await base44.asServiceRole.agents.listConversations({ agent_name: 'chatbot_agendamentos' });
+    let conversation = conversas.conversations?.find(c => c.metadata?.phone === phoneNumber);
+
+    if (!conversation) {
+      // Criar nova conversa COM a mensagem inicial
+      console.log('🆕 Criando conversa nova');
+      conversation = await base44.asServiceRole.agents.createConversation({
+        agent_name: 'chatbot_agendamentos',
+        metadata: {
+          phone: phoneNumber,
+          senderName,
+          pacienteId
+        },
+        initial_message: {
+          role: 'user',
+          content: messageText
         }
-      })
-    });
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      console.error('❌ Erro ao enviar mensagem Meta:', result);
-      return;
+      });
+      console.log('✅ Conversa criada:', conversation.id);
+    } else {
+      // Adicionar mensagem à conversa existente
+      console.log('📝 Adicionando à conversa:', conversation.id);
+      
+      // Buscar conversa completa
+      const conversaCompleta = await base44.asServiceRole.agents.getConversation(conversation.id);
+      
+      // Adicionar mensagem
+      await base44.asServiceRole.agents.addMessage(conversaCompleta, {
+        role: 'user',
+        content: messageText
+      });
+      console.log('✅ Mensagem adicionada');
     }
 
-    console.log('✅ Mensagem enviada via Meta:', result.messages?.[0]?.id);
+    // Aguardar resposta do agente
+    await new Promise(resolve => setTimeout(resolve, 5000));
+
+    // Buscar resposta
+    const conversaAtualizada = await base44.asServiceRole.agents.getConversation(conversation.id);
+    const ultimaMensagem = conversaAtualizada.messages?.[conversaAtualizada.messages.length - 1];
+
+    if (ultimaMensagem?.role === 'assistant') {
+      // Enviar resposta pelo WhatsApp
+      await enviarWhatsApp(phoneNumber, ultimaMensagem.content);
+      console.log('✅ Resposta enviada');
+    } else {
+      console.log('⚠️ Sem resposta do agente');
+    }
+
+    return Response.json({ success: true });
 
   } catch (error) {
-    console.error('❌ Erro ao enviar via Meta:', error);
+    console.error('❌ Erro:', error);
+    return Response.json({ error: error.message }, { status: 500 });
+  }
+});
+
+async function enviarWhatsApp(phoneNumber, mensagem) {
+  const phoneNumberId = Deno.env.get('META_PHONE_NUMBER_ID');
+  const accessToken = Deno.env.get('META_ACCESS_TOKEN');
+
+  if (!phoneNumberId || !accessToken) {
+    console.warn('⚠️ WhatsApp não configurado');
+    return;
+  }
+
+  const url = `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      messaging_product: 'whatsapp',
+      to: phoneNumber,
+      type: 'text',
+      text: { body: mensagem }
+    })
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    console.error('❌ Erro WhatsApp:', result);
+  } else {
+    console.log('✅ WhatsApp enviado:', result);
   }
 }
