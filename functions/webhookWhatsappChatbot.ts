@@ -104,19 +104,29 @@ Deno.serve(async (req) => {
       console.log('✅ Mensagem adicionada');
     }
 
-    // Aguardar resposta do agente
-    await new Promise(resolve => setTimeout(resolve, 5000));
+    // Aguardar e buscar resposta do agente (tentativas múltiplas)
+    let resposta = null;
+    for (let i = 0; i < 6; i++) {
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
-    // Buscar resposta
-    const conversaAtualizada = await base44.asServiceRole.agents.getConversation(conversation.id);
-    const ultimaMensagem = conversaAtualizada.messages?.[conversaAtualizada.messages.length - 1];
+      const conversaAtualizada = await base44.asServiceRole.agents.getConversation(conversation.id);
+      const ultimaMensagem = conversaAtualizada.messages?.[conversaAtualizada.messages.length - 1];
 
-    if (ultimaMensagem?.role === 'assistant') {
-      // Enviar resposta pelo WhatsApp
-      await enviarWhatsApp(phoneNumber, ultimaMensagem.content);
-      console.log('✅ Resposta enviada');
+      console.log(`🔍 Tentativa ${i+1}: ${conversaAtualizada.messages?.length || 0} mensagens`);
+
+      if (ultimaMensagem?.role === 'assistant' && ultimaMensagem.content) {
+        resposta = ultimaMensagem.content;
+        console.log('✅ Resposta do agente recebida');
+        break;
+      }
+    }
+
+    if (resposta) {
+      await enviarWhatsApp(phoneNumber, resposta);
+      console.log('✅ Resposta enviada ao WhatsApp');
     } else {
-      console.log('⚠️ Sem resposta do agente');
+      console.log('⚠️ Timeout: agente não respondeu em 12s');
+      await enviarWhatsApp(phoneNumber, 'Desculpe, estou processando sua mensagem. Por favor, aguarde um momento.');
     }
 
     return Response.json({ success: true });
