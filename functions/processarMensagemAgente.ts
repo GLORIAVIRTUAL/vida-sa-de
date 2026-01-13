@@ -1,12 +1,8 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
-const APP_ID = Deno.env.get('BASE44_APP_ID');
-const BASE_URL = 'https://app.base44.com/api/apps';
-
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const authHeader = req.headers.get('authorization') || '';
     
     const { phoneNumber, messageText, senderName, pacienteId } = await req.json();
     
@@ -17,45 +13,52 @@ Deno.serve(async (req) => {
       agent_name: 'chatbot_agendamentos' 
     });
     
-    let conversationId = conversas.conversations?.find(c => c.metadata?.phone === phoneNumber)?.id;
+    let conversation = conversas.conversations?.find(c => c.metadata?.phone === phoneNumber);
+    let conversationId;
     
-    if (!conversationId) {
-      // Criar nova conversa via SDK
-      console.log('🆕 Nova conversa');
+    if (!conversation) {
+      // Criar nova conversa COM mensagem inicial
+      console.log('🆕 Nova conversa com mensagem');
       const newConv = await base44.asServiceRole.agents.createConversation({
         agent_name: 'chatbot_agendamentos',
-        metadata: { phone: phoneNumber, senderName, pacienteId }
+        metadata: { phone: phoneNumber, senderName, pacienteId },
+        initial_message: { role: 'user', content: messageText }
       });
       conversationId = newConv.id;
       console.log('✅ Criada:', conversationId.substring(0, 8));
     } else {
+      conversationId = conversation.id;
       console.log('📝 Conversa existente:', conversationId.substring(0, 8));
-    }
-    
-    // Adicionar mensagem via API REST diretamente
-    console.log('➕ Adicionando mensagem via REST...');
-    const addMsgResponse = await fetch(
-      `${BASE_URL}/${APP_ID}/agents/chatbot_agendamentos/conversations/${conversationId}/messages`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': authHeader
-        },
-        body: JSON.stringify({
+      
+      // Buscar conversa completa
+      const fullConv = await base44.asServiceRole.agents.getConversation(conversationId);
+      
+      // Forçar array de mensagens para evitar erro 'map'
+      const conversaParaAddMsg = {
+        ...fullConv,
+        messages: fullConv.messages || []
+      };
+      
+      console.log('➕ Adicionando mensagem...');
+      try {
+        await base44.asServiceRole.agents.addMessage(conversaParaAddMsg, {
           role: 'user',
           content: messageText
-        })
+        });
+        console.log('✅ Mensagem adicionada');
+      } catch (addErr) {
+        console.error('⚠️ Erro addMessage:', addErr.message);
+        // Tentar criar nova conversa se falhar
+        console.log('🔄 Criando nova conversa...');
+        const newConv = await base44.asServiceRole.agents.createConversation({
+          agent_name: 'chatbot_agendamentos',
+          metadata: { phone: phoneNumber, senderName, pacienteId },
+          initial_message: { role: 'user', content: messageText }
+        });
+        conversationId = newConv.id;
+        console.log('✅ Nova conversa:', conversationId.substring(0, 8));
       }
-    );
-    
-    if (!addMsgResponse.ok) {
-      const errorText = await addMsgResponse.text();
-      console.error('❌ Erro ao adicionar mensagem:', addMsgResponse.status, errorText);
-      throw new Error(`Falha ao adicionar mensagem: ${addMsgResponse.status}`);
     }
-    
-    console.log('✅ Mensagem enviada via REST');
     
     // Aguardar resposta do agente com polling
     let resposta = null;
