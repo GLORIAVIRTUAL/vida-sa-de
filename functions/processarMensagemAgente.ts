@@ -218,7 +218,7 @@ Deno.serve(async (req) => {
         const hoje = new Date();
         const anoAtual = hoje.getFullYear();
         
-        const promptExtracao = `Analise o histórico da conversa e extraia os dados do agendamento se TODOS estiverem presentes.
+        const promptExtracao = `Analise o histórico da conversa e extraia os dados do agendamento.
 
 HISTÓRICO:
 ${historicoConversa}
@@ -226,16 +226,21 @@ ${historicoConversa}
 ÚLTIMA MENSAGEM DO CLIENTE:
 ${messageText}
 
-DATA DE HOJE: ${hoje.toISOString().split('T')[0]} (use ${anoAtual} como ano para datas de agendamento)
+DATA DE HOJE: ${hoje.toISOString().split('T')[0]} (use ${anoAtual} como ano para datas de agendamento que não especificam ano)
 
-Extraia APENAS se TODOS os dados estiverem claros:
-- nome_paciente: nome completo do paciente (pode ser o nome usado na conversa)
-- data_nascimento: data de nascimento (formato DD/MM/YYYY)
-- medico_nome: nome do médico escolhido
-- data_agendamento: data da consulta (formato YYYY-MM-DD, use ano ${anoAtual})
-- horario: horário escolhido (formato HH:MM)
+EXTRAIA OS SEGUINTES DADOS (procure em todo o histórico):
+- nome_paciente: nome completo do paciente (pode estar na última mensagem ou no histórico)
+- data_nascimento: data de nascimento no formato DD/MM/YYYY
+- medico_nome: nome ou parte do nome do médico mencionado (ex: "João", "Dr. João", "João Inocencio", etc)
+- data_agendamento: data da consulta no formato YYYY-MM-DD (se o cliente disse "dia 14/01", converta para ${anoAtual}-01-14)
+- horario: horário escolhido no formato HH:MM (ex: 14:00)
 
-Retorne um JSON com os dados ou null se faltarem dados.`;
+IMPORTANTE:
+- Se a data de agendamento foi mencionada como "14/01" ou "dia 14", use ano ${anoAtual}
+- Se o horário foi mencionado como "14h" ou "14:00", normalize para "14:00"
+- Retorne dados_completos: true se conseguir extrair TODOS os 5 campos
+
+Retorne um JSON com os dados encontrados.`;
 
         const extracao = await base44.asServiceRole.integrations.Core.InvokeLLM({
           prompt: promptExtracao,
