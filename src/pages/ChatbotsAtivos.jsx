@@ -176,7 +176,7 @@ function ChatTab() {
                     key={contato.id}
                     onClick={() => setContatoSelecionado(contato)}
                     className={`w-full text-left p-3 hover:bg-gray-50 transition ${
-                      contatoSelecionado?.id === contato.id ? 'bg-purple-50 border-l-2 border-purple-600' : ''
+                      contatoSelecionado?.id === contato.id ? 'bg-blue-50 border-l-2 border-blue-600' : ''
                     } ${contato.conversa_finalizada ? 'opacity-60' : ''}`}
                   >
                     <div className="flex items-center gap-2">
@@ -198,7 +198,7 @@ function ChatTab() {
         <Card className="h-[500px] flex flex-col">
           {contatoSelecionado ? (
             <>
-              <CardHeader className="border-b bg-gradient-to-r from-purple-50 to-pink-50 py-3">
+              <CardHeader className="border-b bg-gradient-to-r from-blue-50 to-sky-50 py-3">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-semibold">{contatoSelecionado.nome || 'Cliente'}</p>
@@ -236,7 +236,7 @@ function ChatTab() {
                   mensagens.map((msg, i) => (
                     <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                       <div className={`max-w-md rounded-lg shadow-sm ${
-                        msg.role === 'user' ? 'bg-purple-600 text-white' : 'bg-white text-gray-900 border'
+                        msg.role === 'user' ? 'bg-blue-600 text-white' : 'bg-white text-gray-900 border'
                       }`}>
                         <div className="p-3">
                           <ReactMarkdown className="text-sm prose prose-sm max-w-none [&>p]:m-0">
@@ -244,7 +244,7 @@ function ChatTab() {
                           </ReactMarkdown>
                         </div>
                         {msg.timestamp && (
-                          <div className={`px-3 pb-2 text-[10px] ${msg.role === 'user' ? 'text-purple-200' : 'text-gray-400'}`}>
+                          <div className={`px-3 pb-2 text-[10px] ${msg.role === 'user' ? 'text-blue-200' : 'text-gray-400'}`}>
                             {format(new Date(msg.timestamp), 'HH:mm', { locale: ptBR })}
                           </div>
                         )}
@@ -271,7 +271,7 @@ function ChatTab() {
                     onKeyPress={(e) => e.key === 'Enter' && !enviando && enviarMensagem()}
                     disabled={enviando}
                   />
-                  <Button onClick={() => enviarMensagem()} disabled={enviando || !inputMsg.trim()} className="bg-purple-600 hover:bg-purple-700">
+                  <Button onClick={() => enviarMensagem()} disabled={enviando || !inputMsg.trim()} className="bg-blue-600 hover:bg-blue-700">
                     {enviando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                   </Button>
                 </div>
@@ -554,10 +554,6 @@ export default function ChatbotsAtivos() {
               alt="Glória" 
               className="h-12"
             />
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Glória Virtual</h1>
-              <p className="text-sm text-gray-600">Assistente de IA para agendamentos</p>
-            </div>
           </div>
           <Link to={createPageUrl('ConfiguracaoChatbot')}>
             <Button variant="outline" size="sm">

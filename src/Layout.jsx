@@ -108,8 +108,8 @@ function MainLayout({ children, currentPageName, currentUser, onUserUpdate }) {
     { name: "Turmas e Grupos", page: "Turmas", icon: Users, roles: ["admin", "user"] },
     { name: "Pacientes", page: "Pacientes", icon: Users, roles: ["admin", "user"] },
     { name: "Ordens de Serviço", page: "ordem-servico", icon: ClipboardList, roles: ["admin", "user"] },
-    { name: "Painel TV", page: "Atendimento", icon: Computer, roles: ["admin", "user"] },
-    { name: "Glória", page: "ChatbotsAtivos", icon: MessageSquare, roles: ["admin", "user"], customLogo: true },
+        { name: "Glória", page: "ChatbotsAtivos", icon: MessageSquare, roles: ["admin", "user"], customLogo: true },
+        { name: "Painel TV", page: "Atendimento", icon: Computer, roles: ["admin", "user"] },
     { name: "Portal do Médico", page: "PortalMedico", icon: Stethoscope, roles: ["medico"] },
     { name: "Médicos", page: "Medicos", icon: Stethoscope, roles: ["admin", "user"] },
     { name: "Procedimentos", page: "Procedimentos", icon: FileText, roles: ["admin", "user"] },
@@ -160,8 +160,8 @@ function MainLayout({ children, currentPageName, currentUser, onUserUpdate }) {
             alt="GLÓRIA CLINICA" 
             className="h-10 object-contain" 
           />
-          <span className="font-semibold text-base text-gray-700 leading-tight">
-            GLÓRIA<br/>CLINICA
+          <span className="font-semibold text-base text-gray-700">
+            GLÓRIA CLINICA
           </span>
         </div>
         
