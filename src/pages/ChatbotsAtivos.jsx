@@ -15,9 +15,10 @@ import ReactMarkdown from 'react-markdown';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import ContatosTab from '../components/gloria/ContatosTab';
+import { UserPlus } from 'lucide-react';
 
 // Função para renderizar conteúdo de mensagem (texto, imagem, documento, áudio)
 function renderMensagemContent(content, isUser) {
@@ -94,6 +95,7 @@ function ChatTab() {
   const [enviando, setEnviando] = useState(false);
   const [modoHumano, setModoHumano] = useState(false);
   const messagesEndRef = useRef(null);
+  const navigate = useNavigate();
   
   // Scroll para última mensagem
   const scrollToBottom = () => {
@@ -289,6 +291,20 @@ function ChatTab() {
                     >
                       <User className="w-3 h-3 mr-1" />
                       {modoHumano ? "Humano Ativo" : "Assumir"}
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        const params = new URLSearchParams();
+                        if (contatoSelecionado.nome) params.set('nome', contatoSelecionado.nome);
+                        if (contatoSelecionado.telefone) params.set('telefone', contatoSelecionado.telefone);
+                        navigate(createPageUrl('Pacientes') + '?' + params.toString());
+                      }}
+                      className="text-green-600 hover:bg-green-50"
+                    >
+                      <UserPlus className="w-3 h-3 mr-1" />
+                      Cadastrar
                     </Button>
                     <Button variant="outline" size="sm" onClick={finalizarConversa} className="text-red-600 hover:bg-red-50">
                       <XCircle className="w-3 h-3 mr-1" />
