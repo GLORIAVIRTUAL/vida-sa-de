@@ -10,6 +10,8 @@ export default function ChatbotsAtivos() {
   const [conversas, setConversas] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [conversaSelecionada, setConversaSelecionada] = useState(null);
+  const [mostrarVazias, setMostrarVazias] = useState(false);
+  const [limpando, setLimpando] = useState(false);
 
   useEffect(() => {
     const carregarConversas = async () => {
@@ -64,19 +66,42 @@ export default function ChatbotsAtivos() {
           {/* Lista de Conversas */}
           <div>
             <Card className="h-[600px] flex flex-col">
-              <CardHeader className="border-b">
-                <CardTitle className="text-lg">Conversas Ativas</CardTitle>
-                <CardDescription>{conversas.length} conversa(s)</CardDescription>
+              <CardHeader className="border-b space-y-3">
+                <div>
+                  <CardTitle className="text-lg">Conversas Ativas</CardTitle>
+                  <CardDescription>
+                    {conversasFiltradas.length} conversa(s) • {conversas.filter(c => (c.messages?.length || 0) === 0).length} vazias
+                  </CardDescription>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setMostrarVazias(!mostrarVazias)}
+                    className="flex-1"
+                  >
+                    {mostrarVazias ? '✓ Mostrar vazias' : 'Ocultar vazias'}
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={limparConversasVazias}
+                    disabled={limpando || conversas.filter(c => (c.messages?.length || 0) === 0).length === 0}
+                    className="flex-1"
+                  >
+                    {limpando ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Limpar Vazias'}
+                  </Button>
+                </div>
               </CardHeader>
 
               <CardContent className="flex-1 overflow-y-auto p-0">
-                {conversas.length === 0 ? (
+                {conversasFiltradas.length === 0 ? (
                   <div className="p-4 text-center text-gray-500">
                     <p>Nenhuma conversa ainda</p>
                   </div>
                 ) : (
                   <div className="divide-y">
-                    {conversas.map((conversa) => (
+                    {conversasFiltradas.map((conversa) => (
                       <button
                         key={conversa.id}
                         onClick={() => setConversaSelecionada(conversa.id)}
