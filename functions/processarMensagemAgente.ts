@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
     }
 
     // Verificar se cliente quer resultado de exame
-    const querResultado = /resultado|exame|pegar|buscar|retirar|laudo|meu exame|meus exames/i.test(messageText);
+    const querResultado = /resultado|exame pronto|pegar|buscar resultado|retirar|laudo|meu exame|meus exames/i.test(messageText);
     let infoResultadoExame = '';
     let arquivoParaEnviar = null;
     
@@ -115,17 +115,17 @@ Deno.serve(async (req) => {
               data: resultadoMaisRecente.data_exame
             };
             
-            infoResultadoExame = `\n\n✅ RESULTADO ENCONTRADO!
+            infoResultadoExame = `\n\n✅ RESULTADO DE EXAME ENCONTRADO!
 Paciente: ${resultadoMaisRecente.paciente_nome}
 Exame: ${resultadoMaisRecente.descricao || 'Resultado de exame'}
 Data: ${resultadoMaisRecente.data_exame || 'N/A'}
 Arquivo: ${resultadoMaisRecente.nome_arquivo}
 
-📎 O arquivo será enviado automaticamente junto com esta mensagem.
+📎 O ARQUIVO SERÁ ENVIADO AUTOMATICAMENTE JUNTO COM ESTA MENSAGEM.
 
-RESPONDA confirmando que encontrou o resultado e que está enviando o arquivo agora.`;
+IMPORTANTE: Confirme que encontrou o resultado e informe que está enviando o arquivo PDF agora mesmo.`;
             
-            console.log('✅ Resultado encontrado! Arquivo:', arquivoParaEnviar.url);
+            console.log('✅ Resultado encontrado! Arquivo para enviar:', JSON.stringify(arquivoParaEnviar));
           } else {
             infoResultadoExame = `\n\n❌ RESULTADO NÃO ENCONTRADO
 CPF informado: ${cpfCliente}
