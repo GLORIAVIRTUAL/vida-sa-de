@@ -711,7 +711,8 @@ INSTRUÇÕES ADICIONAIS:
     return Response.json({ 
       success: true, 
       resposta: llmResponse,
-      conversationId: null
+      conversationId: null,
+      arquivoParaEnviar: arquivoParaEnviar
     });
     
   } catch (error) {
