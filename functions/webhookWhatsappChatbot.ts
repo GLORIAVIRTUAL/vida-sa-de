@@ -83,13 +83,30 @@ Deno.serve(async (req) => {
       console.log('✅ Criada:', conversation.id.substring(0, 8));
     }
 
-    // Adicionar mensagem via SDK
+    // Adicionar mensagem - IMPORTANTE: addMessage precisa da conversa COMPLETA
     console.log('📝 Adicionando mensagem...');
-    await base44.asServiceRole.agents.addMessage(conversation, {
-      role: 'user',
-      content: messageText
-    });
-    console.log('✅ Mensagem adicionada');
+    
+    // Buscar conversa completa com mensagens
+    const conversaCompleta = await base44.asServiceRole.agents.getConversation(conversation.id);
+    
+    try {
+      await base44.agents.addMessage(conversaCompleta, {
+        role: 'user',
+        content: messageText
+      });
+      console.log('✅ Mensagem adicionada via SDK');
+    } catch (sdkError) {
+      console.warn('⚠️ SDK falhou:', sdkError.message);
+      console.log('🔄 Tentando criar conversa nova com initial_message...');
+      
+      // Se falhar, recriar conversa com mensagem inicial
+      conversation = await base44.asServiceRole.agents.createConversation({
+        agent_name: 'chatbot_agendamentos',
+        metadata: { phone: phoneNumber, senderName, pacienteId, retry: true },
+        messages: [{ role: 'user', content: messageText }]
+      });
+      console.log('✅ Conversa recriada:', conversation.id.substring(0, 8));
+    }
 
     // Aguardar resposta do agente com polling progressivo
     let resposta = null;
