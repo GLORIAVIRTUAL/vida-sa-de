@@ -72,14 +72,31 @@ Deno.serve(async (req) => {
         content: messageText
       });
 
-      console.log('✅ Mensagem adicionada. Aguardando processamento...');
+      console.log('✅ Mensagem adicionada. Aguardando processamento do agente...');
       
-      // Aguardar para o agente processar
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Aguardar tempo maior para o agente processar completamente
+      await new Promise(resolve => setTimeout(resolve, 5000));
 
-      // Buscar a conversa atualizada
-      const conversaAtualizada = await base44.asServiceRole.agents.getConversation(conversation.id);
-      console.log('📊 Conversa atualizada. Total de mensagens:', conversaAtualizada?.messages?.length || 0);
+      // Buscar a conversa atualizada múltiplas vezes
+      let conversaAtualizada = null;
+      let tentativas = 0;
+      const maxTentativas = 3;
+      
+      while (tentativas < maxTentativas) {
+        conversaAtualizada = await base44.asServiceRole.agents.getConversation(conversation.id);
+        console.log(`📊 Tentativa ${tentativas + 1}: Total de mensagens:`, conversaAtualizada?.messages?.length || 0);
+        
+        // Se tiver resposta do assistente, parar de tentar
+        const respostaAgente = conversaAtualizada?.messages?.find(msg => msg.role === 'assistant');
+        if (respostaAgente?.content) {
+          break;
+        }
+        
+        tentativas++;
+        if (tentativas < maxTentativas) {
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      }
       
       if (conversaAtualizada?.messages) {
         console.log('📋 Mensagens na conversa:', conversaAtualizada.messages.map((m, i) => `${i}: ${m.role} - ${(m.content || '').substring(0, 30)}`).join(' | '));
@@ -95,10 +112,11 @@ Deno.serve(async (req) => {
           return Response.json({ 
             success: true, 
             conversationId: conversation.id,
-            message: 'Resposta entregue'
+            message: 'Resposta entregue',
+            messagesCount: conversaAtualizada.messages.length
           });
         } else {
-          console.log('⚠️ Nenhuma resposta do agente encontrada ainda');
+          console.log('⚠️ Nenhuma resposta do agente após múltiplas tentativas');
         }
       } else {
         console.log('⚠️ Nenhuma mensagem na conversa após atualização');
@@ -106,7 +124,7 @@ Deno.serve(async (req) => {
 
       console.log('📤 Enviando resposta padrão enquanto aguarda o agente...');
     } catch (agentError) {
-      console.error('❌ Erro:', agentError.message);
+      console.error('❌ Erro ao processar mensagem:', agentError.message, agentError.stack);
     }
 
     // Se algo deu errado, enviar resposta padrão
