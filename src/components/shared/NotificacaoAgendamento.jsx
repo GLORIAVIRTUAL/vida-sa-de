@@ -129,7 +129,12 @@ export default function NotificacaoAgendamento() {
                 className: "border-amber-500 bg-amber-50 shadow-2xl border-2",
               });
             } else {
-              // Toast padrão (novo agendamento)
+              // Toast para novo agendamento - verificar se foi pela Glória ou usuário
+              const agendadoPor = novaNotificacao.data?.agendado_por;
+              const agendadoPorTipo = novaNotificacao.data?.agendado_por_tipo;
+              
+              const isGloria = agendadoPorTipo === 'chatbot' || agendadoPor === 'Glória';
+              
               toast({
                 title: (
                   <div className="flex items-center gap-2">
@@ -138,13 +143,22 @@ export default function NotificacaoAgendamento() {
                   </div>
                 ),
                 description: (
-                  <div className="flex items-center gap-2 mt-2">
-                    <Calendar className="w-4 h-4" />
-                    <span className="text-sm">{novaNotificacao.message}</span>
+                  <div className="flex flex-col gap-1 mt-2">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4" />
+                      <span className="text-sm">{novaNotificacao.message}</span>
+                    </div>
+                    <div className={`text-xs font-semibold mt-1 px-2 py-1 rounded-full inline-flex items-center gap-1 w-fit ${isGloria ? 'bg-purple-100 text-purple-700' : 'bg-green-100 text-green-700'}`}>
+                      {isGloria ? (
+                        <>🤖 Agendado pela Glória</>
+                      ) : (
+                        <>👤 Agendado por {agendadoPor || 'usuário'}</>
+                      )}
+                    </div>
                   </div>
                 ),
                 duration: 10000,
-                className: "border-blue-500 bg-blue-50 shadow-2xl border-2",
+                className: isGloria ? "border-purple-500 bg-purple-50 shadow-2xl border-2" : "border-blue-500 bg-blue-50 shadow-2xl border-2",
               });
             }
 
