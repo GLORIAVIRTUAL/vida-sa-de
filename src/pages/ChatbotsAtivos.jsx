@@ -75,11 +75,11 @@ function ChatTab() {
     }
   }, [contatoSelecionado?.id]);
 
-  const enviarMensagem = async () => {
-    if (!inputMsg.trim() || !contatoSelecionado) return;
+  const enviarMensagem = async (textoCustom, skipRefresh = false) => {
+    const texto = textoCustom || inputMsg;
+    if (!texto.trim() || !contatoSelecionado) return;
     setEnviando(true);
-    const texto = inputMsg;
-    setInputMsg('');
+    if (!textoCustom) setInputMsg('');
     try {
       if (modoHumano) {
         // Modo humano: enviar direto pelo WhatsApp sem passar pela IA
@@ -96,10 +96,10 @@ function ChatTab() {
           pacienteId: contatoSelecionado.paciente_id
         });
       }
-      await buscarContatos();
+      if (!skipRefresh) await buscarContatos();
     } catch (error) {
       alert('Erro: ' + error.message);
-      setInputMsg(texto);
+      if (!textoCustom) setInputMsg(texto);
     } finally {
       setEnviando(false);
     }
