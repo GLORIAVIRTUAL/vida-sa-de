@@ -4,9 +4,9 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     
-    const { phoneNumber, messageText, senderName, pacienteId } = await req.json();
+    const { phoneNumber, messageText, senderName, pacienteId, mediaType, mediaUrl } = await req.json();
     
-    console.log('📨 Processando:', { phoneNumber, messageText });
+    console.log('📨 Processando:', { phoneNumber, messageText, mediaType, mediaUrl });
     
     // Verificar se o contato está em atendimento humano
     const contatosCheck = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
