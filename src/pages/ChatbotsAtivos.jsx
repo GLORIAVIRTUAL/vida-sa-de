@@ -185,8 +185,28 @@ function ChatTab() {
                     <p className="font-semibold">{contatoSelecionado.nome || 'Cliente'}</p>
                     <p className="text-xs text-gray-500">{contatoSelecionado.telefone}</p>
                   </div>
-                  <Badge variant="outline">{mensagens.length} msgs</Badge>
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      variant={modoHumano ? "default" : "outline"} 
+                      size="sm"
+                      onClick={toggleAtendimentoHumano}
+                      className={modoHumano ? "bg-orange-500 hover:bg-orange-600" : ""}
+                    >
+                      <User className="w-3 h-3 mr-1" />
+                      {modoHumano ? "Humano Ativo" : "Assumir"}
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={finalizarConversa} className="text-red-600 hover:bg-red-50">
+                      <XCircle className="w-3 h-3 mr-1" />
+                      Finalizar
+                    </Button>
+                  </div>
                 </div>
+                {modoHumano && (
+                  <div className="mt-2 p-2 bg-orange-100 rounded-lg text-xs text-orange-800 flex items-center gap-2">
+                    <User className="w-4 h-4" />
+                    <span><strong>Atendimento humano ativo</strong> - A IA está pausada. Clique em "Assumir" novamente para reativar a Glória.</span>
+                  </div>
+                )}
               </CardHeader>
               <CardContent className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
                 {mensagens.length === 0 ? (
