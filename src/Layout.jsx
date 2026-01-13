@@ -44,10 +44,10 @@ function LoginPage() {
           <div className="text-center mb-8">
             <img 
               src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/696256b5ef59ea2bed1bd7ea/8ca927e40_Untitleddesign27.png" 
-              alt="GLÓRIA CLINICA" 
+              alt="GLÓRIA CLÍNICA" 
               className="h-16 object-contain mx-auto mb-4" 
             />
-            <h1 className="text-2xl font-bold text-gray-800 tracking-tight">GLÓRIA CLINICA</h1>
+            <h1 className="text-2xl font-bold text-gray-800 tracking-tight">GLÓRIA CLÍNICA</h1>
             <p className="text-gray-500">Sistema de Gestão Clínica</p>
           </div>
           
@@ -157,11 +157,11 @@ function MainLayout({ children, currentPageName, currentUser, onUserUpdate }) {
         <div className="h-16 flex items-center gap-2 border-b px-3">
           <img 
             src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/696256b5ef59ea2bed1bd7ea/8ca927e40_Untitleddesign27.png" 
-            alt="GLÓRIA CLINICA" 
+            alt="GLÓRIA CLÍNICA" 
             className="h-10 object-contain" 
           />
           <span className="font-semibold text-base text-gray-700">
-            GLÓRIA CLINICA
+            GLÓRIA CLÍNICA
           </span>
         </div>
         
