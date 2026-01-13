@@ -29,6 +29,8 @@ Deno.serve(async (req) => {
     if (!conversation) {
       console.log('🆕 Criando nova conversa');
       const recifeTz = new Date().toLocaleString('pt-BR', { timeZone: 'America/Recife' });
+      
+      // CRIAR CONVERSA COM MENSAGEM INICIAL
       conversation = await base44.asServiceRole.agents.createConversation({
         agent_name: 'chatbot_agendamentos',
         metadata: {
@@ -41,27 +43,35 @@ Deno.serve(async (req) => {
           pipeline_stage: 'novo',
           created_at: recifeTz,
           last_message_at: recifeTz
+        },
+        initial_message: {
+          role: 'user',
+          content: messageText
         }
       });
-      console.log('✅ Conversa criada:', conversation.id);
+      console.log('✅ Conversa criada com mensagem inicial:', conversation.id);
+      
+      // Já retornar aqui, pois a mensagem inicial aciona o agente automaticamente
+      await new Promise(resolve => setTimeout(resolve, 8000));
+      
+      const conversaAtualizada = await base44.asServiceRole.agents.getConversation(conversation.id);
+      console.log('📊 Total mensagens após criação:', conversaAtualizada?.messages?.length || 0);
+      
+      const respostaAgente = conversaAtualizada?.messages?.find(msg => msg.role === 'assistant');
+      
+      if (respostaAgente?.content) {
+        console.log('📨 Resposta encontrada, enviando...');
+        await enviarWhatsApp(phoneNumber, respostaAgente.content);
+        return Response.json({ 
+          success: true, 
+          conversationId: conversation.id,
+          message: 'Resposta entregue',
+          messagesCount: conversaAtualizada.messages.length
+        });
+      }
+      
     } else {
       console.log('✅ Usando conversa existente:', conversation.id);
-
-      // Criar contato para rastrear
-      try {
-        const recifeTz = new Date().toLocaleString('pt-BR', { timeZone: 'America/Recife' });
-        await base44.asServiceRole.entities.Contato.create({
-          nome: senderName,
-          telefone: phoneNumber,
-          origem: 'WhatsApp',
-          status: 'Lead',
-          ultima_interacao: recifeTz,
-          observacoes: `ID Conversa: ${conversation.id} | Criado em: ${recifeTz}`
-        });
-        console.log('✅ Contato criado');
-      } catch (contatoError) {
-        console.log('⚠️ Contato já existe ou erro:', contatoError.message);
-      }
     }
 
     // Adicionar a mensagem do usuário
