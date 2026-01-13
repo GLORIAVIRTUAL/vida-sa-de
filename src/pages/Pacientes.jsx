@@ -32,6 +32,21 @@ export default function Pacientes() {
   const [selectedPaciente, setSelectedPaciente] = useState(null);
   const [erro, setErro] = useState(null);
   const [totalCarregados, setTotalCarregados] = useState(0);
+  const [dadosIniciais, setDadosIniciais] = useState(null);
+
+  // Verificar parâmetros da URL para pré-preencher formulário
+  React.useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const nome = urlParams.get('nome');
+    const telefone = urlParams.get('telefone');
+    
+    if (nome || telefone) {
+      setDadosIniciais({ nome: nome || '', telefone: telefone || '' });
+      setIsFormOpen(true);
+      // Limpar parâmetros da URL
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
 
   // Carregar pacientes recentes ao abrir a página
   React.useEffect(() => {
@@ -670,10 +685,12 @@ export default function Pacientes() {
           {isFormOpen && (
             <FormularioPaciente
               paciente={selectedPaciente}
+              dadosIniciais={dadosIniciais}
               onSalvar={handleSave}
               onCancelar={() => {
                 setIsFormOpen(false);
                 setSelectedPaciente(null);
+                setDadosIniciais(null);
               }}
             />
           )}
