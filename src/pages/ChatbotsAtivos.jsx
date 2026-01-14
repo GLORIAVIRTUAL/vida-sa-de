@@ -419,6 +419,7 @@ const estagios = [
   { id: 'novo', nome: 'Novo', cor: 'bg-blue-500', icon: MessageCircle },
   { id: 'atendimento', nome: 'Em Atendimento', cor: 'bg-yellow-500', icon: Clock },
   { id: 'agendado', nome: 'Agendado', cor: 'bg-green-500', icon: Calendar },
+  { id: 'cancelou', nome: 'Cancelou Consulta', cor: 'bg-orange-500', icon: XCircle },
   { id: 'concluido', nome: 'Concluído', cor: 'bg-gray-500', icon: CheckCircle },
   { id: 'perdido', nome: 'Perdido', cor: 'bg-red-500', icon: XCircle }
 ];
@@ -435,11 +436,12 @@ function PipelineTab() {
       const comHistorico = lista.filter(c => c.historico_mensagens?.length > 0 || c.ultima_mensagem);
       setContatos(comHistorico);
 
-      const pipelineOrganizado = { novo: [], atendimento: [], agendado: [], concluido: [], perdido: [] };
+      const pipelineOrganizado = { novo: [], atendimento: [], agendado: [], cancelou: [], concluido: [], perdido: [] };
       comHistorico.forEach(contato => {
         const estagio = contato.status === 'Novo' ? 'novo' :
                        contato.status === 'Lead' ? 'atendimento' :
                        contato.status === 'Qualificado' ? 'agendado' :
+                       contato.status === 'Cancelou' ? 'cancelou' :
                        contato.status === 'Cliente' ? 'concluido' :
                        contato.status === 'Inativo' ? 'perdido' : 'novo';
         pipelineOrganizado[estagio].push(contato);
@@ -464,7 +466,7 @@ function PipelineTab() {
     novoPipeline[destination.droppableId].splice(destination.index, 0, contatoMovido);
     setPipeline(novoPipeline);
 
-    const statusMap = { novo: 'Novo', atendimento: 'Lead', agendado: 'Qualificado', concluido: 'Cliente', perdido: 'Inativo' };
+    const statusMap = { novo: 'Novo', atendimento: 'Lead', agendado: 'Qualificado', cancelou: 'Cancelou', concluido: 'Cliente', perdido: 'Inativo' };
     try {
       await base44.entities.Contato.update(draggableId, { status: statusMap[destination.droppableId] });
     } catch (error) {
@@ -479,7 +481,7 @@ function PipelineTab() {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-5 gap-2">
+      <div className="grid grid-cols-6 gap-2">
         {estagios.map((estagio) => {
           const Icon = estagio.icon;
           return (
@@ -499,7 +501,7 @@ function PipelineTab() {
       </div>
 
       <DragDropContext onDragEnd={onDragEnd}>
-        <div className="grid grid-cols-5 gap-2">
+        <div className="grid grid-cols-6 gap-2">
           {estagios.map((estagio) => {
             const Icon = estagio.icon;
             return (
