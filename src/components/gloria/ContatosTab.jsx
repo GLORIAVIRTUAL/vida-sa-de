@@ -66,15 +66,24 @@ export default function ContatosTab() {
     const ultimoInteresse = contato.interesses?.[contato.interesses.length - 1]?.toLowerCase() || '';
     
     let matchMotivo = true;
-    if (filtroMotivo === 'consulta') {
-      matchMotivo = ultimoInteresse.includes('consulta');
-    } else if (filtroMotivo === 'exame_lab') {
-      matchMotivo = ultimoInteresse.includes('laborat');
-    } else if (filtroMotivo === 'exame_imagem') {
-      matchMotivo = ultimoInteresse.includes('imagem');
+    if (filtroMotivo === 'agendamento') {
+      matchMotivo = ultimoInteresse.includes('agendamento') || ultimoInteresse.includes('agendar') || ultimoInteresse.includes('marcar');
+    } else if (filtroMotivo === 'cancelamento') {
+      matchMotivo = ultimoInteresse.includes('cancelamento') || ultimoInteresse.includes('cancelar') || ultimoInteresse.includes('desmarcar');
+    } else if (filtroMotivo === 'orcamento') {
+      matchMotivo = ultimoInteresse.includes('orçamento') || ultimoInteresse.includes('orcamento') || ultimoInteresse.includes('preço') || ultimoInteresse.includes('valor');
+    } else if (filtroMotivo === 'cartao_mais_vida') {
+      matchMotivo = ultimoInteresse.includes('cartão') || ultimoInteresse.includes('cartao') || ultimoInteresse.includes('mais vida');
+    } else if (filtroMotivo === 'resultado_exames') {
+      matchMotivo = ultimoInteresse.includes('resultado') || ultimoInteresse.includes('laudo');
+    } else if (filtroMotivo === 'procedimentos') {
+      matchMotivo = ultimoInteresse.includes('procedimento');
+    } else if (filtroMotivo === 'turmas') {
+      matchMotivo = ultimoInteresse.includes('turma') || ultimoInteresse.includes('hidrogin') || ultimoInteresse.includes('pilates');
     } else if (filtroMotivo === 'outros') {
-      matchMotivo = ultimoInteresse.includes('outro') || 
-        (!ultimoInteresse.includes('consulta') && !ultimoInteresse.includes('laborat') && !ultimoInteresse.includes('imagem'));
+      matchMotivo = !ultimoInteresse.includes('agendamento') && !ultimoInteresse.includes('cancelamento') && 
+        !ultimoInteresse.includes('orçamento') && !ultimoInteresse.includes('cartão') && 
+        !ultimoInteresse.includes('resultado') && !ultimoInteresse.includes('procedimento') && !ultimoInteresse.includes('turma');
     }
     
     return matchBusca && matchMotivo;
