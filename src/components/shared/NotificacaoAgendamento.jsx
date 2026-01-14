@@ -77,6 +77,59 @@ export default function NotificacaoAgendamento() {
     }
   };
 
+  const reproduzirSomCancelamento = () => {
+    try {
+      // Som de alerta para cancelamento (notas descendentes)
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      
+      // Primeira nota (Sol - alta)
+      const oscillator1 = audioContext.createOscillator();
+      const gainNode1 = audioContext.createGain();
+      oscillator1.connect(gainNode1);
+      gainNode1.connect(audioContext.destination);
+      oscillator1.type = 'sine';
+      oscillator1.frequency.setValueAtTime(783.99, audioContext.currentTime); // G5
+      gainNode1.gain.setValueAtTime(0, audioContext.currentTime);
+      gainNode1.gain.linearRampToValueAtTime(0.4, audioContext.currentTime + 0.01);
+      gainNode1.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+      oscillator1.start(audioContext.currentTime);
+      oscillator1.stop(audioContext.currentTime + 0.3);
+
+      // Segunda nota (Mi)
+      const oscillator2 = audioContext.createOscillator();
+      const gainNode2 = audioContext.createGain();
+      oscillator2.connect(gainNode2);
+      gainNode2.connect(audioContext.destination);
+      oscillator2.type = 'sine';
+      oscillator2.frequency.setValueAtTime(659.25, audioContext.currentTime + 0.15); // E5
+      gainNode2.gain.setValueAtTime(0, audioContext.currentTime + 0.15);
+      gainNode2.gain.linearRampToValueAtTime(0.4, audioContext.currentTime + 0.16);
+      gainNode2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.45);
+      oscillator2.start(audioContext.currentTime + 0.15);
+      oscillator2.stop(audioContext.currentTime + 0.45);
+
+      // Terceira nota (Dó - baixa)
+      const oscillator3 = audioContext.createOscillator();
+      const gainNode3 = audioContext.createGain();
+      oscillator3.connect(gainNode3);
+      gainNode3.connect(audioContext.destination);
+      oscillator3.type = 'sine';
+      oscillator3.frequency.setValueAtTime(392.00, audioContext.currentTime + 0.3); // G4 (mais grave)
+      gainNode3.gain.setValueAtTime(0, audioContext.currentTime + 0.3);
+      gainNode3.gain.linearRampToValueAtTime(0.4, audioContext.currentTime + 0.31);
+      gainNode3.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.7);
+      oscillator3.start(audioContext.currentTime + 0.3);
+      oscillator3.stop(audioContext.currentTime + 0.7);
+
+      console.log('🔔 Som de cancelamento reproduzido!');
+    } catch (error) {
+      console.log("Não foi possível reproduzir o som:", error);
+      if (navigator.vibrate) {
+        navigator.vibrate([300, 100, 300]);
+      }
+    }
+  };
+
   useEffect(() => {
     // IMPORTANTE: Não executar se não estiver autenticado
     if (!isAuthenticated) {
@@ -127,6 +180,28 @@ export default function NotificacaoAgendamento() {
                 ),
                 duration: 15000, // Mais tempo para ler
                 className: "border-amber-500 bg-amber-50 shadow-2xl border-2",
+              });
+            } else if (novaNotificacao.type === 'agendamento_cancelado') {
+              // Toast específico para cancelamento - som de alerta diferente
+              reproduzirSomCancelamento();
+              
+              toast({
+                title: (
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="w-5 h-5 text-red-600 animate-pulse" />
+                    <span className="font-bold text-lg text-red-800">❌ Consulta Cancelada!</span>
+                  </div>
+                ),
+                description: (
+                  <div className="flex flex-col gap-1 mt-2">
+                    <span className="text-sm font-medium text-gray-800">{novaNotificacao.message}</span>
+                    <div className="text-xs font-semibold mt-1 px-2 py-1 rounded-full inline-flex items-center gap-1 w-fit bg-red-100 text-red-700">
+                      🤖 Cancelado via WhatsApp - Glória
+                    </div>
+                  </div>
+                ),
+                duration: 15000,
+                className: "border-red-500 bg-red-50 shadow-2xl border-2",
               });
             } else {
               // Toast para novo agendamento - verificar se foi pela Glória ou usuário
