@@ -792,33 +792,56 @@ Analise o conteúdo do vídeo se relevante para o atendimento.
 Confirme o recebimento e pergunte como pode ajudar.`;
     }
     
+    // Preparar histórico para o prompt - se conversa foi finalizada, limpar histórico mas mencionar que há histórico anterior
+    let historicoParaPrompt = historicoConversa || '(primeira mensagem)';
+    let contextoPreviousConversation = '';
+
+    if (conversaFinalizada && historicoConversa) {
+      contextoPreviousConversation = `\n\n📜 CONTEXTO: Esta é uma NOVA CONVERSA. A conversa anterior foi finalizada pelo atendente.
+    Se o cliente mencionar algo da conversa anterior, você pode consultar o histórico abaixo para contexto, 
+    mas trate esta interação como uma NOVA conversa - cumprimente novamente e foque no novo assunto.
+
+    HISTÓRICO DA CONVERSA ANTERIOR (apenas para referência se necessário):
+    ${historicoConversa}
+    ---`;
+      historicoParaPrompt = '(nova conversa - conversa anterior foi finalizada)';
+    }
+
     const promptCompleto = `${config.prompt_sistema}
 
----
-⏰ DATA E HORÁRIO ATUAL (Fuso: Recife/Brasil):
-- 📅 HOJE É: ${dataAtualCompleta}
-- 📅 DATA (ISO): ${dataAtualISO}
-- 🕐 Horário atual: ${horaAtual}
-- Saudação apropriada: ${saudacaoHorario}
+    ---
+    ⏰ DATA E HORÁRIO ATUAL (Fuso: Recife/Brasil):
+    - 📅 HOJE É: ${dataAtualCompleta}
+    - 📅 DATA (ISO): ${dataAtualISO}
+    - 🕐 Horário atual: ${horaAtual}
+    - Saudação apropriada: ${saudacaoHorario}
 
-⚠️ REGRA CRÍTICA DE SAUDAÇÃO:
-- Se o histórico estiver VAZIO (primeira mensagem), use: "${saudacaoHorario}, [NOME]! 👋 Eu sou a Glória, atendente do Centro Vida Saúde. Como posso te ajudar hoje? 😀"
-- Se JÁ HOUVER histórico, NÃO cumprimente novamente. Vá DIRETO ao ponto respondendo a pergunta do cliente.
+    ⚠️ REGRAS CRÍTICAS DE SAUDAÇÃO:
+    1. PRIMEIRA MENSAGEM DA CONVERSA (${ehPrimeiraMensagem ? 'SIM - É PRIMEIRA MENSAGEM' : 'NÃO - JÁ HÁ HISTÓRICO'}):
+       - Se for primeira mensagem: use "${saudacaoHorario}, [NOME]! 👋 Eu sou a Glória, atendente do Centro Vida Saúde. Como posso te ajudar hoje? 😀"
+       - Se NÃO for primeira mensagem: NÃO cumprimente, NÃO diga bom-dia/boa-tarde/boa-noite. Vá DIRETO ao ponto.
 
-⚠️ IMPORTANTE: Quando o cliente mencionar datas de agendamento (ex: "dia 14/11", "novembro"), use o ANO CORRETO (${dataAtualISO.split('-')[0]}) e verifique se a data ainda não passou.
+    2. NUNCA repita saudação no meio da conversa, mesmo que mude de assunto.
 
----
-HISTÓRICO DA CONVERSA (últimas mensagens):
-${historicoConversa || '(primeira mensagem)'}
+    ⚠️ REGRA CRÍTICA DE ORÇAMENTOS:
+    - Quando você já enviou um orçamento ao cliente, NÃO repita o orçamento na próxima mensagem.
+    - Se o cliente confirmar que quer agendar após o orçamento, apenas colete os dados necessários (nome, data de nascimento) SEM repetir valores.
+    - Verifique no histórico se você JÁ enviou um orçamento. Se sim, prossiga com o próximo passo (agendamento, mais informações, etc.).
 
----
-NOVA MENSAGEM DO CLIENTE (${senderName}, telefone ${phoneNumber}):
-${messageText}
-${infoDisponibilidade}
-${infoProcedimentosExames}
-${instrucoesMidia}
-${infoResultadoExame}
-${infoCancelamento}
+    ⚠️ IMPORTANTE: Quando o cliente mencionar datas de agendamento (ex: "dia 14/11", "novembro"), use o ANO CORRETO (${dataAtualISO.split('-')[0]}) e verifique se a data ainda não passou.
+    ${contextoPreviousConversation}
+    ---
+    HISTÓRICO DA CONVERSA ATUAL (últimas mensagens):
+    ${historicoParaPrompt}
+
+    ---
+    NOVA MENSAGEM DO CLIENTE (${senderName}, telefone ${phoneNumber}):
+    ${messageText}
+    ${infoDisponibilidade}
+    ${infoProcedimentosExames}
+    ${instrucoesMidia}
+    ${infoResultadoExame}
+    ${infoCancelamento}
 
 ---
 🎯 INSTRUÇÕES CRÍTICAS SOBRE AGENDAMENTOS E HORÁRIOS:
