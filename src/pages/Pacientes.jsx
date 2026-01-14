@@ -41,9 +41,17 @@ export default function Pacientes() {
     const telefone = urlParams.get('telefone');
     const abrirForm = urlParams.get('abrirForm');
     
+    console.log('URL params:', { nome, telefone, abrirForm });
+    
     if (abrirForm === 'true' || nome || telefone) {
-      setDadosIniciais({ nome: nome || '', telefone: telefone || '' });
-      setIsFormOpen(true);
+      const dados = { nome: nome || '', telefone: telefone || '' };
+      console.log('Abrindo formulário com dados:', dados);
+      setDadosIniciais(dados);
+      setSelectedPaciente(null);
+      // Usar setTimeout para garantir que o estado seja atualizado
+      setTimeout(() => {
+        setIsFormOpen(true);
+      }, 100);
       // Limpar parâmetros da URL
       window.history.replaceState({}, '', window.location.pathname);
     }
