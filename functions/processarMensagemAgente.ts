@@ -431,13 +431,6 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
     // Verificar no histórico se já temos médico, data e horário escolhidos
     let agendamentoCriado = false;
     let mensagemAgendamento = '';
-
-    // Verificar se é uma nova conversa (conversa_finalizada = true no contato)
-    let conversaFinalizada = false;
-    if (contatosCheck.length > 0 && contatosCheck[0].conversa_finalizada) {
-      conversaFinalizada = true;
-      console.log('📝 Conversa anterior foi finalizada - iniciando nova conversa');
-    }
     
     if (matchNascimento && historicoConversa) {
       console.log('📝 Detectada data de nascimento, verificando se pode criar agendamento...');
