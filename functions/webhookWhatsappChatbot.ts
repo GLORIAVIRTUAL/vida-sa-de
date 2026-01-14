@@ -281,7 +281,12 @@ Deno.serve(async (req) => {
       messageId
     });
 
-    if (resultado.data?.resposta && !resultado.data?.duplicata) {
+    if (resultado.data?.duplicata) {
+      console.log('⏭️ Resposta duplicada detectada - não enviando');
+      return Response.json({ success: true, status: 'duplicata_ignorada' });
+    }
+    
+    if (resultado.data?.resposta) {
       await enviarWhatsApp(phoneNumber, resultado.data.resposta);
       console.log('✅ WhatsApp texto enviado');
       
@@ -296,12 +301,10 @@ Deno.serve(async (req) => {
         } catch (docError) {
           console.error('❌ Erro ao enviar documento:', docError.message);
         }
-      } else {
-        console.log('ℹ️ Nenhum arquivo para enviar na resposta');
       }
     } else {
-      console.log('⚠️ Sem resposta - enviando fallback');
-      await enviarWhatsApp(phoneNumber, 'Olá! Estou processando sua solicitação. Um momento, por favor.');
+      // Não enviar mensagem de fallback - só logar
+      console.log('⚠️ Sem resposta da IA - não enviando fallback para evitar spam');
     }
 
     return Response.json({ success: true });
