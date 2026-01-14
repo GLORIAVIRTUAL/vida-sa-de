@@ -1033,7 +1033,7 @@ INSTRUÇÕES GERAIS:
           ];
         }
         
-        await base44.asServiceRole.entities.Contato.update(contato.id, {
+        const updateData = {
           ultima_mensagem: messageText,
           ultima_resposta: llmResponse,
           historico_mensagens: historicoParaSalvar,
@@ -1041,7 +1041,17 @@ INSTRUÇÕES GERAIS:
           total_mensagens: conversaFinalizada ? 2 : (contato.total_mensagens || 0) + 2,
           status: contato.conversa_finalizada ? 'Lead' : contato.status,
           conversa_finalizada: false // Reativa conversa se cliente mandou mensagem
-        });
+        };
+
+        // Adicionar motivo se identificado
+        if (motivoIdentificado) {
+          const interessesAtuais = contato.interesses || [];
+          if (!interessesAtuais.includes(motivoIdentificado)) {
+            updateData.interesses = [...interessesAtuais, motivoIdentificado];
+          }
+        }
+
+        await base44.asServiceRole.entities.Contato.update(contato.id, updateData);
         console.log('✅ Contato atualizado:', contato.id.substring(0, 8));
       } else {
         // Criar novo contato
