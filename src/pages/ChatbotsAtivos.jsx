@@ -343,9 +343,7 @@ function ChatTab() {
                           }`}>
                             <div className="p-3">
                               {customRender ? customRender : (
-                                <ReactMarkdown className={`text-sm prose prose-sm max-w-none [&>p]:m-0 ${msg.role !== 'user' && !isHumano ? 'prose-invert' : ''}`}>
-                                  {msg.content || ''}
-                                </ReactMarkdown>
+                                <p className="text-sm whitespace-pre-wrap">{msg.content || ''}</p>
                               )}
                             </div>
                             {msg.timestamp && (
