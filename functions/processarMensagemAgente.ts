@@ -213,9 +213,13 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
             const dataFormatada = dataConsulta.toISOString().split('T')[0];
             const diaSemana = dataConsulta.getDay();
 
-            const horariosDoDia = horariosAtendimento.filter(h => 
-              h.dia_semana === diaSemana && !h.data_especifica
-            );
+            // Verificar se há horários com data específica para este dia
+            const horariosDataEspecifica = horariosAtendimento.filter(h => h.data_especifica === dataFormatada);
+            
+            // Se houver horários com data específica, usar eles; senão, usar horários recorrentes
+            const horariosDoDia = horariosDataEspecifica.length > 0 
+              ? horariosDataEspecifica 
+              : horariosAtendimento.filter(h => h.dia_semana === diaSemana && !h.data_especifica);
 
             if (horariosDoDia.length === 0) continue;
 
