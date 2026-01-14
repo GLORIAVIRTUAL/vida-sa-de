@@ -487,22 +487,44 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
         'Oftalmologia', 'Oftalmologista', 'Otorrino', 'Otorrinolaringologia',
         'Pediatria', 'Pediatra', 'Pneumologia', 'Pneumologista',
         'Neurologia', 'Neurologista', 'Quiropraxia', 'Quiropraxista',
-        'Massoterapia', 'Massoterapeuta', 'Optometria', 'Optometrista',
+        'Massoterapia', 'Massoterapeuta', 'Massagem', 'Optometria', 'Optometrista',
         'Hidroginástica', 'Hidroterapia', 'Pilates', 'Psicopedagoga', 'Psicopedagogia'
       ];
       
       let especialidadeDetectada = null;
+      let medicoEspecificoDetectado = null;
       const msgLower = messageText.toLowerCase();
       const historicoLower = (historicoConversa || '').toLowerCase();
       const textoCompleto = msgLower + ' ' + historicoLower;
 
-      for (const esp of especialidades) {
-        const espLower = esp.toLowerCase();
-        // Verifica se a mensagem ou histórico contém a especialidade
-        if (textoCompleto.includes(espLower)) {
-          especialidadeDetectada = esp;
-          console.log(`🎯 Especialidade detectada: ${esp}`);
-          break;
+      // Primeiro verificar se mencionou nome de médico específico
+      const todosMedicosParaDeteccao = await base44.asServiceRole.entities.Medico.filter({ status: 'Ativo' });
+      for (const medico of todosMedicosParaDeteccao) {
+        const nomeMedicoLower = medico.nome.toLowerCase();
+        const partesNome = nomeMedicoLower.split(' ').filter(p => p.length > 3);
+        
+        // Verificar se alguma parte significativa do nome está na mensagem
+        for (const parte of partesNome) {
+          if (textoCompleto.includes(parte)) {
+            medicoEspecificoDetectado = medico;
+            especialidadeDetectada = medico.especialidade;
+            console.log(`🎯 Médico específico detectado: ${medico.nome} (${medico.especialidade})`);
+            break;
+          }
+        }
+        if (medicoEspecificoDetectado) break;
+      }
+
+      // Se não encontrou médico específico, buscar por especialidade
+      if (!medicoEspecificoDetectado) {
+        for (const esp of especialidades) {
+          const espLower = esp.toLowerCase();
+          // Verifica se a mensagem ou histórico contém a especialidade
+          if (textoCompleto.includes(espLower)) {
+            especialidadeDetectada = esp;
+            console.log(`🎯 Especialidade detectada: ${esp}`);
+            break;
+          }
         }
       }
 
