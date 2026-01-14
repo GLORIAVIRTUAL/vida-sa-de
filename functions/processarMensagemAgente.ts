@@ -199,7 +199,11 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
         const diasAfrente = 15;
         const diasSemanaMap = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
 
-        for (const medico of medicosParaBuscar.slice(0, 5)) {
+        // Se tiver mais de um médico da mesma especialidade, mostrar todos (sem limite)
+        // Se for uma busca geral, limitar a 5
+        const limitemedicos = especialidadeDetectada && medicosParaBuscar.length > 1 ? medicosParaBuscar.length : 5;
+
+        for (const medico of medicosParaBuscar.slice(0, limitemedicos)) {
           const horariosAtendimento = medico.horarios_atendimento || [];
           if (horariosAtendimento.length === 0) continue;
 
@@ -283,7 +287,12 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
         if (disponibilidadesEncontradas.length > 0) {
           infoDisponibilidade = '\n\n📅 DISPONIBILIDADES ENCONTRADAS:\n';
           
-          for (const medico of disponibilidadesEncontradas.slice(0, 3)) {
+          // Se há mais de um médico da mesma especialidade, mostrar TODOS
+          const limiteMostrar = especialidadeDetectada && disponibilidadesEncontradas.length > 1 
+            ? disponibilidadesEncontradas.length 
+            : 3;
+          
+          for (const medico of disponibilidadesEncontradas.slice(0, limiteMostrar)) {
             infoDisponibilidade += `\n👨‍⚕️ ${medico.medico_nome} (${medico.especialidade}):\n`;
             infoDisponibilidade += `   ID do médico: ${medico.medico_id}\n`;
             
@@ -292,6 +301,9 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
             }
           }
           
+          if (disponibilidadesEncontradas.length > 1) {
+            infoDisponibilidade += '\n⚠️ Há múltiplos profissionais disponíveis. Pergunte qual médico o paciente prefere.';
+          }
           infoDisponibilidade += '\n⚠️ Para confirmar agendamento, preciso: nome completo e data de nascimento do paciente.';
           console.log('✅ Disponibilidades encontradas:', disponibilidadesEncontradas.length, 'médicos');
         } else {
