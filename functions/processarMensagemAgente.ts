@@ -439,22 +439,23 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
       }
     }
 
-    // Verificar se cliente está confirmando agendamento (tem data de nascimento no formato dd/mm/yyyy)
-    const regexDataNascimento = /(\d{2}\/\d{2}\/\d{4})/;
-    const matchNascimento = messageText.match(regexDataNascimento);
-    
     // Verificar no histórico se já temos médico, data e horário escolhidos
     let agendamentoCriado = false;
     let mensagemAgendamento = '';
+    let dadosFaltantes = [];
     
-    if (matchNascimento && historicoConversa) {
-      console.log('📝 Detectada data de nascimento, verificando se pode criar agendamento...');
+    // Verificar se o cliente está no fluxo de agendamento (mencionou agendar ou já tem dados no histórico)
+    const estaEmFluxoAgendamento = querAgendar || 
+      (historicoConversa && /agendar|marcar|consulta|horário|data|nascimento/i.test(historicoConversa));
+    
+    if (estaEmFluxoAgendamento || historicoConversa) {
+      console.log('📝 Verificando dados para agendamento...');
       
       try {
-        // Usar LLM para extrair dados do agendamento do histórico
+        // Usar LLM para extrair dados do agendamento do histórico + mensagem atual
         const hoje = new Date();
         const anoAtual = hoje.getFullYear();
-        const mesAtual = hoje.getMonth() + 1; // 0-11, então +1
+        const mesAtual = hoje.getMonth() + 1;
         const diaAtual = hoje.getDate();
         const dataHojeFormatada = hoje.toLocaleDateString('pt-BR', { 
           weekday: 'long', 
@@ -463,43 +464,30 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
           day: 'numeric' 
         });
         
-        const promptExtracao = `Analise o histórico da conversa e extraia os dados do agendamento.
+        const promptExtracao = `Analise o histórico da conversa E a última mensagem para extrair dados de agendamento.
 
-HISTÓRICO:
-${historicoConversa}
+HISTÓRICO DA CONVERSA:
+${historicoConversa || '(sem histórico)'}
 
 ÚLTIMA MENSAGEM DO CLIENTE:
 ${messageText}
 
-⚠️ INFORMAÇÃO CRÍTICA - DATA ATUAL:
-- HOJE É: ${dataHojeFormatada}
-- DATA NO FORMATO ISO: ${hoje.toISOString().split('T')[0]}
-- ANO ATUAL: ${anoAtual}
-- MÊS ATUAL: ${mesAtual}
-- DIA ATUAL: ${diaAtual}
+⚠️ DATA ATUAL: ${dataHojeFormatada} (${hoje.toISOString().split('T')[0]})
 
-IMPORTANTE: Se o cliente mencionar "dia 14/11" ou apenas "14/11" ou "novembro", você DEVE converter para ${anoAtual}. 
-Se a data mencionada já passou no ano atual, considere o PRÓXIMO ano (${anoAtual + 1}).
-Por exemplo: se hoje é janeiro de 2026 e o cliente disse "14/11", a data correta é 2026-11-14.
+EXTRAIA OS DADOS QUE CONSEGUIR ENCONTRAR:
+1. nome_paciente: nome completo (ex: "Antonio Thiago Cavalcanti Alves")
+2. data_nascimento: formato DD/MM/YYYY (ex: "19/04/1982")
+3. medico_nome: nome do médico escolhido (ex: "João Inocencio")
+4. data_agendamento: formato YYYY-MM-DD (converta "14/01" para "${anoAtual}-01-14", "hoje" para "${hoje.toISOString().split('T')[0]}")
+5. horario: formato HH:MM (converta "17:30", "17h30", "às 17:30" para "17:30")
 
-EXTRAIA OS SEGUINTES DADOS (procure em todo o histórico):
-- nome_paciente: nome completo do paciente (pode estar na última mensagem ou no histórico)
-- data_nascimento: data de nascimento no formato DD/MM/YYYY
-- medico_nome: nome ou parte do nome do médico mencionado (ex: "João", "Dr. João", "João Inocencio", etc)
-- data_agendamento: data da consulta no formato YYYY-MM-DD
-- horario: horário escolhido no formato HH:MM (ex: 14:00)
+REGRAS:
+- Se o cliente disse "hoje", use ${hoje.toISOString().split('T')[0]}
+- Se disse apenas dia/mês (14/01), adicione ano ${anoAtual}
+- Marque cada campo como null se NÃO encontrar
+- dados_completos = true APENAS se TODOS os 5 campos forem preenchidos
 
-REGRAS DE CONVERSÃO DE DATA (CRÍTICO):
-1. Se o cliente disse "14/11" ou "novembro", e hoje é ${diaAtual}/${mesAtual}/${anoAtual}:
-   - Se o mês mencionado (11) >= mês atual (${mesAtual}), use ${anoAtual}
-   - Se o mês mencionado (11) < mês atual (${mesAtual}), use ${anoAtual + 1}
-   - Exemplo: hoje é janeiro/2026, cliente disse "14/11" → converta para 2026-11-14
-2. Se mencionou apenas dia ("dia 14"), use o mês atual (${mesAtual}) e ano atual (${anoAtual})
-3. Se mencionou dia/mês ("14/01"), verifique se já passou no ano atual
-4. Horários: "14h", "14:00", "às 14" → normalize para "14:00"
-5. Retorne dados_completos: true se conseguir extrair TODOS os 5 campos
-
-Retorne um JSON com os dados encontrados.`;
+Retorne JSON.`;
 
         const extracao = await base44.asServiceRole.integrations.Core.InvokeLLM({
           prompt: promptExtracao,
@@ -508,23 +496,35 @@ Retorne um JSON com os dados encontrados.`;
             type: "object",
             properties: {
               dados_completos: { type: "boolean" },
-              nome_paciente: { type: "string" },
-              data_nascimento: { type: "string" },
-              medico_nome: { type: "string" },
-              data_agendamento: { type: "string" },
-              horario: { type: "string" }
+              nome_paciente: { type: ["string", "null"] },
+              data_nascimento: { type: ["string", "null"] },
+              medico_nome: { type: ["string", "null"] },
+              data_agendamento: { type: ["string", "null"] },
+              horario: { type: ["string", "null"] }
             }
           }
         });
 
-        console.log('📊 Extração:', JSON.stringify(extracao));
+        console.log('📊 Extração de dados:', JSON.stringify(extracao));
 
-        if (extracao && extracao.dados_completos && extracao.nome_paciente && extracao.data_agendamento && extracao.horario) {
+        // Verificar quais dados faltam
+        if (!extracao.nome_paciente) dadosFaltantes.push('nome completo');
+        if (!extracao.data_nascimento) dadosFaltantes.push('data de nascimento');
+        if (!extracao.medico_nome) dadosFaltantes.push('médico');
+        if (!extracao.data_agendamento) dadosFaltantes.push('data da consulta');
+        if (!extracao.horario) dadosFaltantes.push('horário');
+
+        // Se temos TODOS os dados, criar agendamento IMEDIATAMENTE
+        if (extracao.dados_completos && extracao.nome_paciente && extracao.data_nascimento && 
+            extracao.medico_nome && extracao.data_agendamento && extracao.horario) {
+          
+          console.log('✅ Todos os dados coletados, criando agendamento...');
+          
           // Buscar médico pelo nome
           const medicos = await base44.asServiceRole.entities.Medico.filter({ status: 'Ativo' });
           const medicoEncontrado = medicos.find(m => 
             m.nome.toLowerCase().includes(extracao.medico_nome?.toLowerCase() || '') ||
-            extracao.medico_nome?.toLowerCase().includes(m.nome.toLowerCase())
+            extracao.medico_nome?.toLowerCase().includes(m.nome.split(' ')[0].toLowerCase())
           );
 
           if (medicoEncontrado) {
@@ -543,7 +543,6 @@ Retorne um JSON com os dados encontrados.`;
             
             if (pacientesExistentes.length > 0) {
               paciente = pacientesExistentes[0];
-              // Atualizar dados se necessário
               await base44.asServiceRole.entities.Paciente.update(paciente.id, {
                 nome: extracao.nome_paciente,
                 data_nascimento: dataNascimentoISO
@@ -603,7 +602,7 @@ Retorne um JSON com os dados encontrados.`;
                 const dataObjNotif = new Date(extracao.data_agendamento + 'T12:00:00');
                 const dataFormatadaNotif = dataObjNotif.toLocaleDateString('pt-BR');
 
-                const notificacao = await base44.asServiceRole.entities.Notification.create({
+                await base44.asServiceRole.entities.Notification.create({
                   type: 'novo_agendamento',
                   message: `🆕 ${extracao.nome_paciente} - ${medicoEncontrado.especialidade} com ${medicoEncontrado.nome} em ${dataFormatadaNotif} às ${extracao.horario}`,
                   data: {
@@ -618,7 +617,6 @@ Retorne um JSON com os dados encontrados.`;
                   },
                   is_read: false
                 });
-                console.log('🔔 Notificação criada com sucesso:', notificacao?.id);
               } catch (notifError) {
                 console.error('⚠️ Erro ao criar notificação:', notifError.message);
               }
@@ -639,7 +637,12 @@ Retorne um JSON com os dados encontrados.`;
               console.log('⚠️ Horário já ocupado');
               mensagemAgendamento = `😔 Poxa, esse horário acabou de ser preenchido. Vou verificar outras opções disponíveis para você!`;
             }
+          } else {
+            console.log('⚠️ Médico não encontrado:', extracao.medico_nome);
           }
+        } else if (dadosFaltantes.length > 0 && dadosFaltantes.length < 5) {
+          // Tem alguns dados mas faltam outros - informar ao LLM quais dados faltam
+          console.log('📋 Dados faltantes para agendamento:', dadosFaltantes.join(', '));
         }
       } catch (extracaoError) {
         console.error('⚠️ Erro na extração:', extracaoError.message);
