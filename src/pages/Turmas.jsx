@@ -11,6 +11,7 @@ import { useToast } from "@/components/ui/use-toast";
 export default function Turmas() {
   const [turmas, setTurmas] = useState([]);
   const [medicos, setMedicos] = useState([]);
+  const [alunosPorTurma, setAlunosPorTurma] = useState({});
   const [loading, setLoading] = useState(true);
   const [modalTurmaOpen, setModalTurmaOpen] = useState(false);
   const [modalAlunosOpen, setModalAlunosOpen] = useState(false);
@@ -24,12 +25,20 @@ export default function Turmas() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [turmasData, medicosData] = await Promise.all([
+      const [turmasData, medicosData, alunosTurmaData] = await Promise.all([
         base44.entities.Turma.list(),
-        base44.entities.Medico.list()
+        base44.entities.Medico.list(),
+        base44.entities.AlunoTurma.filter({ status: 'Ativo' })
       ]);
       setTurmas(turmasData);
       setMedicos(medicosData);
+      
+      // Contar alunos por turma
+      const contagem = {};
+      alunosTurmaData.forEach(at => {
+        contagem[at.turma_id] = (contagem[at.turma_id] || 0) + 1;
+      });
+      setAlunosPorTurma(contagem);
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
       toast({ title: "Erro ao carregar dados", variant: "destructive" });
@@ -132,7 +141,8 @@ export default function Turmas() {
                     </div>
                     <div className="flex items-center gap-2">
                       <Users className="w-4 h-4 text-green-500" />
-                      <span>Capacidade: {turma.capacidade_maxima} alunos</span>
+                      <span className="font-medium text-green-700">{alunosPorTurma[turma.id] || 0}</span>
+                      <span>/ {turma.capacidade_maxima} alunos</span>
                     </div>
                   </div>
 
