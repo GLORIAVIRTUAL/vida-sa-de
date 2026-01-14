@@ -226,7 +226,7 @@ export default function ContatosTab() {
                       </TableCell>
                       <TableCell>
                         {contato.created_date ? 
-                          format(new Date(contato.created_date), "dd/MM/yyyy HH:mm", { locale: ptBR }) 
+                          format(new Date(new Date(contato.created_date).getTime() - (3 * 60 * 60 * 1000)), "dd/MM/yyyy HH:mm", { locale: ptBR }) 
                           : '-'
                         }
                       </TableCell>
