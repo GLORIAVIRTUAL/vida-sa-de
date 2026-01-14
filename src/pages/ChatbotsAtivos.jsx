@@ -324,7 +324,7 @@ function ChatTab() {
                   </div>
                 )}
               </CardHeader>
-              <CardContent className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50 flex flex-col">
+              <CardContent ref={chatContainerRef} className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50 flex flex-col">
                 {mensagens.length === 0 ? (
                   <div className="flex items-center justify-center h-full text-gray-400">
                     <MessageCircle className="w-12 h-12 opacity-30" />
@@ -368,7 +368,6 @@ function ChatTab() {
                         </div>
                       );
                     })}
-                    <div ref={messagesEndRef} />
                   </>
                 )}
               </CardContent>
