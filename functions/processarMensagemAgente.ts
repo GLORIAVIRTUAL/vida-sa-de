@@ -764,11 +764,28 @@ INSTRUÇÕES GERAIS:
     try {
       const contatos = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
       const timestamp = new Date().toISOString();
-      
+
       if (contatos.length > 0) {
         const contato = contatos[0];
         const historicoAtual = contato.historico_mensagens || [];
-        
+
+        // Verificar se a resposta já foi enviada recentemente (últimas 3 mensagens)
+        const ultimasRespostas = historicoAtual.filter(m => m.role === 'assistant').slice(-3);
+        const respostaJaEnviada = ultimasRespostas.some(m => 
+          m.content === llmResponse || 
+          (llmResponse.length > 100 && m.content.substring(0, 100) === llmResponse.substring(0, 100))
+        );
+
+        if (respostaJaEnviada) {
+          console.log('⚠️ Resposta duplicada detectada - não salvando novamente');
+          return Response.json({ 
+            success: true, 
+            resposta: null,
+            duplicata: true,
+            message: 'Resposta já foi enviada recentemente'
+          });
+        }
+
         // Adicionar novas mensagens ao histórico
         historicoAtual.push(
           { role: 'user', content: messageText, timestamp, messageId },

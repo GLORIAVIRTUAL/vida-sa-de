@@ -281,7 +281,7 @@ Deno.serve(async (req) => {
       messageId
     });
 
-    if (resultado.data?.resposta) {
+    if (resultado.data?.resposta && !resultado.data?.duplicata) {
       await enviarWhatsApp(phoneNumber, resultado.data.resposta);
       console.log('✅ WhatsApp texto enviado');
       
