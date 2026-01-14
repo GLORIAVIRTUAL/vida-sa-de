@@ -933,6 +933,30 @@ INSTRUÇÕES GERAIS:
     
     console.log('✅ LLM respondeu');
     
+    // Identificar motivo do contato
+    let motivoIdentificado = null;
+    const msgLowerMotivo = messageText.toLowerCase();
+    const historicoLowerMotivo = (historicoConversa || '').toLowerCase();
+    const textoCompletoMotivo = msgLowerMotivo + ' ' + historicoLowerMotivo;
+
+    if (textoCompletoMotivo.includes('cancelar') || textoCompletoMotivo.includes('desmarcar') || textoCompletoMotivo.includes('cancelamento')) {
+      motivoIdentificado = 'Cancelamento';
+    } else if (textoCompletoMotivo.includes('resultado') || textoCompletoMotivo.includes('laudo') || textoCompletoMotivo.includes('exame pronto')) {
+      motivoIdentificado = 'Resultado de Exames';
+    } else if (textoCompletoMotivo.includes('orçamento') || textoCompletoMotivo.includes('orcamento') || textoCompletoMotivo.includes('quanto custa') || textoCompletoMotivo.includes('preço') || textoCompletoMotivo.includes('valor')) {
+      motivoIdentificado = 'Orçamento';
+    } else if (textoCompletoMotivo.includes('cartão') || textoCompletoMotivo.includes('cartao') || textoCompletoMotivo.includes('mais vida')) {
+      motivoIdentificado = 'Cartão Mais Vida';
+    } else if (textoCompletoMotivo.includes('turma') || textoCompletoMotivo.includes('hidrogin') || textoCompletoMotivo.includes('pilates') || textoCompletoMotivo.includes('natação') || textoCompletoMotivo.includes('natacao')) {
+      motivoIdentificado = 'Turmas';
+    } else if (textoCompletoMotivo.includes('procedimento')) {
+      motivoIdentificado = 'Procedimentos';
+    } else if (textoCompletoMotivo.includes('agendar') || textoCompletoMotivo.includes('marcar') || textoCompletoMotivo.includes('consulta') || textoCompletoMotivo.includes('horário') || textoCompletoMotivo.includes('horario') || textoCompletoMotivo.includes('disponível') || textoCompletoMotivo.includes('disponivel')) {
+      motivoIdentificado = 'Agendamento';
+    }
+
+    console.log('🏷️ Motivo identificado:', motivoIdentificado);
+
     // Salvar conversa no histórico
     try {
       const contatos = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
