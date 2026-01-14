@@ -157,11 +157,20 @@ export default function ImportarTurmas() {
         }
       });
 
+      // Buscar turmas mais atualizadas do banco
+      const turmasAtuais = await base44.entities.Turma.list();
+      const turmasCriadasAgora = {}; // Cache de turmas criadas nesta importação
+
       // Processar cada turma
       for (const [nomeTurma, dadosTurma] of Object.entries(turmasAgrupadas)) {
         try {
-          // Verificar se turma já existe
-          let turma = turmas.find(t => t.nome.toLowerCase() === nomeTurma.toLowerCase());
+          // Verificar se turma já existe (no banco ou criada nesta importação)
+          let turma = turmasAtuais.find(t => t.nome.toLowerCase().trim() === nomeTurma.toLowerCase().trim());
+          
+          // Verificar se já criamos esta turma nesta mesma importação
+          if (!turma && turmasCriadasAgora[nomeTurma.toLowerCase().trim()]) {
+            turma = turmasCriadasAgora[nomeTurma.toLowerCase().trim()];
+          }
           
           if (!turma) {
             // Detectar modalidade
@@ -226,6 +235,9 @@ export default function ImportarTurmas() {
               status: 'Ativa'
             });
             turmasCriadas++;
+            
+            // Salvar no cache para não duplicar
+            turmasCriadasAgora[nomeTurma.toLowerCase().trim()] = turma;
           }
 
           turmasMap[nomeTurma] = turma;
