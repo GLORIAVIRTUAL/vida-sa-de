@@ -172,9 +172,13 @@ export default function ContatosTab() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todos">Todos os motivos</SelectItem>
-                  <SelectItem value="consulta">Consultas</SelectItem>
-                  <SelectItem value="exame_lab">Exames Laboratoriais</SelectItem>
-                  <SelectItem value="exame_imagem">Exames de Imagem</SelectItem>
+                  <SelectItem value="agendamento">Agendamento</SelectItem>
+                  <SelectItem value="cancelamento">Cancelamento</SelectItem>
+                  <SelectItem value="orcamento">Orçamento</SelectItem>
+                  <SelectItem value="cartao_mais_vida">Cartão Mais Vida</SelectItem>
+                  <SelectItem value="resultado_exames">Resultado de Exames</SelectItem>
+                  <SelectItem value="procedimentos">Procedimentos</SelectItem>
+                  <SelectItem value="turmas">Turmas</SelectItem>
                   <SelectItem value="outros">Outros</SelectItem>
                 </SelectContent>
               </Select>
