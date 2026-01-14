@@ -30,7 +30,10 @@ export default function ImportarTurmas() {
     aluno_telefone: '',
     professor: '',
     horario: '',
-    dias: ''
+    dias: '',
+    capacidade: '',
+    data_inicio: '',
+    status_aluno: ''
   });
   const [colunasDetectadas, setColunasDetectadas] = useState([]);
 
@@ -96,6 +99,9 @@ export default function ImportarTurmas() {
       if (colLower.includes('professor') || colLower.includes('responsável') || colLower.includes('instrutor')) novoMapeamento.professor = col;
       if (colLower.includes('horário') || colLower.includes('horario') || colLower.includes('hora')) novoMapeamento.horario = col;
       if (colLower.includes('dia') || colLower.includes('semana')) novoMapeamento.dias = col;
+      if (colLower.includes('capacidade')) novoMapeamento.capacidade = col;
+      if (colLower.includes('data') && colLower.includes('início')) novoMapeamento.data_inicio = col;
+      if (colLower.includes('status') && colLower.includes('aluno')) novoMapeamento.status_aluno = col;
     });
     setMapeamento(novoMapeamento);
 
@@ -121,7 +127,7 @@ export default function ImportarTurmas() {
       // Agrupar por turma
       const turmasAgrupadas = {};
       dadosPreview.forEach(linha => {
-        const nomeTurma = linha[mapeamento.turma];
+        const nomeTurma = linha[mapeamento.turma]?.trim();
         if (!nomeTurma) return;
         
         if (!turmasAgrupadas[nomeTurma]) {
@@ -131,15 +137,24 @@ export default function ImportarTurmas() {
             professor: linha[mapeamento.professor] || '',
             horario: linha[mapeamento.horario] || '',
             dias: linha[mapeamento.dias] || '',
+            capacidade: linha[mapeamento.capacidade] || '',
             alunos: []
           };
         }
         
-        turmasAgrupadas[nomeTurma].alunos.push({
-          nome: linha[mapeamento.aluno_nome],
-          cpf: linha[mapeamento.aluno_cpf] || '',
-          telefone: linha[mapeamento.aluno_telefone] || ''
-        });
+        // Ignorar linhas sem aluno real
+        const nomeAluno = linha[mapeamento.aluno_nome]?.trim();
+        if (nomeAluno && 
+            nomeAluno !== '(Nenhum aluno matriculado)' && 
+            !nomeAluno.toLowerCase().includes('nenhum aluno')) {
+          turmasAgrupadas[nomeTurma].alunos.push({
+            nome: nomeAluno,
+            cpf: linha[mapeamento.aluno_cpf] || '',
+            telefone: linha[mapeamento.aluno_telefone] || '',
+            data_inicio: linha[mapeamento.data_inicio] || '',
+            status: linha[mapeamento.status_aluno] || 'Ativo'
+          });
+        }
       });
 
       // Processar cada turma
@@ -192,6 +207,13 @@ export default function ImportarTurmas() {
               if (diasSemana.length === 0) diasSemana = [1, 3, 5];
             }
 
+            // Capacidade
+            let capacidadeMaxima = 10;
+            if (dadosTurma.capacidade) {
+              const cap = parseInt(dadosTurma.capacidade);
+              if (!isNaN(cap) && cap > 0) capacidadeMaxima = cap;
+            }
+
             // Criar turma
             turma = await base44.entities.Turma.create({
               nome: nomeTurma,
@@ -200,7 +222,7 @@ export default function ImportarTurmas() {
               horario_inicio: horarioInicio,
               horario_fim: horarioFim,
               dias_semana: diasSemana,
-              capacidade_maxima: Math.max(dadosTurma.alunos.length, 10),
+              capacidade_maxima: Math.max(dadosTurma.alunos.length, capacidadeMaxima),
               status: 'Ativa'
             });
             turmasCriadas++;
@@ -246,11 +268,25 @@ export default function ImportarTurmas() {
 
               if (vinculosExistentes.length === 0) {
                 // Vincular à turma
+                let dataInicio = new Date().toISOString().split('T')[0];
+                if (alunoData.data_inicio) {
+                  // Tentar parsear data no formato YYYY-MM-DD ou DD/MM/YYYY
+                  const dataMatch = alunoData.data_inicio.match(/(\d{4})-(\d{2})-(\d{2})/);
+                  if (dataMatch) {
+                    dataInicio = alunoData.data_inicio;
+                  } else {
+                    const dataMatch2 = alunoData.data_inicio.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+                    if (dataMatch2) {
+                      dataInicio = `${dataMatch2[3]}-${dataMatch2[2]}-${dataMatch2[1]}`;
+                    }
+                  }
+                }
+                
                 await base44.entities.AlunoTurma.create({
                   turma_id: turma.id,
                   paciente_id: paciente.id,
-                  data_inicio: new Date().toISOString().split('T')[0],
-                  status: 'Ativo'
+                  data_inicio: dataInicio,
+                  status: alunoData.status === 'Ativo' ? 'Ativo' : alunoData.status === 'Inativo' ? 'Inativo' : 'Ativo'
                 });
                 alunosVinculados++;
               }
@@ -290,7 +326,10 @@ export default function ImportarTurmas() {
       aluno_telefone: '',
       professor: '',
       horario: '',
-      dias: ''
+      dias: '',
+      capacidade: '',
+      data_inicio: '',
+      status_aluno: ''
     });
   };
 
