@@ -715,6 +715,13 @@ ${infoResultadoExame}
 ---
 🎯 INSTRUÇÕES CRÍTICAS SOBRE AGENDAMENTOS E HORÁRIOS:
 
+📋 RETORNOS MÉDICOS:
+- Retorno é uma consulta GRATUITA que o paciente tem direito em até 15 dias após a consulta original
+- O retorno DEVE ser com o MESMO MÉDICO da consulta anterior
+- Ao agendar retorno, use tipo_servico: "Retorno" (valor será R$ 0,00)
+- Se o paciente mencionar "retorno", pergunte: qual médico foi a consulta anterior e quando foi realizada
+- Se passou mais de 15 dias, informe que não é mais possível agendar como retorno gratuito
+
 📋 DISPONIBILIDADES REAIS DA AGENDA:
 ${infoDisponibilidade ? '✅ As disponibilidades acima são REAIS e vêm diretamente da agenda dos médicos.' : '❌ Nenhuma disponibilidade foi carregada.'}
 
