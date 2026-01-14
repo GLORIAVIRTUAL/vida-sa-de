@@ -32,6 +32,7 @@ import VendaCartao from './pages/VendaCartao';
 import VerificacaoAssinatura from './pages/VerificacaoAssinatura';
 import WebhookLogs from './pages/WebhookLogs';
 import ordemServico from './pages/ordem-servico';
+import ImportarTurmas from './pages/ImportarTurmas';
 import __Layout from './Layout.jsx';
 
 
@@ -70,6 +71,7 @@ export const PAGES = {
     "VerificacaoAssinatura": VerificacaoAssinatura,
     "WebhookLogs": WebhookLogs,
     "ordem-servico": ordemServico,
+    "ImportarTurmas": ImportarTurmas,
 }
 
 export const pagesConfig = {
