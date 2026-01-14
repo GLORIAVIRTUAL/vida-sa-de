@@ -697,6 +697,8 @@ Retorne um JSON com os dados encontrados.`;
 
     // Determinar se é primeira mensagem da conversa atual (para saudação)
     const ehPrimeiraMensagem = !historicoConversa || historicoConversa.trim() === '' || historicoConversa === '(primeira mensagem)' || conversaFinalizada;
+    
+    console.log('📊 Estado da conversa:', { conversaFinalizada, ehPrimeiraMensagem, historicoTamanho: historicoConversa?.length || 0 });
 
     // Buscar procedimentos e exames disponíveis para orçamento
     let infoProcedimentosExames = '';
