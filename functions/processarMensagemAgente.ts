@@ -212,17 +212,24 @@ Deno.serve(async (req) => {
           });
           
           // Cancelar o agendamento
+          console.log('📝 Atualizando status para Cancelado...');
           await base44.asServiceRole.entities.Agendamento.update(agendamentoId, {
             status: 'Cancelado',
             observacoes: `Cancelado via WhatsApp pela Glória em ${new Date().toLocaleString('pt-BR')}`
           });
+          console.log('✅ Status atualizado para Cancelado');
 
           // Atualizar contato para pipeline "Cancelou"
-          const contatos = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
-          if (contatos.length > 0) {
-            await base44.asServiceRole.entities.Contato.update(contatos[0].id, {
-              status: 'Cancelou'
-            });
+          try {
+            const contatos = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
+            if (contatos.length > 0) {
+              await base44.asServiceRole.entities.Contato.update(contatos[0].id, {
+                status: 'Cancelou'
+              });
+              console.log('✅ Pipeline do contato atualizado para Cancelou');
+            }
+          } catch (contatoError) {
+            console.log('⚠️ Erro ao atualizar contato:', contatoError.message);
           }
           
           // Criar notificação de cancelamento para a equipe
@@ -246,12 +253,13 @@ Deno.serve(async (req) => {
             console.error('⚠️ Erro ao criar notificação:', notifError.message);
           }
 
-          console.log('✅ Agendamento cancelado:', agendamentoId);
+          console.log('✅ Agendamento cancelado com sucesso:', agendamentoId);
           return true;
         }
+        console.log('❌ Agendamento não encontrado');
         return false;
       } catch (e) {
-        console.error('⚠️ Erro ao cancelar:', e.message);
+        console.error('❌ Erro ao cancelar:', e.message, e.stack);
         return false;
       }
     };
