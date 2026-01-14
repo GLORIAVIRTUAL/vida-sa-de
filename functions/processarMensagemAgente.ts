@@ -4,7 +4,7 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     
-    const { phoneNumber, messageText, senderName, pacienteId, mediaType, mediaUrl } = await req.json();
+    const { phoneNumber, messageText, senderName, pacienteId, mediaType, mediaUrl, messageId } = await req.json();
     
     console.log('📨 Processando:', { phoneNumber, messageText, mediaType, mediaUrl });
     
@@ -768,7 +768,7 @@ INSTRUÇÕES GERAIS:
         
         // Adicionar novas mensagens ao histórico
         historicoAtual.push(
-          { role: 'user', content: messageText, timestamp },
+          { role: 'user', content: messageText, timestamp, messageId },
           { role: 'assistant', content: llmResponse, timestamp }
         );
         
@@ -794,7 +794,7 @@ INSTRUÇÕES GERAIS:
           ultima_mensagem: messageText,
           ultima_resposta: llmResponse,
           historico_mensagens: [
-            { role: 'user', content: messageText, timestamp },
+            { role: 'user', content: messageText, timestamp, messageId },
             { role: 'assistant', content: llmResponse, timestamp }
           ],
           ultima_interacao: timestamp,

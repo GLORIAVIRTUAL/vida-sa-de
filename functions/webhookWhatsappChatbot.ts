@@ -37,8 +37,25 @@ Deno.serve(async (req) => {
     }
 
     const message = messages[0];
+    const messageId = message.id;
     const phoneNumber = message.from;
     const senderName = value?.contacts?.[0]?.profile?.name || 'Usuário';
+    
+    // Verificar se esta mensagem já foi processada (evitar duplicatas)
+    try {
+      const contatos = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
+      if (contatos.length > 0) {
+        const historicoMensagens = contatos[0].historico_mensagens || [];
+        const jaProcessada = historicoMensagens.some(m => m.messageId === messageId);
+        
+        if (jaProcessada) {
+          console.log('⏭️ Mensagem já processada. Ignorando duplicata:', messageId);
+          return Response.json({ success: true, status: 'duplicata_ignorada' });
+        }
+      }
+    } catch (e) {
+      console.log('⚠️ Erro ao verificar duplicata:', e.message);
+    }
     
     // Processar diferentes tipos de mídia
     let messageText = '';
@@ -260,7 +277,8 @@ Deno.serve(async (req) => {
       senderName,
       pacienteId,
       mediaType,
-      mediaUrl
+      mediaUrl,
+      messageId
     });
 
     if (resultado.data?.resposta) {
