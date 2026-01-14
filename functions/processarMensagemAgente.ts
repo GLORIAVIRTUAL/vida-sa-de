@@ -313,6 +313,14 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
         // Usar LLM para extrair dados do agendamento do histórico
         const hoje = new Date();
         const anoAtual = hoje.getFullYear();
+        const mesAtual = hoje.getMonth() + 1; // 0-11, então +1
+        const diaAtual = hoje.getDate();
+        const dataHojeFormatada = hoje.toLocaleDateString('pt-BR', { 
+          weekday: 'long', 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric' 
+        });
         
         const promptExtracao = `Analise o histórico da conversa e extraia os dados do agendamento.
 
@@ -322,19 +330,33 @@ ${historicoConversa}
 ÚLTIMA MENSAGEM DO CLIENTE:
 ${messageText}
 
-DATA DE HOJE: ${hoje.toISOString().split('T')[0]} (use ${anoAtual} como ano para datas de agendamento que não especificam ano)
+⚠️ INFORMAÇÃO CRÍTICA - DATA ATUAL:
+- HOJE É: ${dataHojeFormatada}
+- DATA NO FORMATO ISO: ${hoje.toISOString().split('T')[0]}
+- ANO ATUAL: ${anoAtual}
+- MÊS ATUAL: ${mesAtual}
+- DIA ATUAL: ${diaAtual}
+
+IMPORTANTE: Se o cliente mencionar "dia 14/11" ou apenas "14/11" ou "novembro", você DEVE converter para ${anoAtual}. 
+Se a data mencionada já passou no ano atual, considere o PRÓXIMO ano (${anoAtual + 1}).
+Por exemplo: se hoje é janeiro de 2026 e o cliente disse "14/11", a data correta é 2026-11-14.
 
 EXTRAIA OS SEGUINTES DADOS (procure em todo o histórico):
 - nome_paciente: nome completo do paciente (pode estar na última mensagem ou no histórico)
 - data_nascimento: data de nascimento no formato DD/MM/YYYY
 - medico_nome: nome ou parte do nome do médico mencionado (ex: "João", "Dr. João", "João Inocencio", etc)
-- data_agendamento: data da consulta no formato YYYY-MM-DD (se o cliente disse "dia 14/01", converta para ${anoAtual}-01-14)
+- data_agendamento: data da consulta no formato YYYY-MM-DD
 - horario: horário escolhido no formato HH:MM (ex: 14:00)
 
-IMPORTANTE:
-- Se a data de agendamento foi mencionada como "14/01" ou "dia 14", use ano ${anoAtual}
-- Se o horário foi mencionado como "14h" ou "14:00", normalize para "14:00"
-- Retorne dados_completos: true se conseguir extrair TODOS os 5 campos
+REGRAS DE CONVERSÃO DE DATA (CRÍTICO):
+1. Se o cliente disse "14/11" ou "novembro", e hoje é ${diaAtual}/${mesAtual}/${anoAtual}:
+   - Se o mês mencionado (11) >= mês atual (${mesAtual}), use ${anoAtual}
+   - Se o mês mencionado (11) < mês atual (${mesAtual}), use ${anoAtual + 1}
+   - Exemplo: hoje é janeiro/2026, cliente disse "14/11" → converta para 2026-11-14
+2. Se mencionou apenas dia ("dia 14"), use o mês atual (${mesAtual}) e ano atual (${anoAtual})
+3. Se mencionou dia/mês ("14/01"), verifique se já passou no ano atual
+4. Horários: "14h", "14:00", "às 14" → normalize para "14:00"
+5. Retorne dados_completos: true se conseguir extrair TODOS os 5 campos
 
 Retorne um JSON com os dados encontrados.`;
 
@@ -514,6 +536,17 @@ Retorne um JSON com os dados encontrados.`;
     const horaAtual = new Date().toLocaleTimeString('pt-BR', { timeZone: 'America/Recife', hour: '2-digit', minute: '2-digit' });
     const horaNumero = parseInt(new Date().toLocaleTimeString('pt-BR', { timeZone: 'America/Recife', hour: '2-digit', hour12: false }));
     
+    // Data completa formatada para o prompt
+    const dataAtualCompleta = new Date().toLocaleDateString('pt-BR', { 
+      timeZone: 'America/Recife',
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+    
+    const dataAtualISO = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Recife' }); // formato YYYY-MM-DD
+    
     let saudacaoHorario = 'Bom-dia';
     if (horaNumero >= 12 && horaNumero < 18) {
       saudacaoHorario = 'Boa-tarde';
@@ -624,10 +657,14 @@ Confirme o recebimento e pergunte como pode ajudar.`;
     const promptCompleto = `${config.prompt_sistema}
 
 ---
-INFORMAÇÃO DE HORÁRIO ATUAL (Fuso: Recife/Brasil):
-- Horário atual: ${horaAtual}
+⏰ DATA E HORÁRIO ATUAL (Fuso: Recife/Brasil):
+- 📅 HOJE É: ${dataAtualCompleta}
+- 📅 DATA (ISO): ${dataAtualISO}
+- 🕐 Horário atual: ${horaAtual}
 - Saudação apropriada: ${saudacaoHorario}
 - Use essa saudação APENAS se o histórico estiver vazio (primeira mensagem). Se já houver histórico, NÃO cumprimente novamente, vá direto ao ponto.
+
+⚠️ IMPORTANTE: Quando o cliente mencionar datas de agendamento (ex: "dia 14/11", "novembro"), use o ANO CORRETO (${dataAtualISO.split('-')[0]}) e verifique se a data ainda não passou.
 
 ---
 HISTÓRICO DA CONVERSA (últimas mensagens):
