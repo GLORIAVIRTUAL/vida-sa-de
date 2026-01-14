@@ -592,8 +592,9 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
             return matchPrincipal || matchArray || matchNome;
           });
           console.log(`🔍 Buscando por ${especialidadeDetectada} (termos: ${termosRelacionados.slice(0,3).join(', ')}): encontrados ${medicosParaBuscar.length} médicos`);
-        } else {
-          medicosParaBuscar = todosMedicos;
+          } else {
+            medicosParaBuscar = todosMedicos;
+          }
         }
 
         const disponibilidadesEncontradas = [];
