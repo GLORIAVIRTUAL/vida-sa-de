@@ -144,12 +144,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Verificar se a resposta anterior contém comando de cancelamento (com ou sem motivo)
-    const comandoCancelar = messageText.match(/\[CANCELAR_AGENDAMENTO:([^\]:\s]+)(?::([^\]]+))?\]/i) || 
-                            historicoConversa?.match(/\[CANCELAR_AGENDAMENTO:([^\]:\s]+)(?::([^\]]+))?\]/i);
-    if (comandoCancelar) {
-      const agendamentoId = comandoCancelar[1];
-
+    // Função auxiliar para executar o cancelamento
+    const executarCancelamento = async (agendamentoId) => {
       try {
         const agendamentos = await base44.asServiceRole.entities.Agendamento.filter({ id: agendamentoId });
         if (agendamentos.length > 0) {
@@ -209,11 +205,71 @@ Deno.serve(async (req) => {
             console.error('⚠️ Erro ao criar notificação:', notifError.message);
           }
 
-          agendamentoCancelado = true;
           console.log('✅ Agendamento cancelado:', agendamentoId);
+          return true;
         }
+        return false;
       } catch (e) {
         console.error('⚠️ Erro ao cancelar:', e.message);
+        return false;
+      }
+    };
+
+    // Verificar se no histórico da conversa há um comando de cancelamento pendente
+    // E o cliente confirmou (disse sim, confirmo, pode cancelar, etc.)
+    const clienteConfirmou = /^(sim|s|confirmo|confirma|pode|ok|isso|correto|exato|certo|é isso|cancela|cancele|por favor)$/i.test(messageText.trim()) ||
+                            /sim|confirmo|pode cancelar|isso mesmo|é esse|cancela/i.test(messageText);
+    
+    // Buscar ID do agendamento no histórico se cliente confirmou
+    if (clienteConfirmou && historicoConversa) {
+      // Procurar por IDs de agendamento mencionados no histórico
+      const idsNoHistorico = historicoConversa.match(/ID:\s*([a-zA-Z0-9_-]+)/g);
+      
+      // Verificar se há um contexto de cancelamento no histórico
+      const contextoCancel = /cancelar|desmarcar|qual deles deseja cancelar|qual agendamento/i.test(historicoConversa);
+      
+      if (idsNoHistorico && contextoCancel) {
+        // Pegar o último ID mencionado (mais provável de ser o escolhido)
+        // Verificar se o cliente mencionou número (1, 2, 3...) ou nome do médico
+        const numeroEscolhido = messageText.match(/^(\d)$/);
+        const nomeMedicoMencionado = messageText.toLowerCase();
+        
+        // Extrair todos os agendamentos do histórico com seus IDs
+        const linhasHistorico = historicoConversa.split('\n');
+        let agendamentoParaCancelar = null;
+        
+        for (let i = 0; i < linhasHistorico.length; i++) {
+          const linha = linhasHistorico[i];
+          const matchId = linha.match(/ID:\s*([a-zA-Z0-9_-]+)/);
+          if (matchId) {
+            const idAgendamento = matchId[1];
+            const linhaAnterior = linhasHistorico[i-1] || '';
+            
+            // Se cliente disse um número, verificar se corresponde
+            if (numeroEscolhido) {
+              const numNaLinha = linhaAnterior.match(/^(\d)\./);
+              if (numNaLinha && numNaLinha[1] === numeroEscolhido[1]) {
+                agendamentoParaCancelar = idAgendamento;
+                break;
+              }
+            }
+            
+            // Se cliente confirmou genericamente (sim) e só tem um ID, usar ele
+            if (!numeroEscolhido && idsNoHistorico.length === 1) {
+              agendamentoParaCancelar = idAgendamento;
+              break;
+            }
+          }
+        }
+        
+        // Se encontrou agendamento para cancelar, executar
+        if (agendamentoParaCancelar) {
+          console.log('🎯 Executando cancelamento do agendamento:', agendamentoParaCancelar);
+          const cancelou = await executarCancelamento(agendamentoParaCancelar);
+          if (cancelou) {
+            agendamentoCancelado = true;
+          }
+        }
       }
     }
 
