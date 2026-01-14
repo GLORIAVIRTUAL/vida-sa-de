@@ -64,6 +64,103 @@ Deno.serve(async (req) => {
       console.log('⚠️ Não foi possível buscar histórico');
     }
 
+    // Verificar se cliente quer cancelar agendamento
+    const querCancelar = /cancelar|desmarcar|n[aã]o (vou|posso|irei)|remarcar|adiar|desistir/i.test(messageText);
+    let infoCancelamento = '';
+    let agendamentoCancelado = false;
+
+    if (querCancelar) {
+      console.log('❌ Cliente quer cancelar agendamento...');
+
+      // Buscar agendamentos do contato
+      try {
+        // Primeiro buscar paciente pelo telefone
+        const pacientes = await base44.asServiceRole.entities.Paciente.filter({ telefone: phoneNumber });
+
+        if (pacientes.length > 0) {
+          const paciente = pacientes[0];
+
+          // Buscar agendamentos futuros do paciente
+          const hoje = new Date().toISOString().split('T')[0];
+          const agendamentos = await base44.asServiceRole.entities.Agendamento.filter({
+            paciente_id: paciente.id,
+            status: { $in: ['Agendado', 'Pago'] }
+          });
+
+          // Filtrar apenas agendamentos futuros
+          const agendamentosFuturos = agendamentos.filter(ag => ag.data_agendamento >= hoje);
+
+          if (agendamentosFuturos.length > 0) {
+            // Buscar médicos para mostrar nomes
+            const medicos = await base44.asServiceRole.entities.Medico.list();
+            const medicosMap = {};
+            medicos.forEach(m => { medicosMap[m.id] = m; });
+
+            infoCancelamento = `\n\n📋 AGENDAMENTOS ENCONTRADOS PARA CANCELAMENTO:
+    O paciente ${paciente.nome} tem os seguintes agendamentos:\n`;
+
+            agendamentosFuturos.forEach((ag, idx) => {
+              const medico = medicosMap[ag.medico_id];
+              const dataObj = new Date(ag.data_agendamento + 'T12:00:00');
+              const dataFormatada = dataObj.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' });
+
+              infoCancelamento += `\n${idx + 1}. ${ag.tipo_servico} - ${dataFormatada} às ${ag.horario}`;
+              if (medico) infoCancelamento += ` com ${medico.nome} (${medico.especialidade})`;
+              infoCancelamento += `\n   ID: ${ag.id}`;
+            });
+
+            infoCancelamento += `\n\n⚠️ PARA CANCELAR:
+    1. Confirme QUAL agendamento o cliente deseja cancelar
+    2. Pergunte o MOTIVO do cancelamento
+    3. Quando confirmado, responda EXATAMENTE no formato:
+    [CANCELAR_AGENDAMENTO:ID_DO_AGENDAMENTO:MOTIVO]
+    Exemplo: [CANCELAR_AGENDAMENTO:abc123:paciente viajou]
+    4. Após cancelar, informe que o agendamento foi cancelado com sucesso`;
+          } else {
+            infoCancelamento = `\n\n❌ NENHUM AGENDAMENTO FUTURO ENCONTRADO
+    O paciente ${paciente.nome} não possui agendamentos futuros para cancelar.
+    Informe isso gentilmente ao cliente.`;
+          }
+        } else {
+          infoCancelamento = `\n\n📋 CANCELAMENTO DE AGENDAMENTO
+    O cliente quer cancelar um agendamento mas não encontramos cadastro pelo telefone.
+    Peça o NOME COMPLETO do paciente para localizar o agendamento.`;
+        }
+      } catch (e) {
+        console.error('⚠️ Erro ao buscar agendamentos:', e.message);
+      }
+    }
+
+    // Verificar se a resposta anterior contém comando de cancelamento
+    const comandoCancelar = messageText.match(/\[CANCELAR_AGENDAMENTO:([^:]+):([^\]]+)\]/i);
+    if (comandoCancelar) {
+      const agendamentoId = comandoCancelar[1];
+      const motivoCancelamento = comandoCancelar[2];
+
+      try {
+        const agendamento = await base44.asServiceRole.entities.Agendamento.filter({ id: agendamentoId });
+        if (agendamento.length > 0) {
+          await base44.asServiceRole.entities.Agendamento.update(agendamentoId, {
+            status: 'Cancelado',
+            observacoes: `Cancelado via WhatsApp. Motivo: ${motivoCancelamento}`
+          });
+
+          // Atualizar contato para pipeline "Cancelou"
+          const contatos = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
+          if (contatos.length > 0) {
+            await base44.asServiceRole.entities.Contato.update(contatos[0].id, {
+              status: 'Cancelou'
+            });
+          }
+
+          agendamentoCancelado = true;
+          console.log('✅ Agendamento cancelado:', agendamentoId);
+        }
+      } catch (e) {
+        console.error('⚠️ Erro ao cancelar:', e.message);
+      }
+    }
+
     // Verificar se cliente quer resultado de exame
     const querResultado = /resultado|exame pronto|pegar|buscar resultado|retirar|laudo|meu exame|meus exames/i.test(messageText);
     let infoResultadoExame = '';
@@ -711,6 +808,7 @@ ${infoDisponibilidade}
 ${infoProcedimentosExames}
 ${instrucoesMidia}
 ${infoResultadoExame}
+${infoCancelamento}
 
 ---
 🎯 INSTRUÇÕES CRÍTICAS SOBRE AGENDAMENTOS E HORÁRIOS:
