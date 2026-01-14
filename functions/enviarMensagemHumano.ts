@@ -58,12 +58,13 @@ Deno.serve(async (req) => {
           audio: { link: mediaUrl }
         };
       } else {
-        // Mensagem de texto padrão
+        // Mensagem de texto padrão - adicionar nome do usuário
+        const mensagemComNome = `*${user.full_name || 'Recepção'}:* ${messageText || ''}`;
         messageBody = {
           messaging_product: 'whatsapp',
           to: numero,
           type: 'text',
-          text: { body: messageText || '' }
+          text: { body: mensagemComNome }
         };
       }
 
