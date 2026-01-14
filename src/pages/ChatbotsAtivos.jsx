@@ -341,15 +341,13 @@ function ChatTab() {
                                 ? 'bg-green-100 text-green-900' 
                                 : 'bg-blue-600 text-white'
                           }`}>
-                            {(msg.content || customRender) && (
-                              <div className="p-3">
-                                {customRender || (
-                                  <ReactMarkdown className={`text-sm prose prose-sm max-w-none [&>p]:m-0 ${msg.role !== 'user' && !isHumano ? 'prose-invert' : ''}`}>
-                                    {msg.content}
-                                  </ReactMarkdown>
-                                )}
-                              </div>
-                            )}
+                            <div className="p-3">
+                              {customRender ? customRender : (
+                                <ReactMarkdown className={`text-sm prose prose-sm max-w-none [&>p]:m-0 ${msg.role !== 'user' && !isHumano ? 'prose-invert' : ''}`}>
+                                  {msg.content || ''}
+                                </ReactMarkdown>
+                              )}
+                            </div>
                             {msg.timestamp && (
                               <div className={`px-3 pb-2 text-[10px] ${
                                 msg.role === 'user' 
