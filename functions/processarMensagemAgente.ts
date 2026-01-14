@@ -665,12 +665,12 @@ Retorne um JSON com os dados encontrados.`;
 
     // Usar InvokeLLM diretamente para gerar resposta
     console.log('🤖 Chamando LLM...');
-    
+
     // Obter horário atual no fuso de Recife (America/Recife)
     const agoraRecife = new Date().toLocaleString('pt-BR', { timeZone: 'America/Recife' });
     const horaAtual = new Date().toLocaleTimeString('pt-BR', { timeZone: 'America/Recife', hour: '2-digit', minute: '2-digit' });
     const horaNumero = parseInt(new Date().toLocaleTimeString('pt-BR', { timeZone: 'America/Recife', hour: '2-digit', hour12: false }));
-    
+
     // Data completa formatada para o prompt
     const dataAtualCompleta = new Date().toLocaleDateString('pt-BR', { 
       timeZone: 'America/Recife',
@@ -679,15 +679,18 @@ Retorne um JSON com os dados encontrados.`;
       month: 'long', 
       day: 'numeric' 
     });
-    
+
     const dataAtualISO = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Recife' }); // formato YYYY-MM-DD
-    
+
     let saudacaoHorario = 'Bom-dia';
     if (horaNumero >= 12 && horaNumero < 18) {
       saudacaoHorario = 'Boa-tarde';
     } else if (horaNumero >= 18 || horaNumero < 5) {
       saudacaoHorario = 'Boa-noite';
     }
+
+    // Determinar se é primeira mensagem da conversa atual (para saudação)
+    const ehPrimeiraMensagem = !historicoConversa || historicoConversa.trim() === '' || historicoConversa === '(primeira mensagem)' || conversaFinalizada;
 
     // Buscar procedimentos e exames disponíveis para orçamento
     let infoProcedimentosExames = '';
