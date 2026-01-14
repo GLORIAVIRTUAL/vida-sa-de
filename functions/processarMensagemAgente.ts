@@ -854,6 +854,15 @@ Confirme o recebimento e pergunte como pode ajudar.`;
     - Se o cliente confirmar que quer agendar após o orçamento, apenas colete os dados necessários (nome, data de nascimento) SEM repetir valores.
     - Verifique no histórico se você JÁ enviou um orçamento. Se sim, prossiga com o próximo passo (agendamento, mais informações, etc.).
 
+    ⚠️ REGRAS CRÍTICAS DE AGENDAMENTO - MUITO IMPORTANTE:
+    1. NUNCA diga "aguarde", "um momento" ou "vou verificar" - você TEM os dados, use-os IMEDIATAMENTE.
+    2. Quando o cliente fornecer um dado (nome, data nascimento, etc.), peça APENAS o PRÓXIMO dado faltante.
+    3. NÃO repita dados que o cliente já forneceu.
+    4. Dados necessários para agendar: nome completo, data de nascimento, médico, data e horário.
+    ${dadosFaltantes.length > 0 && dadosFaltantes.length < 5 ? `
+    📋 DADOS FALTANTES PARA ESTE AGENDAMENTO: ${dadosFaltantes.join(', ')}
+    👉 Peça APENAS o PRÓXIMO dado faltante da lista acima. Seja direto e objetivo.` : ''}
+
     ⚠️ IMPORTANTE: Quando o cliente mencionar datas de agendamento (ex: "dia 14/11", "novembro"), use o ANO CORRETO (${dataAtualISO.split('-')[0]}) e verifique se a data ainda não passou.
     ${contextoPreviousConversation}
     ---
