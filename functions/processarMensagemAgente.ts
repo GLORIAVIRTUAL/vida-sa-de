@@ -593,9 +593,10 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
             const horariosDataEspecifica = horariosAtendimento.filter(h => h.data_especifica === dataFormatada);
             
             // Se houver horários com data específica, usar eles; senão, usar horários recorrentes
+            // IMPORTANTE: converter dia_semana para inteiro pois pode vir como float (3.0)
             const horariosDoDia = horariosDataEspecifica.length > 0 
               ? horariosDataEspecifica 
-              : horariosAtendimento.filter(h => h.dia_semana === diaSemana && !h.data_especifica);
+              : horariosAtendimento.filter(h => Math.floor(h.dia_semana) === diaSemana && !h.data_especifica);
 
             if (horariosDoDia.length === 0) continue;
 
