@@ -1259,21 +1259,21 @@ INSTRUÇÕES GERAIS:
 
         // Verificar se a resposta já foi enviada recentemente (últimas 10 mensagens)
         const ultimasRespostas = historicoAtual.filter(m => m.role === 'assistant').slice(-10);
-        
+
         // Verificar duplicata por conteúdo similar (especialmente para orçamentos)
         const respostaJaEnviada = ultimasRespostas.some(m => {
           if (!m.content || !llmResponse) return false;
-          
+
           // Verificação exata
           if (m.content === llmResponse) return true;
-          
+
           // Verificação por início similar (para mensagens longas como orçamentos)
           if (llmResponse.length > 100 && m.content.length > 100) {
             const inicio1 = m.content.substring(0, 150).toLowerCase().replace(/\s+/g, ' ');
             const inicio2 = llmResponse.substring(0, 150).toLowerCase().replace(/\s+/g, ' ');
             if (inicio1 === inicio2) return true;
           }
-          
+
           // Verificação específica para orçamentos (contém ORÇAMENTO e VALOR TOTAL similar)
           if (llmResponse.includes('ORÇAMENTO') && m.content.includes('ORÇAMENTO')) {
             const valorTotal1 = m.content.match(/VALOR TOTAL[:\s]*R\$\s*([\d.,]+)/i);
@@ -1283,7 +1283,7 @@ INSTRUÇÕES GERAIS:
               return true;
             }
           }
-          
+
           // Verificação para mensagens "processando" ou de espera
           const msgProcessando = /processando|aguarde|momento|analisando|verificando/i;
           if (msgProcessando.test(llmResponse) && msgProcessando.test(m.content)) {
@@ -1295,14 +1295,19 @@ INSTRUÇÕES GERAIS:
               return true;
             }
           }
-          
+
           return false;
         });
 
         if (respostaJaEnviada) {
-            console.log('⚠️ Resposta duplicada detectada - gerando nova resposta');
-            // Em vez de bloquear, vamos permitir que a IA gere uma resposta diferente
-            // Apenas logamos o aviso mas continuamos o fluxo
+            console.log('⚠️ Resposta/orçamento duplicado detectado - NÃO enviando');
+            // Retornar null para não enviar resposta duplicada
+            return Response.json({ 
+              success: true, 
+              resposta: null,
+              duplicado: true,
+              message: 'Orçamento já enviado anteriormente'
+            });
           }
 
         // Adicionar novas mensagens ao histórico
