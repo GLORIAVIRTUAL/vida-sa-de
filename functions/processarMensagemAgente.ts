@@ -874,8 +874,8 @@ INSTRUÇÕES GERAIS:
         const contato = contatos[0];
         const historicoAtual = contato.historico_mensagens || [];
 
-        // Verificar se a resposta já foi enviada recentemente (últimas 5 mensagens)
-        const ultimasRespostas = historicoAtual.filter(m => m.role === 'assistant').slice(-5);
+        // Verificar se a resposta já foi enviada recentemente (últimas 10 mensagens)
+        const ultimasRespostas = historicoAtual.filter(m => m.role === 'assistant').slice(-10);
         
         // Verificar duplicata por conteúdo similar (especialmente para orçamentos)
         const respostaJaEnviada = ultimasRespostas.some(m => {
@@ -897,6 +897,18 @@ INSTRUÇÕES GERAIS:
             const valorTotal2 = llmResponse.match(/VALOR TOTAL[:\s]*R\$\s*([\d.,]+)/i);
             if (valorTotal1 && valorTotal2 && valorTotal1[1] === valorTotal2[1]) {
               console.log('⚠️ Orçamento duplicado detectado (mesmo valor total)');
+              return true;
+            }
+          }
+          
+          // Verificação para mensagens "processando" ou de espera
+          const msgProcessando = /processando|aguarde|momento|analisando|verificando/i;
+          if (msgProcessando.test(llmResponse) && msgProcessando.test(m.content)) {
+            // Verificar se foi enviada nos últimos 30 segundos
+            const timestampMsg = new Date(m.timestamp).getTime();
+            const agora = Date.now();
+            if (agora - timestampMsg < 30000) {
+              console.log('⚠️ Mensagem de processamento duplicada detectada');
               return true;
             }
           }
