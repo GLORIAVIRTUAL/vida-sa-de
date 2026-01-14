@@ -279,11 +279,18 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
       
       // Detectar especialidade mencionada - lista expandida
       const especialidades = [
-        'Cardiologia', 'Clínico Geral', 'Clínico', 'Dermatologia', 'Endocrinologia', 
-        'Ginecologia', 'Ginecologista', 'Nutrição', 'Nutricionista', 'Psicologia', 'Psicólogo',
+        'Cardiologia', 'Cardiologista', 'Clínico Geral', 'Clínico', 'Dermatologia', 'Dermatologista',
+        'Endocrinologia', 'Endocrinologista', 'Ginecologia', 'Ginecologista', 
+        'Nutrição', 'Nutricionista', 'Psicologia', 'Psicólogo', 'Psicóloga',
         'Ortopedia', 'Ortopedista', 'Urologia', 'Urologista', 'Geriatria', 'Geriatra',
-        'Gastroenterologia', 'Reumatologia', 'Psiquiatria', 'Psiquiatra',
-        'Fisioterapia', 'Fisioterapeuta', 'Ecografia', 'Traumatologia'
+        'Gastroenterologia', 'Gastro', 'Reumatologia', 'Reumatologista', 
+        'Psiquiatria', 'Psiquiatra', 'Fisioterapia', 'Fisioterapeuta', 'Fisio',
+        'Ecografia', 'Eco', 'Ultrassom', 'Traumatologia', 'Traumatologista',
+        'Oftalmologia', 'Oftalmologista', 'Otorrino', 'Otorrinolaringologia',
+        'Pediatria', 'Pediatra', 'Pneumologia', 'Pneumologista',
+        'Neurologia', 'Neurologista', 'Quiropraxia', 'Quiropraxista',
+        'Massoterapia', 'Massoterapeuta', 'Optometria', 'Optometrista',
+        'Hidroginástica', 'Hidroterapia', 'Pilates', 'Psicopedagoga', 'Psicopedagogia'
       ];
       
       let especialidadeDetectada = null;
