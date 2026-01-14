@@ -318,14 +318,56 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
         
         if (especialidadeDetectada) {
           const especialidadeLower = especialidadeDetectada.toLowerCase();
+
+          // Mapeamento de sinônimos para especialidades
+          const sinonimos = {
+            'clinico': ['clínico geral', 'clinico geral', 'clínico', 'clinico'],
+            'nutri': ['nutrição', 'nutricao', 'nutricionista'],
+            'fisio': ['fisioterapia', 'fisioterapeuta'],
+            'psico': ['psicologia', 'psicologo', 'psicóloga', 'psicologa'],
+            'geriatra': ['geriatria', 'geriatra'],
+            'ortopedista': ['ortopedia', 'ortopedista', 'traumatologia', 'traumatologista'],
+            'eco': ['ecografia', 'ultrassom', 'ultrassonografia'],
+            'psiquiatra': ['psiquiatria', 'psiquiatra'],
+            'uro': ['urologia', 'urologista'],
+            'cardio': ['cardiologia', 'cardiologista'],
+            'dermato': ['dermatologia', 'dermatologista'],
+            'gineco': ['ginecologia', 'ginecologista'],
+            'gastro': ['gastroenterologia', 'gastro'],
+            'neuro': ['neurologia', 'neurologista'],
+            'oftalmo': ['oftalmologia', 'oftalmologista'],
+            'otorrino': ['otorrinolaringologia', 'otorrino'],
+            'pedia': ['pediatria', 'pediatra'],
+            'pneumo': ['pneumologia', 'pneumologista'],
+            'reumato': ['reumatologia', 'reumatologista']
+          };
+
+          // Encontrar termos relacionados
+          let termosRelacionados = [especialidadeLower];
+          for (const [key, valores] of Object.entries(sinonimos)) {
+            if (valores.some(v => especialidadeLower.includes(v) || v.includes(especialidadeLower))) {
+              termosRelacionados = [...termosRelacionados, ...valores];
+            }
+          }
+
           medicosParaBuscar = todosMedicos.filter(m => {
             // Verifica no campo principal 'especialidade'
-            const matchPrincipal = m.especialidade?.toLowerCase().includes(especialidadeLower);
+            const espPrincipal = (m.especialidade || '').toLowerCase();
+            const matchPrincipal = termosRelacionados.some(t => espPrincipal.includes(t) || t.includes(espPrincipal.split(' ')[0]));
+
             // Verifica no array 'especialidades'
-            const matchArray = m.especialidades?.some(e => e.toLowerCase().includes(especialidadeLower));
-            return matchPrincipal || matchArray;
+            const matchArray = m.especialidades?.some(e => {
+              const eLower = e.toLowerCase();
+              return termosRelacionados.some(t => eLower.includes(t) || t.includes(eLower.split(' ')[0]));
+            });
+
+            // Verifica também no nome do médico (alguns podem ter especialidade no nome)
+            const nomeLower = (m.nome || '').toLowerCase();
+            const matchNome = termosRelacionados.some(t => nomeLower.includes(t));
+
+            return matchPrincipal || matchArray || matchNome;
           });
-          console.log(`🔍 Buscando por ${especialidadeDetectada}: encontrados ${medicosParaBuscar.length} médicos`);
+          console.log(`🔍 Buscando por ${especialidadeDetectada} (termos: ${termosRelacionados.slice(0,3).join(', ')}): encontrados ${medicosParaBuscar.length} médicos`);
         } else {
           medicosParaBuscar = todosMedicos;
         }
