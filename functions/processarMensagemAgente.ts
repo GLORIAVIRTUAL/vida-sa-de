@@ -287,9 +287,13 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
       ];
       
       let especialidadeDetectada = null;
+      const msgLower = messageText.toLowerCase();
       for (const esp of especialidades) {
-        if (messageText.toLowerCase().includes(esp.toLowerCase().split(' ')[0])) {
+        const espLower = esp.toLowerCase();
+        // Verifica se a mensagem contém a especialidade (palavra inteira ou início)
+        if (msgLower.includes(espLower) || msgLower.includes(espLower.split(' ')[0])) {
           especialidadeDetectada = esp;
+          console.log(`🎯 Especialidade detectada: ${esp}`);
           break;
         }
       }
