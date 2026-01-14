@@ -299,6 +299,7 @@ function ChatTab() {
                         const params = new URLSearchParams();
                         if (contatoSelecionado.nome) params.set('nome', contatoSelecionado.nome);
                         if (contatoSelecionado.telefone) params.set('telefone', contatoSelecionado.telefone);
+                        params.set('abrirForm', 'true');
                         navigate(createPageUrl('Pacientes') + '?' + params.toString());
                       }}
                       className="text-green-600 hover:bg-green-50"
