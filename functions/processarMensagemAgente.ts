@@ -579,22 +579,49 @@ Retorne JSON.`;
         // Verificar quais dados faltam
         if (!extracao.nome_paciente) dadosFaltantes.push('nome completo');
         if (!extracao.data_nascimento) dadosFaltantes.push('data de nascimento');
-        if (!extracao.medico_nome) dadosFaltantes.push('médico');
+        if (!extracao.medico_nome && !extracao.medico_id) dadosFaltantes.push('médico');
         if (!extracao.data_agendamento) dadosFaltantes.push('data da consulta');
         if (!extracao.horario) dadosFaltantes.push('horário');
 
         // Se temos TODOS os dados, criar agendamento IMEDIATAMENTE
         if (extracao.dados_completos && extracao.nome_paciente && extracao.data_nascimento && 
-            extracao.medico_nome && extracao.data_agendamento && extracao.horario) {
+            (extracao.medico_nome || extracao.medico_id) && extracao.data_agendamento && extracao.horario) {
           
           console.log('✅ Todos os dados coletados, criando agendamento...');
+          console.log('📋 Médico extraído:', extracao.medico_nome, '| ID:', extracao.medico_id);
           
-          // Buscar médico pelo nome
+          // Buscar médico - primeiro por ID se disponível, depois por nome
           const medicos = await base44.asServiceRole.entities.Medico.filter({ status: 'Ativo' });
-          const medicoEncontrado = medicos.find(m => 
-            m.nome.toLowerCase().includes(extracao.medico_nome?.toLowerCase() || '') ||
-            extracao.medico_nome?.toLowerCase().includes(m.nome.split(' ')[0].toLowerCase())
-          );
+          let medicoEncontrado = null;
+          
+          // Tentar primeiro pelo ID (mais preciso)
+          if (extracao.medico_id) {
+            medicoEncontrado = medicos.find(m => m.id === extracao.medico_id);
+          }
+          
+          // Se não encontrou pelo ID, buscar pelo nome (mais flexível)
+          if (!medicoEncontrado && extracao.medico_nome) {
+            const nomeExtraidoLower = extracao.medico_nome.toLowerCase();
+            
+            // Primeiro tenta match exato
+            medicoEncontrado = medicos.find(m => 
+              m.nome.toLowerCase() === nomeExtraidoLower
+            );
+            
+            // Se não encontrou, tenta match parcial mas mais rigoroso
+            if (!medicoEncontrado) {
+              medicoEncontrado = medicos.find(m => {
+                const nomeMedicoLower = m.nome.toLowerCase();
+                // Verifica se o nome extraído contém o nome completo do médico ou vice-versa
+                return nomeMedicoLower.includes(nomeExtraidoLower) || 
+                       nomeExtraidoLower.includes(nomeMedicoLower) ||
+                       // Verifica também partes significativas do nome (mais de 2 palavras coincidindo)
+                       nomeExtraidoLower.split(' ').filter(p => p.length > 2 && nomeMedicoLower.includes(p)).length >= 2;
+              });
+            }
+          }
+          
+          console.log('🔍 Médico encontrado:', medicoEncontrado?.nome || 'NÃO ENCONTRADO');
 
           if (medicoEncontrado) {
             // Converter data de nascimento para formato ISO
