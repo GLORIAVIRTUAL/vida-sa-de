@@ -32,6 +32,55 @@ const EMOJIS = [
   "💳", "💰", "🎉", "👋", "😃", "🤝", "👏", "💪"
 ];
 
+// Função para comprimir imagem
+const compressImage = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        
+        // Reduzir dimensões se muito grande
+        const maxDimension = 2048;
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height *= maxDimension / width;
+            width = maxDimension;
+          } else {
+            width *= maxDimension / height;
+            height = maxDimension;
+          }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Converter para blob com qualidade reduzida
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const compressedFile = new File([blob], file.name, {
+              type: 'image/jpeg',
+              lastModified: Date.now()
+            });
+            resolve(compressedFile);
+          } else {
+            reject(new Error('Falha ao comprimir'));
+          }
+        }, 'image/jpeg', 0.8);
+      };
+      img.onerror = reject;
+    };
+    reader.onerror = reject;
+  });
+};
+
 export default function ChatToolbar({ 
   onSendMessage, 
   inputValue, 
@@ -54,7 +103,19 @@ export default function ChatToolbar({
 
     setUploading(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      let fileToUpload = file;
+      
+      // Comprimir imagem se for maior que 4MB (Meta permite até 5MB)
+      if (type === 'image' && file.size > 4 * 1024 * 1024) {
+        try {
+          fileToUpload = await compressImage(file);
+          console.log('Imagem comprimida:', file.size, '→', fileToUpload.size);
+        } catch (err) {
+          console.warn('Erro ao comprimir, enviando original:', err);
+        }
+      }
+      
+      const { file_url } = await base44.integrations.Core.UploadFile({ file: fileToUpload });
       
       // Enviar via WhatsApp (apenas mídia, sem texto)
       await base44.functions.invoke('enviarMensagemHumano', {
