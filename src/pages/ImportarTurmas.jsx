@@ -157,52 +157,61 @@ export default function ImportarTurmas() {
         }
       });
 
-      // Buscar turmas mais atualizadas do banco
-      const turmasAtuais = await base44.entities.Turma.list();
-      const turmasCriadasAgora = {}; // Cache de turmas criadas nesta importação
+      // Cache de turmas criadas nesta importação
+      const turmasCriadasAgora = {};
 
       // Processar cada turma
       for (const [nomeTurma, dadosTurma] of Object.entries(turmasAgrupadas)) {
         try {
-          // Verificar se turma já existe (no banco ou criada nesta importação)
-          let turma = turmasAtuais.find(t => t.nome.toLowerCase().trim() === nomeTurma.toLowerCase().trim());
-          
           // Verificar se já criamos esta turma nesta mesma importação
-          if (!turma && turmasCriadasAgora[nomeTurma.toLowerCase().trim()]) {
-            turma = turmasCriadasAgora[nomeTurma.toLowerCase().trim()];
+          let turma = turmasCriadasAgora[nomeTurma.toLowerCase().trim()];
+          
+          // Se não, verificar no banco (buscar fresh)
+          if (!turma) {
+            const turmasExistentes = await base44.entities.Turma.list();
+            turma = turmasExistentes.find(t => t.nome.toLowerCase().trim() === nomeTurma.toLowerCase().trim());
           }
           
           if (!turma) {
-            // Detectar modalidade
+            // Detectar modalidade da planilha ou do nome
             let modalidade = 'Outro';
+            const modalidadePlanilha = dadosTurma.modalidade?.toLowerCase() || '';
             const nomeLower = nomeTurma.toLowerCase();
-            if (nomeLower.includes('hidro')) modalidade = 'Hidroginástica';
-            else if (nomeLower.includes('pilates')) modalidade = 'Pilates';
-            else if (nomeLower.includes('natação') || nomeLower.includes('natacao')) modalidade = 'Natação';
+            
+            if (modalidadePlanilha.includes('hidro') || nomeLower.includes('hidro')) modalidade = 'Hidroginástica';
+            else if (modalidadePlanilha.includes('pilates') || nomeLower.includes('pilates')) modalidade = 'Pilates';
+            else if (modalidadePlanilha.includes('nata') || nomeLower.includes('nata')) modalidade = 'Natação';
             
             // Encontrar professor
             let medicoId = medicos[0]?.id;
             if (dadosTurma.professor) {
               const prof = medicos.find(m => 
-                m.nome.toLowerCase().includes(dadosTurma.professor.toLowerCase())
+                m.nome.toLowerCase().includes(dadosTurma.professor.toLowerCase()) ||
+                dadosTurma.professor.toLowerCase().includes(m.nome.split(' ')[0].toLowerCase())
               );
               if (prof) medicoId = prof.id;
             }
 
-            // Extrair horário
+            // Extrair horário (formato "10:00 - 10:50" ou "10:00")
             let horarioInicio = '08:00';
             let horarioFim = '09:00';
             if (dadosTurma.horario) {
-              const match = dadosTurma.horario.match(/(\d{1,2}):?(\d{2})?/);
-              if (match) {
-                horarioInicio = `${match[1].padStart(2, '0')}:${match[2] || '00'}`;
-                const horaFim = parseInt(match[1]) + 1;
-                horarioFim = `${String(horaFim).padStart(2, '0')}:${match[2] || '00'}`;
+              const matchRange = dadosTurma.horario.match(/(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/);
+              if (matchRange) {
+                horarioInicio = `${matchRange[1].padStart(2, '0')}:${matchRange[2]}`;
+                horarioFim = `${matchRange[3].padStart(2, '0')}:${matchRange[4]}`;
+              } else {
+                const match = dadosTurma.horario.match(/(\d{1,2}):?(\d{2})?/);
+                if (match) {
+                  horarioInicio = `${match[1].padStart(2, '0')}:${match[2] || '00'}`;
+                  const horaFim = parseInt(match[1]) + 1;
+                  horarioFim = `${String(horaFim).padStart(2, '0')}:${match[2] || '00'}`;
+                }
               }
             }
 
             // Extrair dias da semana
-            let diasSemana = [1, 3, 5]; // Segunda, Quarta, Sexta por padrão
+            let diasSemana = [1, 3, 5];
             if (dadosTurma.dias) {
               const diasTexto = dadosTurma.dias.toLowerCase();
               diasSemana = [];
@@ -223,6 +232,8 @@ export default function ImportarTurmas() {
               if (!isNaN(cap) && cap > 0) capacidadeMaxima = cap;
             }
 
+            console.log('Criando turma:', nomeTurma, { modalidade, medicoId, horarioInicio, horarioFim });
+
             // Criar turma
             turma = await base44.entities.Turma.create({
               nome: nomeTurma,
@@ -231,13 +242,16 @@ export default function ImportarTurmas() {
               horario_inicio: horarioInicio,
               horario_fim: horarioFim,
               dias_semana: diasSemana,
-              capacidade_maxima: Math.max(dadosTurma.alunos.length, capacidadeMaxima),
+              capacidade_maxima: Math.max(dadosTurma.alunos.length || 1, capacidadeMaxima),
               status: 'Ativa'
             });
             turmasCriadas++;
             
             // Salvar no cache para não duplicar
             turmasCriadasAgora[nomeTurma.toLowerCase().trim()] = turma;
+            console.log('Turma criada com sucesso:', turma.id);
+          } else {
+            console.log('Turma já existe:', nomeTurma);
           }
 
           turmasMap[nomeTurma] = turma;
