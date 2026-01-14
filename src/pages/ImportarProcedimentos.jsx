@@ -16,6 +16,7 @@ export default function ImportarProcedimentos() {
   const [importando, setImportando] = useState(false);
   const [resultado, setResultado] = useState(null);
   const [erro, setErro] = useState(null);
+  const [exportando, setExportando] = useState(false);
 
   useEffect(() => {
     carregarCategorias();
@@ -99,13 +100,14 @@ export default function ImportarProcedimentos() {
         const dados = parseCSV(texto);
         
         let criados = 0;
+        let atualizados = 0;
         let erros = 0;
         const detalhesErros = [];
         
         for (const item of dados) {
           try {
-            // Criar procedimento
-            const novoProcedimento = await base44.entities.Procedimento.create({
+            const procedimentoId = item.id;
+            const dadosProcedimento = {
               nome: item.nome || item[''] || Object.values(item)[0],
               codigo: item.codigo || '',
               especialidade: item.especialidade || 'Geral',
@@ -113,30 +115,55 @@ export default function ImportarProcedimentos() {
               valor_repasse_medico: item.valor_repasse_medico ? parseFloat(item.valor_repasse_medico) : null,
               descricao: item.descricao || '',
               status: item.status || 'Ativo'
-            });
+            };
             
-            // Criar preços por categoria
+            let procedimento;
+            
+            // Se tem ID, tenta atualizar. Se não tem, cria novo
+            if (procedimentoId && procedimentoId.startsWith('proc_')) {
+              try {
+                procedimento = await base44.entities.Procedimento.update(procedimentoId, dadosProcedimento);
+                atualizados++;
+              } catch {
+                // Se não encontrou, cria novo
+                procedimento = await base44.entities.Procedimento.create(dadosProcedimento);
+                criados++;
+              }
+            } else {
+              procedimento = await base44.entities.Procedimento.create(dadosProcedimento);
+              criados++;
+            }
+            
+            // Atualizar/criar preços por categoria
             for (const cat of categorias) {
               const nomeCategoria = cat.nome;
-              // Procurar coluna com nome da categoria
               const valorColuna = item[nomeCategoria] || item[nomeCategoria.toLowerCase()];
               
               if (valorColuna) {
-                // Limpar valor (remover R$, espaços, etc)
                 const valorLimpo = valorColuna.replace(/[R$\s]/g, '').replace(',', '.');
                 const valor = parseFloat(valorLimpo);
                 
-                if (!isNaN(valor) && valor > 0) {
-                  await base44.entities.TabelaPreco.create({
-                    procedimento_id: novoProcedimento.id,
-                    categoria_id: cat.id,
-                    valor: valor
+                if (!isNaN(valor) && valor >= 0) {
+                  // Buscar preço existente
+                  const precosExistentes = await base44.entities.TabelaPreco.filter({
+                    procedimento_id: procedimento.id,
+                    categoria_id: cat.id
                   });
+                  
+                  if (precosExistentes.length > 0) {
+                    // Atualizar
+                    await base44.entities.TabelaPreco.update(precosExistentes[0].id, { valor });
+                  } else {
+                    // Criar novo
+                    await base44.entities.TabelaPreco.create({
+                      procedimento_id: procedimento.id,
+                      categoria_id: cat.id,
+                      valor: valor
+                    });
+                  }
                 }
               }
             }
-            
-            criados++;
           } catch (err) {
             erros++;
             detalhesErros.push(`${item.nome || 'Item'}: ${err.message}`);
@@ -146,6 +173,7 @@ export default function ImportarProcedimentos() {
         setResultado({
           total: dados.length,
           criados,
+          atualizados,
           erros,
           detalhesErros
         });
@@ -158,15 +186,61 @@ export default function ImportarProcedimentos() {
     }
   };
 
+  const exportarProcedimentosAtuais = async () => {
+    setExportando(true);
+    try {
+      const procedimentos = await base44.entities.Procedimento.list('-created_date', 5000);
+      const tabelaPrecos = await base44.entities.TabelaPreco.list('-created_date', 10000);
+      
+      const headers = ['id', 'nome', 'codigo', 'especialidade', 'duracao_minutos', 'valor_repasse_medico', 'descricao', 'status'];
+      categorias.forEach(cat => headers.push(cat.nome));
+      
+      const linhas = [headers.join(',')];
+      
+      for (const proc of procedimentos) {
+        const linha = [
+          proc.id,
+          `"${proc.nome || ''}"`,
+          proc.codigo || '',
+          proc.especialidade || 'Geral',
+          proc.duracao_minutos || '',
+          proc.valor_repasse_medico || '',
+          `"${proc.descricao || ''}"`,
+          proc.status || 'Ativo'
+        ];
+        
+        // Adicionar preços de cada categoria
+        categorias.forEach(cat => {
+          const preco = tabelaPrecos.find(p => p.procedimento_id === proc.id && p.categoria_id === cat.id);
+          linha.push(preco ? preco.valor.toString() : '');
+        });
+        
+        linhas.push(linha.join(','));
+      }
+      
+      const csv = linhas.join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `procedimentos_${new Date().toISOString().split('T')[0]}.csv`;
+      link.click();
+    } catch (err) {
+      setErro(`Erro ao exportar: ${err.message}`);
+    } finally {
+      setExportando(false);
+    }
+  };
+
   const gerarModeloCSV = () => {
-    const headers = ['nome', 'codigo', 'especialidade', 'duracao_minutos', 'valor_repasse_medico', 'descricao', 'status'];
+    const headers = ['id', 'nome', 'codigo', 'especialidade', 'duracao_minutos', 'valor_repasse_medico', 'descricao', 'status'];
     
-    // Adicionar colunas das categorias de preço
     categorias.forEach(cat => {
       headers.push(cat.nome);
     });
     
     const linhaExemplo = [
+      'proc_abc123',
       'HEMOGRAMA COMPLETO',
       'HEM001',
       'Geral',
@@ -176,7 +250,6 @@ export default function ImportarProcedimentos() {
       'Ativo'
     ];
     
-    // Adicionar valores exemplo para cada categoria
     categorias.forEach(() => {
       linhaExemplo.push('25.00');
     });
@@ -198,10 +271,29 @@ export default function ImportarProcedimentos() {
           <h1 className="text-2xl font-bold">Importar Procedimentos</h1>
           <p className="text-gray-500">Importe procedimentos e preços via arquivo CSV</p>
         </div>
-        <Button variant="outline" onClick={gerarModeloCSV}>
-          <Download className="w-4 h-4 mr-2" />
-          Baixar Modelo CSV
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={gerarModeloCSV}>
+            <Download className="w-4 h-4 mr-2" />
+            Modelo CSV
+          </Button>
+          <Button 
+            onClick={exportarProcedimentosAtuais}
+            disabled={exportando}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            {exportando ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Exportando...
+              </>
+            ) : (
+              <>
+                <Download className="w-4 h-4 mr-2" />
+                Exportar Procedimentos Atuais
+              </>
+            )}
+          </Button>
+        </div>
       </div>
 
       <Card>
@@ -229,7 +321,7 @@ export default function ImportarProcedimentos() {
             Upload do Arquivo CSV
           </CardTitle>
           <CardDescription>
-            Formato esperado: nome, codigo, especialidade, duracao_minutos, valor_repasse_medico, descricao, status, [categorias de preço...]
+            <strong>Exportar os procedimentos atuais primeiro</strong> para manter os IDs. Formato: id, nome, codigo, especialidade, duracao_minutos, valor_repasse_medico, descricao, status, [categorias]
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -307,7 +399,7 @@ export default function ImportarProcedimentos() {
               <CheckCircle className="w-4 h-4" />
               <AlertDescription>
                 <p><strong>Importação concluída!</strong></p>
-                <p>Total: {resultado.total} | Criados: {resultado.criados} | Erros: {resultado.erros}</p>
+                <p>Total: {resultado.total} | Criados: {resultado.criados} | Atualizados: {resultado.atualizados} | Erros: {resultado.erros}</p>
                 {resultado.detalhesErros.length > 0 && (
                   <details className="mt-2">
                     <summary className="cursor-pointer text-red-600">Ver erros</summary>
@@ -338,13 +430,13 @@ export default function ImportarProcedimentos() {
         <CardContent>
           <div className="bg-gray-100 p-4 rounded-lg overflow-x-auto">
             <code className="text-xs whitespace-pre">
-{`nome,codigo,especialidade,duracao_minutos,valor_repasse_medico,descricao,status,Particular,Cartão Mais Vida,Prefeitura de Pinhal
-HEMOGRAMA COMPLETO,HEM001,Geral,30,0,Exame de sangue,Ativo,25.00,20.00,15.00
-GLICOSE,GLI001,Geral,15,0,Exame de glicose,Ativo,15.00,12.00,10.00`}
+{`id,nome,codigo,especialidade,duracao_minutos,valor_repasse_medico,descricao,status,Particular,Cartão Mais Vida
+proc_abc123,HEMOGRAMA COMPLETO,HEM001,Geral,30,0,Exame de sangue,Ativo,25.00,20.00
+proc_xyz456,GLICOSE,GLI001,Geral,15,0,Exame de glicose,Ativo,15.00,12.00`}
             </code>
           </div>
           <p className="text-sm text-gray-500 mt-2">
-            As colunas de preço devem ter exatamente o mesmo nome das categorias cadastradas no sistema.
+            <strong>Importante:</strong> Inclua a coluna "id" para atualizar procedimentos existentes. Sem o ID, novos procedimentos serão criados. Use o botão "Exportar Procedimentos Atuais" para obter o CSV com os IDs.
           </p>
         </CardContent>
       </Card>
