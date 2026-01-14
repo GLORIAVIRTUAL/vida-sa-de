@@ -874,12 +874,35 @@ INSTRUÇÕES GERAIS:
         const contato = contatos[0];
         const historicoAtual = contato.historico_mensagens || [];
 
-        // Verificar se a resposta já foi enviada recentemente (últimas 3 mensagens)
-        const ultimasRespostas = historicoAtual.filter(m => m.role === 'assistant').slice(-3);
-        const respostaJaEnviada = ultimasRespostas.some(m => 
-          m.content === llmResponse || 
-          (llmResponse.length > 100 && m.content.substring(0, 100) === llmResponse.substring(0, 100))
-        );
+        // Verificar se a resposta já foi enviada recentemente (últimas 5 mensagens)
+        const ultimasRespostas = historicoAtual.filter(m => m.role === 'assistant').slice(-5);
+        
+        // Verificar duplicata por conteúdo similar (especialmente para orçamentos)
+        const respostaJaEnviada = ultimasRespostas.some(m => {
+          if (!m.content || !llmResponse) return false;
+          
+          // Verificação exata
+          if (m.content === llmResponse) return true;
+          
+          // Verificação por início similar (para mensagens longas como orçamentos)
+          if (llmResponse.length > 100 && m.content.length > 100) {
+            const inicio1 = m.content.substring(0, 150).toLowerCase().replace(/\s+/g, ' ');
+            const inicio2 = llmResponse.substring(0, 150).toLowerCase().replace(/\s+/g, ' ');
+            if (inicio1 === inicio2) return true;
+          }
+          
+          // Verificação específica para orçamentos (contém ORÇAMENTO e VALOR TOTAL similar)
+          if (llmResponse.includes('ORÇAMENTO') && m.content.includes('ORÇAMENTO')) {
+            const valorTotal1 = m.content.match(/VALOR TOTAL[:\s]*R\$\s*([\d.,]+)/i);
+            const valorTotal2 = llmResponse.match(/VALOR TOTAL[:\s]*R\$\s*([\d.,]+)/i);
+            if (valorTotal1 && valorTotal2 && valorTotal1[1] === valorTotal2[1]) {
+              console.log('⚠️ Orçamento duplicado detectado (mesmo valor total)');
+              return true;
+            }
+          }
+          
+          return false;
+        });
 
         if (respostaJaEnviada) {
           console.log('⚠️ Resposta duplicada detectada - não salvando novamente');

@@ -25,13 +25,16 @@ import CadastroRapidoPaciente from '../components/pacientes/CadastroRapidoPacien
 function renderMensagemContent(content, isUser) {
   if (!content) return null;
   
-  // Detectar URLs de mídia no conteúdo
-  const urlMatch = content.match(/(https?:\/\/[^\s]+\.(jpg|jpeg|png|gif|webp|pdf|doc|docx|mp3|ogg|wav|webm|m4a))/i);
+  // Detectar URLs de mídia no conteúdo (incluindo URLs longas de storage)
+  const urlMatch = content.match(/(https?:\/\/[^\s\]]+\.(jpg|jpeg|png|gif|webp|pdf|doc|docx|mp3|ogg|wav|webm|m4a)(\?[^\s]*)?)/i);
   
   // Detectar padrões de mídia enviada
   const isImage = /\[.*📷.*\]|📷 Imagem|\.(?:jpg|jpeg|png|gif|webp)/i.test(content);
-  const isDocument = /\[.*📎.*\]|📄 Documento|Arquivo:|\.(?:pdf|doc|docx)/i.test(content);
+  const isDocument = /\[.*📎.*\]|\[Documento:.*\]|📄 Documento|Arquivo:|\.pdf/i.test(content);
   const isAudio = /\[.*🎤.*\]|🎤 Áudio|Áudio enviado/i.test(content);
+  
+  // Detectar padrão [Documento: nome.pdf] com ou sem URL
+  const documentoMatch = content.match(/\[Documento:\s*([^\]]+)\]/i);
   
   // Se encontrou URL de mídia
   if (urlMatch) {
@@ -50,16 +53,20 @@ function renderMensagemContent(content, isUser) {
     }
     
     if (ext === 'pdf' || ext === 'doc' || ext === 'docx') {
+      const nomeArquivo = documentoMatch ? documentoMatch[1] : 'Documento';
       return (
         <div className="space-y-2">
           <a 
             href={url} 
             target="_blank" 
             rel="noopener noreferrer"
-            className={`flex items-center gap-2 p-2 rounded ${isUser ? 'bg-gray-100 hover:bg-gray-200' : 'bg-blue-500 hover:bg-blue-400'}`}
+            className={`flex items-center gap-2 p-3 rounded-lg border ${isUser ? 'bg-gray-50 hover:bg-gray-100 border-gray-200' : 'bg-blue-500/20 hover:bg-blue-500/30 border-blue-400'}`}
           >
-            <span>📄</span>
-            <span className="text-sm underline">Abrir documento</span>
+            <span className="text-2xl">📄</span>
+            <div className="flex flex-col">
+              <span className="text-sm font-medium">{nomeArquivo}</span>
+              <span className="text-xs opacity-70">Clique para abrir</span>
+            </div>
           </a>
         </div>
       );
@@ -76,15 +83,27 @@ function renderMensagemContent(content, isUser) {
     }
   }
   
-  // Se é indicação de mídia mas sem URL visível, mostrar como está
-  if (isImage || isDocument || isAudio) {
-    // Tentar extrair URL do histórico formatado [👤 Nome]: conteúdo
-    const cleanContent = content.replace(/\[👤[^\]]*\]:\s*/, '');
-    return <p className="text-sm">{cleanContent}</p>;
+  // Se é indicação de documento sem URL visível, mostrar como card de documento
+  if (documentoMatch && !urlMatch) {
+    return (
+      <div className="flex items-center gap-2 p-3 rounded-lg border bg-gray-50 border-gray-200">
+        <span className="text-2xl">📄</span>
+        <div className="flex flex-col">
+          <span className="text-sm font-medium">{documentoMatch[1]}</span>
+          <span className="text-xs text-gray-500">Documento recebido</span>
+        </div>
+      </div>
+    );
   }
   
-  // Texto normal - usar ReactMarkdown
-  return null; // Retorna null para usar ReactMarkdown padrão
+  // Se é indicação de mídia mas sem URL visível, mostrar como está
+  if (isImage || isDocument || isAudio) {
+    const cleanContent = content.replace(/\[👤[^\]]*\]:\s*/, '');
+    return <p className="text-sm whitespace-pre-wrap">{cleanContent}</p>;
+  }
+  
+  // Texto normal
+  return null;
 }
 
 // ========== COMPONENTE: CHAT ==========
