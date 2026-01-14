@@ -567,6 +567,7 @@ Retorne JSON.`;
               nome_paciente: { type: ["string", "null"] },
               data_nascimento: { type: ["string", "null"] },
               medico_nome: { type: ["string", "null"] },
+              medico_id: { type: ["string", "null"] },
               data_agendamento: { type: ["string", "null"] },
               horario: { type: ["string", "null"] }
             }
