@@ -57,15 +57,17 @@ Deno.serve(async (req) => {
           type: 'audio',
           audio: { link: mediaUrl }
         };
-      } else {
+      } else if (messageText) {
         // Mensagem de texto padrão - adicionar nome do usuário
-        const mensagemComNome = `*${user.full_name || 'Recepção'}:* ${messageText || ''}`;
+        const mensagemComNome = `*${user.full_name || 'Recepção'}:* ${messageText}`;
         messageBody = {
           messaging_product: 'whatsapp',
           to: numero,
           type: 'text',
           text: { body: mensagemComNome }
         };
+      } else {
+        return Response.json({ error: 'Nenhum conteúdo para enviar' }, { status: 400 });
       }
 
       const response = await fetch(`https://graph.facebook.com/v18.0/${phoneId}/messages`, {
@@ -94,13 +96,15 @@ Deno.serve(async (req) => {
         const timestamp = new Date().toISOString();
         
         // Salvar conteúdo da mensagem - incluir URL da mídia para exibição
-        let conteudoMensagem = messageText || '';
+        let conteudoMensagem = '';
         if (messageType === 'image' && mediaUrl) {
-          conteudoMensagem = `📷 ${mediaUrl}`;
+          conteudoMensagem = `📷 Imagem: ${mediaUrl}`;
         } else if (messageType === 'document' && mediaUrl) {
           conteudoMensagem = `📄 ${fileName || 'Documento'}: ${mediaUrl}`;
         } else if (messageType === 'audio' && mediaUrl) {
-          conteudoMensagem = `🎤 ${mediaUrl}`;
+          conteudoMensagem = `🎤 Áudio: ${mediaUrl}`;
+        } else {
+          conteudoMensagem = messageText || '';
         }
         
         historicoAtual.push({

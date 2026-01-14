@@ -56,14 +56,13 @@ export default function ChatToolbar({
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
       
-      // Enviar via WhatsApp
+      // Enviar via WhatsApp (apenas mídia, sem texto)
       await base44.functions.invoke('enviarMensagemHumano', {
         phoneNumber,
         contatoId,
         messageType: type === 'image' ? 'image' : 'document',
         mediaUrl: file_url,
-        fileName: file.name,
-        messageText: type === 'image' ? '📷 Imagem enviada' : `📎 ${file.name}`
+        fileName: file.name
       });
       
       onSendMessage(`[${type === 'image' ? '📷 Imagem' : '📎 Arquivo'}: ${file.name}]`, true);
@@ -95,8 +94,7 @@ export default function ChatToolbar({
             phoneNumber,
             contatoId,
             messageType: 'audio',
-            mediaUrl: file_url,
-            messageText: '🎤 Áudio enviado'
+            mediaUrl: file_url
           });
           
           onSendMessage('[🎤 Áudio enviado]', true);
