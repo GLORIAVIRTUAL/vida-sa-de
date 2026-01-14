@@ -9,30 +9,62 @@ import { Loader2, Save, Printer } from "lucide-react";
 import { CategoriaPreco } from "@/entities/all";
 
 export default function FormularioPaciente({ paciente, dadosIniciais, onSalvar, onCancelar }) {
-  const [formData, setFormData] = useState({
-    nome: '',
-    cpf: '',
-    rg: '',
-    data_nascimento: '',
-    telefone: '',
-    telefone_secundario: '',
-    email: '',
-    endereco: {
-      cep: '',
-      logradouro: '',
-      numero: '',
-      complemento: '',
-      bairro: '',
-      cidade: '',
-      estado: ''
-    },
-    convenio: 'Particular',
-    numero_carteira: '',
-    prioridade: 'Normal',
-    observacoes: '',
-    como_conheceu: '',
-    como_conheceu_outro: ''
-  });
+  // Determinar valores iniciais com base em paciente ou dadosIniciais
+  const getInitialFormData = () => {
+    if (paciente) {
+      return {
+        nome: paciente.nome || '',
+        cpf: paciente.cpf || '',
+        rg: paciente.rg || '',
+        data_nascimento: paciente.data_nascimento || '',
+        telefone: paciente.telefone || '',
+        telefone_secundario: paciente.telefone_secundario || '',
+        email: paciente.email || '',
+        endereco: paciente.endereco || {
+          cep: '',
+          logradouro: '',
+          numero: '',
+          complemento: '',
+          bairro: '',
+          cidade: '',
+          estado: ''
+        },
+        convenio: paciente.convenio || 'Particular',
+        numero_carteira: paciente.numero_carteira || '',
+        prioridade: paciente.prioridade || 'Normal',
+        observacoes: paciente.observacoes || '',
+        como_conheceu: paciente.como_conheceu || '',
+        como_conheceu_outro: paciente.como_conheceu_outro || ''
+      };
+    }
+    
+    return {
+      nome: dadosIniciais?.nome || '',
+      cpf: '',
+      rg: '',
+      data_nascimento: '',
+      telefone: dadosIniciais?.telefone || '',
+      telefone_secundario: '',
+      email: '',
+      endereco: {
+        cep: '',
+        logradouro: '',
+        numero: '',
+        complemento: '',
+        bairro: '',
+        cidade: '',
+        estado: ''
+      },
+      convenio: 'Particular',
+      numero_carteira: '',
+      prioridade: 'Normal',
+      observacoes: '',
+      como_conheceu: '',
+      como_conheceu_outro: ''
+    };
+  };
+
+  const [formData, setFormData] = useState(getInitialFormData);
   const [loading, setLoading] = useState(false);
   const [categorias, setCategorias] = useState([]);
 
