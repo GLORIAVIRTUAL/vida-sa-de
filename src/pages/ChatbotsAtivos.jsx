@@ -19,6 +19,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import ContatosTab from '../components/gloria/ContatosTab';
 import { UserPlus } from 'lucide-react';
+import CadastroRapidoPaciente from '../components/pacientes/CadastroRapidoPaciente';
 
 // Função para renderizar conteúdo de mensagem (texto, imagem, documento, áudio)
 function renderMensagemContent(content, isUser) {
@@ -94,6 +95,7 @@ function ChatTab() {
   const [inputMsg, setInputMsg] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [modoHumano, setModoHumano] = useState(false);
+  const [modalCadastroAberto, setModalCadastroAberto] = useState(false);
   const messagesEndRef = useRef(null);
   const navigate = useNavigate();
   
@@ -299,13 +301,7 @@ function ChatTab() {
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={() => {
-                        const params = new URLSearchParams();
-                        if (contatoSelecionado.nome) params.set('nome', contatoSelecionado.nome);
-                        if (contatoSelecionado.telefone) params.set('telefone', contatoSelecionado.telefone);
-                        params.set('abrirForm', 'true');
-                        navigate(createPageUrl('Pacientes') + '?' + params.toString());
-                      }}
+                      onClick={() => setModalCadastroAberto(true)}
                       className="text-green-600 hover:bg-green-50"
                     >
                       <UserPlus className="w-3 h-3 mr-1" />
@@ -406,6 +402,13 @@ function ChatTab() {
           )}
         </Card>
       </div>
+
+      <CadastroRapidoPaciente
+        open={modalCadastroAberto}
+        onClose={() => setModalCadastroAberto(false)}
+        nomeInicial={contatoSelecionado?.nome}
+        telefoneInicial={contatoSelecionado?.telefone}
+      />
     </div>
   );
 }
