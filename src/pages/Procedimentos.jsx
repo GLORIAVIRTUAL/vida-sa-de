@@ -72,6 +72,15 @@ export default function Procedimentos() {
     const preco = tabelaPrecos.find(
       (p) => p.procedimento_id === procedimentoId && p.categoria_id === categoriaId
     );
+    
+    // Debug - mostrar o que temos na tabela de preços para este procedimento
+    if (!preco) {
+      const precosDesteProcedimento = tabelaPrecos.filter(p => p.procedimento_id === procedimentoId);
+      if (precosDesteProcedimento.length === 0) {
+        console.log(`⚠️ Nenhum preço encontrado para procedimento_id: ${procedimentoId}`);
+      }
+    }
+    
     return preco ? `R$ ${preco.valor.toFixed(2)}` : "-";
   };
 
