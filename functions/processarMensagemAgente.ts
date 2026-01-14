@@ -295,10 +295,13 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
       
       let especialidadeDetectada = null;
       const msgLower = messageText.toLowerCase();
+      const historicoLower = (historicoConversa || '').toLowerCase();
+      const textoCompleto = msgLower + ' ' + historicoLower;
+
       for (const esp of especialidades) {
         const espLower = esp.toLowerCase();
-        // Verifica se a mensagem contém a especialidade (palavra inteira ou início)
-        if (msgLower.includes(espLower) || msgLower.includes(espLower.split(' ')[0])) {
+        // Verifica se a mensagem ou histórico contém a especialidade
+        if (textoCompleto.includes(espLower)) {
           especialidadeDetectada = esp;
           console.log(`🎯 Especialidade detectada: ${esp}`);
           break;
