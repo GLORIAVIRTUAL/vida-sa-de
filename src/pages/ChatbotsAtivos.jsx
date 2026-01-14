@@ -97,9 +97,13 @@ function ChatTab() {
   const messagesEndRef = useRef(null);
   const navigate = useNavigate();
   
-  // Scroll para última mensagem
+  const chatContainerRef = useRef(null);
+  
+  // Scroll para última mensagem (apenas dentro do container do chat)
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
   };
   
   useEffect(() => {
