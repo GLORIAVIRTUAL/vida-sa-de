@@ -294,7 +294,7 @@ function ChatTab() {
                       variant={modoHumano ? "default" : "outline"} 
                       size="sm"
                       onClick={toggleAtendimentoHumano}
-                      className={modoHumano ? "bg-orange-500 hover:bg-orange-600" : ""}
+                      className={modoHumano ? "bg-green-500 hover:bg-green-600" : ""}
                     >
                       <User className="w-3 h-3 mr-1" />
                       {modoHumano ? "Humano Ativo" : "Assumir"}
@@ -315,7 +315,7 @@ function ChatTab() {
                   </div>
                 </div>
                 {modoHumano && (
-                  <div className="mt-2 p-2 bg-orange-100 rounded-lg text-xs text-orange-800 flex items-center gap-2">
+                  <div className="mt-2 p-2 bg-green-100 rounded-lg text-xs text-green-800 flex items-center gap-2">
                     <User className="w-4 h-4" />
                     <span><strong>Atendimento humano ativo</strong> - A IA está pausada. Clique em "Assumir" novamente para reativar a Glória.</span>
                   </div>
@@ -338,13 +338,13 @@ function ChatTab() {
                             msg.role === 'user' 
                               ? 'bg-white text-gray-900 border' 
                               : isHumano 
-                                ? 'bg-orange-500 text-white' 
+                                ? 'bg-green-100 text-green-900' 
                                 : 'bg-blue-600 text-white'
                           }`}>
-                            {msg.content && (
+                            {(msg.content || customRender) && (
                               <div className="p-3">
                                 {customRender || (
-                                  <ReactMarkdown className={`text-sm prose prose-sm max-w-none [&>p]:m-0 ${msg.role !== 'user' ? 'prose-invert' : ''}`}>
+                                  <ReactMarkdown className={`text-sm prose prose-sm max-w-none [&>p]:m-0 ${msg.role !== 'user' && !isHumano ? 'prose-invert' : ''}`}>
                                     {msg.content}
                                   </ReactMarkdown>
                                 )}
@@ -355,7 +355,7 @@ function ChatTab() {
                                 msg.role === 'user' 
                                   ? 'text-gray-400' 
                                   : isHumano 
-                                    ? 'text-orange-200' 
+                                    ? 'text-green-600' 
                                     : 'text-blue-200'
                               }`}>
                                 {format(new Date(msg.timestamp), 'HH:mm', { locale: ptBR })}
