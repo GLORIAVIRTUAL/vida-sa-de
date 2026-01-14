@@ -430,6 +430,20 @@ Retorne um JSON com os dados encontrados.`;
             });
 
             if (agendamentosExistentes.length === 0) {
+              // Buscar categoria "Particular"
+              let categoriaParticularId = null;
+              try {
+                const categorias = await base44.asServiceRole.entities.CategoriaPreco.filter({ 
+                  nome: 'Particular',
+                  status: 'Ativo'
+                });
+                if (categorias.length > 0) {
+                  categoriaParticularId = categorias[0].id;
+                }
+              } catch (e) {
+                console.log('⚠️ Erro ao buscar categoria Particular:', e.message);
+              }
+              
               // Criar agendamento
               const novoAgendamento = await base44.asServiceRole.entities.Agendamento.create({
                 paciente_id: paciente.id,
@@ -439,6 +453,7 @@ Retorne um JSON com os dados encontrados.`;
                 horario: extracao.horario,
                 tipo_servico: 'Consulta',
                 status: 'Agendado',
+                categoria_preco_id: categoriaParticularId,
                 observacoes: 'Agendado pela Glória',
                 agendado_por: 'Glória',
                 agendado_por_tipo: 'chatbot'
