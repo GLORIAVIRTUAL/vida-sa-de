@@ -532,11 +532,15 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
         // Buscar médicos e disponibilidades diretamente
         let medicosParaBuscar = [];
         
-        // Sempre buscar todos os médicos ativos e filtrar depois
-        // porque a especialidade pode estar no campo 'especialidade' OU no array 'especialidades'
-        const todosMedicos = await base44.asServiceRole.entities.Medico.filter({ status: 'Ativo' });
+        // Se detectou médico específico, usar apenas ele
+        if (medicoEspecificoDetectado) {
+          medicosParaBuscar = [medicoEspecificoDetectado];
+          console.log(`🎯 Usando médico específico: ${medicoEspecificoDetectado.nome}`);
+        } else {
+          // Buscar todos os médicos ativos e filtrar depois
+          const todosMedicos = await base44.asServiceRole.entities.Medico.filter({ status: 'Ativo' });
         
-        if (especialidadeDetectada) {
+          if (especialidadeDetectada) {
           const especialidadeLower = especialidadeDetectada.toLowerCase();
 
           // Mapeamento de sinônimos para especialidades
