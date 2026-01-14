@@ -78,66 +78,102 @@ Deno.serve(async (req) => {
     }
 
     // Verificar se cliente quer cancelar agendamento
-    const querCancelar = /cancelar|desmarcar|n[aã]o (vou|posso|irei)|remarcar|adiar|desistir/i.test(messageText);
+    const querCancelar = /cancelar|desmarcar|n[aã]o (vou|posso|irei)|remarcar|adiar|desistir/i.test(messageText) ||
+                        /cancelar|desmarcar/i.test(historicoConversa || '');
     let infoCancelamento = '';
     let agendamentoCancelado = false;
 
     if (querCancelar) {
       console.log('❌ Cliente quer cancelar agendamento...');
 
-      // Buscar agendamentos do contato
+      // Buscar agendamentos do contato - tentar múltiplas formas
       try {
-        // Primeiro buscar paciente pelo telefone
+        const hoje = new Date().toISOString().split('T')[0];
+        let agendamentosFuturos = [];
+        let nomePaciente = '';
+        
+        // 1. Primeiro buscar paciente pelo telefone
         const pacientes = await base44.asServiceRole.entities.Paciente.filter({ telefone: phoneNumber });
-
+        
         if (pacientes.length > 0) {
           const paciente = pacientes[0];
-
+          nomePaciente = paciente.nome;
+          
           // Buscar agendamentos futuros do paciente
-          const hoje = new Date().toISOString().split('T')[0];
           const agendamentos = await base44.asServiceRole.entities.Agendamento.filter({
             paciente_id: paciente.id,
             status: { $in: ['Agendado', 'Pago'] }
           });
-
-          // Filtrar apenas agendamentos futuros
-          const agendamentosFuturos = agendamentos.filter(ag => ag.data_agendamento >= hoje);
-
-          if (agendamentosFuturos.length > 0) {
-            // Buscar médicos para mostrar nomes
-            const medicos = await base44.asServiceRole.entities.Medico.list();
-            const medicosMap = {};
-            medicos.forEach(m => { medicosMap[m.id] = m; });
-
-            infoCancelamento = `\n\n📋 AGENDAMENTOS ENCONTRADOS PARA CANCELAMENTO:
-    O paciente ${paciente.nome} tem os seguintes agendamentos:\n`;
-
-            agendamentosFuturos.forEach((ag, idx) => {
-              const medico = medicosMap[ag.medico_id];
-              const dataObj = new Date(ag.data_agendamento + 'T12:00:00');
-              const dataFormatada = dataObj.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' });
-
-              infoCancelamento += `\n${idx + 1}. ${ag.tipo_servico} - ${dataFormatada} às ${ag.horario}`;
-              if (medico) infoCancelamento += ` com ${medico.nome} (${medico.especialidade})`;
-              infoCancelamento += `\n   ID: ${ag.id}`;
+          agendamentosFuturos = agendamentos.filter(ag => ag.data_agendamento >= hoje);
+        }
+        
+        // 2. Se não encontrou pelo paciente_id, buscar pelo nome no campo paciente_nome
+        if (agendamentosFuturos.length === 0 && pacientes.length > 0) {
+          const todosAgendamentos = await base44.asServiceRole.entities.Agendamento.filter({
+            status: { $in: ['Agendado', 'Pago'] }
+          });
+          
+          // Filtrar por nome parcial e data futura
+          const nomeLower = pacientes[0].nome.toLowerCase();
+          agendamentosFuturos = todosAgendamentos.filter(ag => {
+            const nomeAgLower = (ag.paciente_nome || '').toLowerCase();
+            return ag.data_agendamento >= hoje && 
+                   (nomeAgLower.includes(nomeLower.split(' ')[0]) || nomeLower.includes(nomeAgLower.split(' ')[0]));
+          });
+        }
+        
+        // 3. Se ainda não encontrou, buscar por nome mencionado no histórico/mensagem
+        if (agendamentosFuturos.length === 0) {
+          // Extrair possível nome do cliente da mensagem ou histórico
+          const textoCompleto = messageText + ' ' + (historicoConversa || '');
+          const nomeMatch = textoCompleto.match(/(?:nome[:\s]+|sou\s+o?\s*|me chamo\s+)([A-Za-zÀ-ÿ]+(?:\s+[A-Za-zÀ-ÿ]+)*)/i);
+          
+          if (nomeMatch) {
+            const nomeBusca = nomeMatch[1].toLowerCase();
+            const todosAgendamentos = await base44.asServiceRole.entities.Agendamento.filter({
+              status: { $in: ['Agendado', 'Pago'] }
             });
-
-            infoCancelamento += `\n\n⚠️ PARA CANCELAR:
-    1. Pergunte QUAL agendamento o cliente deseja cancelar (pelo número ou nome do médico)
-    2. Quando o cliente confirmar qual agendamento, responda EXATAMENTE no formato:
-    [CANCELAR_AGENDAMENTO:ID_DO_AGENDAMENTO]
-    Exemplo: [CANCELAR_AGENDAMENTO:abc123]
-    3. NÃO peça motivo do cancelamento - apenas confirme e cancele
-    4. Após cancelar, informe que o agendamento foi cancelado com sucesso`;
-          } else {
-            infoCancelamento = `\n\n❌ NENHUM AGENDAMENTO FUTURO ENCONTRADO
-    O paciente ${paciente.nome} não possui agendamentos futuros para cancelar.
-    Informe isso gentilmente ao cliente.`;
+            
+            agendamentosFuturos = todosAgendamentos.filter(ag => {
+              const nomeAgLower = (ag.paciente_nome || '').toLowerCase();
+              return ag.data_agendamento >= hoje && nomeAgLower.includes(nomeBusca.split(' ')[0]);
+            });
+            
+            if (agendamentosFuturos.length > 0) {
+              nomePaciente = agendamentosFuturos[0].paciente_nome;
+            }
           }
+        }
+
+        if (agendamentosFuturos.length > 0) {
+          // Buscar médicos para mostrar nomes
+          const medicos = await base44.asServiceRole.entities.Medico.list();
+          const medicosMap = {};
+          medicos.forEach(m => { medicosMap[m.id] = m; });
+
+          infoCancelamento = `\n\n📋 AGENDAMENTOS ENCONTRADOS PARA CANCELAMENTO:
+    O paciente ${nomePaciente || 'vinculado a este telefone'} tem os seguintes agendamentos:\n`;
+
+          agendamentosFuturos.forEach((ag, idx) => {
+            const medico = medicosMap[ag.medico_id];
+            const dataObj = new Date(ag.data_agendamento + 'T12:00:00');
+            const dataFormatada = dataObj.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' });
+
+            infoCancelamento += `\n${idx + 1}. ${ag.tipo_servico} - ${dataFormatada} às ${ag.horario}`;
+            if (medico) infoCancelamento += ` com ${medico.nome} (${medico.especialidade})`;
+            infoCancelamento += `\n   ID: ${ag.id}`;
+          });
+
+          infoCancelamento += `\n\n⚠️ INSTRUÇÕES PARA CANCELAMENTO:
+    1. MOSTRE a lista acima ao cliente e pergunte QUAL deseja cancelar
+    2. Quando o cliente confirmar (pelo número, nome do médico ou data), CANCELE IMEDIATAMENTE
+    3. NÃO peça nome do paciente - já temos os dados
+    4. NÃO peça motivo - apenas confirme e cancele
+    5. Após o cliente indicar qual, informe que foi cancelado com sucesso`;
         } else {
-          infoCancelamento = `\n\n📋 CANCELAMENTO DE AGENDAMENTO
-    O cliente quer cancelar um agendamento mas não encontramos cadastro pelo telefone.
-    Peça o NOME COMPLETO do paciente para localizar o agendamento.`;
+          infoCancelamento = `\n\n❌ NENHUM AGENDAMENTO FUTURO ENCONTRADO
+    Não encontramos agendamentos futuros para este telefone.
+    Peça ao cliente para confirmar se o agendamento foi feito com este número de telefone.`;
         }
       } catch (e) {
         console.error('⚠️ Erro ao buscar agendamentos:', e.message);
