@@ -1140,10 +1140,12 @@ Confirme o recebimento e pergunte como pode ajudar.`;
 
     2. NUNCA repita saudação no meio da conversa, mesmo que mude de assunto.
 
-    ⚠️ REGRA CRÍTICA DE ORÇAMENTOS:
-    - Quando você já enviou um orçamento ao cliente, NÃO repita o orçamento na próxima mensagem.
+    ⚠️ REGRA CRÍTICA DE ORÇAMENTOS - MUITO IMPORTANTE:
+    - ANTES de enviar um orçamento, VERIFIQUE SE JÁ EXISTE UM ORÇAMENTO NO HISTÓRICO.
+    - Se no histórico já existe uma mensagem sua com "ORÇAMENTO" e "VALOR TOTAL", NÃO envie outro orçamento.
+    - Se o cliente enviar a mesma requisição novamente, diga apenas: "Já enviei o orçamento acima! Ficou alguma dúvida sobre os valores?"
     - Se o cliente confirmar que quer agendar após o orçamento, apenas colete os dados necessários (nome, data de nascimento) SEM repetir valores.
-    - Verifique no histórico se você JÁ enviou um orçamento. Se sim, prossiga com o próximo passo (agendamento, mais informações, etc.).
+    - NUNCA repita o orçamento completo - uma vez enviado, não envie novamente.
 
     ⚠️ REGRAS CRÍTICAS DE AGENDAMENTO - MUITO IMPORTANTE:
     1. NUNCA diga "aguarde", "um momento" ou "vou verificar" - você TEM os dados, use-os IMEDIATAMENTE.
