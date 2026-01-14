@@ -467,7 +467,10 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
 
     // Verificar se cliente quer agendar - buscar disponibilidades
     let infoDisponibilidade = '';
-    const querAgendar = /agendar|marcar|consulta|atend|hor[áa]rio|dispon[íi]vel|vaga/i.test(messageText);
+    // Verificar se quer agendar na mensagem atual OU se já está em fluxo de agendamento no histórico
+    const querAgendarMensagem = /agendar|marcar|consulta|atend|hor[áa]rio|dispon[íi]vel|vaga/i.test(messageText);
+    const jaEmFluxoAgendamento = historicoConversa && /agendar|marcar|consulta|vamos agendar|seguir com o agendamento/i.test(historicoConversa);
+    const querAgendar = querAgendarMensagem || jaEmFluxoAgendamento;
     
     if (querAgendar) {
       console.log('📅 Cliente quer agendar - buscando disponibilidades...');
