@@ -131,9 +131,9 @@ export default function Procedimentos() {
                     <td colSpan={categorias.length + 3} className="text-center p-6">Carregando...</td>
                   </tr>
                 ) : filteredProcedimentos.map((proc) => (
-                  <tr key={proc.id} className="border-b hover:bg-gray-50">
-                    <td className="p-3 font-medium">{proc.nome}</td>
-                    <td className="p-3">{proc.especialidade}</td>
+                 <tr key={proc.id} className="border-b hover:bg-gray-50">
+                   <td className="p-3 font-medium">{proc.nome || `ID: ${proc.id}`}</td>
+                   <td className="p-3">{proc.especialidade || '-'}</td>
                     {categorias.map(cat => (
                       <td key={cat.id} className="p-3">{getPreco(proc.id, cat.id)}</td>
                     ))}
