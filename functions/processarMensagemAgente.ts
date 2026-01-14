@@ -972,12 +972,22 @@ INSTRUÇÕES GERAIS:
         // Manter apenas as últimas 50 mensagens
         const historicoLimitado = historicoAtual.slice(-50);
         
+        // Se a conversa estava finalizada, limpar o histórico antigo e começar do zero
+        let historicoParaSalvar = historicoLimitado;
+        if (conversaFinalizada) {
+          console.log('🔄 Limpando histórico antigo - nova conversa');
+          historicoParaSalvar = [
+            { role: 'user', content: messageText, timestamp, messageId },
+            { role: 'assistant', content: llmResponse, timestamp }
+          ];
+        }
+        
         await base44.asServiceRole.entities.Contato.update(contato.id, {
           ultima_mensagem: messageText,
           ultima_resposta: llmResponse,
-          historico_mensagens: historicoLimitado,
+          historico_mensagens: historicoParaSalvar,
           ultima_interacao: timestamp,
-          total_mensagens: (contato.total_mensagens || 0) + 2,
+          total_mensagens: conversaFinalizada ? 2 : (contato.total_mensagens || 0) + 2,
           status: contato.conversa_finalizada ? 'Lead' : contato.status,
           conversa_finalizada: false // Reativa conversa se cliente mandou mensagem
         });
