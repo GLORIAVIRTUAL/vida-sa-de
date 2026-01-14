@@ -146,12 +146,13 @@ function ChatTab() {
   useEffect(() => {
     if (contatoSelecionado && contatos.length > 0) {
       const atualizado = contatos.find(c => c.id === contatoSelecionado.id);
-      if (atualizado) {
+      if (atualizado && atualizado.id === contatoSelecionado.id) {
+        // Apenas atualizar o contato atual, não trocar
         setContatoSelecionado(atualizado);
         setModoHumano(atualizado.atendimento_humano || false);
       }
     }
-  }, [contatos]);
+  }, [contatos, contatoSelecionado?.id]);
 
   useEffect(() => {
     if (contatoSelecionado) {
