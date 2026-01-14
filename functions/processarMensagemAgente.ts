@@ -950,14 +950,10 @@ INSTRUÇÕES GERAIS:
         });
 
         if (respostaJaEnviada) {
-          console.log('⚠️ Resposta duplicada detectada - não salvando novamente');
-          return Response.json({ 
-            success: true, 
-            resposta: null,
-            duplicata: true,
-            message: 'Resposta já foi enviada recentemente'
-          });
-        }
+            console.log('⚠️ Resposta duplicada detectada - gerando nova resposta');
+            // Em vez de bloquear, vamos permitir que a IA gere uma resposta diferente
+            // Apenas logamos o aviso mas continuamos o fluxo
+          }
 
         // Adicionar novas mensagens ao histórico
         historicoAtual.push(
