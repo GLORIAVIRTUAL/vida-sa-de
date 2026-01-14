@@ -131,6 +131,7 @@ function MainLayout({ children, currentPageName, currentUser, onUserUpdate }) {
     { name: "Importar Vendas Cartão", page: "ImportarVendasCartao", icon: CreditCard, roles: ["admin"] },
     { name: "Importador de Dados", page: "ImportadorDados", icon: Upload, roles: ["admin"] },
               { name: "Importar Procedimentos", page: "ImportarProcedimentos", icon: Upload, roles: ["admin"] },
+          { name: "Importar Turmas", page: "ImportarTurmas", icon: Upload, roles: ["admin"] },
               { name: "API e Integrações", page: "ApiIntegracoes", icon: FileText, roles: ["admin"] },
     { name: "Teste de API", page: "ApiTest", icon: FileText, roles: ["admin"] },
     { name: "Verificação Assinatura", page: "VerificacaoAssinatura", icon: FileText, roles: ["admin"] },
