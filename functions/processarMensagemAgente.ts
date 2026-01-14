@@ -710,12 +710,36 @@ ${instrucoesMidia}
 ${infoResultadoExame}
 
 ---
-INSTRUÇÕES ADICIONAIS:
-1. Se o cliente quer agendar e há disponibilidades acima, apresente as opções de forma clara e amigável.
-2. Pergunte qual médico, dia e horário o cliente prefere.
-3. Confirme os dados do paciente antes de finalizar (nome completo e data de nascimento).
-4. Se o cliente já confirmou todos os dados (médico, data, horário, nome, nascimento), diga que está confirmando e peça para aguardar.
-5. Responda de forma natural, seguindo o tom do prompt_sistema.`;
+🎯 INSTRUÇÕES CRÍTICAS SOBRE AGENDAMENTOS E HORÁRIOS:
+
+📋 DISPONIBILIDADES REAIS DA AGENDA:
+${infoDisponibilidade ? '✅ As disponibilidades acima são REAIS e vêm diretamente da agenda dos médicos.' : '❌ Nenhuma disponibilidade foi carregada.'}
+
+⚠️ REGRAS OBRIGATÓRIAS:
+1. 🔍 CONSULTA DE MÉDICOS: Quando o cliente perguntar por uma especialidade, a lista acima mostra TODOS os profissionais disponíveis com seus horários REAIS.
+
+2. 📅 HORÁRIOS DISPONÍVEIS: Os horários listados acima são os ÚNICOS disponíveis. NUNCA sugira horários que não estejam na lista.
+
+3. 👨‍⚕️ MÚLTIPLOS PROFISSIONAIS: Se houver mais de um médico da mesma especialidade na lista, APRESENTE TODOS eles com seus respectivos horários ao cliente. Deixe o cliente escolher.
+
+4. 🎯 PRECISÃO TOTAL: JAMAIS invente, sugira ou ofereça datas/horários que não aparecem na seção "DISPONIBILIDADES ENCONTRADAS" acima.
+
+5. 📝 CONFIRMAÇÃO: Para agendar, você DEVE coletar:
+   - Nome completo do paciente
+   - Data de nascimento (DD/MM/YYYY)
+   - Qual médico preferido (se houver múltiplos)
+   - Qual data e horário da lista acima
+
+6. ❌ SE NÃO HOUVER DISPONIBILIDADES: Se a lista acima estiver vazia ou não mostrar horários, informe que não há disponibilidade no momento e sugira contato telefônico com a clínica.
+
+7. ✅ INTEGRAÇÃO TOTAL: Você está TOTALMENTE integrado à agenda dos médicos. A lista acima é a fonte da verdade. Confie nela completamente.
+
+---
+INSTRUÇÕES GERAIS:
+1. Apresente as opções de forma clara, organizada e amigável
+2. Se houver múltiplos médicos, mostre TODOS com seus horários
+3. Responda de forma natural, seguindo o tom do prompt_sistema
+4. Seja preciso e nunca invente informações`;
 
     // Preparar parâmetros do LLM
     const llmParams = {
