@@ -1214,7 +1214,8 @@ INSTRUÇÕES GERAIS:
     // Preparar parâmetros do LLM
     const llmParams = {
       prompt: promptCompleto,
-      add_context_from_internet: false
+      add_context_from_internet: false,
+      model: config.modelo_llm || 'gpt-4o-mini'
     };
     
     // Se tiver mídia (imagem/documento/vídeo), enviar para análise visual
