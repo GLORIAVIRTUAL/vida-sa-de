@@ -39,8 +39,9 @@ export default function Pacientes() {
     const urlParams = new URLSearchParams(window.location.search);
     const nome = urlParams.get('nome');
     const telefone = urlParams.get('telefone');
+    const abrirForm = urlParams.get('abrirForm');
     
-    if (nome || telefone) {
+    if (abrirForm === 'true' || nome || telefone) {
       setDadosIniciais({ nome: nome || '', telefone: telefone || '' });
       setIsFormOpen(true);
       // Limpar parâmetros da URL
