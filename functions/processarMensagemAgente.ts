@@ -52,13 +52,26 @@ Deno.serve(async (req) => {
     
     console.log('✅ Config encontrada:', config.nome);
     
+    // Verificar se é uma nova conversa (conversa_finalizada = true no contato)
+    let conversaFinalizada = false;
+    if (contatosCheck.length > 0 && contatosCheck[0].conversa_finalizada) {
+      conversaFinalizada = true;
+      console.log('📝 Conversa anterior foi finalizada - iniciando nova conversa');
+    }
+    
     // Buscar histórico de conversa
     let historicoConversa = '';
     try {
       const contatos = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
       if (contatos.length > 0 && contatos[0].historico_mensagens) {
-        const ultimas = contatos[0].historico_mensagens.slice(-10);
-        historicoConversa = ultimas.map(m => `${m.role === 'user' ? 'CLIENTE' : 'ASSISTENTE'}: ${m.content}`).join('\n');
+        // Se a conversa foi finalizada, NÃO usar o histórico antigo
+        if (conversaFinalizada) {
+          console.log('🗑️ Ignorando histórico antigo - conversa finalizada');
+          historicoConversa = '';
+        } else {
+          const ultimas = contatos[0].historico_mensagens.slice(-10);
+          historicoConversa = ultimas.map(m => `${m.role === 'user' ? 'CLIENTE' : 'ASSISTENTE'}: ${m.content}`).join('\n');
+        }
       }
     } catch (e) {
       console.log('⚠️ Não foi possível buscar histórico');
