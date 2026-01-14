@@ -277,11 +277,13 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
     if (querAgendar) {
       console.log('📅 Cliente quer agendar - buscando disponibilidades...');
       
-      // Detectar especialidade mencionada
+      // Detectar especialidade mencionada - lista expandida
       const especialidades = [
-        'Cardiologia', 'Clínico Geral', 'Dermatologia', 'Endocrinologia', 
-        'Ginecologia', 'Nutrição', 'Psicologia', 'Ortopedia', 'Urologia',
-        'Geriatria', 'Gastroenterologia', 'Reumatologia'
+        'Cardiologia', 'Clínico Geral', 'Clínico', 'Dermatologia', 'Endocrinologia', 
+        'Ginecologia', 'Ginecologista', 'Nutrição', 'Nutricionista', 'Psicologia', 'Psicólogo',
+        'Ortopedia', 'Ortopedista', 'Urologia', 'Urologista', 'Geriatria', 'Geriatra',
+        'Gastroenterologia', 'Reumatologia', 'Psiquiatria', 'Psiquiatra',
+        'Fisioterapia', 'Fisioterapeuta', 'Ecografia', 'Traumatologia'
       ];
       
       let especialidadeDetectada = null;
