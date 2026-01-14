@@ -1055,7 +1055,7 @@ INSTRUÇÕES GERAIS:
         console.log('✅ Contato atualizado:', contato.id.substring(0, 8));
       } else {
         // Criar novo contato
-        await base44.asServiceRole.entities.Contato.create({
+        const novoContatoData = {
           nome: senderName,
           telefone: phoneNumber,
           paciente_id: pacienteId,
@@ -1069,7 +1069,14 @@ INSTRUÇÕES GERAIS:
           total_mensagens: 2,
           origem: 'WhatsApp',
           status: 'Novo'
-        });
+        };
+
+        // Adicionar motivo se identificado
+        if (motivoIdentificado) {
+          novoContatoData.interesses = [motivoIdentificado];
+        }
+
+        await base44.asServiceRole.entities.Contato.create(novoContatoData);
         console.log('✅ Novo contato criado');
       }
     } catch (e) {
