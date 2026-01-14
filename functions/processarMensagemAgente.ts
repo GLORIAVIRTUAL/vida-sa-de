@@ -516,6 +516,15 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
           day: 'numeric' 
         });
         
+        // Buscar médicos disponíveis para incluir na extração
+        let medicosDisponiveis = '';
+        try {
+          const medicosAtivos = await base44.asServiceRole.entities.Medico.filter({ status: 'Ativo' });
+          medicosDisponiveis = medicosAtivos.map(m => `- ${m.nome} (${m.especialidade}) [ID: ${m.id}]`).join('\n');
+        } catch (e) {
+          console.log('⚠️ Erro ao buscar médicos para extração');
+        }
+
         const promptExtracao = `Analise o histórico da conversa E a última mensagem para extrair dados de agendamento.
 
 HISTÓRICO DA CONVERSA:
@@ -526,18 +535,25 @@ ${messageText}
 
 ⚠️ DATA ATUAL: ${dataHojeFormatada} (${hoje.toISOString().split('T')[0]})
 
+📋 MÉDICOS CADASTRADOS NO SISTEMA:
+${medicosDisponiveis}
+
 EXTRAIA OS DADOS QUE CONSEGUIR ENCONTRAR:
 1. nome_paciente: nome completo (ex: "Antonio Thiago Cavalcanti Alves")
 2. data_nascimento: formato DD/MM/YYYY (ex: "19/04/1982")
-3. medico_nome: nome do médico escolhido (ex: "João Inocencio")
-4. data_agendamento: formato YYYY-MM-DD (converta "14/01" para "${anoAtual}-01-14", "hoje" para "${hoje.toISOString().split('T')[0]}")
-5. horario: formato HH:MM (converta "17:30", "17h30", "às 17:30" para "17:30")
+3. medico_nome: nome EXATO do médico escolhido da lista acima (ex: "Dr. João Inocencio Rodrigues Gonçalves")
+4. medico_id: ID do médico escolhido da lista acima (se encontrar)
+5. data_agendamento: formato YYYY-MM-DD (converta "14/01" para "${anoAtual}-01-14", "hoje" para "${hoje.toISOString().split('T')[0]}")
+6. horario: formato HH:MM (converta "17:30", "17h30", "às 17:30" para "17:30")
 
-REGRAS:
+REGRAS CRÍTICAS:
 - Se o cliente disse "hoje", use ${hoje.toISOString().split('T')[0]}
 - Se disse apenas dia/mês (14/01), adicione ano ${anoAtual}
 - Marque cada campo como null se NÃO encontrar
-- dados_completos = true APENAS se TODOS os 5 campos forem preenchidos
+- dados_completos = true APENAS se TODOS os 6 campos forem preenchidos
+- IMPORTANTE: Use o nome EXATO do médico que foi OFERECIDO no histórico da conversa
+- Se o assistente ofereceu "Dr. Douglas Filipe Bianchi", use EXATAMENTE esse nome
+- NÃO confunda médicos diferentes - verifique qual médico foi mencionado na conversa
 
 Retorne JSON.`;
 
