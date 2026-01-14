@@ -108,7 +108,7 @@ export default function Turmas() {
               <Card key={turma.id} className="hover:shadow-md transition-shadow">
                 <CardHeader className="pb-2">
                   <div className="flex justify-between items-start">
-                    <Badge className="mb-2" variant={turma.status === 'Ativa' ? 'default' : 'secondary'}>
+                    <Badge className="mb-2 bg-blue-100 text-blue-700 hover:bg-blue-100">
                       {turma.modalidade}
                     </Badge>
                     <div className="flex gap-1">
@@ -126,28 +126,28 @@ export default function Turmas() {
                 <CardContent>
                   <div className="space-y-3 text-sm text-gray-600">
                     <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-blue-500" />
+                      <Clock className="w-4 h-4 text-slate-500" />
                       <span>{turma.horario_inicio} - {turma.horario_fim}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-purple-500" />
+                      <Calendar className="w-4 h-4 text-slate-500" />
                       <div className="flex gap-1">
                         {turma.dias_semana?.sort().map(d => (
-                          <span key={d} className="bg-gray-100 px-1.5 py-0.5 rounded text-xs font-medium">
+                          <span key={d} className="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded text-xs font-medium">
                             {diasLabel[d]}
                           </span>
                         ))}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Users className="w-4 h-4 text-green-500" />
-                      <span className="font-medium text-green-700">{alunosPorTurma[turma.id] || 0}</span>
+                      <Users className="w-4 h-4 text-slate-500" />
+                      <span className="font-medium text-blue-600">{alunosPorTurma[turma.id] || 0}</span>
                       <span>/ {turma.capacidade_maxima} alunos</span>
                     </div>
                   </div>
 
                   <Button 
-                    className="w-full mt-4 bg-green-600 hover:bg-green-700 text-white"
+                    className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white"
                     onClick={() => handleGerenciarAlunos(turma)}
                   >
                     <UserPlus className="w-4 h-4 mr-2" /> Gerenciar Alunos & Agenda
