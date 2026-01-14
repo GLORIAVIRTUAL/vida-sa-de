@@ -44,18 +44,30 @@ export default function ContatosTab() {
   const getMotivoBadge = (interesses) => {
     if (!interesses || interesses.length === 0) return <Badge variant="outline">Não informado</Badge>;
     
-    const motivo = interesses[interesses.length - 1];
+    const motivo = interesses[interesses.length - 1].toLowerCase();
     
-    if (motivo.toLowerCase().includes('consulta')) {
-      return <Badge className="bg-blue-100 text-blue-800">{motivo}</Badge>;
+    if (motivo.includes('agendamento') || motivo.includes('agendar') || motivo.includes('marcar')) {
+      return <Badge className="bg-blue-100 text-blue-800">Agendamento</Badge>;
     }
-    if (motivo.toLowerCase().includes('laborat')) {
-      return <Badge className="bg-green-100 text-green-800">Exames Laboratoriais</Badge>;
+    if (motivo.includes('cancelamento') || motivo.includes('cancelar') || motivo.includes('desmarcar')) {
+      return <Badge className="bg-red-100 text-red-800">Cancelamento</Badge>;
     }
-    if (motivo.toLowerCase().includes('imagem')) {
-      return <Badge className="bg-purple-100 text-purple-800">Exames de Imagem</Badge>;
+    if (motivo.includes('orçamento') || motivo.includes('orcamento') || motivo.includes('preço') || motivo.includes('valor')) {
+      return <Badge className="bg-yellow-100 text-yellow-800">Orçamento</Badge>;
     }
-    return <Badge className="bg-gray-100 text-gray-800">{motivo}</Badge>;
+    if (motivo.includes('cartão') || motivo.includes('cartao') || motivo.includes('mais vida')) {
+      return <Badge className="bg-purple-100 text-purple-800">Cartão Mais Vida</Badge>;
+    }
+    if (motivo.includes('resultado') || motivo.includes('laudo')) {
+      return <Badge className="bg-green-100 text-green-800">Resultado de Exames</Badge>;
+    }
+    if (motivo.includes('procedimento')) {
+      return <Badge className="bg-orange-100 text-orange-800">Procedimentos</Badge>;
+    }
+    if (motivo.includes('turma') || motivo.includes('hidrogin') || motivo.includes('pilates')) {
+      return <Badge className="bg-cyan-100 text-cyan-800">Turmas</Badge>;
+    }
+    return <Badge className="bg-gray-100 text-gray-800">{interesses[interesses.length - 1]}</Badge>;
   };
 
   const contatosFiltrados = contatos.filter(contato => {
