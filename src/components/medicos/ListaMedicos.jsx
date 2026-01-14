@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -232,39 +231,19 @@ export default function ListaMedicos({ medicos, loading, onEdit, onDelete }) {
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {medicos.map((medico) => (
         <Card key={medico.id} className="overflow-hidden hover:shadow-xl transition-all duration-300 group">
-          {/* Foto do Médico */}
-          <div className="relative h-56 bg-gradient-to-br from-blue-500 to-purple-600 overflow-hidden">
-            {medico.foto_url ? (
-              <img 
-                src={medico.foto_url} 
-                alt={medico.nome}
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <Stethoscope className="w-24 h-24 text-white opacity-50" />
-              </div>
-            )}
-            
-            {/* Badge de Status */}
-            <div className="absolute top-3 right-3">
-              <Badge className={`${statusColors[medico.status]} shadow-lg`}>
-                {medico.status}
-              </Badge>
-            </div>
-
-            {/* Badge de Tipo de Atendimento */}
-            {medico.tipo_atendimento === "Ordem de Chegada" && (
-              <div className="absolute top-3 left-3">
-                <Badge variant="outline" className="bg-white/90 backdrop-blur-sm text-xs">
-                  Ordem de Chegada
-                </Badge>
-              </div>
-            )}
-          </div>
-
           {/* Informações do Médico */}
           <CardContent className="p-5">
+            {/* Badge de Status */}
+            <div className="flex justify-between items-start mb-3">
+              <Badge className={`${statusColors[medico.status]}`}>
+                {medico.status}
+              </Badge>
+              {medico.tipo_atendimento === "Ordem de Chegada" && (
+                <Badge variant="outline" className="text-xs">
+                  Ordem de Chegada
+                </Badge>
+              )}
+            </div>
             <div className="mb-3">
               <h3 className="font-bold text-lg text-gray-900 mb-1 line-clamp-1">
                 Dr(a). {medico.nome}
