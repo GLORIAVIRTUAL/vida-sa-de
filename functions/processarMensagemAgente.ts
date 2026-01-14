@@ -182,10 +182,15 @@ Deno.serve(async (req) => {
 
     // Função auxiliar para executar o cancelamento
     const executarCancelamento = async (agendamentoId) => {
+      console.log('🔧 executarCancelamento chamado com ID:', agendamentoId);
       try {
-        const agendamentos = await base44.asServiceRole.entities.Agendamento.filter({ id: agendamentoId });
-        if (agendamentos.length > 0) {
-          const agendamento = agendamentos[0];
+        // Buscar agendamento diretamente - filter por id pode não funcionar corretamente
+        const todosAgendamentos = await base44.asServiceRole.entities.Agendamento.list();
+        const agendamento = todosAgendamentos.find(ag => ag.id === agendamentoId);
+        
+        console.log('🔍 Agendamento encontrado:', agendamento ? 'SIM' : 'NÃO');
+        
+        if (agendamento) {
           
           // Buscar dados do médico para a notificação
           let medicoNome = 'Médico não identificado';
