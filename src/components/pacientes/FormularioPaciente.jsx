@@ -82,41 +82,10 @@ export default function FormularioPaciente({ paciente, dadosIniciais, onSalvar, 
     carregarCategorias();
   }, []);
 
+  // Atualizar formData se paciente ou dadosIniciais mudarem após montagem
   useEffect(() => {
-    if (paciente) {
-      setFormData({
-        nome: paciente.nome || '',
-        cpf: paciente.cpf || '',
-        rg: paciente.rg || '',
-        data_nascimento: paciente.data_nascimento || '',
-        telefone: paciente.telefone || '',
-        telefone_secundario: paciente.telefone_secundario || '',
-        email: paciente.email || '',
-        endereco: paciente.endereco || {
-          cep: '',
-          logradouro: '',
-          numero: '',
-          complemento: '',
-          bairro: '',
-          cidade: '',
-          estado: ''
-        },
-        convenio: paciente.convenio || 'Particular',
-        numero_carteira: paciente.numero_carteira || '',
-        prioridade: paciente.prioridade || 'Normal',
-        observacoes: paciente.observacoes || '',
-        como_conheceu: paciente.como_conheceu || '',
-        como_conheceu_outro: paciente.como_conheceu_outro || ''
-      });
-    } else if (dadosIniciais) {
-      // Preencher dados iniciais vindos da URL (ex: do chat)
-      setFormData(prev => ({
-        ...prev,
-        nome: dadosIniciais.nome || prev.nome,
-        telefone: dadosIniciais.telefone || prev.telefone
-      }));
-    }
-  }, [paciente, dadosIniciais]);
+    setFormData(getInitialFormData());
+  }, [paciente?.id, dadosIniciais?.nome, dadosIniciais?.telefone]);
 
   const handleChange = (field, value) => {
     if (field.startsWith('endereco.')) {
