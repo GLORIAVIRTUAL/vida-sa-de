@@ -32,6 +32,8 @@ export default function FluxoCaixa({ lancamentos, ordensServico, pacientes, onUp
   const [mostrarDialogSenha, setMostrarDialogSenha] = useState(false);
   const [senhaDigitada, setSenhaDigitada] = useState('');
   const [erroSenha, setErroSenha] = useState('');
+  const [lancamentoParaExcluir, setLancamentoParaExcluir] = useState(null);
+  const [excluindo, setExcluindo] = useState(false);
   
   // Senha para desbloquear valores (pode ser alterada aqui)
   const SENHA_VALORES = '1234';
