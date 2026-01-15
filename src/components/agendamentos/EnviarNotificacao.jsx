@@ -54,7 +54,7 @@ export default function EnviarNotificacao({
       const template = modelosMensagens[modeloSelecionado].template;
       
       // Valores padrão caso os dados não estejam disponíveis
-      const nomePaciente = paciente?.nome ? paciente.nome.split(' ')[0] : '[Nome do Paciente]';
+      const nomePaciente = paciente?.nome ? paciente.nome.split(' ')[0] : '';
       const nomeMedico = medico?.nome ? (medico.nome.startsWith('Dr') ? medico.nome : `Dr(a). ${medico.nome}`) : '[Nome do Médico]';
       const dataFormatada = agendamento?.data_agendamento 
         ? format(new Date(agendamento.data_agendamento + 'T00:00:00'), "dd 'de' MMMM", { locale: ptBR })
