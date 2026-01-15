@@ -616,9 +616,8 @@ PERGUNTE ao cliente: "Para qual especialidade você gostaria de agendar? Temos v
         const diasAfrente = 15;
         const diasSemanaMap = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
 
-        // Se tiver mais de um médico da mesma especialidade, mostrar todos (sem limite)
-        // Se for uma busca geral, limitar a 5
-        const limitemedicos = especialidadeDetectada && medicosParaBuscar.length > 1 ? medicosParaBuscar.length : 5;
+        // SEMPRE mostrar TODOS os médicos da especialidade escolhida (sem limite)
+        const limitemedicos = medicosParaBuscar.length;
 
         for (const medico of medicosParaBuscar.slice(0, limitemedicos)) {
           const horariosAtendimento = medico.horarios_atendimento || [];
