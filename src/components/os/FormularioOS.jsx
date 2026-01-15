@@ -331,14 +331,19 @@ export default function FormularioOS({
 
     const valorClinica = valorTotal - repasseMedico - repasseLab;
 
+    // Calcular valor final considerando desconto/acréscimo do agendamento
+    const valorFinalCalculado = valorTotal - descontoAgendamento + acrescimoAgendamento;
+    const valorClinicaAjustado = valorFinalCalculado - repasseMedico - repasseLab;
+
     setDados(prev => ({
       ...prev,
       valor_total: valorTotal,
-      valor_final: valorTotal,
+      desconto: descontoAgendamento,
+      valor_final: valorFinalCalculado,
       itens: itensOS,
       valor_repasse_medico: repasseMedico,
       valor_repasse_laboratorio: repasseLab,
-      valor_clinica: valorClinica
+      valor_clinica: valorClinicaAjustado > 0 ? valorClinicaAjustado : valorFinalCalculado - repasseMedico - repasseLab
     }));
   }, [agendamento, medico, procedimento, exames, categorias]);
 
