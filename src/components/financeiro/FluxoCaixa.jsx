@@ -446,6 +446,7 @@ export default function FluxoCaixa({ lancamentos, ordensServico, pacientes, onUp
                   <TableHead>Tipo</TableHead>
                   <TableHead>Forma Pagamento</TableHead>
                   <TableHead className="text-right">Valor</TableHead>
+                  <TableHead className="w-12"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
