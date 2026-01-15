@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
     // Buscar agendamento
     let agendamento;
     try {
-      agendamento = await base44.entities.Agendamento.get(codigo);
+      agendamento = await base44.asServiceRole.entities.Agendamento.get(codigo);
     } catch (error) {
       console.error('[ConfirmLink] Agendamento não encontrado:', error);
       return new Response(`
