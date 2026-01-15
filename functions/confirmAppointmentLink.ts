@@ -1,10 +1,13 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+import { createClient } from 'npm:@base44/sdk@0.8.6';
+
+const base44 = createClient({
+  appId: Deno.env.get('BASE44_APP_ID')
+});
 
 Deno.serve(async (req) => {
   try {
     console.log('🔗 [ConfirmLink] Requisição recebida');
     
-    const base44 = createClientFromRequest(req);
     const url = new URL(req.url);
     
     // Tentar pegar código da query string primeiro, depois do body
