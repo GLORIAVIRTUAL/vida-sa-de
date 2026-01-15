@@ -477,6 +477,16 @@ export default function FluxoCaixa({ lancamentos, ordensServico, pacientes, onUp
                           '******'
                         )}
                       </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => setLancamentoParaExcluir(lancamento)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
               </TableBody>
