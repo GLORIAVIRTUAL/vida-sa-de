@@ -711,12 +711,16 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
   // Atualizar horários quando mudar tipo de serviço, médico ou data
   useEffect(() => {
     const loadHorarios = async () => {
+      let horarios = [];
+      
       if (formData.tipo_servico === 'Exame' || formData.tipo_servico === 'Procedimento') {
         // Para exames e procedimentos, carregar horários sem depender de médico
         if (formData.data_agendamento) {
           await carregarHorarios(null, formData.data_agendamento);
+          return; // carregarHorarios já seta horariosDisponiveis
         } else {
           setHorariosDisponiveis([]);
+          return;
         }
       } else if (formData.tipo_servico === 'Múltiplos Serviços') {
         // Para múltiplos serviços, gerar horários automáticos (7h às 19h a cada 10 min)
@@ -729,20 +733,24 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
             }
           }
           horariosAutomaticos.push('19:00');
-          setHorariosDisponiveis(horariosAutomaticos.sort());
-        } else {
-          setHorariosDisponiveis([]);
+          horarios = horariosAutomaticos.sort();
         }
       } else if (formData.medico_id && formData.data_agendamento) {
         // For consultations and returns, load based on the doctor
         await carregarHorarios(formData.medico_id, formData.data_agendamento);
-      } else {
-        setHorariosDisponiveis([]);
+        return; // carregarHorarios já seta horariosDisponiveis
       }
+      
+      // Se estiver editando, garantir que o horário original esteja na lista
+      if (agendamento?.horario && !horarios.includes(agendamento.horario)) {
+        horarios = [...horarios, agendamento.horario].sort();
+      }
+      
+      setHorariosDisponiveis(horarios);
     };
 
     loadHorarios();
-  }, [formData.medico_id, formData.data_agendamento, formData.tipo_servico, carregarHorarios]);
+  }, [formData.medico_id, formData.data_agendamento, formData.tipo_servico, carregarHorarios, agendamento]);
 
   // NOVO: Carregar horários do médico selecionado para consulta em múltiplos serviços
   const carregarHorariosParaMedicoMultiplo = useCallback(async (medicoId) => {
