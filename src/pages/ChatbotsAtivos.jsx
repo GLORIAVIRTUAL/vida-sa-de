@@ -271,6 +271,65 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
     return msgs;
   };
 
+  // Buscar templates aprovados da Meta
+  const buscarTemplates = async () => {
+    setCarregandoTemplates(true);
+    try {
+      const response = await base44.functions.invoke('enviarTemplateMeta', {
+        action: 'listarTemplates'
+      });
+      setTemplates(response.data.templates || []);
+      setModalTemplatesAberto(true);
+    } catch (error) {
+      console.error('Erro ao buscar templates:', error);
+      alert('Erro ao buscar templates: ' + (error.response?.data?.error || error.message));
+    } finally {
+      setCarregandoTemplates(false);
+    }
+  };
+
+  // Enviar template selecionado
+  const enviarTemplate = async () => {
+    if (!templateSelecionado || !contatoSelecionado) return;
+    
+    const template = templates.find(t => t.name === templateSelecionado);
+    if (!template) return;
+
+    setEnviandoTemplate(true);
+    try {
+      await base44.functions.invoke('enviarTemplateMeta', {
+        action: 'enviarTemplate',
+        phoneNumber: contatoSelecionado.telefone,
+        templateName: template.name,
+        templateLanguage: template.language
+      });
+      
+      // Adicionar mensagem no histórico local
+      const novaMsg = {
+        role: 'assistant',
+        content: `[📋 Template enviado: ${template.name}]`,
+        timestamp: new Date().toISOString(),
+        humano: true
+      };
+      
+      const historicoAtual = contatoSelecionado.historico_mensagens || [];
+      await base44.entities.Contato.update(contatoSelecionado.id, {
+        historico_mensagens: [...historicoAtual, novaMsg],
+        ultima_interacao: new Date().toISOString()
+      });
+      
+      setModalTemplatesAberto(false);
+      setTemplateSelecionado('');
+      await buscarContatos();
+      alert('Template enviado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao enviar template:', error);
+      alert('Erro ao enviar template: ' + (error.response?.data?.error || error.message));
+    } finally {
+      setEnviandoTemplate(false);
+    }
+  };
+
   if (carregando) {
     return (
       <div className="flex items-center justify-center py-20">
