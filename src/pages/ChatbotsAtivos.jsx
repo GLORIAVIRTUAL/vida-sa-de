@@ -517,6 +517,72 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
         nomeInicial={contatoSelecionado?.nome}
         telefoneInicial={contatoSelecionado?.telefone}
       />
+
+      {/* Modal de Templates Meta */}
+      <Dialog open={modalTemplatesAberto} onOpenChange={setModalTemplatesAberto}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Zap className="w-5 h-5 text-blue-600" />
+              Enviar Template Meta
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-gray-600">
+              Selecione um template aprovado pela Meta para iniciar a conversa fora da janela de 24 horas.
+            </p>
+            
+            {templates.length === 0 ? (
+              <div className="text-center py-4 text-gray-500">
+                <p>Nenhum template aprovado encontrado.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <Select value={templateSelecionado} onValueChange={setTemplateSelecionado}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um template" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {templates.map((template) => (
+                      <SelectItem key={template.name} value={template.name}>
+                        {template.name} ({template.language})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                {templateSelecionado && (
+                  <div className="p-3 bg-gray-50 rounded-lg">
+                    <p className="text-xs text-gray-500 mb-1">Preview do template:</p>
+                    {(() => {
+                      const template = templates.find(t => t.name === templateSelecionado);
+                      const bodyComponent = template?.components?.find(c => c.type === 'BODY');
+                      return (
+                        <p className="text-sm">{bodyComponent?.text || 'Sem preview disponível'}</p>
+                      );
+                    })()}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setModalTemplatesAberto(false)} disabled={enviandoTemplate}>
+              Cancelar
+            </Button>
+            <Button 
+              onClick={enviarTemplate} 
+              disabled={!templateSelecionado || enviandoTemplate}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {enviandoTemplate ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
+              Enviar Template
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
