@@ -511,6 +511,47 @@ export default function FluxoCaixa({ lancamentos, ordensServico, pacientes, onUp
         />
       )}
 
+      {/* Dialog para confirmar exclusão */}
+      <Dialog open={!!lancamentoParaExcluir} onOpenChange={() => setLancamentoParaExcluir(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Trash2 className="w-5 h-5" />
+              Excluir Lançamento
+            </DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja excluir este lançamento? Esta ação não pode ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {lancamentoParaExcluir && (
+            <div className="py-4 space-y-2 bg-gray-50 rounded-lg p-4">
+              <p><strong>Descrição:</strong> {getDescricaoCompleta(lancamentoParaExcluir)}</p>
+              <p><strong>Valor:</strong> R$ {lancamentoParaExcluir.valor?.toFixed(2)}</p>
+              <p><strong>Tipo:</strong> {lancamentoParaExcluir.tipo}</p>
+              <p><strong>Data:</strong> {format(new Date(lancamentoParaExcluir.data_lancamento + 'T00:00:00'), "dd/MM/yyyy", { locale: ptBR })}</p>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setLancamentoParaExcluir(null)}
+              disabled={excluindo}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleExcluirLancamento}
+              disabled={excluindo}
+            >
+              {excluindo ? 'Excluindo...' : 'Confirmar Exclusão'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Dialog para senha */}
       <Dialog open={mostrarDialogSenha} onOpenChange={setMostrarDialogSenha}>
         <DialogContent className="sm:max-w-md">
