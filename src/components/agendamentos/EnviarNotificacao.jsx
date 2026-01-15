@@ -16,15 +16,15 @@ import { useToast } from "@/components/ui/use-toast"; // Adicionado import para 
 const modelosMensagens = {
   lembrete_consulta: {
     nome: 'Lembrete de Consulta',
-    template: '🏥 *CENTRO VIDA SAÚDE*\n\n📅 Lembrete de Consulta\n\nOlá [PACIENTE]! Você tem consulta marcada com [MEDICO] ([ESPECIALIDADE]):\n\n📆 Data: [DATA]\n🕐 Horário: [HORARIO]\n\n✅ *Clique aqui para CONFIRMAR sua presença:*\n[LINK_CONFIRMACAO]\n\nPor favor, chegue com 10 minutos de antecedência.'
+    template: 'Olá [PACIENTE], aqui é a Glória do Centro Vida Saúde! 🏥\n\nPassando para lembrar da sua consulta:\n\n👨‍⚕️ Profissional: [MEDICO]\n📋 Procedimento: [PROCEDIMENTO]\n📆 Data: [DATA]\n🕐 Horário: [HORARIO]\n\n✅ Para CONFIRMAR sua presença, clique aqui:\n[LINK_CONFIRMACAO]\n\nPor favor, chegue com 10 minutos de antecedência. Aguardamos você! 😊'
   },
   confirmacao_agendamento: {
     nome: 'Confirmação de Agendamento',
-    template: '✅ *CONSULTA CONFIRMADA*\n\n🏥 CENTRO VIDA SAÚDE\n\nOlá [PACIENTE], seu agendamento com [MEDICO] ([ESPECIALIDADE]) foi confirmado!\n\n📆 Data: [DATA]\n🕐 Horário: [HORARIO]\n\nAguardamos você! 😊'
+    template: 'Olá [PACIENTE], aqui é a Glória do Centro Vida Saúde! 🏥\n\n✅ Seu agendamento está confirmado!\n\n👨‍⚕️ Profissional: [MEDICO]\n📋 Procedimento: [PROCEDIMENTO]\n📆 Data: [DATA]\n🕐 Horário: [HORARIO]\n\nLembre-se de chegar com 10 minutos de antecedência.\n\nAguardamos você! 😊'
   },
   aviso_cancelamento: {
     nome: 'Aviso de Cancelamento',
-    template: '❌ *CONSULTA CANCELADA*\n\n🏥 CENTRO VIDA SAÚDE\n\nOlá [PACIENTE], informamos que seu agendamento com [MEDICO] para o dia [DATA] às [HORARIO] foi cancelado.\n\nPara reagendar, entre em contato conosco.\n\nAgradecemos a compreensão.'
+    template: 'Olá [PACIENTE], aqui é a Glória do Centro Vida Saúde. 🏥\n\n❌ Informamos que seu agendamento foi cancelado:\n\n👨‍⚕️ Profissional: [MEDICO]\n📋 Procedimento: [PROCEDIMENTO]\n📆 Data: [DATA]\n🕐 Horário: [HORARIO]\n\nPara reagendar, entre em contato conosco pelo WhatsApp 51 98550-5991 ou clique aqui: https://wa.me/5551985505991\n\nAgradecemos a compreensão! 🙏'
   }
 };
 
