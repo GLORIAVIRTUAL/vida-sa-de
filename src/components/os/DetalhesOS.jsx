@@ -45,6 +45,7 @@ export default function DetalhesOS({ os, pacienteNome, medicoNome, categoriaNome
   const [verificandoStatus, setVerificandoStatus] = useState(false);
   const [statusPagamento, setStatusPagamento] = useState(os?.status_pagamento || 'Pendente');
   const [formaPagamento, setFormaPagamento] = useState(os?.forma_pagamento || 'Dinheiro');
+  const [valorFinal, setValorFinal] = useState(os?.valor_final || 0);
 
   if (!os) return null;
 
