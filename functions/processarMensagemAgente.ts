@@ -737,10 +737,13 @@ PERGUNTE ao cliente: "Para qual especialidade você gostaria de agendar? Temos v
     
     // Verificar se o cliente está no fluxo de agendamento (mencionou agendar ou já tem dados no histórico)
     const estaEmFluxoAgendamento = querAgendar || 
-      (historicoConversa && /agendar|marcar|consulta|horário|data|nascimento/i.test(historicoConversa));
+      (historicoConversa && /agendar|marcar|consulta|horário|data|nascimento|clínico|geral|doutor|dr\./i.test(historicoConversa));
     
-    if (estaEmFluxoAgendamento || historicoConversa) {
-      console.log('📝 Verificando dados para agendamento...');
+    // Verificar se o cliente está escolhendo horário (pode ser hoje, 13 horas, etc.)
+    const clienteEscolhendoHorarioAgora = /pode ser|quero|às?\s*\d|hoje|\d{1,2}[h:]|horário/i.test(messageText);
+    
+    if (estaEmFluxoAgendamento || historicoConversa || clienteEscolhendoHorarioAgora) {
+      console.log('📝 Verificando dados para agendamento...', { estaEmFluxoAgendamento, clienteEscolhendoHorarioAgora });
       
       try {
         // Usar LLM para extrair dados do agendamento do histórico + mensagem atual
