@@ -218,13 +218,13 @@ Deno.serve(async (req) => {
     
     // Confirmar agendamento
     console.log('[ConfirmLink] Confirmando agendamento...');
-    await base44.entities.Agendamento.update(agendamento.id, {
+    await base44.asServiceRole.entities.Agendamento.update(agendamento.id, {
       status: 'Confirmado'
     });
     
     // Criar notificação interna
     try {
-      await base44.entities.Notification.create({
+      await base44.asServiceRole.entities.Notification.create({
         type: 'confirmacao_recebida',
         message: `✅ Confirmação via link: ${agendamento.paciente_nome} confirmou presença para ${agendamento.data_agendamento} às ${agendamento.horario}`,
         data: {
