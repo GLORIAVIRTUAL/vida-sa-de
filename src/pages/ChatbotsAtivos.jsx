@@ -146,7 +146,8 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
         return 0;
       });
       setContatos(ordenados);
-      if (ordenados.length > 0 && !contatoSelecionado) {
+      // Só selecionar automaticamente se não tiver contato selecionado E não vier de contatoInicial
+      if (ordenados.length > 0 && !contatoSelecionado && !contatoInicial) {
         setContatoSelecionado(ordenados[0]);
       }
     } catch (error) {
