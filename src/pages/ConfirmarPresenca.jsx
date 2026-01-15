@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle2, Calendar, Clock, User, AlertCircle } from "lucide-react";
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+
+const API_BASE = 'https://clinica-plus-7629e61a.base44.app/functions';
 
 export default function ConfirmarPresenca() {
   const [loading, setLoading] = useState(true);
@@ -28,12 +29,17 @@ export default function ConfirmarPresenca() {
   const carregarAgendamento = async () => {
     try {
       setLoading(true);
-      const result = await base44.functions.invoke('buscarAgendamentoPublico', { codigo });
+      const response = await fetch(`${API_BASE}/buscarAgendamentoPublico`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ codigo })
+      });
+      const result = await response.json();
       
-      if (result.data?.sucesso && result.data?.agendamento) {
-        setAgendamento(result.data.agendamento);
+      if (result?.sucesso && result?.agendamento) {
+        setAgendamento(result.agendamento);
       } else {
-        setErro(result.data?.erro || 'Agendamento não encontrado.');
+        setErro(result?.erro || 'Agendamento não encontrado.');
       }
     } catch (error) {
       console.error('Erro ao carregar agendamento:', error);
@@ -46,13 +52,18 @@ export default function ConfirmarPresenca() {
   const confirmarPresenca = async () => {
     try {
       setConfirmando(true);
-      const result = await base44.functions.invoke('confirmarAgendamentoPublico', { codigo });
+      const response = await fetch(`${API_BASE}/confirmarAgendamentoPublico`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ codigo })
+      });
+      const result = await response.json();
       
-      if (result.data?.sucesso) {
+      if (result?.sucesso) {
         setSucesso(true);
         setAgendamento(prev => ({ ...prev, status: 'Confirmado' }));
       } else {
-        setErro(result.data?.erro || 'Erro ao confirmar presença.');
+        setErro(result?.erro || 'Erro ao confirmar presença.');
       }
     } catch (error) {
       console.error('Erro ao confirmar:', error);
