@@ -30,8 +30,21 @@ Deno.serve(async (req) => {
             formattedPhone = '55' + formattedPhone;
         }
 
+        // Buscar nome do contato se disponível
+        let nomeContato = "cliente";
+        if (contatoId) {
+            try {
+                const contato = await base44.entities.Contato.get(contatoId);
+                if (contato?.nome) {
+                    nomeContato = contato.nome.split(' ')[0]; // Pegar primeiro nome
+                }
+            } catch (e) {
+                console.log('Não foi possível buscar nome do contato');
+            }
+        }
+        
         // Mensagem padrão de convite
-        const mensagemConvite = mensagem || "Olá! 👋 Gostaríamos de convidá-lo(a) para conhecer nossos serviços. Podemos ajudá-lo(a)?";
+        const mensagemConvite = mensagem || `Olá ${nomeContato}, Aqui é a Glória do Centro Vida Saúde, preciso que você entre em contato com a gente pelo whatsapp 51 98550-5991 o mais rápido possível. Muito obrigada! Se preferir pode clicar nesse link: https://wa.me/5551985505991`;
 
         const url = `https://api.z-api.io/instances/${instanceId}/token/${token}/send-text`;
         
