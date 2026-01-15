@@ -6,8 +6,23 @@ Deno.serve(async (req) => {
     
     const base44 = createClientFromRequest(req);
     const url = new URL(req.url);
-    const codigo = url.searchParams.get('codigo');
-    const confirmar = url.searchParams.get('confirmar');
+    
+    // Tentar pegar código da query string primeiro, depois do body
+    let codigo = url.searchParams.get('codigo');
+    let confirmar = url.searchParams.get('confirmar');
+    
+    // Se não veio na query, tentar do body (para testes)
+    if (!codigo && req.method === 'POST') {
+      try {
+        const body = await req.json();
+        codigo = body.codigo;
+        confirmar = body.confirmar;
+      } catch (e) {
+        // Ignora erro de parse
+      }
+    }
+    
+    console.log(`[ConfirmLink] Método: ${req.method}, Código: ${codigo}, URL: ${req.url}`);
     
     if (!codigo) {
       return new Response(`
