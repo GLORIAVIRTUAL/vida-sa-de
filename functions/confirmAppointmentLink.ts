@@ -1,10 +1,15 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { createClient } from 'npm:@base44/sdk@0.8.6';
 
 Deno.serve(async (req) => {
   try {
     console.log('🔗 [ConfirmLink] Requisição recebida');
     
-    const base44 = createClientFromRequest(req);
+    // Usar service role key para acesso público (sem autenticação do usuário)
+    const base44 = createClient({
+      appId: Deno.env.get('BASE44_APP_ID'),
+      serviceRoleKey: Deno.env.get('BASE44_SERVICE_ROLE_KEY')
+    });
+    
     const url = new URL(req.url);
     
     // Tentar pegar código da query string primeiro, depois do body
