@@ -114,15 +114,15 @@ export default function Procedimentos() {
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full text-sm">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left p-3">Nome</th>
-                  <th className="text-left p-3">Especialidade</th>
+                  <th className="text-left p-2 text-xs">Nome</th>
+                  <th className="text-left p-2 text-xs">Especialidade</th>
                   {categorias.map(cat => (
-                    <th key={cat.id} className="text-left p-3">{cat.nome}</th>
+                    <th key={cat.id} className="text-left p-2 text-xs">{cat.nome}</th>
                   ))}
-                  <th className="text-left p-3">Ações</th>
+                  <th className="text-left p-2 text-xs">Ações</th>
                 </tr>
               </thead>
               <tbody>
@@ -132,23 +132,23 @@ export default function Procedimentos() {
                   </tr>
                 ) : filteredProcedimentos.map((proc) => (
                  <tr key={proc.id} className="border-b hover:bg-gray-50">
-                   <td className="p-3 font-medium">{proc.nome || `ID: ${proc.id}`}</td>
-                   <td className="p-3">{proc.especialidade || '-'}</td>
+                   <td className="p-2 font-medium text-xs">{proc.nome || `ID: ${proc.id}`}</td>
+                   <td className="p-2 text-xs">{proc.especialidade || '-'}</td>
                     {categorias.map(cat => (
-                      <td key={cat.id} className="p-3">{getPreco(proc.id, cat.id)}</td>
+                      <td key={cat.id} className="p-2 text-xs">{getPreco(proc.id, cat.id)}</td>
                     ))}
-                    <td className="p-3">
-                      <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" onClick={() => handleOpenForm(proc)}>
+                    <td className="p-2">
+                      <div className="flex items-center gap-1">
+                        <Button variant="outline" size="sm" className="text-xs h-7 px-2" onClick={() => handleOpenForm(proc)}>
                           Editar
                         </Button>
                         <Button 
                           variant="ghost" 
                           size="icon" 
                           onClick={() => handleDelete(proc.id)}
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50 h-7 w-7"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3 h-3" />
                         </Button>
                       </div>
                     </td>
