@@ -79,7 +79,7 @@ export const PAGES = {
 }
 
 export const pagesConfig = {
-    mainPage: "ResultadosExames",
+    mainPage: "AgendamentoOnline",
     Pages: PAGES,
     Layout: __Layout,
 };
