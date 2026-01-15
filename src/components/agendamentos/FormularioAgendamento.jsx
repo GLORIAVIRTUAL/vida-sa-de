@@ -696,34 +696,38 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
 
   // Atualizar horários quando mudar tipo de serviço, médico ou data
   useEffect(() => {
-    if (formData.tipo_servico === 'Exame' || formData.tipo_servico === 'Procedimento') {
-      // Para exames e procedimentos, carregar horários sem depender de médico
-      if (formData.data_agendamento) { // Still needs a date
-        carregarHorarios(null, formData.data_agendamento); // medicoId is not relevant, pass null
-      } else {
-        setHorariosDisponiveis([]);
-      }
-    } else if (formData.tipo_servico === 'Múltiplos Serviços') {
-      // Para múltiplos serviços, gerar horários automáticos (7h às 19h a cada 10 min)
-      if (formData.data_agendamento) {
-        const horariosAutomaticos = [];
-        for (let hora = 7; hora <= 18; hora++) {
-          for (let minuto = 0; minuto < 60; minuto += 10) {
-            const horario = `${String(hora).padStart(2, '0')}:${String(minuto).padStart(2, '0')}`;
-            horariosAutomaticos.push(horario);
-          }
+    const loadHorarios = async () => {
+      if (formData.tipo_servico === 'Exame' || formData.tipo_servico === 'Procedimento') {
+        // Para exames e procedimentos, carregar horários sem depender de médico
+        if (formData.data_agendamento) {
+          await carregarHorarios(null, formData.data_agendamento);
+        } else {
+          setHorariosDisponiveis([]);
         }
-        horariosAutomaticos.push('19:00');
-        setHorariosDisponiveis(horariosAutomaticos.sort());
+      } else if (formData.tipo_servico === 'Múltiplos Serviços') {
+        // Para múltiplos serviços, gerar horários automáticos (7h às 19h a cada 10 min)
+        if (formData.data_agendamento) {
+          const horariosAutomaticos = [];
+          for (let hora = 7; hora <= 18; hora++) {
+            for (let minuto = 0; minuto < 60; minuto += 10) {
+              const horario = `${String(hora).padStart(2, '0')}:${String(minuto).padStart(2, '0')}`;
+              horariosAutomaticos.push(horario);
+            }
+          }
+          horariosAutomaticos.push('19:00');
+          setHorariosDisponiveis(horariosAutomaticos.sort());
+        } else {
+          setHorariosDisponiveis([]);
+        }
+      } else if (formData.medico_id && formData.data_agendamento) {
+        // For consultations and returns, load based on the doctor
+        await carregarHorarios(formData.medico_id, formData.data_agendamento);
       } else {
         setHorariosDisponiveis([]);
       }
-    } else if (formData.medico_id && formData.data_agendamento) {
-      // For consultations and returns, load based on the doctor
-      carregarHorarios(formData.medico_id, formData.data_agendamento);
-    } else {
-      setHorariosDisponiveis([]);
-    }
+    };
+
+    loadHorarios();
   }, [formData.medico_id, formData.data_agendamento, formData.tipo_servico, carregarHorarios]);
 
   // NOVO: Carregar horários do médico selecionado para consulta em múltiplos serviços
