@@ -315,6 +315,17 @@ export default function ContatosTab({ onIniciarConversa }) {
                       <TableCell>
                         <Badge variant="outline">{contato.origem || 'Site'}</Badge>
                       </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                          onClick={() => onIniciarConversa && onIniciarConversa(contato)}
+                          title="Iniciar conversa"
+                        >
+                          <MessageCircle className="w-4 h-4" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
