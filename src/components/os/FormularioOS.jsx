@@ -110,6 +110,10 @@ export default function FormularioOS({
 
     let valorTotal = 0;
     let itensOS = [];
+    
+    // Capturar desconto e acréscimo do agendamento (se existirem)
+    const descontoAgendamento = parseFloat(agendamento.desconto_manual) || 0;
+    const acrescimoAgendamento = parseFloat(agendamento.acrescimo_manual) || 0;
 
     // Verificar se há itens_servico (Múltiplos Serviços ou agendamentos com detalhamento)
     if (agendamento.itens_servico && agendamento.itens_servico.length > 0) {
