@@ -162,6 +162,14 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
     return () => clearInterval(interval);
   }, []);
 
+  // Selecionar contato inicial quando vier da aba de contatos
+  useEffect(() => {
+    if (contatoInicial) {
+      setContatoSelecionado(contatoInicial);
+      onContatoSelecionado && onContatoSelecionado();
+    }
+  }, [contatoInicial]);
+
   useEffect(() => {
     if (contatoSelecionado && contatos.length > 0) {
       const atualizado = contatos.find(c => c.id === contatoSelecionado.id);
