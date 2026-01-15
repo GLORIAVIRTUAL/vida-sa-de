@@ -202,17 +202,30 @@ export default function FormularioOS({
         valorTotal = parseFloat(procedimento.valor_particular);
       }
 
+      // Buscar nome do médico vinculado ao agendamento
+      let medicoNomeProcedimento = '';
+      if (agendamento.medico_id) {
+        const medicoProc = medicos.find(m => m.id === agendamento.medico_id);
+        medicoNomeProcedimento = medicoProc ? medicoProc.nome : '';
+      }
+
       if (procedimento) {
+        const descricaoProc = medicoNomeProcedimento 
+          ? `Procedimento: ${procedimento.nome} - Dr(a). ${medicoNomeProcedimento}`
+          : `Procedimento: ${procedimento.nome}`;
         itensOS.push({
-          descricao: `Procedimento: ${procedimento.nome}`,
+          descricao: descricaoProc,
           tipo: 'Procedimento',
           valor_unitario: valorTotal,
           quantidade: 1,
           valor_total: valorTotal
         });
       } else {
+        const descricaoProc = medicoNomeProcedimento 
+          ? `Procedimento - Dr(a). ${medicoNomeProcedimento}`
+          : `Procedimento`;
         itensOS.push({
-          descricao: `Procedimento`,
+          descricao: descricaoProc,
           tipo: 'Procedimento',
           valor_unitario: valorTotal,
           quantidade: 1,
