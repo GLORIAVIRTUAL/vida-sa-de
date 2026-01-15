@@ -1,15 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { PlusCircle, Search, Trash2, MoreVertical } from "lucide-react";
+import { PlusCircle, Search, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import FormularioProcedimento from "../components/procedimentos/FormularioProcedimento";
 import { Procedimento, CategoriaPreco, TabelaPreco } from "@/entities/all";
 
@@ -119,77 +112,48 @@ export default function Procedimentos() {
             />
           </div>
         </CardHeader>
-        <CardContent className="p-0">
+        <CardContent>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b bg-gray-50/50">
-                  <th className="text-left p-4 text-sm font-medium text-gray-500">Procedimento</th>
-                  <th className="text-left p-4 text-sm font-medium text-gray-500">Código</th>
-                  <th className="text-left p-4 text-sm font-medium text-gray-500">Especialidade</th>
-                  <th className="text-left p-4 text-sm font-medium text-gray-500">Valor Particular</th>
-                  <th className="text-left p-4 text-sm font-medium text-gray-500">Duração</th>
-                  <th className="text-left p-4 text-sm font-medium text-gray-500">Status</th>
-                  <th className="text-left p-4 text-sm font-medium text-gray-500"></th>
+                <tr className="border-b">
+                  <th className="text-left p-3">Nome</th>
+                  <th className="text-left p-3">Especialidade</th>
+                  {categorias.map(cat => (
+                    <th key={cat.id} className="text-left p-3">{cat.nome}</th>
+                  ))}
+                  <th className="text-left p-3">Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={7} className="text-center p-6">Carregando...</td>
+                    <td colSpan={categorias.length + 3} className="text-center p-6">Carregando...</td>
                   </tr>
-                ) : filteredProcedimentos.map((proc) => {
-                  const categoriaParticular = categorias.find(c => c.nome?.toLowerCase().includes('particular'));
-                  const valorParticular = categoriaParticular ? getPreco(proc.id, categoriaParticular.id) : '-';
-                  
-                  return (
-                    <tr key={proc.id} className="border-b hover:bg-gray-50/50 transition-colors">
-                      <td className="p-4">
-                        <div>
-                          <p className="font-semibold text-gray-900">{proc.nome || `ID: ${proc.id}`}</p>
-                          {proc.descricao && (
-                            <p className="text-sm text-gray-500 mt-0.5">{proc.descricao}</p>
-                          )}
-                        </div>
-                      </td>
-                      <td className="p-4 text-gray-600">{proc.codigo || '-'}</td>
-                      <td className="p-4 text-gray-600">{proc.especialidade || '-'}</td>
-                      <td className="p-4 text-emerald-600 font-medium">{valorParticular}</td>
-                      <td className="p-4 text-gray-600">{proc.duracao_minutos ? `${proc.duracao_minutos} min` : '-'}</td>
-                      <td className="p-4">
-                        <Badge 
-                          variant="outline" 
-                          className={proc.status === 'Ativo' 
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
-                            : 'bg-gray-100 text-gray-600 border-gray-200'
-                          }
+                ) : filteredProcedimentos.map((proc) => (
+                 <tr key={proc.id} className="border-b hover:bg-gray-50">
+                   <td className="p-3 font-medium">{proc.nome || `ID: ${proc.id}`}</td>
+                   <td className="p-3">{proc.especialidade || '-'}</td>
+                    {categorias.map(cat => (
+                      <td key={cat.id} className="p-3">{getPreco(proc.id, cat.id)}</td>
+                    ))}
+                    <td className="p-3">
+                      <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={() => handleOpenForm(proc)}>
+                          Editar
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => handleDelete(proc.id)}
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
                         >
-                          {proc.status || 'Ativo'}
-                        </Badge>
-                      </td>
-                      <td className="p-4">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreVertical className="h-4 w-4 text-gray-400" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleOpenForm(proc)}>
-                              Editar
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={() => handleDelete(proc.id)}
-                              className="text-red-600"
-                            >
-                              Excluir
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </td>
-                    </tr>
-                  );
-                })}
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
