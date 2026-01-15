@@ -55,6 +55,32 @@ export default function ContatosTab() {
     carregarContatos();
   }, []);
 
+  const handleAdicionarContato = async () => {
+    if (!novoContato.nome || !novoContato.telefone) {
+      alert('Por favor, preencha nome e telefone');
+      return;
+    }
+    setSalvando(true);
+    try {
+      await base44.entities.Contato.create({
+        nome: novoContato.nome,
+        telefone: novoContato.telefone.replace(/\D/g, ''),
+        data_nascimento: novoContato.data_nascimento || undefined,
+        interesses: novoContato.motivo ? [novoContato.motivo] : [],
+        origem: 'Manual',
+        status: 'Novo'
+      });
+      setModalAberto(false);
+      setNovoContato({ nome: '', telefone: '', data_nascimento: '', motivo: '' });
+      carregarContatos();
+    } catch (error) {
+      console.error('Erro ao adicionar contato:', error);
+      alert('Erro ao adicionar contato');
+    } finally {
+      setSalvando(false);
+    }
+  };
+
   const formatarTelefone = (telefone) => {
     if (!telefone) return '-';
     const numeros = telefone.replace(/\D/g, '');
