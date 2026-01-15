@@ -50,35 +50,40 @@ export default function EnviarNotificacao({
 
   // Este useEffect agora é o único responsável por gerar e atualizar a mensagem
   useEffect(() => {
-    if (aberto && agendamento && paciente && medico) {
+    if (aberto) {
       const template = modelosMensagens[modeloSelecionado].template;
-      // Adicionado 'T00:00:00' para garantir que a data seja interpretada consistentemente como o início do dia em UTC.
-      const dataFormatada = format(new Date(agendamento.data_agendamento + 'T00:00:00'), "dd 'de' MMMM", { locale: ptBR });
       
-      const nomeMedicoFormatado = medico.nome.startsWith('Dr') ? medico.nome : `Dr(a). ${medico.nome}`;
-
-      const linkConfirmacao = `https://clinica-plus-7629e61a.base44.app/functions/confirmAppointmentLink?codigo=${agendamento.id}`;
+      // Valores padrão caso os dados não estejam disponíveis
+      const nomePaciente = paciente?.nome ? paciente.nome.split(' ')[0] : '[Nome do Paciente]';
+      const nomeMedico = medico?.nome ? (medico.nome.startsWith('Dr') ? medico.nome : `Dr(a). ${medico.nome}`) : '[Nome do Médico]';
+      const dataFormatada = agendamento?.data_agendamento 
+        ? format(new Date(agendamento.data_agendamento + 'T00:00:00'), "dd 'de' MMMM", { locale: ptBR })
+        : '[Data]';
+      const horario = agendamento?.horario || '[Horário]';
+      const linkConfirmacao = agendamento?.id 
+        ? `https://clinica-plus-7629e61a.base44.app/functions/confirmAppointmentLink?codigo=${agendamento.id}`
+        : '[Link de Confirmação]';
       
       // Determinar o procedimento/serviço
       let procedimentoTexto = 'Consulta';
-      if (agendamento.tipo_servico === 'Procedimento' && agendamento.procedimento_id) {
+      if (agendamento?.tipo_servico === 'Procedimento' && agendamento.procedimento_id) {
         procedimentoTexto = 'Procedimento';
-      } else if (agendamento.tipo_servico === 'Exame') {
+      } else if (agendamento?.tipo_servico === 'Exame') {
         procedimentoTexto = 'Exame';
-      } else if (agendamento.tipo_servico === 'Retorno') {
+      } else if (agendamento?.tipo_servico === 'Retorno') {
         procedimentoTexto = 'Retorno';
-      } else if (agendamento.tipo_servico) {
+      } else if (agendamento?.tipo_servico) {
         procedimentoTexto = agendamento.tipo_servico;
       }
 
       const mensagemPersonalizada = template
-        .replace('[PACIENTE]', paciente.nome.split(' ')[0]) // Primeiro nome
-        .replace('[MEDICO]', nomeMedicoFormatado)
+        .replace('[PACIENTE]', nomePaciente)
+        .replace('[MEDICO]', nomeMedico)
         .replace('[DATA]', dataFormatada)
-        .replace('[HORARIO]', agendamento.horario)
+        .replace('[HORARIO]', horario)
         .replace('[PROCEDIMENTO]', procedimentoTexto)
-        .replace('[ESPECIALIDADE]', medico.especialidade || '')
-        .replace('[CODIGO]', agendamento.id)
+        .replace('[ESPECIALIDADE]', medico?.especialidade || '')
+        .replace('[CODIGO]', agendamento?.id || '')
         .replace('[LINK_CONFIRMACAO]', linkConfirmacao);
 
       setMensagem(mensagemPersonalizada);
