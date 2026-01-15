@@ -81,6 +81,7 @@ export default function DetalhesOS({ os, pacienteNome, medicoNome, categoriaNome
   const handleCancelarEdicao = () => {
     setStatusPagamento(os.status_pagamento);
     setFormaPagamento(os.forma_pagamento);
+    setValorFinal(os.valor_final || 0);
     setEditando(false);
   };
 
