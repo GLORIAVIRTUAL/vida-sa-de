@@ -55,6 +55,7 @@ export default function DetalhesOS({ os, pacienteNome, medicoNome, categoriaNome
       await OrdemServico.update(os.id, {
         status_pagamento: statusPagamento,
         forma_pagamento: formaPagamento,
+        valor_final: parseFloat(valorFinal) || 0,
         data_pagamento: statusPagamento === 'Pago' ? new Date().toISOString() : null
       });
 
