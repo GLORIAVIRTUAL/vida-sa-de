@@ -212,10 +212,7 @@ export default function DetalhesOS({ os, pacienteNome, medicoNome, categoriaNome
     // Info de pagamento
     let infoPagamento = os.forma_pagamento || 'Dinheiro';
     if (os.parcelas && os.parcelas > 1) {
-      infoPagamento += `: R$ ${valorFormatado}`;
-      infoPagamento += `<br/>- Parcelamentos: ${os.parcelas}x`;
-    } else {
-      infoPagamento += `: R$ ${valorFormatado}`;
+      infoPagamento += ` - ${os.parcelas}x de R$ ${(os.valor_final / os.parcelas).toFixed(2).replace('.', ',')}`;
     }
 
     const htmlContent = `
