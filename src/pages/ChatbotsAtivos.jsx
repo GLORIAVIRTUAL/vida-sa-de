@@ -7,8 +7,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   MessageCircle, Loader2, Send, RefreshCw, User, Phone, Calendar,
   TrendingUp, Clock, CheckCircle, XCircle, Activity, Users, Settings, Bot,
-  Image, Paperclip, Mic, Smile
+  Image, Paperclip, Mic, Smile, Zap
 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import ChatToolbar from '../components/gloria/ChatToolbar';
 import { base44 } from '@/api/base44Client';
 import ReactMarkdown from 'react-markdown';
