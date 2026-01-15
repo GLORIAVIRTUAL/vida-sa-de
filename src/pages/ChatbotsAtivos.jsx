@@ -392,6 +392,16 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
                   </div>
                   <div className="flex items-center gap-2">
                     <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={buscarTemplates}
+                      disabled={carregandoTemplates}
+                      className="text-blue-600 hover:bg-blue-50"
+                    >
+                      {carregandoTemplates ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Zap className="w-3 h-3 mr-1" />}
+                      Início Meta
+                    </Button>
+                    <Button 
                       variant={modoHumano ? "default" : "outline"} 
                       size="sm"
                       onClick={toggleAtendimentoHumano}
