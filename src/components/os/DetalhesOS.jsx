@@ -592,7 +592,7 @@ export default function DetalhesOS({ os, pacienteNome, medicoNome, categoriaNome
           </div>
 
           {/* Itens da OS (se houver) */}
-          {os.itens && os.itens.length > 0 && (
+          {Array.isArray(os.itens) && os.itens.length > 0 && (
             <>
               <Separator />
               <div>
