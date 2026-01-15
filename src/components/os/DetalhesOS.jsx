@@ -445,7 +445,8 @@ export default function DetalhesOS({ os, pacienteNome, medicoNome, categoriaNome
 
               <div class="recibo-recebido">
                 <div class="recibo-recebido-title">Recebido:</div>
-                <div>${infoPagamento}</div>
+                <div><strong>Forma de Pagamento:</strong> ${infoPagamento}</div>
+                <div style="margin-top: 5px;"><strong>Valor:</strong> R$ ${valorFormatado}</div>
               </div>
             </div>
 
