@@ -131,8 +131,8 @@ export default function ImportarPacientes() {
         throw new Error('Nenhum paciente válido encontrado. Verifique se a coluna "nome" existe.');
       }
 
-      // Importar em lotes de 500 (suporta até 50.000 registros)
-      const BATCH_SIZE = 500;
+      // Importar em lotes de 50 com pausa entre lotes para evitar rate limit
+      const BATCH_SIZE = 50;
       let importados = 0;
       let erros = 0;
 
@@ -166,8 +166,8 @@ export default function ImportarPacientes() {
 
         setProgresso(Math.round(((i + batch.length) / pacientes.length) * 100));
         
-        // Pequena pausa entre lotes para não sobrecarregar
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Pausa de 2 segundos entre lotes para evitar rate limit
+        await new Promise(resolve => setTimeout(resolve, 2000));
       }
 
       setResultado({
