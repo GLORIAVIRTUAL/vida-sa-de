@@ -408,6 +408,11 @@ export default function DetalhesOS({ os, pacienteNome, medicoNome, categoriaNome
                 <strong>Referente:</strong><br/>
                 ${descricaoServico}
               </div>
+
+              <div class="canhoto-pagamento" style="margin-top: 10px; font-size: 10px;">
+                <strong>Pagamento:</strong><br/>
+                ${infoPagamento}
+              </div>
             </div>
             
             <div class="canhoto-recibo-num">
