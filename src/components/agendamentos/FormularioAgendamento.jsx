@@ -408,6 +408,9 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
     disponivel: "bg-green-100 text-green-900 font-bold",
   };
 
+  // Estado para armazenar o horário original do agendamento sendo editado
+  const [horarioOriginal, setHorarioOriginal] = useState('');
+
   // useEffect para setar os dados iniciais do agendamento ou definir padrões
   useEffect(() => {
     const initializeFormDataAndPatient = async () => {
@@ -432,6 +435,11 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
       };
 
       if (agendamento) {
+        // Guardar o horário original para preservá-lo na edição
+        if (agendamento.horario) {
+          setHorarioOriginal(agendamento.horario);
+        }
+        
         initialFormData = {
           id: agendamento.id,
           paciente_id: agendamento.paciente_id || '',
