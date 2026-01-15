@@ -30,6 +30,14 @@ export default function ContatosTab() {
   const [loading, setLoading] = useState(true);
   const [busca, setBusca] = useState('');
   const [filtroMotivo, setFiltroMotivo] = useState('todos');
+  const [modalAberto, setModalAberto] = useState(false);
+  const [salvando, setSalvando] = useState(false);
+  const [novoContato, setNovoContato] = useState({
+    nome: '',
+    telefone: '',
+    data_nascimento: '',
+    motivo: ''
+  });
 
   const carregarContatos = async () => {
     setLoading(true);
