@@ -1,8 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Search, Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { PlusCircle, Search, Trash2, MoreVertical } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import FormularioProcedimento from "../components/procedimentos/FormularioProcedimento";
 import { Procedimento, CategoriaPreco, TabelaPreco } from "@/entities/all";
 
