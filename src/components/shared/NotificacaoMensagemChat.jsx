@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Contato } from '@/entities/all';
 import { MessageSquare, Volume2, VolumeX, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -11,9 +11,15 @@ export default function NotificacaoMensagemChat() {
     return saved !== null ? JSON.parse(saved) : true;
   });
   const [notificacoes, setNotificacoes] = useState([]);
-  const [ultimaVerificacao, setUltimaVerificacao] = useState(null);
   const audioRef = useRef(null);
+  const ultimaVerificacaoRef = useRef(null);
   const ultimoContatoIdRef = useRef(null);
+  const somAtivoRef = useRef(somAtivo);
+
+  // Manter ref atualizado
+  useEffect(() => {
+    somAtivoRef.current = somAtivo;
+  }, [somAtivo]);
 
   // Salvar preferência de som
   useEffect(() => {
@@ -27,80 +33,76 @@ export default function NotificacaoMensagemChat() {
   }, []);
 
   // Tocar som de notificação
-  const tocarSom = useCallback(() => {
-    if (somAtivo && audioRef.current) {
+  const tocarSom = () => {
+    if (somAtivoRef.current && audioRef.current) {
       audioRef.current.currentTime = 0;
       audioRef.current.play().catch(e => console.log('Erro ao tocar som:', e));
     }
-  }, [somAtivo]);
-
-  // Verificar novas mensagens
-  const verificarNovasMensagens = useCallback(async () => {
-    try {
-      const contatos = await Contato.list('-ultima_interacao', 50);
-      
-      // Filtrar apenas contatos com mensagens não lidas (última mensagem do usuário)
-      const contatosComNovasMensagens = contatos.filter(c => {
-        if (!c.historico_mensagens || c.historico_mensagens.length === 0) return false;
-        const ultimaMensagem = c.historico_mensagens[c.historico_mensagens.length - 1];
-        return ultimaMensagem.role === 'user';
-      });
-
-      // Na primeira execução, apenas armazenar os IDs
-      if (ultimaVerificacao === null) {
-        setUltimaVerificacao(new Date());
-        if (contatosComNovasMensagens.length > 0) {
-          ultimoContatoIdRef.current = contatosComNovasMensagens[0].id;
-        }
-        return;
-      }
-
-      // Verificar se há novos contatos com mensagens
-      if (contatosComNovasMensagens.length > 0) {
-        const contatoMaisRecente = contatosComNovasMensagens[0];
-        const ultimaInteracao = new Date(contatoMaisRecente.ultima_interacao);
-        
-        // Se a última interação é mais recente que nossa última verificação
-        // E é um contato diferente ou a mesma pessoa mandou nova mensagem
-        if (ultimaInteracao > ultimaVerificacao && 
-            (contatoMaisRecente.id !== ultimoContatoIdRef.current || 
-             ultimaInteracao.getTime() > ultimaVerificacao.getTime() + 5000)) {
-          
-          // Criar notificação
-          const novaNotificacao = {
-            id: Date.now(),
-            nome: contatoMaisRecente.nome || 'Novo contato',
-            telefone: contatoMaisRecente.telefone,
-            mensagem: contatoMaisRecente.ultima_mensagem?.substring(0, 100) || 'Nova mensagem',
-            timestamp: new Date()
-          };
-
-          setNotificacoes(prev => {
-            // Evitar duplicatas
-            if (prev.some(n => n.telefone === novaNotificacao.telefone && 
-                Date.now() - n.timestamp.getTime() < 30000)) {
-              return prev;
-            }
-            return [novaNotificacao, ...prev].slice(0, 5);
-          });
-
-          tocarSom();
-          ultimoContatoIdRef.current = contatoMaisRecente.id;
-        }
-      }
-
-      setUltimaVerificacao(new Date());
-    } catch (error) {
-      console.error('Erro ao verificar mensagens:', error);
-    }
-  }, [ultimaVerificacao, tocarSom]);
+  };
 
   // Polling para verificar novas mensagens
   useEffect(() => {
+    const verificarNovasMensagens = async () => {
+      try {
+        const contatos = await Contato.list('-ultima_interacao', 50);
+        
+        // Filtrar apenas contatos com mensagens não lidas (última mensagem do usuário)
+        const contatosComNovasMensagens = contatos.filter(c => {
+          if (!c.historico_mensagens || c.historico_mensagens.length === 0) return false;
+          const ultimaMensagem = c.historico_mensagens[c.historico_mensagens.length - 1];
+          return ultimaMensagem.role === 'user';
+        });
+
+        // Na primeira execução, apenas armazenar os IDs
+        if (ultimaVerificacaoRef.current === null) {
+          ultimaVerificacaoRef.current = new Date();
+          if (contatosComNovasMensagens.length > 0) {
+            ultimoContatoIdRef.current = contatosComNovasMensagens[0].id;
+          }
+          return;
+        }
+
+        // Verificar se há novos contatos com mensagens
+        if (contatosComNovasMensagens.length > 0) {
+          const contatoMaisRecente = contatosComNovasMensagens[0];
+          const ultimaInteracao = new Date(contatoMaisRecente.ultima_interacao);
+          
+          // Se a última interação é mais recente que nossa última verificação
+          if (ultimaInteracao > ultimaVerificacaoRef.current) {
+            
+            // Criar notificação
+            const novaNotificacao = {
+              id: Date.now(),
+              nome: contatoMaisRecente.nome || 'Novo contato',
+              telefone: contatoMaisRecente.telefone,
+              mensagem: contatoMaisRecente.ultima_mensagem?.substring(0, 100) || 'Nova mensagem',
+              timestamp: new Date()
+            };
+
+            setNotificacoes(prev => {
+              // Evitar duplicatas
+              if (prev.some(n => n.telefone === novaNotificacao.telefone && 
+                  Date.now() - n.timestamp.getTime() < 30000)) {
+                return prev;
+              }
+              return [novaNotificacao, ...prev].slice(0, 5);
+            });
+
+            tocarSom();
+            ultimoContatoIdRef.current = contatoMaisRecente.id;
+          }
+        }
+
+        ultimaVerificacaoRef.current = new Date();
+      } catch (error) {
+        console.error('Erro ao verificar mensagens:', error);
+      }
+    };
+
     verificarNovasMensagens();
     const interval = setInterval(verificarNovasMensagens, 10000); // A cada 10 segundos
     return () => clearInterval(interval);
-  }, [verificarNovasMensagens]);
+  }, []);
 
   // Auto-remover notificações após 15 segundos
   useEffect(() => {
