@@ -117,6 +117,11 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
   const [enviando, setEnviando] = useState(false);
   const [modoHumano, setModoHumano] = useState(false);
   const [modalCadastroAberto, setModalCadastroAberto] = useState(false);
+  const [modalTemplatesAberto, setModalTemplatesAberto] = useState(false);
+  const [templates, setTemplates] = useState([]);
+  const [templateSelecionado, setTemplateSelecionado] = useState('');
+  const [carregandoTemplates, setCarregandoTemplates] = useState(false);
+  const [enviandoTemplate, setEnviandoTemplate] = useState(false);
   const messagesEndRef = useRef(null);
   const navigate = useNavigate();
   
