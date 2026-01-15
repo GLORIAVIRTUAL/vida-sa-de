@@ -25,6 +25,7 @@ import {
   Loader2,
   RefreshCcw
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { base44 } from "@/api/base44Client";
 
 const statusPagamentoColors = {
