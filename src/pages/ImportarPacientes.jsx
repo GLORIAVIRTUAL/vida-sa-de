@@ -131,8 +131,8 @@ export default function ImportarPacientes() {
         throw new Error('Nenhum paciente válido encontrado. Verifique se a coluna "nome" existe.');
       }
 
-      // Importar em lotes de 100
-      const BATCH_SIZE = 100;
+      // Importar em lotes de 500 (suporta até 50.000 registros)
+      const BATCH_SIZE = 500;
       let importados = 0;
       let erros = 0;
 
