@@ -25,7 +25,7 @@ const LISTA_MOTIVOS = [
   "Outro"
 ];
 
-export default function ContatosTab() {
+export default function ContatosTab({ onIniciarConversa }) {
   const [contatos, setContatos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busca, setBusca] = useState('');
