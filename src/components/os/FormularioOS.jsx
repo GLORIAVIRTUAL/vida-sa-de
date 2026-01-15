@@ -109,14 +109,59 @@ export default function FormularioOS({
     let valorTotal = 0;
     let itensOS = [];
 
-    if (agendamento.tipo_servico === "Consulta") {
+    // Verificar se há itens_servico (Múltiplos Serviços ou agendamentos com detalhamento)
+    if (agendamento.itens_servico && agendamento.itens_servico.length > 0) {
+      console.log('📦 Processando itens_servico:', agendamento.itens_servico);
+      
+      agendamento.itens_servico.forEach((item, index) => {
+        const valorItem = parseFloat(item.valor) || 0;
+        valorTotal += valorItem;
+        
+        let descricaoItem = item.descricao || '';
+        
+        // Se não tem descrição, montar baseado no tipo
+        if (!descricaoItem) {
+          if (item.tipo === 'Consulta' && item.medico_id) {
+            // Buscar nome do médico se disponível
+            descricaoItem = `Consulta`;
+          } else if (item.tipo === 'Procedimento' && item.procedimento_id && procedimento) {
+            descricaoItem = `Procedimento: ${procedimento.nome}`;
+          } else if (item.tipo === 'Exame' && item.exame_id && exames) {
+            const exame = exames.find(e => e.id === item.exame_id);
+            descricaoItem = exame ? `Exame: ${exame.nome}` : `Exame`;
+          } else if (item.tipo === 'Retorno') {
+            descricaoItem = `Retorno`;
+          } else {
+            descricaoItem = item.tipo || `Item ${index + 1}`;
+          }
+        }
+        
+        itensOS.push({
+          descricao: descricaoItem,
+          tipo: item.tipo,
+          valor_unitario: valorItem,
+          quantidade: 1,
+          valor_total: valorItem
+        });
+      });
+    } else if (agendamento.tipo_servico === "Consulta" || agendamento.tipo_servico === "Retorno") {
       if (agendamento.valor_total > 0) {
         valorTotal = parseFloat(agendamento.valor_total);
       }
 
-      if (valorTotal > 0 && medico) {
+      if (medico) {
+        const tipoServico = agendamento.tipo_servico === "Retorno" ? "Retorno" : "Consulta";
         itensOS.push({
-          descricao: `Consulta ${medico.especialidade} - Dr(a). ${medico.nome}`,
+          descricao: `${tipoServico} ${medico.especialidade} - Dr(a). ${medico.nome}`,
+          tipo: agendamento.tipo_servico,
+          valor_unitario: valorTotal,
+          quantidade: 1,
+          valor_total: valorTotal
+        });
+      } else {
+        itensOS.push({
+          descricao: `${agendamento.tipo_servico}`,
+          tipo: agendamento.tipo_servico,
           valor_unitario: valorTotal,
           quantidade: 1,
           valor_total: valorTotal
@@ -129,9 +174,18 @@ export default function FormularioOS({
         valorTotal = parseFloat(procedimento.valor_particular);
       }
 
-      if (valorTotal > 0 && procedimento) {
+      if (procedimento) {
         itensOS.push({
           descricao: `Procedimento: ${procedimento.nome}`,
+          tipo: 'Procedimento',
+          valor_unitario: valorTotal,
+          quantidade: 1,
+          valor_total: valorTotal
+        });
+      } else {
+        itensOS.push({
+          descricao: `Procedimento`,
+          tipo: 'Procedimento',
           valor_unitario: valorTotal,
           quantidade: 1,
           valor_total: valorTotal
@@ -149,6 +203,7 @@ export default function FormularioOS({
             valorTotal += valor;
             itensOS.push({
               descricao: `Exame: ${exame.nome}`,
+              tipo: 'Exame',
               valor_unitario: valor,
               quantidade: 1,
               valor_total: valor
@@ -156,6 +211,16 @@ export default function FormularioOS({
           }
         });
       }
+    } else if (agendamento.tipo_servico === "Múltiplos Serviços") {
+      // Fallback se não tem itens_servico mas é múltiplos serviços
+      valorTotal = parseFloat(agendamento.valor_total) || 0;
+      itensOS.push({
+        descricao: `Múltiplos Serviços`,
+        tipo: 'Múltiplos Serviços',
+        valor_unitario: valorTotal,
+        quantidade: 1,
+        valor_total: valorTotal
+      });
     }
 
     let repasseMedico = 0;
