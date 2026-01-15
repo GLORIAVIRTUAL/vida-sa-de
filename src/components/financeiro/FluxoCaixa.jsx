@@ -100,6 +100,20 @@ export default function FluxoCaixa({ lancamentos, ordensServico, pacientes, onUp
     }
   };
 
+  const handleExcluirLancamento = async () => {
+    if (!lancamentoParaExcluir) return;
+    setExcluindo(true);
+    try {
+      await Lancamento.delete(lancamentoParaExcluir.id);
+      setLancamentoParaExcluir(null);
+      onUpdate();
+    } catch (error) {
+      console.error("Erro ao excluir lançamento:", error);
+    } finally {
+      setExcluindo(false);
+    }
+  };
+
   const formatarValor = (valor) => {
     if (!valoresDesbloqueados) {
       return '******';
