@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Contato } from '@/entities/all';
+import { Contato, User } from '@/entities/all';
 import { MessageSquare, Volume2, VolumeX, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
@@ -11,10 +11,23 @@ export default function NotificacaoMensagemChat() {
     return saved !== null ? JSON.parse(saved) : true;
   });
   const [notificacoes, setNotificacoes] = useState([]);
-  const audioRef = useRef(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const ultimaVerificacaoRef = useRef(null);
-  const ultimoContatoIdRef = useRef(null);
+  const ultimaInteracaoConhecidaRef = useRef(null);
   const somAtivoRef = useRef(somAtivo);
+
+  // Verificar autenticação ao montar
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const user = await User.me();
+        setIsAuthenticated(!!user);
+      } catch (error) {
+        setIsAuthenticated(false);
+      }
+    };
+    checkAuth();
+  }, []);
 
   // Manter ref atualizado
   useEffect(() => {
@@ -26,25 +39,55 @@ export default function NotificacaoMensagemChat() {
     localStorage.setItem('chatSomAtivo', JSON.stringify(somAtivo));
   }, [somAtivo]);
 
-  // Criar elemento de áudio
-  useEffect(() => {
-    audioRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3');
-    audioRef.current.volume = 0.5;
-  }, []);
-
-  // Tocar som de notificação
+  // Tocar som de notificação usando Web Audio API (mais confiável)
   const tocarSom = () => {
-    if (somAtivoRef.current && audioRef.current) {
-      audioRef.current.currentTime = 0;
-      audioRef.current.play().catch(e => console.log('Erro ao tocar som:', e));
+    if (!somAtivoRef.current) return;
+    
+    try {
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      
+      // Som de "ding" para mensagem
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(880, audioContext.currentTime); // A5
+      gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+      gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.01);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.3);
+
+      // Segunda nota
+      const oscillator2 = audioContext.createOscillator();
+      const gainNode2 = audioContext.createGain();
+      oscillator2.connect(gainNode2);
+      gainNode2.connect(audioContext.destination);
+      oscillator2.type = 'sine';
+      oscillator2.frequency.setValueAtTime(1108.73, audioContext.currentTime + 0.1); // C#6
+      gainNode2.gain.setValueAtTime(0, audioContext.currentTime + 0.1);
+      gainNode2.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.11);
+      gainNode2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
+      oscillator2.start(audioContext.currentTime + 0.1);
+      oscillator2.stop(audioContext.currentTime + 0.4);
+      
+      console.log('🔔 Som de mensagem reproduzido!');
+    } catch (e) {
+      console.log('Erro ao tocar som:', e);
     }
   };
 
   // Polling para verificar novas mensagens
   useEffect(() => {
+    if (!isAuthenticated) {
+      console.log('⚠️ Usuário não autenticado - pulando verificação de mensagens do chat');
+      return;
+    }
+
     const verificarNovasMensagens = async () => {
       try {
-        const contatos = await Contato.list('-ultima_interacao', 50);
+        const contatos = await Contato.list('-ultima_interacao', 20);
         
         // Filtrar apenas contatos com mensagens não lidas (última mensagem do usuário)
         const contatosComNovasMensagens = contatos.filter(c => {
@@ -53,56 +96,73 @@ export default function NotificacaoMensagemChat() {
           return ultimaMensagem.role === 'user';
         });
 
-        // Na primeira execução, apenas armazenar os IDs
+        // Na primeira execução, apenas armazenar o timestamp
         if (ultimaVerificacaoRef.current === null) {
           ultimaVerificacaoRef.current = new Date();
           if (contatosComNovasMensagens.length > 0) {
-            ultimoContatoIdRef.current = contatosComNovasMensagens[0].id;
+            ultimaInteracaoConhecidaRef.current = contatosComNovasMensagens[0].ultima_interacao;
           }
+          console.log('📱 Primeira verificação de chat - inicializado');
           return;
         }
 
         // Verificar se há novos contatos com mensagens
         if (contatosComNovasMensagens.length > 0) {
           const contatoMaisRecente = contatosComNovasMensagens[0];
-          const ultimaInteracao = new Date(contatoMaisRecente.ultima_interacao);
           
-          // Se a última interação é mais recente que nossa última verificação
-          if (ultimaInteracao > ultimaVerificacaoRef.current) {
+          // Se a última interação é diferente da que conhecemos
+          if (contatoMaisRecente.ultima_interacao !== ultimaInteracaoConhecidaRef.current) {
+            const ultimaInteracao = new Date(contatoMaisRecente.ultima_interacao);
             
-            // Criar notificação
-            const novaNotificacao = {
-              id: Date.now(),
-              nome: contatoMaisRecente.nome || 'Novo contato',
-              telefone: contatoMaisRecente.telefone,
-              mensagem: contatoMaisRecente.ultima_mensagem?.substring(0, 100) || 'Nova mensagem',
-              timestamp: new Date()
-            };
+            // Se é mais recente que nossa última verificação
+            if (ultimaInteracao > ultimaVerificacaoRef.current) {
+              console.log('📱 Nova mensagem detectada!', contatoMaisRecente.nome);
+              
+              // Criar notificação
+              const novaNotificacao = {
+                id: Date.now(),
+                nome: contatoMaisRecente.nome || 'Novo contato',
+                telefone: contatoMaisRecente.telefone,
+                mensagem: contatoMaisRecente.ultima_mensagem?.substring(0, 100) || 'Nova mensagem',
+                timestamp: new Date()
+              };
 
-            setNotificacoes(prev => {
-              // Evitar duplicatas
-              if (prev.some(n => n.telefone === novaNotificacao.telefone && 
-                  Date.now() - n.timestamp.getTime() < 30000)) {
-                return prev;
-              }
-              return [novaNotificacao, ...prev].slice(0, 5);
-            });
+              setNotificacoes(prev => {
+                // Evitar duplicatas
+                if (prev.some(n => n.telefone === novaNotificacao.telefone && 
+                    Date.now() - n.timestamp.getTime() < 30000)) {
+                  return prev;
+                }
+                return [novaNotificacao, ...prev].slice(0, 5);
+              });
 
-            tocarSom();
-            ultimoContatoIdRef.current = contatoMaisRecente.id;
+              tocarSom();
+            }
+            
+            ultimaInteracaoConhecidaRef.current = contatoMaisRecente.ultima_interacao;
           }
         }
 
         ultimaVerificacaoRef.current = new Date();
       } catch (error) {
-        console.error('Erro ao verificar mensagens:', error);
+        // Silenciar erros de permissão
+        if (!error.message?.includes('403') && !error.message?.includes('Rate limit')) {
+          console.error('Erro ao verificar mensagens:', error);
+        }
       }
     };
 
-    verificarNovasMensagens();
-    const interval = setInterval(verificarNovasMensagens, 10000); // A cada 10 segundos
-    return () => clearInterval(interval);
-  }, []);
+    // Verificar após 3 segundos do mount
+    const timeout = setTimeout(verificarNovasMensagens, 3000);
+    
+    // Verificar a cada 10 segundos
+    const interval = setInterval(verificarNovasMensagens, 10000);
+    
+    return () => {
+      clearTimeout(timeout);
+      clearInterval(interval);
+    };
+  }, [isAuthenticated]);
 
   // Auto-remover notificações após 15 segundos
   useEffect(() => {
