@@ -28,11 +28,12 @@ Deno.serve(async (req) => {
     console.log('📱 Enviando cartão para:', telefoneFormatado);
 
     // Buscar credenciais Z-API
-    const instanceId = Deno.env.get('WHATSAPP_INSTANCE_ID');
-    const token = Deno.env.get('WHATSAPP_API_KEY');
+    const instanceId = Deno.env.get('ZAPI_INSTANCE_ID');
+    const token = Deno.env.get('ZAPI_TOKEN');
+    const clientToken = Deno.env.get('ZAPI_CLIENT_TOKEN');
 
     if (!instanceId || !token) {
-      throw new Error('Credenciais Z-API não configuradas');
+      throw new Error('Credenciais Z-API não configuradas (ZAPI_INSTANCE_ID e ZAPI_TOKEN)');
     }
 
     // Converter base64 para Blob
@@ -41,11 +42,16 @@ Deno.serve(async (req) => {
     // Enviar via Z-API
     const zapiUrl = `https://api.z-api.io/instances/${instanceId}/token/${token}/send-image`;
     
+    const headers = {
+      'Content-Type': 'application/json'
+    };
+    if (clientToken) {
+      headers['Client-Token'] = clientToken;
+    }
+    
     const response = await fetch(zapiUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify({
         phone: telefoneFormatado,
         image: imagemBase64,

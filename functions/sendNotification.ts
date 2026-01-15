@@ -30,21 +30,20 @@ Deno.serve(async (req) => {
         const timestamp = new Date().toISOString();
 
         if (tipo === 'whatsapp') {
-            // DEBUG: Vamos verificar cada variável individualmente
-            const whatsappInstanceId = Deno.env.get("WHATSAPP_INSTANCE_ID");
-            const tokenDaInstancia = Deno.env.get("WHATSAPP_API_KEY");
+            // Buscar credenciais Z-API
+            const instanceId = Deno.env.get("ZAPI_INSTANCE_ID");
+            const token = Deno.env.get("ZAPI_TOKEN");
             const clientToken = Deno.env.get("ZAPI_CLIENT_TOKEN");
 
             console.log('=== DEBUG DAS VARIÁVEIS DE AMBIENTE ===');
-            console.log(`WHATSAPP_INSTANCE_ID: ${whatsappInstanceId ? `PRESENTE (${whatsappInstanceId.substring(0, 8)}...)` : 'AUSENTE'}`);
-            console.log(`WHATSAPP_API_KEY: ${tokenDaInstancia ? `PRESENTE (${tokenDaInstancia.substring(0, 8)}...)` : 'AUSENTE'}`);
+            console.log(`ZAPI_INSTANCE_ID: ${instanceId ? `PRESENTE (${instanceId.substring(0, 8)}...)` : 'AUSENTE'}`);
+            console.log(`ZAPI_TOKEN: ${token ? `PRESENTE (${token.substring(0, 8)}...)` : 'AUSENTE'}`);
             console.log(`ZAPI_CLIENT_TOKEN: ${clientToken ? `PRESENTE (${clientToken.substring(0, 8)}...)` : 'AUSENTE'}`);
 
             // Verificação mais detalhada com mensagem específica
             const variaveisAusentes = [];
-            if (!whatsappInstanceId) variaveisAusentes.push('WHATSAPP_INSTANCE_ID');
-            if (!tokenDaInstancia) variaveisAusentes.push('WHATSAPP_API_KEY');
-            if (!clientToken) variaveisAusentes.push('ZAPI_CLIENT_TOKEN');
+            if (!instanceId) variaveisAusentes.push('ZAPI_INSTANCE_ID');
+            if (!token) variaveisAusentes.push('ZAPI_TOKEN');
 
             if (variaveisAusentes.length > 0) {
                 const mensagemErro = `Variáveis ausentes: ${variaveisAusentes.join(', ')}. Por favor, configure-as em Settings → Environment Variables.`;
@@ -52,18 +51,22 @@ Deno.serve(async (req) => {
                 return new Response(JSON.stringify({ error: mensagemErro }), { status: 500 });
             }
 
-            const endpointUrl = `https://api.z-api.io/instances/${whatsappInstanceId}/token/${tokenDaInstancia}/send-text`;
+            const endpointUrl = `https://api.z-api.io/instances/${instanceId}/token/${token}/send-text`;
 
             console.log('=== ENVIANDO PARA Z-API ===');
             console.log('URL:', endpointUrl);
 
             try {
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+                if (clientToken) {
+                    headers['Client-Token'] = clientToken;
+                }
+                
                 const response = await fetch(endpointUrl, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'client-token': clientToken
-                    },
+                    headers,
                     body: JSON.stringify({
                         phone: telefoneCompleto,
                         message: mensagem
