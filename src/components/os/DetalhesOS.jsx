@@ -656,9 +656,23 @@ export default function DetalhesOS({ os, pacienteNome, medicoNome, categoriaNome
             {/* Valor Final */}
             <div className="flex justify-between items-center">
               <span className="font-semibold text-gray-900">Valor Final:</span>
-              <span className="text-2xl font-bold text-blue-600">
-                R$ {os.valor_final?.toFixed(2)}
-              </span>
+              {editando ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-600">R$</span>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={valorFinal}
+                    onChange={(e) => setValorFinal(e.target.value)}
+                    className="w-32 text-right font-bold"
+                  />
+                </div>
+              ) : (
+                <span className="text-2xl font-bold text-blue-600">
+                  R$ {os.valor_final?.toFixed(2)}
+                </span>
+              )}
             </div>
 
             <Separator className="my-4" />
