@@ -257,6 +257,10 @@ export default function ContatosTab() {
               <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
               Atualizar
             </Button>
+            <Button onClick={() => setModalAberto(true)} className="bg-green-600 hover:bg-green-700">
+              <UserPlus className="w-4 h-4 mr-2" />
+              Adicionar Contato
+            </Button>
           </div>
         </CardContent>
       </Card>
