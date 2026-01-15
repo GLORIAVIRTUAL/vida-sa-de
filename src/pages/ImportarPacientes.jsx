@@ -12,6 +12,7 @@ export default function ImportarPacientes() {
   const [progresso, setProgresso] = useState(0);
   const [resultado, setResultado] = useState(null);
   const [logs, setLogs] = useState([]);
+  const [pacientesComErro, setPacientesComErro] = useState([]);
   const fileInputRef = useRef(null);
 
   const addLog = (msg, tipo = 'info') => {
@@ -109,6 +110,7 @@ export default function ImportarPacientes() {
     setProgresso(0);
     setLogs([]);
     setResultado(null);
+    setPacientesComErro([]);
 
     try {
       addLog('Lendo arquivo...', 'info');
@@ -157,6 +159,7 @@ export default function ImportarPacientes() {
               erros--;
             } catch (e) {
               addLog(`  → Erro em "${paciente.nome}": ${e.message}`, 'error');
+              setPacientesComErro(prev => [...prev, { ...paciente, erro: e.message }]);
             }
           }
         }
@@ -317,6 +320,41 @@ export default function ImportarPacientes() {
                 )}
               </AlertDescription>
             </Alert>
+          )}
+
+          {/* Exportar erros */}
+          {pacientesComErro.length > 0 && (
+            <div className="space-y-2">
+              <Alert className="border-orange-500 bg-orange-50">
+                <AlertCircle className="w-4 h-4 text-orange-600" />
+                <AlertDescription>
+                  <strong>{pacientesComErro.length} pacientes não foram importados.</strong>
+                  <br />
+                  Baixe a lista abaixo para corrigir os dados e tentar novamente.
+                </AlertDescription>
+              </Alert>
+              <Button 
+                variant="outline" 
+                className="gap-2 border-orange-500 text-orange-700 hover:bg-orange-50"
+                onClick={() => {
+                  const headers = 'nome;cpf;telefone;email;data_nascimento;erro\n';
+                  const rows = pacientesComErro.map(p => 
+                    `"${p.nome || ''}";"${p.cpf || ''}";"${p.telefone || ''}";"${p.email || ''}";"${p.data_nascimento || ''}";"${p.erro || ''}"`
+                  ).join('\n');
+                  
+                  const blob = new Blob([headers + rows], { type: 'text/csv;charset=utf-8' });
+                  const url = window.URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = 'pacientes_com_erro.csv';
+                  a.click();
+                  window.URL.revokeObjectURL(url);
+                }}
+              >
+                <Download className="w-4 h-4" />
+                Baixar Lista de Pacientes com Erro ({pacientesComErro.length})
+              </Button>
+            </div>
           )}
 
           {/* Logs */}
