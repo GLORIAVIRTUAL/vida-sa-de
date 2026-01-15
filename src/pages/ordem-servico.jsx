@@ -382,6 +382,8 @@ export default function OrdemDeServico() {
             procedimento={osFormData.procedimento}
             exames={osFormData.exames}
             categorias={categorias}
+            medicos={medicos}
+            procedimentos={procedimentos}
             onSalvar={handleSalvarOS}
             onCancelar={handleCancelarForm}
           />

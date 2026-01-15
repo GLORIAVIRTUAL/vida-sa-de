@@ -16,6 +16,7 @@ import Exames from './pages/Exames';
 import Financeiro from './pages/Financeiro';
 import Home from './pages/Home';
 import ImportadorDados from './pages/ImportadorDados';
+import ImportarPacientes from './pages/ImportarPacientes';
 import ImportarProcedimentos from './pages/ImportarProcedimentos';
 import ImportarTurmas from './pages/ImportarTurmas';
 import ImportarVendasCartao from './pages/ImportarVendasCartao';
@@ -33,7 +34,6 @@ import VendaCartao from './pages/VendaCartao';
 import VerificacaoAssinatura from './pages/VerificacaoAssinatura';
 import WebhookLogs from './pages/WebhookLogs';
 import ordemServico from './pages/ordem-servico';
-import ImportarPacientes from './pages/ImportarPacientes';
 import __Layout from './Layout.jsx';
 
 
@@ -56,6 +56,7 @@ export const PAGES = {
     "Financeiro": Financeiro,
     "Home": Home,
     "ImportadorDados": ImportadorDados,
+    "ImportarPacientes": ImportarPacientes,
     "ImportarProcedimentos": ImportarProcedimentos,
     "ImportarTurmas": ImportarTurmas,
     "ImportarVendasCartao": ImportarVendasCartao,
@@ -73,7 +74,6 @@ export const PAGES = {
     "VerificacaoAssinatura": VerificacaoAssinatura,
     "WebhookLogs": WebhookLogs,
     "ordem-servico": ordemServico,
-    "ImportarPacientes": ImportarPacientes,
 }
 
 export const pagesConfig = {
