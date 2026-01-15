@@ -527,10 +527,12 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
     
     // Só buscar disponibilidades se:
     // 1. Detectou médico específico OU especialidade específica, OU
-    // 2. Já está em fluxo de agendamento com dados parciais no histórico
+    // 2. Já está em fluxo de agendamento com dados parciais no histórico, OU
+    // 3. Cliente está confirmando horário/data (hoje, 8 horas, 13:00, etc.)
     const temEspecialidadeOuMedico = especialidadeDetectada || medicoEspecificoDetectado;
+    const clienteEscolhendoHorario = /hoje|\d{1,2}[h:]?\s*(?:horas?)?|\d{1,2}:\d{2}|amanhã|segunda|terça|quarta|quinta|sexta|sábado/i.test(messageText);
     const deveBuscarDisponibilidades = querAgendar && (temEspecialidadeOuMedico || 
-      (jaEmFluxoAgendamento && /médico|doutor|dr\.|especialidade|horário|data/i.test(historicoConversa)));
+      (jaEmFluxoAgendamento && (/médico|doutor|dr\.|especialidade|horário|data/i.test(historicoConversa) || clienteEscolhendoHorario)));
     
     if (querAgendar && !temEspecialidadeOuMedico && !jaEmFluxoAgendamento) {
       // Cliente quer agendar mas NÃO especificou especialidade - NÃO mostrar médicos
