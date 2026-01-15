@@ -904,8 +904,9 @@ Retorne JSON.`;
             });
 
             if (agendamentosExistentes.length === 0) {
-              // Buscar categoria "Particular"
+              // Buscar categoria "Particular" e valor da consulta
               let categoriaParticularId = null;
+              let valorConsulta = 0;
               try {
                 const categorias = await base44.asServiceRole.entities.CategoriaPreco.filter({ 
                   nome: 'Particular',
@@ -913,12 +914,48 @@ Retorne JSON.`;
                 });
                 if (categorias.length > 0) {
                   categoriaParticularId = categorias[0].id;
+                  
+                  // Buscar valor da consulta na tabela de preços
+                  // Procurar procedimento de consulta da especialidade do médico
+                  try {
+                    const tabelaPrecos = await base44.asServiceRole.entities.TabelaPreco.filter({
+                      categoria_id: categoriaParticularId
+                    });
+                    const procedimentos = await base44.asServiceRole.entities.Procedimento.filter({ status: 'Ativo' });
+                    
+                    // Buscar procedimento de consulta para a especialidade do médico
+                    const especialidadeMedico = (medicoEncontrado.especialidade || '').toLowerCase();
+                    let procedimentoConsulta = procedimentos.find(p => {
+                      const nomeLower = (p.nome || '').toLowerCase();
+                      const espLower = (p.especialidade || '').toLowerCase();
+                      return (nomeLower.includes('consulta') || nomeLower.includes(especialidadeMedico)) &&
+                             (espLower.includes(especialidadeMedico) || especialidadeMedico.includes(espLower));
+                    });
+                    
+                    // Se não encontrou específico, buscar consulta genérica ou clínico geral
+                    if (!procedimentoConsulta) {
+                      procedimentoConsulta = procedimentos.find(p => {
+                        const nomeLower = (p.nome || '').toLowerCase();
+                        return nomeLower.includes('consulta') && (nomeLower.includes('clínico') || nomeLower.includes('clinico') || nomeLower.includes('geral'));
+                      });
+                    }
+                    
+                    if (procedimentoConsulta) {
+                      const preco = tabelaPrecos.find(tp => tp.procedimento_id === procedimentoConsulta.id);
+                      if (preco) {
+                        valorConsulta = preco.valor || 0;
+                        console.log(`💰 Valor da consulta encontrado: R$ ${valorConsulta}`);
+                      }
+                    }
+                  } catch (precoError) {
+                    console.log('⚠️ Erro ao buscar valor da consulta:', precoError.message);
+                  }
                 }
               } catch (e) {
                 console.log('⚠️ Erro ao buscar categoria Particular:', e.message);
               }
               
-              // Criar agendamento
+              // Criar agendamento com valor
               const novoAgendamento = await base44.asServiceRole.entities.Agendamento.create({
                 paciente_id: paciente.id,
                 paciente_nome: extracao.nome_paciente,
@@ -928,6 +965,8 @@ Retorne JSON.`;
                 tipo_servico: 'Consulta',
                 status: 'Agendado',
                 categoria_preco_id: categoriaParticularId,
+                valor_total: valorConsulta,
+                valor_final: valorConsulta,
                 observacoes: 'Agendado pela Glória',
                 agendado_por: 'Glória',
                 agendado_por_tipo: 'chatbot'
