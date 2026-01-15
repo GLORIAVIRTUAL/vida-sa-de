@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
       });
     }
     
-    console.log('✅ Config encontrada:', config.nome);
+    console.log('✅ Config encontrada:', config.nome, '| Modelo LLM:', config.modelo_llm);
     
     // Verificar se é uma nova conversa (conversa_finalizada = true no contato)
     let conversaFinalizada = false;
