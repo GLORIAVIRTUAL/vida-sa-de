@@ -81,54 +81,62 @@ export default function NotificacaoMensagemChat() {
   // Polling para verificar novas mensagens
   useEffect(() => {
     if (!isAuthenticated) {
-      console.log('⚠️ Usuário não autenticado - pulando verificação de mensagens do chat');
       return;
     }
 
     const verificarNovasMensagens = async () => {
       try {
-        const contatos = await Contato.list('-ultima_interacao', 20);
+        const contatos = await Contato.list('-updated_date', 20);
         
-        // Filtrar apenas contatos com mensagens não lidas (última mensagem do usuário)
-        const contatosComNovasMensagens = contatos.filter(c => {
-          if (!c.historico_mensagens || c.historico_mensagens.length === 0) return false;
-          const ultimaMensagem = c.historico_mensagens[c.historico_mensagens.length - 1];
-          return ultimaMensagem.role === 'user';
-        });
-
-        // Na primeira execução, apenas armazenar o timestamp
+        // Na primeira execução, apenas armazenar os timestamps das últimas mensagens de usuário
         if (ultimaVerificacaoRef.current === null) {
           ultimaVerificacaoRef.current = new Date();
-          if (contatosComNovasMensagens.length > 0) {
-            ultimaInteracaoConhecidaRef.current = contatosComNovasMensagens[0].ultima_interacao;
-          }
-          console.log('📱 Primeira verificação de chat - inicializado');
+          
+          // Armazenar timestamps das mensagens de usuário já existentes
+          const timestampsExistentes = {};
+          contatos.forEach(c => {
+            if (c.historico_mensagens?.length > 0) {
+              // Pegar a última mensagem do usuário
+              const ultimaMsgUsuario = [...c.historico_mensagens].reverse().find(m => m.role === 'user');
+              if (ultimaMsgUsuario?.timestamp) {
+                timestampsExistentes[c.id] = ultimaMsgUsuario.timestamp;
+              }
+            }
+          });
+          ultimaInteracaoConhecidaRef.current = timestampsExistentes;
+          console.log('📱 Chat notificações inicializado');
           return;
         }
 
-        // Verificar se há novos contatos com mensagens
-        if (contatosComNovasMensagens.length > 0) {
-          const contatoMaisRecente = contatosComNovasMensagens[0];
+        // Verificar cada contato por novas mensagens de usuário
+        for (const contato of contatos) {
+          if (!contato.historico_mensagens?.length) continue;
           
-          // Se a última interação é diferente da que conhecemos
-          if (contatoMaisRecente.ultima_interacao !== ultimaInteracaoConhecidaRef.current) {
-            const ultimaInteracao = new Date(contatoMaisRecente.ultima_interacao);
+          // Pegar a última mensagem do usuário
+          const ultimaMsgUsuario = [...contato.historico_mensagens].reverse().find(m => m.role === 'user');
+          if (!ultimaMsgUsuario?.timestamp) continue;
+          
+          const timestampConhecido = ultimaInteracaoConhecidaRef.current[contato.id];
+          
+          // Se é uma nova mensagem (timestamp diferente do conhecido)
+          if (ultimaMsgUsuario.timestamp !== timestampConhecido) {
+            const dataMensagem = new Date(ultimaMsgUsuario.timestamp);
             
-            // Se é mais recente que nossa última verificação
-            if (ultimaInteracao > ultimaVerificacaoRef.current) {
-              console.log('📱 Nova mensagem detectada!', contatoMaisRecente.nome);
+            // E é mais recente que nossa última verificação
+            if (dataMensagem > ultimaVerificacaoRef.current) {
+              console.log('📱 Nova mensagem de:', contato.nome, '-', ultimaMsgUsuario.content?.substring(0, 50));
               
               // Criar notificação
               const novaNotificacao = {
-                id: Date.now(),
-                nome: contatoMaisRecente.nome || 'Novo contato',
-                telefone: contatoMaisRecente.telefone,
-                mensagem: contatoMaisRecente.ultima_mensagem?.substring(0, 100) || 'Nova mensagem',
+                id: Date.now() + Math.random(),
+                nome: contato.nome || 'Novo contato',
+                telefone: contato.telefone,
+                mensagem: ultimaMsgUsuario.content?.substring(0, 100) || 'Nova mensagem',
                 timestamp: new Date()
               };
 
               setNotificacoes(prev => {
-                // Evitar duplicatas
+                // Evitar duplicatas do mesmo telefone nos últimos 30s
                 if (prev.some(n => n.telefone === novaNotificacao.telefone && 
                     Date.now() - n.timestamp.getTime() < 30000)) {
                   return prev;
@@ -139,7 +147,8 @@ export default function NotificacaoMensagemChat() {
               tocarSom();
             }
             
-            ultimaInteracaoConhecidaRef.current = contatoMaisRecente.ultima_interacao;
+            // Atualizar timestamp conhecido
+            ultimaInteracaoConhecidaRef.current[contato.id] = ultimaMsgUsuario.timestamp;
           }
         }
 
@@ -152,11 +161,11 @@ export default function NotificacaoMensagemChat() {
       }
     };
 
-    // Verificar após 3 segundos do mount
-    const timeout = setTimeout(verificarNovasMensagens, 3000);
+    // Verificar após 2 segundos
+    const timeout = setTimeout(verificarNovasMensagens, 2000);
     
-    // Verificar a cada 10 segundos
-    const interval = setInterval(verificarNovasMensagens, 10000);
+    // Verificar a cada 8 segundos
+    const interval = setInterval(verificarNovasMensagens, 8000);
     
     return () => {
       clearTimeout(timeout);
