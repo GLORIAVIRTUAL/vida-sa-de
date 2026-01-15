@@ -704,22 +704,19 @@ PERGUNTE ao cliente: "Para qual especialidade você gostaria de agendar? Temos v
         if (disponibilidadesEncontradas.length > 0) {
           infoDisponibilidade = '\n\n📅 DISPONIBILIDADES ENCONTRADAS:\n';
           
-          // Se há mais de um médico da mesma especialidade, mostrar TODOS
-          const limiteMostrar = especialidadeDetectada && disponibilidadesEncontradas.length > 1 
-            ? disponibilidadesEncontradas.length 
-            : 3;
-          
-          for (const medico of disponibilidadesEncontradas.slice(0, limiteMostrar)) {
+          // SEMPRE mostrar TODOS os médicos da especialidade
+          for (const medico of disponibilidadesEncontradas) {
             infoDisponibilidade += `\n👨‍⚕️ ${medico.medico_nome} (${medico.especialidade}):\n`;
             infoDisponibilidade += `   ID do médico: ${medico.medico_id}\n`;
             
-            for (const dia of medico.disponibilidades.slice(0, 2)) {
-              infoDisponibilidade += `   • ${dia.data_formatada}: ${dia.horarios.slice(0, 3).join(', ')}\n`;
+            // Mostrar mais dias e horários para cada médico
+            for (const dia of medico.disponibilidades.slice(0, 3)) {
+              infoDisponibilidade += `   • ${dia.data_formatada}: ${dia.horarios.slice(0, 5).join(', ')}\n`;
             }
           }
           
           if (disponibilidadesEncontradas.length > 1) {
-            infoDisponibilidade += '\n⚠️ Há múltiplos profissionais disponíveis. Pergunte qual médico o paciente prefere.';
+            infoDisponibilidade += '\n⚠️ Há múltiplos profissionais disponíveis. MOSTRE TODOS ao cliente e pergunte qual médico e horário ele prefere.';
           }
           infoDisponibilidade += '\n⚠️ Para confirmar agendamento, preciso: nome completo e data de nascimento do paciente.';
           console.log('✅ Disponibilidades encontradas:', disponibilidadesEncontradas.length, 'médicos');
