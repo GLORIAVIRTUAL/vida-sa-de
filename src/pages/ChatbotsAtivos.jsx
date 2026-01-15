@@ -736,11 +736,7 @@ export default function ChatbotsAtivos() {
           </TabsContent>
 
           <TabsContent value="contatos" className="mt-4">
-            <ContatosTab onIniciarConversa={(contato) => {
-              // Mudar para aba de chat e selecionar o contato
-              const chatTab = document.querySelector('[value="chat"]');
-              if (chatTab) chatTab.click();
-            }} />
+            <ContatosTab onIniciarConversa={handleIniciarConversa} />
           </TabsContent>
 
           <TabsContent value="pipeline" className="mt-4">
