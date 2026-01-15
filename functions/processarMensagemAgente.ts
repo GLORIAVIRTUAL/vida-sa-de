@@ -1231,7 +1231,9 @@ Confirme o recebimento e pergunte como pode ajudar.`;
 ${infoDisponibilidade ? '✅ As disponibilidades acima são REAIS e vêm diretamente da agenda dos médicos.' : '❌ Nenhuma disponibilidade foi carregada.'}
 
 ⚠️ REGRAS OBRIGATÓRIAS:
-1. 🔍 CONSULTA DE MÉDICOS: Quando o cliente perguntar por uma especialidade, a lista acima mostra TODOS os profissionais disponíveis com seus horários REAIS.
+1. 🔍 PRIMEIRO PERGUNTE A ESPECIALIDADE: Se o cliente disser "quero agendar uma consulta" sem especificar a especialidade, PERGUNTE: "Para qual especialidade você gostaria de agendar? Temos Clínico Geral, Cardiologia, Psicologia, Nutrição, entre outras. 😊"
+   - NÃO mostre lista de médicos antes de saber a especialidade!
+   - APENAS mostre horários quando o cliente ESPECIFICAR a especialidade ou médico.
 
 2. 📅 HORÁRIOS DISPONÍVEIS: Os horários listados acima são os ÚNICOS disponíveis. NUNCA sugira horários que não estejam na lista.
 
