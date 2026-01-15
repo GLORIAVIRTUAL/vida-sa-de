@@ -682,7 +682,13 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
         }
       }
 
-      setHorariosDisponiveis(horariosLivres.sort());
+      // Se estiver editando um agendamento, garantir que o horário original esteja na lista
+      let horariosFinais = horariosLivres.sort();
+      if (agendamento && agendamento.horario && !horariosFinais.includes(agendamento.horario)) {
+        horariosFinais = [...horariosFinais, agendamento.horario].sort();
+      }
+      
+      setHorariosDisponiveis(horariosFinais);
     } catch (error) {
       console.error("Erro ao carregar horários:", error);
       setHorariosDisponiveis([]);
