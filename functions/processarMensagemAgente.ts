@@ -472,61 +472,76 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
     const jaEmFluxoAgendamento = historicoConversa && /agendar|marcar|consulta|vamos agendar|seguir com o agendamento/i.test(historicoConversa);
     const querAgendar = querAgendarMensagem || jaEmFluxoAgendamento;
     
-    if (querAgendar) {
+    // Detectar especialidade mencionada - lista expandida
+    const especialidades = [
+      'Cardiologia', 'Cardiologista', 'Clínico Geral', 'Clínico', 'Dermatologia', 'Dermatologista',
+      'Endocrinologia', 'Endocrinologista', 'Ginecologia', 'Ginecologista', 
+      'Nutrição', 'Nutricionista', 'Psicologia', 'Psicólogo', 'Psicóloga',
+      'Ortopedia', 'Ortopedista', 'Urologia', 'Urologista', 'Geriatria', 'Geriatra',
+      'Gastroenterologia', 'Gastro', 'Reumatologia', 'Reumatologista', 
+      'Psiquiatria', 'Psiquiatra', 'Fisioterapia', 'Fisioterapeuta', 'Fisio',
+      'Ecografia', 'Eco', 'Ultrassom', 'Traumatologia', 'Traumatologista',
+      'Oftalmologia', 'Oftalmologista', 'Otorrino', 'Otorrinolaringologia',
+      'Pediatria', 'Pediatra', 'Pneumologia', 'Pneumologista',
+      'Neurologia', 'Neurologista', 'Quiropraxia', 'Quiropraxista',
+      'Massoterapia', 'Massoterapeuta', 'Massagem', 'Optometria', 'Optometrista',
+      'Hidroginástica', 'Hidroterapia', 'Pilates', 'Psicopedagoga', 'Psicopedagogia'
+    ];
+    
+    let especialidadeDetectada = null;
+    let medicoEspecificoDetectado = null;
+    const msgLower = messageText.toLowerCase();
+    const historicoLower = (historicoConversa || '').toLowerCase();
+    const textoCompleto = msgLower + ' ' + historicoLower;
+
+    // Primeiro verificar se mencionou nome de médico específico
+    const todosMedicosParaDeteccao = await base44.asServiceRole.entities.Medico.filter({ status: 'Ativo' });
+    for (const medico of todosMedicosParaDeteccao) {
+      const nomeMedicoLower = medico.nome.toLowerCase();
+      const partesNome = nomeMedicoLower.split(' ').filter(p => p.length > 3);
+      
+      // Verificar se alguma parte significativa do nome está na mensagem
+      for (const parte of partesNome) {
+        if (textoCompleto.includes(parte)) {
+          medicoEspecificoDetectado = medico;
+          especialidadeDetectada = medico.especialidade;
+          console.log(`🎯 Médico específico detectado: ${medico.nome} (${medico.especialidade})`);
+          break;
+        }
+      }
+      if (medicoEspecificoDetectado) break;
+    }
+
+    // Se não encontrou médico específico, buscar por especialidade
+    if (!medicoEspecificoDetectado) {
+      for (const esp of especialidades) {
+        const espLower = esp.toLowerCase();
+        // Verifica se a mensagem ou histórico contém a especialidade
+        if (textoCompleto.includes(espLower)) {
+          especialidadeDetectada = esp;
+          console.log(`🎯 Especialidade detectada: ${esp}`);
+          break;
+        }
+      }
+    }
+    
+    // Só buscar disponibilidades se:
+    // 1. Detectou médico específico OU especialidade específica, OU
+    // 2. Já está em fluxo de agendamento com dados parciais no histórico
+    const temEspecialidadeOuMedico = especialidadeDetectada || medicoEspecificoDetectado;
+    const deveBuscarDisponibilidades = querAgendar && (temEspecialidadeOuMedico || 
+      (jaEmFluxoAgendamento && /médico|doutor|dr\.|especialidade|horário|data/i.test(historicoConversa)));
+    
+    if (querAgendar && !temEspecialidadeOuMedico && !jaEmFluxoAgendamento) {
+      // Cliente quer agendar mas NÃO especificou especialidade - NÃO mostrar médicos
+      console.log('📅 Cliente quer agendar mas não especificou especialidade - aguardando escolha');
+      infoDisponibilidade = `\n\n⚠️ IMPORTANTE: O cliente quer agendar mas NÃO especificou qual especialidade ou médico.
+NÃO mostre lista de médicos ainda!
+PERGUNTE ao cliente: "Para qual especialidade você gostaria de agendar? Temos várias opções como Clínico Geral, Cardiologia, Psicologia, Nutrição, entre outras. 😊"`;
+    }
+    
+    if (deveBuscarDisponibilidades) {
       console.log('📅 Cliente quer agendar - buscando disponibilidades...');
-      
-      // Detectar especialidade mencionada - lista expandida
-      const especialidades = [
-        'Cardiologia', 'Cardiologista', 'Clínico Geral', 'Clínico', 'Dermatologia', 'Dermatologista',
-        'Endocrinologia', 'Endocrinologista', 'Ginecologia', 'Ginecologista', 
-        'Nutrição', 'Nutricionista', 'Psicologia', 'Psicólogo', 'Psicóloga',
-        'Ortopedia', 'Ortopedista', 'Urologia', 'Urologista', 'Geriatria', 'Geriatra',
-        'Gastroenterologia', 'Gastro', 'Reumatologia', 'Reumatologista', 
-        'Psiquiatria', 'Psiquiatra', 'Fisioterapia', 'Fisioterapeuta', 'Fisio',
-        'Ecografia', 'Eco', 'Ultrassom', 'Traumatologia', 'Traumatologista',
-        'Oftalmologia', 'Oftalmologista', 'Otorrino', 'Otorrinolaringologia',
-        'Pediatria', 'Pediatra', 'Pneumologia', 'Pneumologista',
-        'Neurologia', 'Neurologista', 'Quiropraxia', 'Quiropraxista',
-        'Massoterapia', 'Massoterapeuta', 'Massagem', 'Optometria', 'Optometrista',
-        'Hidroginástica', 'Hidroterapia', 'Pilates', 'Psicopedagoga', 'Psicopedagogia'
-      ];
-      
-      let especialidadeDetectada = null;
-      let medicoEspecificoDetectado = null;
-      const msgLower = messageText.toLowerCase();
-      const historicoLower = (historicoConversa || '').toLowerCase();
-      const textoCompleto = msgLower + ' ' + historicoLower;
-
-      // Primeiro verificar se mencionou nome de médico específico
-      const todosMedicosParaDeteccao = await base44.asServiceRole.entities.Medico.filter({ status: 'Ativo' });
-      for (const medico of todosMedicosParaDeteccao) {
-        const nomeMedicoLower = medico.nome.toLowerCase();
-        const partesNome = nomeMedicoLower.split(' ').filter(p => p.length > 3);
-        
-        // Verificar se alguma parte significativa do nome está na mensagem
-        for (const parte of partesNome) {
-          if (textoCompleto.includes(parte)) {
-            medicoEspecificoDetectado = medico;
-            especialidadeDetectada = medico.especialidade;
-            console.log(`🎯 Médico específico detectado: ${medico.nome} (${medico.especialidade})`);
-            break;
-          }
-        }
-        if (medicoEspecificoDetectado) break;
-      }
-
-      // Se não encontrou médico específico, buscar por especialidade
-      if (!medicoEspecificoDetectado) {
-        for (const esp of especialidades) {
-          const espLower = esp.toLowerCase();
-          // Verifica se a mensagem ou histórico contém a especialidade
-          if (textoCompleto.includes(espLower)) {
-            especialidadeDetectada = esp;
-            console.log(`🎯 Especialidade detectada: ${esp}`);
-            break;
-          }
-        }
-      }
 
       try {
         // Buscar médicos e disponibilidades diretamente
