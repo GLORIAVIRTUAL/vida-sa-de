@@ -59,13 +59,26 @@ export default function EnviarNotificacao({
 
       const linkConfirmacao = `https://clinica-plus-7629e61a.base44.app/functions/confirmAppointmentLink?codigo=${agendamento.id}`;
       
+      // Determinar o procedimento/serviço
+      let procedimentoTexto = 'Consulta';
+      if (agendamento.tipo_servico === 'Procedimento' && agendamento.procedimento_id) {
+        procedimentoTexto = 'Procedimento';
+      } else if (agendamento.tipo_servico === 'Exame') {
+        procedimentoTexto = 'Exame';
+      } else if (agendamento.tipo_servico === 'Retorno') {
+        procedimentoTexto = 'Retorno';
+      } else if (agendamento.tipo_servico) {
+        procedimentoTexto = agendamento.tipo_servico;
+      }
+
       const mensagemPersonalizada = template
         .replace('[PACIENTE]', paciente.nome.split(' ')[0]) // Primeiro nome
-        .replace('[MEDICO]', nomeMedicoFormatado) // CORREÇÃO: Nome do médico formatado
+        .replace('[MEDICO]', nomeMedicoFormatado)
         .replace('[DATA]', dataFormatada)
         .replace('[HORARIO]', agendamento.horario)
-        .replace('[ESPECIALIDADE]', medico.especialidade)
-        .replace('[CODIGO]', agendamento.id) // Código de confirmação é o ID do agendamento
+        .replace('[PROCEDIMENTO]', procedimentoTexto)
+        .replace('[ESPECIALIDADE]', medico.especialidade || '')
+        .replace('[CODIGO]', agendamento.id)
         .replace('[LINK_CONFIRMACAO]', linkConfirmacao);
 
       setMensagem(mensagemPersonalizada);
