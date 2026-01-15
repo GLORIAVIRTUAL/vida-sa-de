@@ -107,7 +107,7 @@ function renderMensagemContent(content, isUser) {
 }
 
 // ========== COMPONENTE: CHAT ==========
-function ChatTab() {
+function ChatTab({ contatoInicial, onContatoSelecionado }) {
   const [contatos, setContatos] = useState([]);
   const [contatoSelecionado, setContatoSelecionado] = useState(null);
   const [carregando, setCarregando] = useState(true);
