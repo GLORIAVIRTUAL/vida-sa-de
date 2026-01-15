@@ -150,7 +150,7 @@ Deno.serve(async (req) => {
             </div>
             ${agendamento.status === 'Confirmado' 
               ? '<p style="color: #28a745; font-weight: bold;">✅ Já confirmado anteriormente</p>'
-              : '<a href="?codigo=${codigo}&confirmar=sim"><button class="btn">✅ Confirmar Presença</button></a>'
+              : `<a href="?codigo=${codigo}&confirmar=sim"><button class="btn">✅ Confirmar Presença</button></a>`
             }
           </div>
         </body>
