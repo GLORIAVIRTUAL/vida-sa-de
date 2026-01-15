@@ -165,10 +165,12 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
   // Selecionar contato inicial quando vier da aba de contatos
   useEffect(() => {
     if (contatoInicial) {
-      setContatoSelecionado(contatoInicial);
+      // Buscar o contato na lista pelo telefone ou usar direto
+      const contatoExistente = contatos.find(c => c.telefone === contatoInicial.telefone);
+      setContatoSelecionado(contatoExistente || contatoInicial);
       onContatoSelecionado && onContatoSelecionado();
     }
-  }, [contatoInicial]);
+  }, [contatoInicial, contatos]);
 
   useEffect(() => {
     if (contatoSelecionado && contatos.length > 0) {
