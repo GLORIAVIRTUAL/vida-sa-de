@@ -54,6 +54,8 @@ export default function FormularioOS({
   procedimento,
   exames,
   categorias,
+  medicos = [],
+  procedimentos = [],
   onSalvar,
   onCancelar
 }) {
