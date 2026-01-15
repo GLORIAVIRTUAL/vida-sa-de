@@ -34,7 +34,6 @@ import VendaCartao from './pages/VendaCartao';
 import VerificacaoAssinatura from './pages/VerificacaoAssinatura';
 import WebhookLogs from './pages/WebhookLogs';
 import ordemServico from './pages/ordem-servico';
-import ConfirmarPresenca from './pages/ConfirmarPresenca';
 import __Layout from './Layout.jsx';
 
 
@@ -75,7 +74,6 @@ export const PAGES = {
     "VerificacaoAssinatura": VerificacaoAssinatura,
     "WebhookLogs": WebhookLogs,
     "ordem-servico": ordemServico,
-    "ConfirmarPresenca": ConfirmarPresenca,
 }
 
 export const pagesConfig = {
