@@ -6,9 +6,24 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Users, Phone, Calendar, FileText, RefreshCw, Loader2, Filter } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Search, Users, Phone, Calendar, FileText, RefreshCw, Loader2, Filter, UserPlus } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+
+const LISTA_MOTIVOS = [
+  "Agendamento de Consulta",
+  "Agendamento de Exame",
+  "Cancelamento",
+  "Orçamento",
+  "Cartão Mais Vida",
+  "Resultado de Exames",
+  "Procedimentos",
+  "Turmas (Hidroginástica/Pilates)",
+  "Informações Gerais",
+  "Outro"
+];
 
 export default function ContatosTab() {
   const [contatos, setContatos] = useState([]);
