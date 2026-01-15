@@ -288,6 +288,7 @@ export default function ContatosTab({ onIniciarConversa }) {
                     <TableHead>Data</TableHead>
                     <TableHead>Motivo</TableHead>
                     <TableHead>Origem</TableHead>
+                    <TableHead className="w-12"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
