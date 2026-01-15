@@ -409,6 +409,8 @@ export default function Layout({ children, currentPageName }) {
       </MainLayout>
       {/* CORRIGIDO: Chatbot renderizado fora do MainLayout para funcionar em todas as páginas */}
       <ChatbotAjuda />
+      {/* Notificação de novas mensagens do chat */}
+      <NotificacaoMensagemChat />
     </>
   );
 }
