@@ -121,20 +121,46 @@ export default function FormularioOS({
         
         let descricaoItem = item.descricao || '';
         
+        // Buscar nome do médico vinculado ao item (se houver)
+        let medicoNome = '';
+        if (item.medico_id) {
+          const medicoItem = medicos.find(m => m.id === item.medico_id);
+          medicoNome = medicoItem ? medicoItem.nome : '';
+        }
+        
+        // Buscar nome do procedimento vinculado ao item (se houver)
+        let procedimentoNome = '';
+        if (item.procedimento_id) {
+          const procItem = procedimentos.find(p => p.id === item.procedimento_id);
+          procedimentoNome = procItem ? procItem.nome : '';
+        }
+        
         // Se não tem descrição, montar baseado no tipo
         if (!descricaoItem) {
-          if (item.tipo === 'Consulta' && item.medico_id) {
-            // Buscar nome do médico se disponível
-            descricaoItem = `Consulta`;
-          } else if (item.tipo === 'Procedimento' && item.procedimento_id && procedimento) {
-            descricaoItem = `Procedimento: ${procedimento.nome}`;
+          if (item.tipo === 'Consulta') {
+            descricaoItem = medicoNome ? `Consulta - Dr(a). ${medicoNome}` : `Consulta`;
+          } else if (item.tipo === 'Procedimento') {
+            if (procedimentoNome && medicoNome) {
+              descricaoItem = `Procedimento: ${procedimentoNome} - Dr(a). ${medicoNome}`;
+            } else if (procedimentoNome) {
+              descricaoItem = `Procedimento: ${procedimentoNome}`;
+            } else if (procedimento) {
+              descricaoItem = `Procedimento: ${procedimento.nome}`;
+            } else {
+              descricaoItem = `Procedimento`;
+            }
           } else if (item.tipo === 'Exame' && item.exame_id && exames) {
             const exame = exames.find(e => e.id === item.exame_id);
             descricaoItem = exame ? `Exame: ${exame.nome}` : `Exame`;
           } else if (item.tipo === 'Retorno') {
-            descricaoItem = `Retorno`;
+            descricaoItem = medicoNome ? `Retorno - Dr(a). ${medicoNome}` : `Retorno`;
           } else {
             descricaoItem = item.tipo || `Item ${index + 1}`;
+          }
+        } else {
+          // Se já tem descrição mas tem médico vinculado, adicionar o nome do médico
+          if (medicoNome && !descricaoItem.includes(medicoNome)) {
+            descricaoItem = `${descricaoItem} - Dr(a). ${medicoNome}`;
           }
         }
         
