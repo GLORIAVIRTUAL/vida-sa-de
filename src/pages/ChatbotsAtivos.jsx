@@ -732,7 +732,7 @@ export default function ChatbotsAtivos() {
           </TabsList>
 
           <TabsContent value="chat" className="mt-4">
-            <ChatTab />
+            <ChatTab contatoInicial={contatoParaConversa} onContatoSelecionado={() => setContatoParaConversa(null)} />
           </TabsContent>
 
           <TabsContent value="contatos" className="mt-4">
