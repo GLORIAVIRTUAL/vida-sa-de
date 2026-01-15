@@ -1311,8 +1311,9 @@ INSTRUÇÕES GERAIS:
         const contato = contatos[0];
         const historicoAtual = contato.historico_mensagens || [];
 
-        // Verificar se já existe orçamento no histórico (qualquer orçamento com VALOR TOTAL)
+        // Verificar duplicatas - orçamentos e outras mensagens repetidas
         const historicoCompleto = historicoAtual.filter(m => m.role === 'assistant');
+        const ultimasRespostasAssistente = historicoCompleto.slice(-5);
 
         // Se a nova resposta contém ORÇAMENTO, verificar se já existe um orçamento no histórico
         if (llmResponse && /ORÇAMENTO/i.test(llmResponse) && /VALOR TOTAL/i.test(llmResponse)) {
@@ -1322,14 +1323,47 @@ INSTRUÇÕES GERAIS:
 
           if (jaTemOrcamento) {
             console.log('⚠️ Já existe orçamento no histórico - NÃO enviando duplicado');
-            // Retornar mensagem informando que orçamento já foi enviado
             return Response.json({ 
               success: true, 
-              resposta: "Já enviei o orçamento acima! Ficou alguma dúvida sobre os valores? 😊",
+              resposta: null,
               duplicado: true,
               message: 'Orçamento já enviado anteriormente'
             });
           }
+        }
+
+        // Verificar se a mesma resposta já foi enviada recentemente (últimas 5 mensagens)
+        const respostaExata = ultimasRespostasAssistente.some(m => {
+          if (!m.content || !llmResponse) return false;
+          // Normalizar para comparação
+          const msg1 = m.content.toLowerCase().replace(/\s+/g, ' ').trim();
+          const msg2 = llmResponse.toLowerCase().replace(/\s+/g, ' ').trim();
+          return msg1 === msg2;
+        });
+
+        if (respostaExata) {
+          console.log('⚠️ Resposta exata duplicada detectada - NÃO enviando');
+          return Response.json({ 
+            success: true, 
+            resposta: null,
+            duplicado: true,
+            message: 'Resposta duplicada'
+          });
+        }
+
+        // Verificar se a mensagem "Já enviei o orçamento" foi enviada recentemente
+        const jaEnviouMsgOrcamento = ultimasRespostasAssistente.some(m => 
+          m.content && /já enviei o orçamento/i.test(m.content)
+        );
+
+        if (jaEnviouMsgOrcamento && /já enviei o orçamento/i.test(llmResponse)) {
+          console.log('⚠️ Mensagem "já enviei orçamento" duplicada - NÃO enviando');
+          return Response.json({ 
+            success: true, 
+            resposta: null,
+            duplicado: true,
+            message: 'Mensagem duplicada'
+          });
         }
 
         // Adicionar novas mensagens ao histórico
