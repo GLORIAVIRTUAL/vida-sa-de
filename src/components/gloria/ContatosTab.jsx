@@ -322,6 +322,77 @@ export default function ContatosTab() {
           )}
         </CardContent>
       </Card>
+
+      {/* Modal de Adicionar Contato */}
+      <Dialog open={modalAberto} onOpenChange={setModalAberto}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="w-5 h-5 text-green-600" />
+              Adicionar Contato
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="nome">Nome *</Label>
+              <Input
+                id="nome"
+                placeholder="Nome completo"
+                value={novoContato.nome}
+                onChange={(e) => setNovoContato({...novoContato, nome: e.target.value})}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="telefone">Telefone *</Label>
+              <Input
+                id="telefone"
+                placeholder="(00) 00000-0000"
+                value={novoContato.telefone}
+                onChange={(e) => setNovoContato({...novoContato, telefone: e.target.value})}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="data_nascimento">Data de Nascimento</Label>
+              <Input
+                id="data_nascimento"
+                type="date"
+                value={novoContato.data_nascimento}
+                onChange={(e) => setNovoContato({...novoContato, data_nascimento: e.target.value})}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="motivo">Motivo do Contato</Label>
+              <Select 
+                value={novoContato.motivo} 
+                onValueChange={(value) => setNovoContato({...novoContato, motivo: value})}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o motivo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {LISTA_MOTIVOS.map((motivo) => (
+                    <SelectItem key={motivo} value={motivo}>{motivo}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setModalAberto(false)} disabled={salvando}>
+              Cancelar
+            </Button>
+            <Button onClick={handleAdicionarContato} disabled={salvando} className="bg-green-600 hover:bg-green-700">
+              {salvando ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <UserPlus className="w-4 h-4 mr-2" />}
+              Adicionar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
