@@ -61,7 +61,7 @@ export default function EnviarNotificacao({
         : '[Data]';
       const horario = agendamento?.horario || '[Horário]';
       const linkConfirmacao = agendamento?.id 
-        ? `https://clinica-plus-7629e61a.base44.app/ConfirmarPresenca?codigo=${agendamento.id}`
+        ? `https://clinica-plus-7629e61a.base44.app/Confirmacao?codigo=${agendamento.id}`
         : '[Link de Confirmação]';
       
       // Determinar o procedimento/serviço
