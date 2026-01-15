@@ -1309,58 +1309,26 @@ INSTRUÇÕES GERAIS:
         const contato = contatos[0];
         const historicoAtual = contato.historico_mensagens || [];
 
-        // Verificar se a resposta já foi enviada recentemente (últimas 10 mensagens)
-        const ultimasRespostas = historicoAtual.filter(m => m.role === 'assistant').slice(-10);
+        // Verificar se já existe orçamento no histórico (qualquer orçamento com VALOR TOTAL)
+        const historicoCompleto = historicoAtual.filter(m => m.role === 'assistant');
 
-        // Verificar duplicata por conteúdo similar (especialmente para orçamentos)
-        const respostaJaEnviada = ultimasRespostas.some(m => {
-          if (!m.content || !llmResponse) return false;
+        // Se a nova resposta contém ORÇAMENTO, verificar se já existe um orçamento no histórico
+        if (llmResponse && /ORÇAMENTO/i.test(llmResponse) && /VALOR TOTAL/i.test(llmResponse)) {
+          const jaTemOrcamento = historicoCompleto.some(m => 
+            m.content && /ORÇAMENTO/i.test(m.content) && /VALOR TOTAL/i.test(m.content)
+          );
 
-          // Verificação exata
-          if (m.content === llmResponse) return true;
-
-          // Verificação por início similar (para mensagens longas como orçamentos)
-          if (llmResponse.length > 100 && m.content.length > 100) {
-            const inicio1 = m.content.substring(0, 150).toLowerCase().replace(/\s+/g, ' ');
-            const inicio2 = llmResponse.substring(0, 150).toLowerCase().replace(/\s+/g, ' ');
-            if (inicio1 === inicio2) return true;
-          }
-
-          // Verificação específica para orçamentos (contém ORÇAMENTO e VALOR TOTAL similar)
-          if (llmResponse.includes('ORÇAMENTO') && m.content.includes('ORÇAMENTO')) {
-            const valorTotal1 = m.content.match(/VALOR TOTAL[:\s]*R\$\s*([\d.,]+)/i);
-            const valorTotal2 = llmResponse.match(/VALOR TOTAL[:\s]*R\$\s*([\d.,]+)/i);
-            if (valorTotal1 && valorTotal2 && valorTotal1[1] === valorTotal2[1]) {
-              console.log('⚠️ Orçamento duplicado detectado (mesmo valor total)');
-              return true;
-            }
-          }
-
-          // Verificação para mensagens "processando" ou de espera
-          const msgProcessando = /processando|aguarde|momento|analisando|verificando/i;
-          if (msgProcessando.test(llmResponse) && msgProcessando.test(m.content)) {
-            // Verificar se foi enviada nos últimos 30 segundos
-            const timestampMsg = new Date(m.timestamp).getTime();
-            const agora = Date.now();
-            if (agora - timestampMsg < 30000) {
-              console.log('⚠️ Mensagem de processamento duplicada detectada');
-              return true;
-            }
-          }
-
-          return false;
-        });
-
-        if (respostaJaEnviada) {
-            console.log('⚠️ Resposta/orçamento duplicado detectado - NÃO enviando');
-            // Retornar null para não enviar resposta duplicada
+          if (jaTemOrcamento) {
+            console.log('⚠️ Já existe orçamento no histórico - NÃO enviando duplicado');
+            // Retornar mensagem informando que orçamento já foi enviado
             return Response.json({ 
               success: true, 
-              resposta: null,
+              resposta: "Já enviei o orçamento acima! Ficou alguma dúvida sobre os valores? 😊",
               duplicado: true,
               message: 'Orçamento já enviado anteriormente'
             });
           }
+        }
 
         // Adicionar novas mensagens ao histórico
         historicoAtual.push(
