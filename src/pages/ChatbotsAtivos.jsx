@@ -711,7 +711,7 @@ export default function ChatbotsAtivos() {
           </Link>
         </div>
 
-        <Tabs defaultValue="chat" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="chat" className="flex items-center gap-2">
               <MessageCircle className="w-4 h-4" />
