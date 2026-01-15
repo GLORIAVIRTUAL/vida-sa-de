@@ -19,6 +19,7 @@ import ProfileEditor from '../components/perfil/ProfileEditor';
 import NotificacaoAgendamento from '../components/shared/NotificacaoAgendamento';
 import ChatbotAjuda from '../components/shared/ChatbotAjuda';
 import ErrorBoundary from '../components/shared/ErrorBoundary';
+import NotificacaoMensagemChat from '../components/shared/NotificacaoMensagemChat';
 
 // Tela de Login
 function LoginPage() {
