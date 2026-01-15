@@ -684,6 +684,14 @@ function DashboardTab() {
 
 // ========== PÁGINA PRINCIPAL ==========
 export default function ChatbotsAtivos() {
+  const [activeTab, setActiveTab] = useState('chat');
+  const [contatoParaConversa, setContatoParaConversa] = useState(null);
+
+  const handleIniciarConversa = (contato) => {
+    setContatoParaConversa(contato);
+    setActiveTab('chat');
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
