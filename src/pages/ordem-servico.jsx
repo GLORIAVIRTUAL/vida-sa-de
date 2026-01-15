@@ -140,17 +140,17 @@ export default function OrdemDeServico() {
       setLoading(true);
       console.log('🔄 Carregando dados da página OS...');
       
-      // Carregar dados auxiliares em paralelo
-      const [pacientesData, medicosData, procedimentosData, examesData, agendamentosData, categoriasData] = await Promise.all([
-        Paciente.list("nome", 3000),
-        Medico.list("nome", 1000),
-        Procedimento.list(),
-        Exame.list(),
-        Agendamento.list(),
+      // Carregar dados em etapas para evitar rate limit
+      // Etapa 1: Dados essenciais
+      const [medicosData, categoriasData] = await Promise.all([
+        Medico.list("nome", 500),
         CategoriaPreco.list(),
       ]);
-
-      // Carregar Ordens de Serviço (Backend Function com Fallback)
+      
+      setMedicos(medicosData || []);
+      setCategorias(categoriasData || []);
+      
+      // Etapa 2: Ordens de Serviço
       let ordensData = [];
       try {
         console.log('🔄 Tentando carregar OS via função backend...');
@@ -163,26 +163,35 @@ export default function OrdemDeServico() {
         }
       } catch (err) {
         console.warn("⚠️ Falha na função backend, usando fallback SDK:", err);
-        // Fallback: Ordenação via SDK direto (ordenando por data de execução decrescente)
         ordensData = await OrdemServico.list("-data_execucao", 500);
         console.log('✅ OS carregadas via fallback:', ordensData?.length);
       }
       
       setOrdens(ordensData || []);
+      
+      // Etapa 3: Dados secundários (com pequeno delay para evitar rate limit)
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      const [pacientesData, procedimentosData, examesData] = await Promise.all([
+        Paciente.list("nome", 1000),
+        Procedimento.list("-created_date", 500),
+        Exame.list("-created_date", 500),
+      ]);
+      
       setPacientes(pacientesData || []);
-      setMedicos(medicosData || []);
       setProcedimentos(procedimentosData || []);
       setExames(examesData || []);
+      
+      // Etapa 4: Agendamentos (opcional, carregar sob demanda)
+      await new Promise(resolve => setTimeout(resolve, 200));
+      const agendamentosData = await Agendamento.list("-data_agendamento", 500);
       setAgendamentos(agendamentosData || []);
-      setCategorias(categoriasData || []);
+      
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
-      // Fallback de segurança para não quebrar a tela
-      setOrdens([]);
-      
       toast({
-        title: "Erro Parcial",
-        description: "Alguns dados não puderam ser carregados. " + error.message,
+        title: "Erro ao Carregar",
+        description: "Tente recarregar a página. " + error.message,
         variant: "destructive"
       });
     } finally {
