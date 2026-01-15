@@ -122,6 +122,7 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
   const [templateSelecionado, setTemplateSelecionado] = useState('');
   const [carregandoTemplates, setCarregandoTemplates] = useState(false);
   const [enviandoTemplate, setEnviandoTemplate] = useState(false);
+  const [enviandoConvite, setEnviandoConvite] = useState(false);
   const messagesEndRef = useRef(null);
   const navigate = useNavigate();
   
@@ -288,6 +289,27 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
     }
   };
 
+  // Enviar convite via Z-API
+  const enviarConvite = async () => {
+    if (!contatoSelecionado) return;
+    
+    setEnviandoConvite(true);
+    try {
+      await base44.functions.invoke('enviarConviteZapi', {
+        phoneNumber: contatoSelecionado.telefone,
+        contatoId: contatoSelecionado.id
+      });
+      
+      await buscarContatos();
+      alert('Convite enviado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao enviar convite:', error);
+      alert('Erro ao enviar convite: ' + (error.response?.data?.error || error.message));
+    } finally {
+      setEnviandoConvite(false);
+    }
+  };
+
   // Enviar template selecionado
   const enviarTemplate = async () => {
     if (!templateSelecionado || !contatoSelecionado) return;
@@ -400,6 +422,16 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
                     >
                       {carregandoTemplates ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Zap className="w-3 h-3 mr-1" />}
                       Início Meta
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={enviarConvite}
+                      disabled={enviandoConvite}
+                      className="text-purple-600 hover:bg-purple-50"
+                    >
+                      {enviandoConvite ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Send className="w-3 h-3 mr-1" />}
+                      Convidar
                     </Button>
                     <Button 
                       variant={modoHumano ? "default" : "outline"} 
