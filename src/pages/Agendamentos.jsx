@@ -29,14 +29,14 @@ export default function Agendamentos() {
   const [pacientes, setPacientes] = useState([]);
   const [procedimentos, setProcedimentos] = useState([]);
   const [exames, setExames] = useState([]);
-  const [categorias, setCategorias] = useState([]); 
-  const [tabelaPrecos, setTabelaPrecos] = useState([]); 
+  const [categorias, setCategorias] = useState([]);
+  const [tabelaPrecos, setTabelaPrecos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [diaSelecionado, setDiaSelecionado] = useState(new Date());
-  const [isFormOpen, setIsFormOpen] = useState(false); 
+  const [isFormOpen, setIsFormOpen] = useState(false);
   const [isReservaOpen, setIsReservaOpen] = useState(false);
-  const [selectedAgendamento, setSelectedAgendamento] = useState(null); 
-  const [visualizacao, setVisualizacao] = useState("lista"); 
+  const [selectedAgendamento, setSelectedAgendamento] = useState(null);
+  const [visualizacao, setVisualizacao] = useState("lista");
   const [filtros, setFiltros] = useState({
     periodo: "dia",
     medico: "todos",
@@ -51,23 +51,23 @@ export default function Agendamentos() {
   const handleCorrigirNomes = async () => {
     setCorrigindo(true);
     try {
-        toast({ title: "Sincronizando...", description: "Buscando e corrigindo nomes faltantes..." });
-        const res = await base44.functions.invoke('fixAppointmentPatientNames', {});
-        if (res.data?.success) {
-            toast({ 
-                title: "Sucesso", 
-                description: res.data.message || "Nomes sincronizados com sucesso!",
-                className: "bg-green-50 border-green-200" 
-            });
-            await carregarDados();
-        } else {
-            toast({ title: "Aviso", description: "Não foi possível completar a sincronização.", variant: "destructive" });
-        }
+      toast({ title: "Sincronizando...", description: "Buscando e corrigindo nomes faltantes..." });
+      const res = await base44.functions.invoke('fixAppointmentPatientNames', {});
+      if (res.data?.success) {
+        toast({
+          title: "Sucesso",
+          description: res.data.message || "Nomes sincronizados com sucesso!",
+          className: "bg-green-50 border-green-200"
+        });
+        await carregarDados();
+      } else {
+        toast({ title: "Aviso", description: "Não foi possível completar a sincronização.", variant: "destructive" });
+      }
     } catch (error) {
-        console.error(error);
-        toast({ title: "Erro", description: "Falha ao chamar função de correção.", variant: "destructive" });
+      console.error(error);
+      toast({ title: "Erro", description: "Falha ao chamar função de correção.", variant: "destructive" });
     } finally {
-        setCorrigindo(false);
+      setCorrigindo(false);
     }
   };
 
@@ -75,32 +75,32 @@ export default function Agendamentos() {
     setLoading(true);
     try {
       console.log('🚀 Carregando dados com prioridades...');
-      
+
       // PRIORIDADE ALTA - Dados essenciais em paralelo (3 requisições)
       // Aumentado o limite de pacientes para 3000 para garantir que todos sejam carregados e os nomes apareçam
       const [agendamentosData, medicosData, pacientesData] = await Promise.all([
-        cachedApiCall('agendamentos', () => Agendamento.list('-data_agendamento', 2000), []),
-        cachedApiCall('medicos', () => Medico.list(), []),
-        cachedApiCall('pacientes', () => Paciente.list('-created_date', 3000), [])
-      ]);
-      
+      cachedApiCall('agendamentos', () => Agendamento.list('-data_agendamento', 2000), []),
+      cachedApiCall('medicos', () => Medico.list(), []),
+      cachedApiCall('pacientes', () => Paciente.list('-created_date', 3000), [])]
+      );
+
       setAgendamentos(Array.isArray(agendamentosData) ? agendamentosData : []);
       setMedicos(Array.isArray(medicosData) ? medicosData : []);
       setPacientes(Array.isArray(pacientesData) ? pacientesData : []);
       console.log('✅ Dados essenciais carregados');
-      
+
       // PRIORIDADE MÉDIA - Dados complementares em paralelo (3 requisições)
       const [procedimentosData, examesData, categoriasData] = await Promise.all([
-        cachedApiCall('procedimentos', () => Procedimento.list(), []),
-        cachedApiCall('exames', () => Exame.list(), []),
-        cachedApiCall('categorias', () => CategoriaPreco.list(), [])
-      ]);
-      
+      cachedApiCall('procedimentos', () => Procedimento.list(), []),
+      cachedApiCall('exames', () => Exame.list(), []),
+      cachedApiCall('categorias', () => CategoriaPreco.list(), [])]
+      );
+
       setProcedimentos(Array.isArray(procedimentosData) ? procedimentosData : []);
       setExames(Array.isArray(examesData) ? examesData : []);
       setCategorias(Array.isArray(categoriasData) ? categoriasData : []);
       console.log('✅ Dados complementares carregados');
-      
+
       // PRIORIDADE BAIXA - Tabela de preços (última requisição)
       const tabelaPrecosData = await cachedApiCall(
         'tabelaPrecos',
@@ -109,7 +109,7 @@ export default function Agendamentos() {
       );
       setTabelaPrecos(Array.isArray(tabelaPrecosData) ? tabelaPrecosData : []);
       console.log('✅ Tabela de preços carregada');
-      
+
       console.log('🎉 Todos os dados carregados!');
 
     } catch (error) {
@@ -153,24 +153,24 @@ export default function Agendamentos() {
     const fimFormatado = format(dataFim, "yyyy-MM-dd");
 
     const agendamentosArray = Array.isArray(agendamentos) ? agendamentos : [];
-    return agendamentosArray.filter(agendamento => {
+    return agendamentosArray.filter((agendamento) => {
       // Ensure data_agendamento is comparable
       const agendamentoDate = new Date(agendamento.data_agendamento + 'T00:00:00'); // Add T00:00:00 for correct date comparison
       const inicioDate = new Date(inicioFormatado + 'T00:00:00');
       const fimDate = new Date(fimFormatado + 'T00:00:00');
 
-      return agendamento && 
-             agendamento.data_agendamento && 
-             agendamentoDate >= inicioDate && 
-             agendamentoDate <= fimDate;
+      return agendamento &&
+      agendamento.data_agendamento &&
+      agendamentoDate >= inicioDate &&
+      agendamentoDate <= fimDate;
     });
   };
 
   const agendamentosPorPeriodo = getAgendamentosPorPeriodo();
 
-  const agendamentosFiltrados = Array.isArray(agendamentosPorPeriodo) ? agendamentosPorPeriodo.filter(agendamento => {
+  const agendamentosFiltrados = Array.isArray(agendamentosPorPeriodo) ? agendamentosPorPeriodo.filter((agendamento) => {
     if (!agendamento) return false;
-    
+
     const filtroMedico = filtros.medico === "todos" || agendamento.medico_id === filtros.medico;
     const filtroStatus = filtros.status === "todos" || agendamento.status === filtros.status;
     const filtroTipo = filtros.tipo === "todos" || agendamento.tipo_servico === filtros.tipo;
@@ -181,17 +181,17 @@ export default function Agendamentos() {
   // CORRIGIDO: Filtrar agendamentos do calendário por médico E por mês atual
   const agendamentosCalendario = useMemo(() => {
     const mesAtual = format(diaSelecionado, 'yyyy-MM');
-    
-    return agendamentos.filter(a => {
+
+    return agendamentos.filter((a) => {
       if (!a || !a.data_agendamento) return false;
-      
+
       // Filtrar pelo mês sendo visualizado
       const mesAgendamento = a.data_agendamento.substring(0, 7); // "2025-01"
       const dentroDoMes = mesAgendamento === mesAtual;
-      
+
       // Filtrar por médico se selecionado
       const filtroMedico = filtroMedicoCalendario === "todos" || a.medico_id === filtroMedicoCalendario;
-      
+
       return dentroDoMes && filtroMedico;
     });
   }, [agendamentos, diaSelecionado, filtroMedicoCalendario]);
@@ -199,11 +199,11 @@ export default function Agendamentos() {
   const handleSave = async () => {
     try {
       console.log('📝 handleSave chamado');
-      
+
       // Limpar cache e recarregar
       clearCache('agendamentos');
       await carregarDados();
-      
+
       console.log('✅ Dados recarregados');
     } catch (error) {
       console.error('❌ Erro ao recarregar dados:', error);
@@ -246,41 +246,41 @@ export default function Agendamentos() {
     if (visualizacao === "calendario") {
       // CORRIGIDO: Modo calendário - filtrar apenas pelo DIA selecionado
       const dataFormatada = format(diaSelecionado, 'yyyy-MM-dd');
-      
-      agendamentosParaImpressao = agendamentos.filter(a => {
+
+      agendamentosParaImpressao = agendamentos.filter((a) => {
         if (!a || !a.data_agendamento) return false;
-        
+
         // Filtrar pelo dia selecionado
         const mesmoDia = a.data_agendamento === dataFormatada;
-        
+
         // Filtrar por médico se selecionado
         const filtroMedico = filtroMedicoCalendario === "todos" || a.medico_id === filtroMedicoCalendario;
-        
+
         return mesmoDia && filtroMedico;
       });
-      
-      medicoParaImpressao = filtroMedicoCalendario !== "todos" 
-        ? medicos.find(m => m.id === filtroMedicoCalendario) 
-        : null;
+
+      medicoParaImpressao = filtroMedicoCalendario !== "todos" ?
+      medicos.find((m) => m.id === filtroMedicoCalendario) :
+      null;
       tituloPeriodo = format(diaSelecionado, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
     } else {
       // Modo lista: usar agendamentosFiltrados
       agendamentosParaImpressao = Array.isArray(agendamentosFiltrados) ? agendamentosFiltrados : [];
-      medicoParaImpressao = filtros.medico !== "todos" 
-        ? medicos.find(m => m.id === filtros.medico) 
-        : null;
+      medicoParaImpressao = filtros.medico !== "todos" ?
+      medicos.find((m) => m.id === filtros.medico) :
+      null;
       tituloPeriodo = getTituloPeriodo();
     }
 
     // Ordenar por horário, remover cancelados
-    agendamentosParaImpressao = agendamentosParaImpressao
-      .filter(a => a && a.status !== 'Cancelado')
-      .sort((a, b) => {
-        if (a.data_agendamento !== b.data_agendamento) {
-          return a.data_agendamento.localeCompare(b.data_agendamento);
-        }
-        return a.horario.localeCompare(b.horario);
-      });
+    agendamentosParaImpressao = agendamentosParaImpressao.
+    filter((a) => a && a.status !== 'Cancelado').
+    sort((a, b) => {
+      if (a.data_agendamento !== b.data_agendamento) {
+        return a.data_agendamento.localeCompare(b.data_agendamento);
+      }
+      return a.horario.localeCompare(b.horario);
+    });
 
     console.log('📋 Imprimindo:', {
       modo: visualizacao,
@@ -391,12 +391,12 @@ export default function Agendamentos() {
                   Nenhum agendamento
                 </td>
               </tr>
-            ` : agendamentosParaImpressao.map(ag => {
-              const paciente = pacientes.find(p => p.id === ag.paciente_id);
-              const medico = medicos.find(m => m.id === ag.medico_id);
-              const categoria = categorias.find(c => c.id === ag.categoria_preco_id);
-              
-              return `
+            ` : agendamentosParaImpressao.map((ag) => {
+      const paciente = pacientes.find((p) => p.id === ag.paciente_id);
+      const medico = medicos.find((m) => m.id === ag.medico_id);
+      const categoria = categorias.find((c) => c.id === ag.categoria_preco_id);
+
+      return `
                 <tr>
                   <td>${format(new Date(ag.data_agendamento + 'T00:00:00'), 'dd/MM/yyyy')}</td>
                   <td><strong>${ag.horario}</strong></td>
@@ -407,7 +407,7 @@ export default function Agendamentos() {
                   <td>${ag.created_by?.split('@')[0]?.toUpperCase() || ''}</td>
                 </tr>
               `;
-            }).join('')}
+    }).join('')}
           </tbody>
         </table>
         
@@ -423,7 +423,7 @@ export default function Agendamentos() {
       janelaImpressao.document.write(conteudoImpressao);
       janelaImpressao.document.close();
       janelaImpressao.focus();
-      
+
       setTimeout(() => {
         janelaImpressao.print();
       }, 250);
@@ -443,11 +443,11 @@ export default function Agendamentos() {
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Agendamentos</h1>
+              <h1 className="text-cyan-500 mb-2 text-3xl font-bold">Agendamentos</h1>
               <p className="text-gray-600 mt-1">Gerencie os agendamentos da clínica</p>
               <div className="flex items-center gap-4">
-                {visualizacao === "lista" && (
-                  <Popover>
+                {visualizacao === "lista" &&
+                <Popover>
                     <PopoverTrigger asChild>
                       <Button variant="outline" className="w-64 justify-start text-left font-normal">
                         <CalendarIcon className="mr-2 h-4 w-4" />
@@ -456,26 +456,26 @@ export default function Agendamentos() {
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0">
                       <Calendar
-                        mode="single"
-                        selected={diaSelecionado}
-                        onSelect={setDiaSelecionado}
-                        initialFocus
-                        locale={ptBR}
-                      />
+                      mode="single"
+                      selected={diaSelecionado}
+                      onSelect={setDiaSelecionado}
+                      initialFocus
+                      locale={ptBR} />
+
                     </PopoverContent>
                   </Popover>
-                )}
+                }
               </div>
             </div>
             
             <div className="flex items-center gap-3">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="sm"
-                onClick={handleCorrigirNomes} 
+                onClick={handleCorrigirNomes}
                 disabled={corrigindo}
-                className="gap-2 text-gray-600"
-              >
+                className="gap-2 text-gray-600">
+
                 <RefreshCw className={`w-4 h-4 ${corrigindo ? 'animate-spin' : ''}`} />
                 Corrigir Nomes
               </Button>
@@ -484,8 +484,8 @@ export default function Agendamentos() {
                   variant={visualizacao === "lista" ? "default" : "ghost"}
                   size="sm"
                   onClick={() => setVisualizacao("lista")}
-                  className="gap-2"
-                >
+                  className="gap-2">
+
                   <List className="w-4 h-4" />
                   Lista
                 </Button>
@@ -493,8 +493,8 @@ export default function Agendamentos() {
                   variant={visualizacao === "calendario" ? "default" : "ghost"}
                   size="sm"
                   onClick={() => setVisualizacao("calendario")}
-                  className="gap-2"
-                >
+                  className="gap-2">
+
                   <Grid3x3 className="w-4 h-4" />
                   Calendário
                 </Button>
@@ -504,25 +504,25 @@ export default function Agendamentos() {
                 variant="outline"
                 size="sm"
                 onClick={handleImprimirAgenda}
-                className="gap-2"
-              >
+                className="gap-2">
+
                 <Printer className="w-4 h-4" />
                 Imprimir Agenda
               </Button>
 
-              <Button 
+              <Button
                 onClick={() => setIsReservaOpen(true)}
                 variant="outline"
-                className="bg-orange-50 text-orange-700 border-orange-300 hover:bg-orange-100"
-              >
+                className="bg-orange-50 text-orange-700 border-orange-300 hover:bg-orange-100">
+
                 <Clock className="w-4 h-4 mr-2" />
                 Reserva de Horário
               </Button>
 
-              <Button 
+              <Button
                 onClick={() => handleOpenForm(null)}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
+                className="bg-blue-600 hover:bg-blue-700">
+
                 <Plus className="w-4 h-4 mr-2" />
                 Novo Agendamento
               </Button>
@@ -530,15 +530,15 @@ export default function Agendamentos() {
           </div>
 
           {/* NOVO: Filtro por médico para visualização de calendário */}
-          {visualizacao === "calendario" && (
-            <Card className="mb-6">
+          {visualizacao === "calendario" &&
+          <Card className="mb-6">
               <CardContent className="p-4">
                 <div className="flex items-center gap-4">
                   <Label htmlFor="filtroMedicoCalendario" className="text-sm font-medium text-gray-700">Filtrar por Médico:</Label>
-                  <Select 
-                    value={filtroMedicoCalendario} 
-                    onValueChange={setFiltroMedicoCalendario}
-                  >
+                  <Select
+                  value={filtroMedicoCalendario}
+                  onValueChange={setFiltroMedicoCalendario}>
+
                     <SelectTrigger id="filtroMedicoCalendario" className="w-64">
                       <SelectValue placeholder="Selecione o médico" />
                     </SelectTrigger>
@@ -549,81 +549,81 @@ export default function Agendamentos() {
                           Todos os Médicos
                         </div>
                       </SelectItem>
-                      {medicos.map((medico) => (
-                        <SelectItem key={medico.id} value={medico.id}>
+                      {medicos.map((medico) =>
+                    <SelectItem key={medico.id} value={medico.id}>
                           <div className="flex items-center gap-2">
                             <User className="w-4 h-4" />
                             Dr(a). {medico.nome} - {medico.especialidade}
                           </div>
                         </SelectItem>
-                      ))}
+                    )}
                     </SelectContent>
                   </Select>
-                  {filtroMedicoCalendario !== "todos" && (
-                    <Badge className="bg-blue-100 text-blue-800">
-                      {medicos.find(m => m.id === filtroMedicoCalendario)?.nome}
+                  {filtroMedicoCalendario !== "todos" &&
+                <Badge className="bg-blue-100 text-blue-800">
+                      {medicos.find((m) => m.id === filtroMedicoCalendario)?.nome}
                     </Badge>
-                  )}
+                }
                 </div>
               </CardContent>
             </Card>
-          )}
+          }
 
-          {visualizacao === "lista" && (
-            <FiltrosAgendamento 
-              filtros={filtros}
-              onFiltrosChange={setFiltros}
-              medicos={Array.isArray(medicos) ? medicos : []}
-            />
-          )}
+          {visualizacao === "lista" &&
+          <FiltrosAgendamento
+            filtros={filtros}
+            onFiltrosChange={setFiltros}
+            medicos={Array.isArray(medicos) ? medicos : []} />
 
-          {visualizacao === "lista" ? (
-            <VisualizacaoDiaria
-              agendamentos={Array.isArray(agendamentosFiltrados) ? agendamentosFiltrados : []}
-              medicos={Array.isArray(medicos) ? medicos : []}
-              pacientes={Array.isArray(pacientes) ? pacientes : []}
-              onEditarAgendamento={handleEditarAgendamento}
-              loading={loading}
-              dia={diaSelecionado}
-              onUpdate={carregarDados}
-              periodo={filtros.periodo}
-            />
-          ) : (
-            <VisualizacaoCalendario
-              agendamentos={Array.isArray(agendamentosCalendario) ? agendamentosCalendario : []} // Use filtered list for calendar
-              medicos={filtroMedicoCalendario !== "todos" 
-                ? medicos.filter(m => m.id === filtroMedicoCalendario) 
-                : (Array.isArray(medicos) ? medicos : [])}
-              pacientes={Array.isArray(pacientes) ? pacientes : []}
-              loading={loading}
-              onUpdate={carregarDados}
-            />
-          )}
+          }
 
-          {isFormOpen && (
-            <FormularioAgendamento
-              agendamento={selectedAgendamento}
-              todosAgendamentos={agendamentos}
-              medicos={Array.isArray(medicos) ? medicos : []}
-              pacientes={Array.isArray(pacientes) ? pacientes : []}
-              procedimentos={Array.isArray(procedimentos) ? procedimentos : []}
-              exames={Array.isArray(exames) ? exames : []}
-              categorias={Array.isArray(categorias) ? categorias : []}
-              tabelaPrecos={Array.isArray(tabelaPrecos) ? tabelaPrecos : []}
-              onSave={handleSave}
-              onClose={handleCloseForm}
-            />
-          )}
+          {visualizacao === "lista" ?
+          <VisualizacaoDiaria
+            agendamentos={Array.isArray(agendamentosFiltrados) ? agendamentosFiltrados : []}
+            medicos={Array.isArray(medicos) ? medicos : []}
+            pacientes={Array.isArray(pacientes) ? pacientes : []}
+            onEditarAgendamento={handleEditarAgendamento}
+            loading={loading}
+            dia={diaSelecionado}
+            onUpdate={carregarDados}
+            periodo={filtros.periodo} /> :
 
-          {isReservaOpen && (
-            <FormularioReserva
-              medicos={Array.isArray(medicos) ? medicos : []}
-              onSave={handleSave}
-              onClose={() => setIsReservaOpen(false)}
-            />
-          )}
+
+          <VisualizacaoCalendario
+            agendamentos={Array.isArray(agendamentosCalendario) ? agendamentosCalendario : []} // Use filtered list for calendar
+            medicos={filtroMedicoCalendario !== "todos" ?
+            medicos.filter((m) => m.id === filtroMedicoCalendario) :
+            Array.isArray(medicos) ? medicos : []}
+            pacientes={Array.isArray(pacientes) ? pacientes : []}
+            loading={loading}
+            onUpdate={carregarDados} />
+
+          }
+
+          {isFormOpen &&
+          <FormularioAgendamento
+            agendamento={selectedAgendamento}
+            todosAgendamentos={agendamentos}
+            medicos={Array.isArray(medicos) ? medicos : []}
+            pacientes={Array.isArray(pacientes) ? pacientes : []}
+            procedimentos={Array.isArray(procedimentos) ? procedimentos : []}
+            exames={Array.isArray(exames) ? exames : []}
+            categorias={Array.isArray(categorias) ? categorias : []}
+            tabelaPrecos={Array.isArray(tabelaPrecos) ? tabelaPrecos : []}
+            onSave={handleSave}
+            onClose={handleCloseForm} />
+
+          }
+
+          {isReservaOpen &&
+          <FormularioReserva
+            medicos={Array.isArray(medicos) ? medicos : []}
+            onSave={handleSave}
+            onClose={() => setIsReservaOpen(false)} />
+
+          }
         </div>
       </div>
-    </ProtectedRoute>
-  );
+    </ProtectedRoute>);
+
 }
