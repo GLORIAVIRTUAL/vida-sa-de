@@ -144,7 +144,7 @@ export default function VisualizacaoCalendario({ agendamentos, medicos, paciente
           mode="single"
           selected={dataSelecionada}
           onSelect={setDataSelecionada}
-          className="p-0"
+          className="p-0 w-full [&_table]:w-full [&_td]:p-2 [&_th]:p-2 [&_button]:w-12 [&_button]:h-12 [&_button]:text-base"
           locale={ptBR}
           modifiers={{
             comEventos: (date) => {
