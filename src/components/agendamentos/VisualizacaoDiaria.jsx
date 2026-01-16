@@ -16,13 +16,13 @@ import { useToast } from "@/components/ui/use-toast";
 import FormularioPaciente from '../pacientes/FormularioPaciente';
 
 const statusColors = {
-  "Agendado": "bg-blue-100 text-blue-800 border-blue-200",
-  "Confirmado": "bg-emerald-600 text-white border-emerald-700",
-  "Pago": "bg-teal-100 text-teal-800 border-teal-200",
-  "Em Atendimento": "bg-yellow-100 text-yellow-800 border-yellow-200",
-  "Finalizado": "bg-emerald-100 text-emerald-800 border-emerald-200",
-  "Cancelado": "bg-red-100 text-red-800 border-red-200",
-  "Não Compareceu": "bg-gray-100 text-gray-800 border-gray-200"
+  "Agendado": "bg-purple-100 text-purple-700 border-purple-200",
+  "Confirmado": "bg-pink-100 text-pink-700 border-pink-200",
+  "Pago": "bg-fuchsia-100 text-fuchsia-700 border-fuchsia-200",
+  "Em Atendimento": "bg-amber-100 text-amber-700 border-amber-200",
+  "Finalizado": "bg-rose-100 text-rose-700 border-rose-200",
+  "Cancelado": "bg-slate-200 text-slate-600 border-slate-300",
+  "Não Compareceu": "bg-gray-200 text-gray-600 border-gray-300"
 };
 
 export default function VisualizacaoDiaria({ agendamentos, medicos, pacientes, onEditarAgendamento, loading, dia, onUpdate, periodo }) {
