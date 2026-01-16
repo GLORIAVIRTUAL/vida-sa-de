@@ -692,11 +692,20 @@ PERGUNTE ao cliente: "Para qual especialidade você gostaria de agendar? Temos v
 
             if (horariosDoDia.length === 0) continue;
 
-            const agendamentosExistentes = await base44.asServiceRole.entities.Agendamento.filter({
-              medico_id: medico.id,
-              data_agendamento: dataFormatada,
-              status: { $ne: 'Cancelado' }
-            });
+            // Buscar agendamentos com timeout
+            let agendamentosExistentes = [];
+            try {
+              agendamentosExistentes = await Promise.race([
+                base44.asServiceRole.entities.Agendamento.filter({
+                  medico_id: medico.id,
+                  data_agendamento: dataFormatada,
+                  status: { $ne: 'Cancelado' }
+                }),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout Agendamentos')), 2000))
+              ]);
+            } catch (e) {
+              console.warn(`⚠️ Timeout ao buscar agendamentos de ${medico.nome}:`, e.message);
+            }
 
             const horariosOcupados = agendamentosExistentes.map(ag => ag.horario);
             const horariosDisponiveis = [];
