@@ -2791,9 +2791,9 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                 )}
 
                 {formData.is_recorrente && formData.recorrencia_tipo && formData.recorrencia_data_fim && (
-                  <Alert className="bg-purple-100 border-purple-300 mt-3">
-                    <Repeat className="w-4 h-4 text-purple-600" />
-                    <AlertDescription className="text-purple-900 text-sm">
+                  <Alert className="bg-gray-100 border-gray-300 mt-3">
+                    <Repeat className="w-4 h-4 text-gray-700" />
+                    <AlertDescription className="text-gray-800 text-sm">
                       <strong>Serão criados múltiplos agendamentos:</strong>
                       <br />
                       De {format(new Date(formData.data_agendamento + 'T00:00:00'), "dd/MM/yyyy")} até{' '}
