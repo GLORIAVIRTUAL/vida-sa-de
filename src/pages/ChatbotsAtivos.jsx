@@ -24,15 +24,22 @@ import { UserPlus } from 'lucide-react';
 import CadastroRapidoPaciente from '../components/pacientes/CadastroRapidoPaciente';
 
 // Função para renderizar conteúdo de mensagem (texto, imagem, documento, áudio)
-function renderMensagemContent(content, isUser) {
+function renderMensagemContent(content, isUser, msgData = {}) {
   if (!content) return null;
+  
+  // Se temos mediaUrl diretamente no objeto da mensagem, usar ela
+  const mediaUrlFromData = msgData.mediaUrl;
+  const mediaTypeFromData = msgData.mediaType;
   
   // Detectar URLs de mídia no conteúdo (incluindo URLs longas de storage com query params)
   // Também detecta URLs sem extensão visível mas com parâmetros de storage
   const urlMatch = content.match(/(https?:\/\/[^\s\]]+\.(jpg|jpeg|png|gif|webp|pdf|doc|docx|mp3|ogg|wav|webm|m4a|opus)(\?[^\s\]]*)?)/i);
   
-  // Também detectar URLs de storage que não têm extensão clara
-  const storageUrlMatch = content.match(/(https?:\/\/[^\s\]]*(?:supabase|storage|blob)[^\s\]]*)/i);
+  // Também detectar URLs de storage que não têm extensão clara (incluindo base44)
+  const storageUrlMatch = content.match(/(https?:\/\/[^\s\]]*(?:supabase|storage|blob|base44)[^\s\]]*)/i);
+  
+  // Priorizar mediaUrl do objeto se existir
+  const finalMediaUrl = mediaUrlFromData || (urlMatch ? urlMatch[1] : null) || (storageUrlMatch ? storageUrlMatch[1] : null);
   
   // Detectar padrões de mídia enviada
   const isImage = /\[Imagem recebida\]|\[.*📷.*\]|📷 Imagem|Imagem enviada/i.test(content);
@@ -42,6 +49,45 @@ function renderMensagemContent(content, isUser) {
   
   // Detectar padrão [Documento: nome.pdf] com ou sem URL
   const documentoMatch = content.match(/\[Documento:\s*([^\]]+)\]/i);
+  
+  // Se temos mídia do objeto msgData, renderizar diretamente
+  if (mediaUrlFromData && mediaTypeFromData) {
+    if (mediaTypeFromData === 'image') {
+      return (
+        <div className="space-y-2">
+          <img src={mediaUrlFromData} alt="Imagem" className="max-w-full rounded-lg max-h-64 object-contain cursor-pointer hover:opacity-90" onClick={() => window.open(mediaUrlFromData, '_blank')} />
+          {content.replace(mediaUrlFromData, '').replace(/\[Imagem recebida\]/gi, '').trim() && (
+            <p className="text-sm">{content.replace(mediaUrlFromData, '').replace(/\[Imagem recebida\]/gi, '').trim()}</p>
+          )}
+        </div>
+      );
+    }
+    if (mediaTypeFromData === 'document') {
+      return (
+        <a 
+          href={mediaUrlFromData} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className={`flex items-center gap-2 p-3 rounded-lg border ${isUser ? 'bg-gray-50 hover:bg-gray-100 border-gray-200' : 'bg-blue-500/20 hover:bg-blue-500/30 border-blue-400'}`}
+        >
+          <span className="text-2xl">📄</span>
+          <div className="flex flex-col">
+            <span className="text-sm font-medium">Documento</span>
+            <span className="text-xs opacity-70">Clique para abrir</span>
+          </div>
+        </a>
+      );
+    }
+    if (mediaTypeFromData === 'audio') {
+      return (
+        <div className="space-y-2">
+          <audio controls className="max-w-full">
+            <source src={mediaUrlFromData} />
+          </audio>
+        </div>
+      );
+    }
+  }
   
   // Se encontrou URL de mídia com extensão
   if (urlMatch) {
@@ -590,7 +636,7 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
                   <>
                     {mensagens.map((msg, i) => {
                       const isHumano = msg.humano || msg.content?.includes('[👤');
-                      const customRender = renderMensagemContent(msg.content, msg.role === 'user');
+                      const customRender = renderMensagemContent(msg.content, msg.role === 'user', msg);
                       
                       return (
                         <div key={i} className={`flex ${msg.role === 'user' ? 'justify-start' : 'justify-end'}`}>
