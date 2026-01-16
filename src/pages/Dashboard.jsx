@@ -97,14 +97,14 @@ export default function Dashboard() {
       setLoading(false);
 
       // 4. Carregar contagem total de pacientes em segundo plano
-      safeApiCall(() => getDashboardStats())
+      getDashboardStats()
         .then(statsResponse => {
-          const totalPacientesReal = statsResponse.data?.totalPacientes || 0;
+          const totalPacientesReal = statsResponse?.data?.totalPacientes || 0;
           setTotalPacientesCount(totalPacientesReal);
         })
         .catch(err => {
           console.error("Erro ao carregar stats de pacientes:", err);
-          setTotalPacientesCount(0); // Em caso de erro, mostra 0 ou mantém o que tinha
+          setTotalPacientesCount(0);
         })
         .finally(() => {
           setLoadingPacientes(false);
