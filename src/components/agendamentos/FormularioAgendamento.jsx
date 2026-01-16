@@ -2755,7 +2755,7 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                     </div>
 
                     <div>
-                      <Label htmlFor="recorrencia_data_fim" className="text-purple-900">
+                      <Label htmlFor="recorrencia_data_fim" className="text-gray-800">
                         Repetir até *
                       </Label>
                       <Popover>
