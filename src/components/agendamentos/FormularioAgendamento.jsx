@@ -3036,15 +3036,15 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
               <Textarea id="observacoes" name="observacoes" value={formData.observacoes} onChange={(e) => handleChange('observacoes', e.target.value)} placeholder="Alergias, pedidos especiais, etc." />
             </div>
 
-            <div className="flex items-center space-x-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div className="flex items-center space-x-4 p-4 bg-gray-50 border rounded-lg">
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="lembrete_equipe"
                   checked={formData.lembrete_equipe}
                   onCheckedChange={(checked) => handleChange('lembrete_equipe', checked)}
                 />
-                <Label htmlFor="lembrete_equipe" className="cursor-pointer font-medium text-yellow-900">
-                  Lembrar equipe
+                <Label htmlFor="lembrete_equipe" className="cursor-pointer font-medium text-gray-700">
+                  Lembrete à equipe
                 </Label>
               </div>
               
