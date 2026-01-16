@@ -65,8 +65,13 @@ async function processarMensagemRecebida(base44, payload) {
     const ultimos9Digitos = telefoneNormalizado.slice(-9);
     const ultimos11Digitos = telefoneNormalizado.slice(-11);
 
+    console.log('🔍 Telefone recebido:', telefone);
+    console.log('🔍 Telefone normalizado:', telefoneNormalizado);
+    console.log('🔍 Últimos 8/9/11 dígitos:', ultimos8Digitos, ultimos9Digitos, ultimos11Digitos);
+
     // Buscar todos os pacientes
     const todosPacientes = await base44.asServiceRole.entities.Paciente.list('-created_date', 1000);
+    console.log('📊 Total de pacientes:', todosPacientes.length);
     
     // Encontrar TODOS os pacientes que correspondem ao telefone
     const pacientesEncontrados = [];
@@ -75,12 +80,18 @@ async function processarMensagemRecebida(base44, payload) {
         const telPaciente = p.telefone.replace(/\D/g, '');
         if (telPaciente.length < 8) continue;
         
+        // Log para debug - mostrar comparação
+        if (p.nome.toLowerCase().includes('antonio')) {
+            console.log(`🔎 Comparando com ${p.nome}: tel=${telPaciente}, últimos8=${telPaciente.slice(-8)}`);
+        }
+        
         if (telPaciente.endsWith(ultimos8Digitos) || 
             telPaciente.endsWith(ultimos9Digitos) ||
             telefoneNormalizado.endsWith(telPaciente.slice(-8)) ||
             telefoneNormalizado.endsWith(telPaciente.slice(-9)) ||
             telPaciente === ultimos11Digitos) {
             pacientesEncontrados.push(p);
+            console.log('✅ Match encontrado:', p.nome, p.telefone);
         }
     }
     
