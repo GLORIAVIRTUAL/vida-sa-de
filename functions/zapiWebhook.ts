@@ -71,7 +71,7 @@ async function processarMensagemRecebida(base44, payload) {
     // Pegar IDs de todos os pacientes encontrados
     const pacienteIds = pacientesEncontrados.map(p => p.id);
 
-    if (!pacienteEncontrado) {
+    if (pacientesEncontrados.length === 0) {
         return new Response(JSON.stringify({ 
             message: "Paciente não encontrado",
             telefone: telefoneNormalizado,
@@ -79,12 +79,13 @@ async function processarMensagemRecebida(base44, payload) {
         }), { status: 200 });
     }
 
-    // Buscar agendamentos futuros deste paciente com status "Agendado"
+    // Buscar agendamentos futuros de QUALQUER um dos pacientes encontrados com status "Agendado"
     const hoje = new Date().toISOString().split('T')[0];
     const todosAgendamentos = await base44.asServiceRole.entities.Agendamento.list('-data_agendamento', 500);
     
+    // Filtrar agendamentos que pertencem a qualquer um dos pacientes encontrados
     const agendamentos = todosAgendamentos.filter(a => 
-        a.paciente_id === pacienteEncontrado.id && 
+        pacienteIds.includes(a.paciente_id) && 
         a.status === 'Agendado' && 
         a.data_agendamento >= hoje
     );
@@ -92,8 +93,7 @@ async function processarMensagemRecebida(base44, payload) {
     if (agendamentos.length === 0) {
         return new Response(JSON.stringify({ 
             message: "Nenhum agendamento pendente",
-            paciente: pacienteEncontrado.nome,
-            pacienteId: pacienteEncontrado.id,
+            pacientesEncontrados: pacientesEncontrados.map(p => ({ id: p.id, nome: p.nome })),
             totalAgendamentosEncontrados: todosAgendamentos.length
         }), { status: 200 });
     }
@@ -102,6 +102,9 @@ async function processarMensagemRecebida(base44, payload) {
     const agendamentoMaisProximo = agendamentos.sort((a, b) => 
         new Date(a.data_agendamento) - new Date(b.data_agendamento)
     )[0];
+    
+    // Encontrar o paciente específico deste agendamento
+    const pacienteDoAgendamento = pacientesEncontrados.find(p => p.id === agendamentoMaisProximo.paciente_id) || pacientesEncontrados[0];
 
     await base44.asServiceRole.entities.Agendamento.update(agendamentoMaisProximo.id, {
         status: 'Confirmado'
@@ -111,10 +114,10 @@ async function processarMensagemRecebida(base44, payload) {
     try {
         await base44.asServiceRole.entities.Notification.create({
             type: 'confirmacao_recebida',
-            message: `✅ ${pacienteEncontrado.nome} confirmou presença para ${agendamentoMaisProximo.data_agendamento} às ${agendamentoMaisProximo.horario} via WhatsApp`,
+            message: `✅ ${pacienteDoAgendamento.nome} confirmou presença para ${agendamentoMaisProximo.data_agendamento} às ${agendamentoMaisProximo.horario} via WhatsApp`,
             data: { 
                 agendamentoId: agendamentoMaisProximo.id,
-                pacienteNome: pacienteEncontrado.nome,
+                pacienteNome: pacienteDoAgendamento.nome,
                 telefone: telefone
             }
         });
@@ -125,7 +128,7 @@ async function processarMensagemRecebida(base44, payload) {
     // Enviar mensagem de confirmação de volta
     try {
         await enviarMensagemZapi(telefone, 
-            `✅ Perfeito, ${pacienteEncontrado.nome.split(' ')[0]}! Sua presença está confirmada para o dia ${formatarData(agendamentoMaisProximo.data_agendamento)} às ${agendamentoMaisProximo.horario}.\n\nLembre-se de chegar com 10 minutos de antecedência. Até lá! 😊\n\n*Centro Vida Saúde*`
+            `✅ Perfeito, ${pacienteDoAgendamento.nome.split(' ')[0]}! Sua presença está confirmada para o dia ${formatarData(agendamentoMaisProximo.data_agendamento)} às ${agendamentoMaisProximo.horario}.\n\nLembre-se de chegar com 10 minutos de antecedência. Até lá! 😊\n\n*Centro Vida Saúde*`
         );
     } catch (e) {
         // Ignora erro de envio
@@ -134,7 +137,7 @@ async function processarMensagemRecebida(base44, payload) {
     return new Response(JSON.stringify({ 
         message: "Confirmação processada",
         agendamentoId: agendamentoMaisProximo.id,
-        paciente: pacienteEncontrado.nome
+        paciente: pacienteDoAgendamento.nome
     }), { status: 200 });
 }
 
