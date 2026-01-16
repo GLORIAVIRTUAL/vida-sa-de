@@ -32,21 +32,36 @@ Deno.serve(async (req) => {
       });
     }
     
-    // Buscar agendamento usando filter ao invés de get
+    // Buscar agendamento - tentar múltiplas abordagens
     let agendamento = null;
+    let debugInfo = { codigo, codigoLength: codigo?.length, attempts: [] };
+    
+    // Abordagem 1: Filter por ID
     try {
       const agendamentos = await base44.asServiceRole.entities.Agendamento.filter({ id: codigo });
+      debugInfo.attempts.push({ method: 'filter', result: agendamentos?.length || 0 });
       if (agendamentos && agendamentos.length > 0) {
         agendamento = agendamentos[0];
       }
     } catch (filterError) {
-      // Se filter falhar, tentar com get
+      debugInfo.attempts.push({ method: 'filter', error: filterError.message });
+    }
+    
+    // Abordagem 2: List e filtrar manualmente
+    if (!agendamento) {
       try {
-        agendamento = await base44.asServiceRole.entities.Agendamento.get(codigo);
-      } catch (getError) {
-        // Ambos falharam
+        const todosAgendamentos = await base44.asServiceRole.entities.Agendamento.list('-created_date', 100);
+        const encontrado = todosAgendamentos.find(a => a.id === codigo);
+        debugInfo.attempts.push({ method: 'list+find', totalItems: todosAgendamentos?.length, found: !!encontrado });
+        if (encontrado) {
+          agendamento = encontrado;
+        }
+      } catch (listError) {
+        debugInfo.attempts.push({ method: 'list+find', error: listError.message });
       }
     }
+    
+    console.log('[ConfirmLink] Debug:', JSON.stringify(debugInfo));
 
     if (!agendamento) {
       return new Response(renderErrorPage(
