@@ -652,9 +652,9 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
     const querAgendar = querAgendarMensagem || jaEmFluxoAgendamento;
     
     // Se cliente está em fluxo de VERIFICAÇÃO, NÃO entrar em fluxo de AGENDAMENTO
-    if (querVerificarAgendamento || (temPedidoVerificacaoNoHistorico && historicoConversa && /Para verificar seu agendamento/i.test(historicoConversa))) {
+    // NOTA: Se chegou aqui, verificação já retornou acima - este é um fallback de segurança
+    if (querVerificarAgendamento) {
       console.log('ℹ️ Cliente em fluxo de VERIFICAÇÃO - pulando lógica de agendamento');
-      // Deixar para o LLM genérico responder
     } else {
       // Cliente quer AGENDAR - processar normalmente
 
