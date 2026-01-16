@@ -2678,9 +2678,8 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                       {horariosDisponiveis.length} horário(s) disponível(is)
                     </p>
                 )}
-                {/* NOVO: Mensagem de disponibilidade do horário */}
                 {mensagemDisponibilidade && (
-                  <p className={`text-xs mt-1 ${horarioDisponivel ? 'text-green-600' : 'text-red-600'}`}>
+                  <p className={`text-xs mt-1 ${horarioDisponivel ? 'text-gray-600' : 'text-red-600'}`}>
                     {mensagemDisponibilidade}
                   </p>
                 )}
