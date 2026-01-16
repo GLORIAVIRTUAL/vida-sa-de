@@ -13,15 +13,15 @@ import EstatisticasRapidas from "../components/dashboard/EstatisticasRapidas";
 import AssistenteIA from "../components/dashboard/AssistenteIA";
 
 const mensagensMotivacionais = [
-  "✨ Cada paciente atendido é uma vida transformada!",
-  "❤️ Sua dedicação faz a diferença na saúde de muitas pessoas!",
-  "🌟 Juntos, construímos um futuro mais saudável!",
-  "💪 Excelência no atendimento é o que nos move!",
-  "🎯 Cada dia é uma nova oportunidade de cuidar bem!",
-  "🌈 Transformando vidas através do cuidado humanizado!",
-  "🚀 Inovação e cuidado caminhando juntos!",
-  "💙 O bem-estar dos pacientes é nossa maior conquista!"
-];
+"✨ Cada paciente atendido é uma vida transformada!",
+"❤️ Sua dedicação faz a diferença na saúde de muitas pessoas!",
+"🌟 Juntos, construímos um futuro mais saudável!",
+"💪 Excelência no atendimento é o que nos move!",
+"🎯 Cada dia é uma nova oportunidade de cuidar bem!",
+"🌈 Transformando vidas através do cuidado humanizado!",
+"🚀 Inovação e cuidado caminhando juntos!",
+"💙 O bem-estar dos pacientes é nossa maior conquista!"];
+
 
 export default function Dashboard() {
   const [agendamentosHoje, setAgendamentosHoje] = useState([]);
@@ -43,7 +43,7 @@ export default function Dashboard() {
       const dayOfYear = getDayOfYear(today);
       const messageIndex = dayOfYear % mensagensMotivacionais.length;
       const newMessage = mensagensMotivacionais[messageIndex];
-      
+
       setMensagemMotivacional(newMessage);
       localStorage.setItem('dailyMessage', newMessage);
       localStorage.setItem('lastMessageDate', todayFormatted);
@@ -57,12 +57,12 @@ export default function Dashboard() {
     setLoading(true);
     try {
       console.log('🔄 Dashboard: Iniciando carregamento otimizado...');
-      
+
       const hoje = new Date();
       const hojeFormatado = format(hoje, "yyyy-MM-dd");
       const inicioSemana = startOfWeek(hoje, { weekStartsOn: 1 });
       const fimSemana = endOfWeek(hoje, { weekStartsOn: 1 });
-      
+
       const inicioSemanaStr = format(inicioSemana, "yyyy-MM-dd");
       const fimSemanaStr = format(fimSemana, "yyyy-MM-dd");
 
@@ -79,9 +79,9 @@ export default function Dashboard() {
       // 2. Carregar Agendamentos da Semana (Filtro no Backend)
       // Usando filtro por data para trazer apenas o necessário
       const agendamentosSemanaData = await safeApiCall(() => Agendamento.filter({
-        data_agendamento: { 
-          "$gte": inicioSemanaStr, 
-          "$lte": fimSemanaStr 
+        data_agendamento: {
+          "$gte": inicioSemanaStr,
+          "$lte": fimSemanaStr
         }
       }), []);
       const agendamentosSemanaArray = Array.isArray(agendamentosSemanaData) ? agendamentosSemanaData : [];
@@ -89,7 +89,7 @@ export default function Dashboard() {
 
       // Filtrar hoje localmente a partir dos dados da semana (já que hoje está na semana)
       const agendamentosHojeFiltered = agendamentosSemanaArray.filter(
-        a => a && a.data_agendamento === hojeFormatado
+        (a) => a && a.data_agendamento === hojeFormatado
       );
       setAgendamentosHoje(agendamentosHojeFiltered);
 
@@ -97,18 +97,18 @@ export default function Dashboard() {
       setLoading(false);
 
       // 4. Carregar contagem total de pacientes em segundo plano
-      getDashboardStats()
-        .then(statsResponse => {
-          const totalPacientesReal = statsResponse?.data?.totalPacientes || 0;
-          setTotalPacientesCount(totalPacientesReal);
-        })
-        .catch(err => {
-          console.error("Erro ao carregar stats de pacientes:", err);
-          setTotalPacientesCount(0);
-        })
-        .finally(() => {
-          setLoadingPacientes(false);
-        });
+      getDashboardStats().
+      then((statsResponse) => {
+        const totalPacientesReal = statsResponse?.data?.totalPacientes || 0;
+        setTotalPacientesCount(totalPacientesReal);
+      }).
+      catch((err) => {
+        console.error("Erro ao carregar stats de pacientes:", err);
+        setTotalPacientesCount(0);
+      }).
+      finally(() => {
+        setLoadingPacientes(false);
+      });
 
     } catch (error) {
       console.error("Erro ao carregar dados do dashboard:", error);
@@ -126,16 +126,16 @@ export default function Dashboard() {
     totalMedicos: medicos.length,
     agendamentosHoje: agendamentosHoje.length,
     agendamentosSemana: agendamentosSemana.length,
-    confirmados: agendamentosHoje.filter(a => a && a.status === "Pago").length,
-    finalizados: agendamentosHoje.filter(a => a && a.status === "Finalizado").length,
-    cancelados: agendamentosHoje.filter(a => a && a.status === "Cancelado").length
+    confirmados: agendamentosHoje.filter((a) => a && a.status === "Pago").length,
+    finalizados: agendamentosHoje.filter((a) => a && a.status === "Finalizado").length,
+    cancelados: agendamentosHoje.filter((a) => a && a.status === "Cancelado").length
   };
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2"></h1>
           <p className="text-gray-600 mb-4">
             Visão geral da clínica - {format(new Date(), "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
           </p>
@@ -159,33 +159,33 @@ export default function Dashboard() {
           </Card>
         </div>
 
-        <EstatisticasRapidas 
-          estatisticas={estatisticas} 
-          loading={loading} 
-          loadingPacientes={loadingPacientes} 
-        />
+        <EstatisticasRapidas
+          estatisticas={estatisticas}
+          loading={loading}
+          loadingPacientes={loadingPacientes} />
+
 
         <div className="grid lg:grid-cols-2 gap-6 mb-6">
-          <AgendamentosHoje 
+          <AgendamentosHoje
             agendamentos={agendamentosHoje}
             medicos={medicos}
             pacientes={pacientes}
             loading={loading}
-            onUpdate={carregarDados}
-          />
+            onUpdate={carregarDados} />
+
           
-          <AgendamentosSemana 
+          <AgendamentosSemana
             agendamentos={agendamentosSemana}
             medicos={medicos}
             pacientes={pacientes}
-            loading={loading}
-          />
+            loading={loading} />
+
         </div>
 
         <div className="mt-6">
           <AssistenteIA />
         </div>
       </div>
-    </div>
-  );
+    </div>);
+
 }
