@@ -1470,8 +1470,15 @@ INSTRUÇÕES GERAIS:
         base44.asServiceRole.integrations.Core.InvokeLLM(llmParams),
         new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout LLM Principal')), 10000))
       ]);
+      console.log('✅ LLM respondeu com sucesso');
     } catch (e) {
       console.error('❌ Erro ou timeout no LLM:', e.message);
+      console.error('📋 Params enviados:', {
+        promptTamanho: promptCompleto.length,
+        mediaUrl: mediaUrl ? 'SIM' : 'NÃO',
+        mediaType: mediaType,
+        modelo: config.modelo_llm
+      });
       llmResponse = `😊 Desculpe, estou com dificuldade para processar sua mensagem. Pode tentar novamente em alguns instantes?`;
     }
     
