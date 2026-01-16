@@ -59,14 +59,29 @@ async function processarMensagemRecebida(base44, payload) {
     console.log(`   Últimos 8 dígitos: ${ultimos8Digitos}`);
 
     // Buscar todos os pacientes e filtrar manualmente (mais confiável)
-    const todosPacientes = await base44.asServiceRole.entities.Paciente.list('-created_date', 500);
+    const todosPacientes = await base44.asServiceRole.entities.Paciente.list('-created_date', 1000);
     
+    console.log(`📋 Total de pacientes encontrados: ${todosPacientes.length}`);
+    
+    // Filtrar pacientes com correspondência de telefone
     const pacientesEncontrados = todosPacientes.filter(p => {
         if (!p.telefone) return false;
         const telPaciente = normalizarTelefone(p.telefone);
-        return telPaciente.includes(ultimos8Digitos) || 
+        
+        // Verificar se o telefone tem pelo menos 8 dígitos (número válido)
+        if (telPaciente.length < 8) return false;
+        
+        // Comparar últimos 8 ou 9 dígitos para maior precisão
+        const match = telPaciente.endsWith(ultimos8Digitos) || 
                telPaciente.endsWith(ultimos9Digitos) ||
-               telefoneNormalizado.endsWith(telPaciente.slice(-8));
+               telefoneNormalizado.endsWith(telPaciente.slice(-8)) ||
+               telefoneNormalizado.endsWith(telPaciente.slice(-9));
+        
+        if (match) {
+            console.log(`   🔗 Match encontrado: ${p.nome} - Tel cadastrado: ${p.telefone} -> Normalizado: ${telPaciente}`);
+        }
+        
+        return match;
     });
 
     if (!pacientesEncontrados || pacientesEncontrados.length === 0) {
