@@ -205,12 +205,12 @@ export default function EnviarNotificacao({
   };
 
   const isFormValid = () => {
-    if (!mensagem.trim() || !paciente?.telefone) return false;
-    if (isScheduling) {
-      return scheduledDate && scheduledTime;
-    }
-    return true;
-  };
+        if (!mensagem.trim()) return false;
+        if (isScheduling) {
+          return scheduledDate && scheduledTime;
+        }
+        return true;
+      };
 
   return (
     <Dialog open={aberto} onOpenChange={handleClose}>
