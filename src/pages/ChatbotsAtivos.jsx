@@ -27,18 +27,23 @@ import CadastroRapidoPaciente from '../components/pacientes/CadastroRapidoPacien
 function renderMensagemContent(content, isUser) {
   if (!content) return null;
   
-  // Detectar URLs de mídia no conteúdo (incluindo URLs longas de storage)
-  const urlMatch = content.match(/(https?:\/\/[^\s\]]+\.(jpg|jpeg|png|gif|webp|pdf|doc|docx|mp3|ogg|wav|webm|m4a)(\?[^\s]*)?)/i);
+  // Detectar URLs de mídia no conteúdo (incluindo URLs longas de storage com query params)
+  // Também detecta URLs sem extensão visível mas com parâmetros de storage
+  const urlMatch = content.match(/(https?:\/\/[^\s\]]+\.(jpg|jpeg|png|gif|webp|pdf|doc|docx|mp3|ogg|wav|webm|m4a|opus)(\?[^\s\]]*)?)/i);
+  
+  // Também detectar URLs de storage que não têm extensão clara
+  const storageUrlMatch = content.match(/(https?:\/\/[^\s\]]*(?:supabase|storage|blob)[^\s\]]*)/i);
   
   // Detectar padrões de mídia enviada
-  const isImage = /\[.*📷.*\]|📷 Imagem|\.(?:jpg|jpeg|png|gif|webp)/i.test(content);
-  const isDocument = /\[.*📎.*\]|\[Documento:.*\]|📄 Documento|Arquivo:|\.pdf/i.test(content);
-  const isAudio = /\[.*🎤.*\]|🎤 Áudio|Áudio enviado/i.test(content);
+  const isImage = /\[Imagem recebida\]|\[.*📷.*\]|📷 Imagem|Imagem enviada/i.test(content);
+  const isDocument = /\[Documento recebido\]|\[.*📎.*\]|\[Documento:.*\]|📄 Documento|Arquivo:/i.test(content);
+  const isAudio = /\[Áudio recebido\]|\[.*🎤.*\]|🎤 Áudio|Áudio enviado/i.test(content);
+  const isSticker = /\[Sticker\/Figurinha recebida\]|\[Figurinha\]/i.test(content);
   
   // Detectar padrão [Documento: nome.pdf] com ou sem URL
   const documentoMatch = content.match(/\[Documento:\s*([^\]]+)\]/i);
   
-  // Se encontrou URL de mídia
+  // Se encontrou URL de mídia com extensão
   if (urlMatch) {
     const url = urlMatch[1];
     const ext = urlMatch[2].toLowerCase();
@@ -46,16 +51,16 @@ function renderMensagemContent(content, isUser) {
     if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
       return (
         <div className="space-y-2">
-          <img src={url} alt="Imagem" className="max-w-full rounded-lg max-h-64 object-contain" />
-          {content.replace(url, '').trim() && (
-            <p className="text-sm">{content.replace(url, '').trim()}</p>
+          <img src={url} alt="Imagem" className="max-w-full rounded-lg max-h-64 object-contain cursor-pointer hover:opacity-90" onClick={() => window.open(url, '_blank')} />
+          {content.replace(urlMatch[0], '').trim() && (
+            <p className="text-sm">{content.replace(urlMatch[0], '').trim()}</p>
           )}
         </div>
       );
     }
     
     if (ext === 'pdf' || ext === 'doc' || ext === 'docx') {
-      const nomeArquivo = documentoMatch ? documentoMatch[1] : 'Documento';
+      const nomeArquivo = documentoMatch ? documentoMatch[1] : `Documento.${ext}`;
       return (
         <div className="space-y-2">
           <a 
@@ -74,37 +79,105 @@ function renderMensagemContent(content, isUser) {
       );
     }
     
-    if (['mp3', 'ogg', 'wav', 'webm', 'm4a'].includes(ext)) {
+    if (['mp3', 'ogg', 'wav', 'webm', 'm4a', 'opus'].includes(ext)) {
       return (
         <div className="space-y-2">
           <audio controls className="max-w-full">
-            <source src={url} type={`audio/${ext === 'm4a' ? 'mp4' : ext}`} />
+            <source src={url} type={`audio/${ext === 'm4a' ? 'mp4' : ext === 'opus' ? 'ogg' : ext}`} />
           </audio>
         </div>
       );
     }
   }
   
-  // Se é indicação de documento sem URL visível, mostrar como card de documento
-  if (documentoMatch && !urlMatch) {
+  // Se é indicação de imagem sem URL, mostrar placeholder clicável
+  if (isImage && !urlMatch) {
+    // Tentar extrair URL do storage se existir
+    if (storageUrlMatch) {
+      return (
+        <div className="space-y-2">
+          <img src={storageUrlMatch[1]} alt="Imagem" className="max-w-full rounded-lg max-h-64 object-contain cursor-pointer hover:opacity-90" onClick={() => window.open(storageUrlMatch[1], '_blank')} />
+        </div>
+      );
+    }
+    return (
+      <div className="flex items-center gap-2 p-3 rounded-lg border bg-blue-50 border-blue-200">
+        <span className="text-2xl">🖼️</span>
+        <div className="flex flex-col">
+          <span className="text-sm font-medium">Imagem recebida</span>
+          <span className="text-xs text-gray-500">Arquivo de imagem</span>
+        </div>
+      </div>
+    );
+  }
+  
+  // Se é indicação de documento sem URL visível
+  if ((isDocument || documentoMatch) && !urlMatch) {
+    const nomeArquivo = documentoMatch ? documentoMatch[1] : 'Documento recebido';
+    // Tentar extrair URL do storage se existir
+    if (storageUrlMatch) {
+      return (
+        <a 
+          href={storageUrlMatch[1]} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 p-3 rounded-lg border bg-gray-50 hover:bg-gray-100 border-gray-200"
+        >
+          <span className="text-2xl">📄</span>
+          <div className="flex flex-col">
+            <span className="text-sm font-medium">{nomeArquivo}</span>
+            <span className="text-xs text-blue-600">Clique para abrir</span>
+          </div>
+        </a>
+      );
+    }
     return (
       <div className="flex items-center gap-2 p-3 rounded-lg border bg-gray-50 border-gray-200">
         <span className="text-2xl">📄</span>
         <div className="flex flex-col">
-          <span className="text-sm font-medium">{documentoMatch[1]}</span>
+          <span className="text-sm font-medium">{nomeArquivo}</span>
           <span className="text-xs text-gray-500">Documento recebido</span>
         </div>
       </div>
     );
   }
   
-  // Se é indicação de mídia mas sem URL visível, mostrar como está
-  if (isImage || isDocument || isAudio) {
-    const cleanContent = content.replace(/\[👤[^\]]*\]:\s*/, '');
-    return <p className="text-sm whitespace-pre-wrap">{cleanContent}</p>;
+  // Se é indicação de áudio sem URL
+  if (isAudio && !urlMatch) {
+    if (storageUrlMatch) {
+      return (
+        <div className="space-y-2">
+          <audio controls className="max-w-full">
+            <source src={storageUrlMatch[1]} />
+          </audio>
+        </div>
+      );
+    }
+    return (
+      <div className="flex items-center gap-2 p-3 rounded-lg border bg-purple-50 border-purple-200">
+        <span className="text-2xl">🎤</span>
+        <div className="flex flex-col">
+          <span className="text-sm font-medium">Áudio recebido</span>
+          <span className="text-xs text-gray-500">Mensagem de voz</span>
+        </div>
+      </div>
+    );
   }
   
-  // Texto normal
+  // Sticker/Figurinha
+  if (isSticker) {
+    return (
+      <div className="flex items-center gap-2 p-3 rounded-lg border bg-yellow-50 border-yellow-200">
+        <span className="text-2xl">😀</span>
+        <div className="flex flex-col">
+          <span className="text-sm font-medium">Figurinha recebida</span>
+          <span className="text-xs text-gray-500">Sticker</span>
+        </div>
+      </div>
+    );
+  }
+  
+  // Texto normal - retorna null para usar o render padrão
   return null;
 }
 
