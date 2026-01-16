@@ -2320,20 +2320,19 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
             
             {/* NOVO: Bloco para Múltiplos Serviços */}
             {formData.tipo_servico === 'Múltiplos Serviços' && (
-              <div className="space-y-4 p-4 border-2 border-purple-200 rounded-lg bg-purple-50">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-medium text-lg text-purple-900 flex items-center gap-2">
-                    <Layers className="w-5 h-5" />
-                    Serviços Incluídos
-                  </h3>
-                  <Badge variant="outline" className="bg-purple-100 text-purple-700">
-                    {formData.itens_servico.length} serviço(s)
-                  </Badge>
-                </div>
+               <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
+                 <div className="flex items-center justify-between">
+                   <h3 className="font-medium text-lg text-gray-800 flex items-center gap-2">
+                     <Layers className="w-5 h-5" />
+                     Serviços
+                   </h3>
+                   <Badge variant="outline">
+                     {formData.itens_servico.length}
+                   </Badge>
+                 </div>
 
-                {/* Adicionar novo serviço */}
-                <div className="p-3 border border-purple-300 rounded-lg bg-white space-y-3">
-                  <Label className="text-purple-800 font-medium">Adicionar Serviço</Label>
+                 <div className="p-3 border rounded-lg bg-white space-y-3">
+                   <Label className="text-gray-700 font-medium">Adicionar Serviço</Label>
                   
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                     <Select 
