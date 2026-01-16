@@ -1511,31 +1511,23 @@ INSTRUÇÕES GERAIS:
         const historicoCompleto = historicoAtual.filter(m => m.role === 'assistant');
         const ultimasRespostasAssistente = historicoCompleto.slice(-5);
 
-        // Se a nova resposta contém ORÇAMENTO, verificar se já existe um orçamento no histórico
-          // MAS: se é um documento diferente ou é a primeira vez, permite enviar
-          if (llmResponse && /ORÇAMENTO/i.test(llmResponse) && /VALOR TOTAL/i.test(llmResponse)) {
-            // Verificar se o documento ATUAL é diferente do anterior
-            const ultimaMensagemUser = historicoCompleto.filter(m => m.role === 'user').slice(-1)[0];
-            const documentoMudou = !ultimaMensagemUser || ultimaMensagemUser.content !== messageText;
+        // Sem deduplicação agressiva - deixar a IA decidir
+        // Apenas verificar se é a exata mesma resposta (palavra por palavra)
+        const respostaExataIgual = ultimasRespostasAssistente.some(m => {
+          if (!m.content || !llmResponse) return false;
+          const msg1 = m.content.toLowerCase().replace(/\s+/g, ' ').trim();
+          const msg2 = llmResponse.toLowerCase().replace(/\s+/g, ' ').trim();
+          return msg1 === msg2 && msg1.length > 50; // Apenas bloqueia respostas idênticas longas
+        });
 
-            if (!documentoMudou) {
-              const jaTemOrcamento = historicoCompleto.some(m => 
-                m.content && /ORÇAMENTO/i.test(m.content) && /VALOR TOTAL/i.test(m.content)
-              );
-
-              if (jaTemOrcamento) {
-                console.log('⚠️ Já existe orçamento para este documento - NÃO enviando duplicado');
-                return Response.json({ 
-                  success: true, 
-                  resposta: null,
-                  duplicado: true,
-                  message: 'Orçamento já enviado anteriormente'
-                });
-              }
-            } else {
-              console.log('✅ Documento diferente detectado - permitindo novo orçamento');
-            }
-          }
+        if (respostaExataIgual) {
+          console.log('⚠️ Resposta idêntica já enviada - ignorando');
+          return Response.json({ 
+            success: true, 
+            resposta: null,
+            duplicado: true
+          });
+        }
 
         // Verificar se a mesma resposta já foi enviada recentemente (últimas 5 mensagens)
         const respostaExata = ultimasRespostasAssistente.some(m => {
