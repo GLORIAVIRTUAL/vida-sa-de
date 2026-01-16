@@ -105,22 +105,32 @@ Deno.serve(async (req) => {
     let infoCancelamento = '';
     let agendamentoCancelado = false;
 
+    // ========== FLUXO DE VERIFICAÇÃO (SEPARADO) ==========
     if (querVerificarAgendamento) {
-      console.log('🔍 Cliente quer verificar agendamento...');
+      console.log('🔍 Cliente quer VERIFICAR agendamento (fluxo separado)...');
 
       // Extrair nome e data de nascimento da conversa
       let nomeExtraido = null;
       let dataNascimentoExtraida = null;
 
-      // Buscar nome na mensagem
-      const nomeMatch = messageText.match(/(?:nome[:\s]+|sou\s+o?\s*|me chamo\s+|é\s+)([A-Za-zÀ-ÿ]+(?:\s+[A-Za-zÀ-ÿ]+)*)/i);
-      if (nomeMatch) nomeExtraido = nomeMatch[1];
+      // Buscar nome na mensagem - múltiplos formatos
+      const nomeMatch = messageText.match(/(?:nome[:\s]+|sou\s+o?\s*|me chamo\s+|é\s+)?([A-Za-zÀ-ÿ]+(?:\s+[A-Za-zÀ-ÿ]+)+)/i);
+      if (nomeMatch) {
+        // Limpar nome - remover palavras comuns que não fazem parte do nome
+        let nome = nomeMatch[1].trim();
+        nome = nome.replace(/^(me chamo|sou|meu nome é|é)\s*/i, '');
+        if (nome.split(' ').length >= 2) { // Nome deve ter pelo menos 2 partes
+          nomeExtraido = nome;
+        }
+      }
 
       // Buscar data de nascimento
       const dataMatch = messageText.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-      if (dataMatch) dataNascimentoExtraida = `${dataMatch[3]}-${String(dataMatch[2]).padStart(2,'0')}-${String(dataMatch[1]).padStart(2,'0')}`;
+      if (dataMatch) {
+        dataNascimentoExtraida = `${dataMatch[3]}-${String(dataMatch[2]).padStart(2,'0')}-${String(dataMatch[1]).padStart(2,'0')}`;
+      }
 
-      console.log('📋 Dados extraídos:', { nomeExtraido, dataNascimentoExtraida });
+      console.log('📋 Dados extraídos para VERIFICAÇÃO:', { nomeExtraido, dataNascimentoExtraida });
 
       if (nomeExtraido && dataNascimentoExtraida) {
         // Chamar função de verificação
@@ -132,85 +142,114 @@ Deno.serve(async (req) => {
 
           console.log('✅ Verificação realizada:', resultadoVerificacao.data);
 
+          let respostaVerificacao = '';
+
           if (resultadoVerificacao.data?.sucesso && resultadoVerificacao.data?.agendamentos?.length > 0) {
-            // Formatar resposta com agendamentos
-            let respostaVerificacao = `✅ ${resultadoVerificacao.data.mensagem}\n\n`;
+            // Formatar resposta com agendamentos - MOSTRAR STATUS REAL
+            respostaVerificacao = `📋 *Encontramos seus agendamentos:*\n\n`;
 
             resultadoVerificacao.data.agendamentos.forEach((ag, idx) => {
-              respostaVerificacao += `${idx + 1}️⃣ *${ag.data_formatada}* às *${ag.horario}*\n`;
+              // Emoji diferente por status
+              let statusEmoji = '✅';
+              let statusTexto = ag.status;
+              if (ag.status === 'Cancelado') {
+                statusEmoji = '❌';
+                statusTexto = 'CANCELADO';
+              } else if (ag.status === 'Agendado') {
+                statusEmoji = '📅';
+                statusTexto = 'Agendado (aguardando confirmação)';
+              } else if (ag.status === 'Confirmado') {
+                statusEmoji = '✅';
+                statusTexto = 'CONFIRMADO';
+              } else if (ag.status === 'Finalizado') {
+                statusEmoji = '✔️';
+                statusTexto = 'Finalizado';
+              }
+
+              respostaVerificacao += `${statusEmoji} *${ag.data_formatada}* às *${ag.horario}*\n`;
               respostaVerificacao += `👨‍⚕️ ${ag.medico_nome} (${ag.especialidade})\n`;
-              respostaVerificacao += `🏥 ${ag.tipo_servico} - Status: ${ag.status}\n`;
+              respostaVerificacao += `🏥 ${ag.tipo_servico}\n`;
+              respostaVerificacao += `📌 Status: *${statusTexto}*\n`;
               if (ag.observacoes) respostaVerificacao += `📝 ${ag.observacoes}\n`;
               respostaVerificacao += '\n';
             });
 
-            respostaVerificacao += '✨ Seus agendamentos estão confirmados! Lembramos de chegar 10 minutos antes.';
-
-            // Retornar resposta e salvar no histórico
-            try {
-              const contatosCheck = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
-              if (contatosCheck.length > 0) {
-                const historicoAtual = contatosCheck[0].historico_mensagens || [];
-                const timestamp = new Date().toISOString();
-
-                historicoAtual.push(
-                  { role: 'user', content: messageText, timestamp },
-                  { role: 'assistant', content: respostaVerificacao, timestamp }
-                );
-
-                await base44.asServiceRole.entities.Contato.update(contatosCheck[0].id, {
-                  historico_mensagens: historicoAtual.slice(-50)
-                });
-              }
-            } catch (e) {
-              console.log('⚠️ Erro ao salvar histórico:', e.message);
+            // Mensagem final baseada nos status
+            const temConfirmado = resultadoVerificacao.data.agendamentos.some(a => a.status === 'Confirmado' || a.status === 'Agendado');
+            if (temConfirmado) {
+              respostaVerificacao += '📍 *Endereço:* Tristão Monteiro, 580 – Zona Nova, Tramandaí/RS\n';
+              respostaVerificacao += '⏰ Lembre-se de chegar 10 minutos antes!\n\nPosso ajudar em mais alguma coisa?';
+            } else {
+              respostaVerificacao += 'Posso ajudar em mais alguma coisa?';
             }
-
-            return Response.json({ 
-              success: true, 
-              resposta: respostaVerificacao,
-              verificado: true
-            });
           } else {
-            const respostaNaoEncontrado = `😔 Não encontramos agendamentos confirmados para você.\n\nDeseja agendar uma consulta conosco?`;
-
-            try {
-              const contatosCheck = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
-              if (contatosCheck.length > 0) {
-                const historicoAtual = contatosCheck[0].historico_mensagens || [];
-                const timestamp = new Date().toISOString();
-
-                historicoAtual.push(
-                  { role: 'user', content: messageText, timestamp },
-                  { role: 'assistant', content: respostaNaoEncontrado, timestamp }
-                );
-
-                await base44.asServiceRole.entities.Contato.update(contatosCheck[0].id, {
-                  historico_mensagens: historicoAtual.slice(-50)
-                });
-              }
-            } catch (e) {
-              console.log('⚠️ Erro ao salvar histórico:', e.message);
-            }
-
-            return Response.json({ 
-              success: true, 
-              resposta: respostaNaoEncontrado,
-              verificado: true
-            });
+            respostaVerificacao = `😔 Não encontramos agendamentos para *${nomeExtraido}* com data de nascimento *${dataMatch[1]}/${dataMatch[2]}/${dataMatch[3]}*.\n\nVerifique se os dados estão corretos ou, se preferir, posso agendar uma consulta para você! 😊`;
           }
+
+          // Salvar no histórico
+          try {
+            const contatosCheck = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
+            if (contatosCheck.length > 0) {
+              const historicoAtual = contatosCheck[0].historico_mensagens || [];
+              const timestamp = new Date().toISOString();
+
+              historicoAtual.push(
+                { role: 'user', content: messageText, timestamp },
+                { role: 'assistant', content: respostaVerificacao, timestamp }
+              );
+
+              await base44.asServiceRole.entities.Contato.update(contatosCheck[0].id, {
+                historico_mensagens: historicoAtual.slice(-50),
+                ultima_interacao: timestamp
+              });
+            }
+          } catch (e) {
+            console.log('⚠️ Erro ao salvar histórico:', e.message);
+          }
+
+          // RETORNO IMEDIATO - NÃO CONTINUA PARA AGENDAMENTO
+          return Response.json({ 
+            success: true, 
+            resposta: respostaVerificacao,
+            verificado: true,
+            fluxo: 'verificacao'
+          });
+
         } catch (e) {
           console.error('❌ Erro ao verificar agendamento:', e.message);
         }
       } else {
-        // Pedir dados faltantes
-        const respostaPedirDados = `Para verificar seu agendamento, preciso:\n\n📝 Seu nome completo\n📅 Sua data de nascimento (DD/MM/AAAA)\n\nEx: "Me chamo Antonio Thiago Cavalcanti Alves, nascido em 19/04/1982"`;
+        // Pedir dados faltantes - RETORNO IMEDIATO
+        const respostaPedirDados = `Para verificar seu agendamento, preciso:\n\n📝 Seu nome completo\n📅 Sua data de nascimento (DD/MM/AAAA)\n\nEx: "Antonio Thiago Cavalcanti Alves 19/04/1982"`;
+
+        // Salvar no histórico
+        try {
+          const contatosCheck = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
+          if (contatosCheck.length > 0) {
+            const historicoAtual = contatosCheck[0].historico_mensagens || [];
+            const timestamp = new Date().toISOString();
+
+            historicoAtual.push(
+              { role: 'user', content: messageText, timestamp },
+              { role: 'assistant', content: respostaPedirDados, timestamp }
+            );
+
+            await base44.asServiceRole.entities.Contato.update(contatosCheck[0].id, {
+              historico_mensagens: historicoAtual.slice(-50),
+              ultima_interacao: timestamp
+            });
+          }
+        } catch (e) {
+          console.log('⚠️ Erro ao salvar histórico:', e.message);
+        }
+
         return Response.json({ 
           success: true, 
-          resposta: respostaPedirDados
+          resposta: respostaPedirDados,
+          fluxo: 'verificacao'
         });
       }
-      } // FIM VERIFICAÇÃO
+    } // FIM VERIFICAÇÃO
 
       if (querCancelar) {
       console.log('❌ Cliente quer cancelar agendamento...');
