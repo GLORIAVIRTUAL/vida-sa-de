@@ -2703,9 +2703,8 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                 )}
               </div>
 
-              {/* NOVO: Checkbox de Encaixe */}
-              <div className="flex flex-col justify-end"> {/* Align with the bottom of the select */}
-                <div className="flex items-center space-x-2 pt-2"> {/* pt-2 to align with label of select */}
+              <div className="flex flex-col justify-end">
+                <div className="flex items-center space-x-2 pt-2">
                   <Checkbox
                     id="is_encaixe"
                     checked={formData.is_encaixe}
@@ -2718,13 +2717,11 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                     htmlFor="is_encaixe"
                     className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
                   >
-                    <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-300">
-                      🔄 Marcar como Encaixe
-                    </Badge>
+                    <Badge variant="outline">Encaixe</Badge>
                   </label>
                 </div>
-                <p className="text-xs text-gray-500 mt-1 pl-6"> {/* pl-6 to align with text */}
-                  Permite agendar mesmo com horário ocupado.
+                <p className="text-xs text-gray-500 mt-1 pl-6">
+                  Horário duplicado
                 </p>
               </div>
              </div>
