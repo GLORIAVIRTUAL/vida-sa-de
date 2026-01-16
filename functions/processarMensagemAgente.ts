@@ -916,6 +916,7 @@ PERGUNTE ao cliente: "Para qual especialidade você gostaria de agendar? Temos v
       }
       }
       } // fim do if deveBuscarDisponibilidades
+      } // FIM BLOCO DE AGENDAMENTO
 
     // Verificar no histórico se já temos médico, data e horário escolhidos
     let agendamentoCriado = false;
