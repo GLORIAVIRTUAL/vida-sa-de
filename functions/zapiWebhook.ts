@@ -9,23 +9,34 @@ Deno.serve(async (req) => {
 
     try {
         const payload = await req.json();
+        
+        console.log('📨 Z-API Webhook recebido:', JSON.stringify(payload, null, 2));
 
-        // Verificar se é uma mensagem RECEBIDA (do paciente)
-        if (payload.isGroup === false && payload.fromMe === false && payload.text?.message) {
+        // Verificar se é uma mensagem RECEBIDA (do paciente) - múltiplos formatos
+        const isReceivedMessage = 
+            (payload.isGroup === false && payload.fromMe === false && payload.text?.message) ||
+            (payload.event === 'message' && payload.fromMe === false) ||
+            (payload.phone && payload.text && !payload.fromMe);
+            
+        if (isReceivedMessage) {
+            console.log('✅ Mensagem recebida detectada - processando...');
             return await processarMensagemRecebida(base44, payload);
         }
 
         // Caso seja atualização de STATUS de mensagem enviada
-        const messageId = payload.id;
+        const messageId = payload.id || payload.messageId;
         const status = payload.status;
 
         if (messageId && status) {
+            console.log('📊 Atualização de status:', { messageId, status });
             return await processarStatusMensagem(base44, messageId, status);
         }
 
+        console.log('ℹ️ Payload não processado:', Object.keys(payload));
         return new Response(JSON.stringify({ message: "OK" }), { status: 200 });
 
     } catch (error) {
+        console.error('❌ Erro no webhook Z-API:', error.message);
         return new Response(JSON.stringify({ error: 'Erro interno', details: error.message }), { status: 500 });
     }
 });
