@@ -221,13 +221,13 @@ Deno.serve(async (req) => {
         var mensagemFinal = mensagemCompleta;
         
       } else {
-        // Novo contato - criar com mensagem pendente e aguardar
+        // Novo contato - criar com mensagem pendente (com mídia se houver) e aguardar
         await base44.asServiceRole.entities.Contato.create({
           nome: senderName,
           telefone: phoneNumber,
           origem: 'WhatsApp',
           status: 'Novo',
-          mensagens_pendentes: [{ texto: messageText, timestamp: agora }],
+          mensagens_pendentes: [{ texto: messageText, timestamp: agora, mediaType: mediaType, mediaUrl: mediaUrl }],
           ultimo_timestamp_pendente: agora
         });
         
