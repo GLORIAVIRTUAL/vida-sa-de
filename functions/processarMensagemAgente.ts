@@ -1338,6 +1338,12 @@ Confirme o recebimento e pergunte como pode ajudar.`;
     - 🕐 Horário atual: ${horaAtual}
     - Saudação apropriada: ${saudacaoHorario}
 
+    🧠 CONTEXTO DO FLUXO DE AGENDAMENTO:
+    ${historicoConversa && /disponibilidades? encontradas|Dr\.|👨‍⚕️/i.test(historicoConversa) ? 
+      '✅ DISPONIBILIDADES JÁ FORAM MOSTRADAS ao cliente. Ele está ESCOLHENDO agora. NÃO REPITA disponibilidades novamente!' : 
+      '❌ Disponibilidades ainda NÃO foram mostradas (ou foram há muito tempo). Se cliente quer agendar, MOSTRE as opções.'}
+    ${dadosFaltantes.length > 0 ? `📋 DADOS QUE FALTAM: ${dadosFaltantes.join(', ')}` : ''}
+
     ⚠️ REGRAS CRÍTICAS DE SAUDAÇÃO:
     1. PRIMEIRA MENSAGEM DA CONVERSA (${ehPrimeiraMensagem ? 'SIM - É PRIMEIRA MENSAGEM' : 'NÃO - JÁ HÁ HISTÓRICO'}):
        - Se for primeira mensagem (${ehPrimeiraMensagem}): SEMPRE inicie COM a saudação "${saudacaoHorario}, [NOME]! 👋 Eu sou a Glória, atendente do Centro Vida Saúde. Como posso te ajudar hoje? 😀"
