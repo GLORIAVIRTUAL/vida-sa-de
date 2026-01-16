@@ -203,13 +203,28 @@ Deno.serve(async (req) => {
         // Juntar todas as mensagens pendentes em uma só - MANTER ÚLTIMA MÍDIA
         const mensagemCompleta = todasMensagens.map(m => m.texto).join('\n');
         // Pegar a última mídia se houver (para requisições com múltiplas mensagens de texto)
-        const ultimaMidia = todasMensagens.reverse().find(m => m.mediaUrl);
+        const ultimaMidia = [...todasMensagens].reverse().find(m => m.mediaUrl);
         if (ultimaMidia) {
           mediaUrl = ultimaMidia.mediaUrl;
           mediaType = ultimaMidia.mediaType;
-          console.log(`📎 Usando última mídia encontrada: ${mediaType}`);
+          console.log(`📎 Usando última mídia encontrada: ${mediaType} - ${mediaUrl}`);
         }
         console.log(`📝 Processando ${todasMensagens.length} mensagens acumuladas`);
+        
+        // Salvar mídia no histórico com URL
+        if (mediaUrl) {
+          const historicoAtual = contatoAtualizado?.historico_mensagens || [];
+          const mensagemComMidia = mediaType === 'image' 
+            ? `[Imagem recebida]\n${mediaUrl}` 
+            : mediaType === 'document' 
+              ? `[Documento recebido]\n${mediaUrl}`
+              : mediaType === 'audio'
+                ? `[Áudio recebido]\n${mediaUrl}`
+                : mensagemCompleta;
+          
+          // A mídia será salva no histórico pela função processarMensagemAgente
+          console.log(`💾 Mídia será salva no histórico: ${mediaUrl}`);
+        }
         
         // Limpar mensagens pendentes
         await base44.asServiceRole.entities.Contato.update(contatoAtualizado.id, {
@@ -256,11 +271,11 @@ Deno.serve(async (req) => {
         
         const mensagemCompleta = todasMensagens.map(m => m.texto).join('\n');
         // Pegar a última mídia se houver para novo contato
-        const ultimaMidiaNovoContato = todasMensagens.reverse().find(m => m.mediaUrl);
+        const ultimaMidiaNovoContato = [...todasMensagens].reverse().find(m => m.mediaUrl);
         if (ultimaMidiaNovoContato) {
           mediaUrl = ultimaMidiaNovoContato.mediaUrl;
           mediaType = ultimaMidiaNovoContato.mediaType;
-          console.log(`📎 Novo contato - usando mídia: ${mediaType}`);
+          console.log(`📎 Novo contato - usando mídia: ${mediaType} - ${mediaUrl}`);
         }
         console.log(`📝 Processando ${todasMensagens.length} mensagens acumuladas (novo contato)`);
         
