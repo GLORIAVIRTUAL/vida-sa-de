@@ -141,11 +141,11 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
 
   const buscarContatos = async () => {
     try {
-      const lista = await base44.entities.Contato.list('-updated_date', 50);
+      const lista = await base44.entities.Contato.list('-ultima_interacao', 100);
       const comHistorico = lista.filter(c => 
         (c.historico_mensagens && c.historico_mensagens.length > 0) || c.ultima_mensagem
       );
-      // Ordenar: ativos primeiro (não finalizados), finalizados por último
+      // Ordenar: ativas primeiro (não finalizadas), depois por última interação (descendente)
       const ordenados = [...comHistorico].sort((a, b) => {
         const aFinalizado = a.conversa_finalizada === true;
         const bFinalizado = b.conversa_finalizada === true;
@@ -154,7 +154,6 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
         return 0;
       });
       setContatos(ordenados);
-      // Só selecionar automaticamente se não tiver contato selecionado E não vier de contatoInicial
       if (ordenados.length > 0 && !contatoSelecionado && !contatoInicial) {
         setContatoSelecionado(ordenados[0]);
       }
