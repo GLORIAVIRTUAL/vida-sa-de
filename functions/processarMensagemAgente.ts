@@ -591,8 +591,16 @@ PERGUNTE ao cliente: "Para qual especialidade você gostaria de agendar? Temos v
           medicosParaBuscar = [medicoEspecificoDetectado];
           console.log(`🎯 Usando médico específico: ${medicoEspecificoDetectado.nome}`);
         } else {
-          // Buscar todos os médicos ativos e filtrar depois
-          const todosMedicos = await base44.asServiceRole.entities.Medico.filter({ status: 'Ativo' });
+           // Buscar todos os médicos ativos (com timeout e cache)
+           let todosMedicos = [];
+           try {
+             todosMedicos = await Promise.race([
+               base44.asServiceRole.entities.Medico.filter({ status: 'Ativo' }),
+               new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout Medicos')), 3000))
+             ]);
+           } catch (e) {
+             console.warn('⚠️ Timeout ao buscar médicos:', e.message);
+           }
         
           if (especialidadeDetectada) {
           const especialidadeLower = especialidadeDetectada.toLowerCase();
