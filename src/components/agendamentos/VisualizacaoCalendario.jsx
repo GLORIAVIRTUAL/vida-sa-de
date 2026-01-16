@@ -100,16 +100,16 @@ export default function VisualizacaoCalendario({ agendamentos, medicos, paciente
         }
         .calendar-large table {
           width: 100%;
-          max-width: 600px; /* Limita largura máxima para não esticar demais */
+          max-width: 100%; /* Ocupar toda largura disponível */
           margin: 0 auto;
           border-collapse: separate;
-          border-spacing: 8px; /* Espaço entre as células */
+          border-spacing: 12px; /* Espaço maior entre as células */
         }
         .calendar-large th {
           text-align: center;
-          padding-bottom: 12px;
-          font-size: 14px;
-          font-weight: 600;
+          padding-bottom: 16px;
+          font-size: 16px;
+          font-weight: 700;
           color: #64748b;
           text-transform: capitalize;
         }
@@ -120,10 +120,11 @@ export default function VisualizacaoCalendario({ agendamentos, medicos, paciente
 
         /* Estilo Base dos Botões de Dia */
         .calendar-large button.rdp-day {
-          width: 52px !important;
-          height: 52px !important;
-          font-size: 16px;
-          border-radius: 14px !important; /* Quadrado arredondado */
+          width: 100% !important; /* Ocupar largura da célula */
+          min-width: 60px !important;
+          height: 80px !important; /* Altura fixa maior */
+          font-size: 20px;
+          border-radius: 16px !important; /* Quadrado arredondado */
           margin: 0 auto;
           transition: all 0.2s ease;
           display: flex;
