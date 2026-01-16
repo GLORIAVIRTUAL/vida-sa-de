@@ -2625,12 +2625,11 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                       </div>
                     </div>
                     
-                    {/* Total dos exames */}
-                    <div className="mt-2 p-2 bg-green-50 rounded border border-green-200">
+                    <div className="mt-2 p-2 bg-gray-100 rounded border">
                       <div className="flex justify-between items-center">
-                        <span className="font-medium text-green-800">Total dos Exames:</span>
-                        <span className="font-bold text-lg text-green-800">
-                          R$ ${selectedExames.reduce((total, exame) => total + exame.display_valor, 0).toFixed(2).replace('.', ',')}
+                        <span className="font-medium text-gray-800">Total:</span>
+                        <span className="font-bold text-lg text-gray-900">
+                          R$ {selectedExames.reduce((total, exame) => total + exame.display_valor, 0).toFixed(2).replace('.', ',')}
                         </span>
                       </div>
                     </div>
