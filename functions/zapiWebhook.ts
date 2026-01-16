@@ -13,13 +13,21 @@ Deno.serve(async (req) => {
         console.log('📨 Z-API Webhook recebido:', JSON.stringify(payload, null, 2));
 
         // Verificar se é uma mensagem RECEBIDA (do paciente) - múltiplos formatos
+        // NOTA: Também aceita fromMe=true para casos de teste onde o mesmo número envia confirmação
+        const temMensagemTexto = payload.text?.message || payload.body || payload.message;
         const isReceivedMessage = 
-            (payload.isGroup === false && payload.fromMe === false && payload.text?.message) ||
+            (payload.isGroup === false && payload.fromMe === false && temMensagemTexto) ||
             (payload.event === 'message' && payload.fromMe === false) ||
-            (payload.phone && payload.text && !payload.fromMe);
-            
-        if (isReceivedMessage) {
-            console.log('✅ Mensagem recebida detectada - processando...');
+            (payload.phone && temMensagemTexto && !payload.fromMe);
+        
+        // Verificar se é uma confirmação (SIM) - aceita mesmo de fromMe=true para testes
+        const mensagemTexto = (temMensagemTexto || '').toLowerCase().trim();
+        const palavrasConfirmacao = ['sim', 'confirmo', 'confirmar', 'confirmado', 'ok', 'vou', 'estarei', 'irei', 's', '1', 'yes'];
+        const ehConfirmacao = palavrasConfirmacao.some(p => mensagemTexto === p || mensagemTexto.startsWith(p + ' '));
+        
+        // Processar se for mensagem recebida OU se for confirmação (mesmo de fromMe=true)
+        if (isReceivedMessage || (payload.phone && ehConfirmacao && !payload.fromApi)) {
+            console.log('✅ Mensagem recebida detectada - processando...', { fromMe: payload.fromMe, ehConfirmacao });
             return await processarMensagemRecebida(base44, payload);
         }
 
