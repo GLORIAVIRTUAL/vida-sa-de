@@ -2499,10 +2499,10 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                 )}
 
                 {formData.itens_servico.length === 0 && (
-                  <Alert className="bg-yellow-50 border-yellow-200">
-                    <AlertCircle className="w-4 h-4 text-yellow-600" />
-                    <AlertDescription className="text-yellow-800">
-                      Adicione pelo menos um serviço (consulta, procedimento ou exame) ao agendamento.
+                  <Alert className="bg-gray-50 border">
+                    <AlertCircle className="w-4 h-4 text-gray-600" />
+                    <AlertDescription className="text-gray-700">
+                      Adicione serviços ao agendamento.
                     </AlertDescription>
                   </Alert>
                 )}
