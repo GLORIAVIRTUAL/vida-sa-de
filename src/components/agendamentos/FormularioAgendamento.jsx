@@ -2197,7 +2197,18 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                                  >
                                    <SelectTrigger id="horario" className="mt-1"><SelectValue placeholder={loadingHorarios ? "Carregando..." : "Selecione..."} /></SelectTrigger>
                                    <SelectContent>
-                                    {/* ... (options logic remains the same) ... */}
+                                     {horariosDisponiveis.length > 0 ? (
+                                         horariosDisponiveis.map(h => (
+                                           <SelectItem key={h} value={h}>
+                                             <div className="flex items-center gap-2">
+                                               <Clock className="w-4 h-4" />
+                                               {h}
+                                             </div>
+                                           </SelectItem>
+                                         ))
+                                       ) : (
+                                         <SelectItem value="none" disabled>Nenhum horário disponível</SelectItem>
+                                       )}
                                    </SelectContent>
                                  </Select>
                                  {mensagemDisponibilidade && <p className={`text-xs mt-1 ${horarioDisponivel ? 'text-gray-600' : 'text-red-600'}`}>{mensagemDisponibilidade}</p>}
