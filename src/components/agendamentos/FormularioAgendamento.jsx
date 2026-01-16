@@ -2136,7 +2136,7 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                 </div>
                 
                 <p className="text-xs text-gray-500">
-                  💡 Digite o nome, CPF ou telefone e clique em "Buscar". Pacientes recém-cadastrados aparecem no topo.
+                  Digite o nome, CPF ou telefone e clique em "Buscar".
                 </p>
                 
                 {/* Select de pacientes encontrados */}
