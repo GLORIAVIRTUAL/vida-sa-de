@@ -200,7 +200,7 @@ export default function VisualizacaoDiaria({ agendamentos, medicos, pacientes, o
                     }
                           <Clock className="w-4 h-4 text-gray-500" />
                           <span className="font-semibold text-lg">{agendamento.horario || 'Sem horário'}</span>
-                          <Badge className="bg-green-200 text-lime-700 px-2.5 py-0.5 text-xs font-semibold rounded-md inline-flex items-center transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 shadow hover:bg-primary/80 border-pink-200 border">
+                          <Badge className={`${statusColors[agendamento.status]} border`}>
                             {agendamento.status}
                           </Badge>
                           {agendamento.is_reserva &&
