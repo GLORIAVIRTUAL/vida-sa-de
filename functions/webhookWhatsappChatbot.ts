@@ -337,8 +337,12 @@ Deno.serve(async (req) => {
         console.log('⚠️ Erro ao verificar duplicata:', dedup.message);
       }
       
-      await enviarWhatsApp(phoneNumber, resultado.data.resposta);
-      console.log('✅ WhatsApp texto enviado');
+      try {
+        await enviarWhatsApp(phoneNumber, resultado.data.resposta);
+        console.log('✅ WhatsApp texto enviado com sucesso');
+      } catch (whatsappError) {
+        console.error('❌ ERRO ao enviar WhatsApp:', whatsappError.message, whatsappError);
+      }
       
       // Se houver arquivo para enviar (resultado de exame)
       if (resultado.data?.arquivoParaEnviar) {
@@ -354,7 +358,7 @@ Deno.serve(async (req) => {
       }
     } else {
       // Não enviar mensagem de fallback - só logar
-      console.log('⚠️ Sem resposta da IA - não enviando fallback para evitar spam');
+      console.log('⚠️ Sem resposta da IA:', JSON.stringify(resultado.data));
     }
 
     return Response.json({ success: true });
