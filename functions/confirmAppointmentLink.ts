@@ -8,6 +8,15 @@ Deno.serve(async (req) => {
     let codigo = url.searchParams.get('codigo');
     let confirmar = url.searchParams.get('confirmar');
     
+    // Se não veio na query, tentar do body (para testes)
+    if (!codigo && req.method === 'POST') {
+      try {
+        const body = await req.clone().json();
+        codigo = body.codigo;
+        confirmar = body.confirmar;
+      } catch (e) {}
+    }
+    
     // Limpar código
     if (codigo) {
       codigo = codigo.trim();
