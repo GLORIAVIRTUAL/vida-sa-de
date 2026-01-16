@@ -3,6 +3,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 Deno.serve(async (req) => {
   try {
     console.log('🔗 [ConfirmLink] Requisição recebida');
+    console.log('[ConfirmLink] URL completa:', req.url);
     
     const base44 = createClientFromRequest(req);
     
@@ -12,6 +13,9 @@ Deno.serve(async (req) => {
     let codigo = url.searchParams.get('codigo');
     let confirmar = url.searchParams.get('confirmar');
     
+    console.log('[ConfirmLink] Código da query string:', codigo);
+    console.log('[ConfirmLink] Todos os params:', Object.fromEntries(url.searchParams.entries()));
+    
     // Se não veio na query, tentar do body (para testes)
     if (!codigo && req.method === 'POST') {
       try {
@@ -19,12 +23,13 @@ Deno.serve(async (req) => {
         const body = await clonedReq.json();
         codigo = body.codigo;
         confirmar = body.confirmar;
+        console.log('[ConfirmLink] Código do body:', codigo);
       } catch (e) {
-        // Ignora erro de parse
+        console.log('[ConfirmLink] Erro ao parsear body:', e.message);
       }
     }
     
-    console.log(`[ConfirmLink] Método: ${req.method}, Código: ${codigo}, URL: ${req.url}`);
+    console.log(`[ConfirmLink] Método: ${req.method}, Código Final: ${codigo}, Tamanho: ${codigo?.length || 0}`);
     
     if (!codigo) {
       return new Response(`
