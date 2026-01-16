@@ -43,8 +43,10 @@ Deno.serve(async (req) => {
 
 // Processa mensagens recebidas dos pacientes (confirmações)
 async function processarMensagemRecebida(base44, payload) {
-    const telefone = payload.phone;
-    const mensagem = payload.text?.message?.toLowerCase().trim() || '';
+    const telefone = payload.phone || payload.from;
+    const mensagem = (payload.text?.message || payload.body || payload.message || '').toLowerCase().trim();
+    
+    console.log('📱 Processando mensagem:', { telefone, mensagem });
 
     // Palavras-chave para confirmação
     const palavrasConfirmacao = ['sim', 'confirmo', 'confirmar', 'confirmado', 'ok', 'vou', 'estarei', 'irei', 's', '1', 'yes'];
