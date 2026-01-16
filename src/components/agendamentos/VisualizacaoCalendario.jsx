@@ -142,16 +142,16 @@ export default function VisualizacaoCalendario({ agendamentos, medicos, paciente
         .weekdays {
           display: grid;
           grid-template-columns: repeat(7, 1fr);
-          gap: 12px;
-          margin-bottom: 12px;
+          gap: 16px;
+          margin-bottom: 16px;
         }
 
         .weekday {
           text-align: center;
-          font-size: 14px;
+          font-size: 16px;
           font-weight: 700;
           color: #64748b;
-          padding: 8px 0;
+          padding: 12px 0;
           text-transform: uppercase;
           letter-spacing: 0.5px;
         }
@@ -160,17 +160,18 @@ export default function VisualizacaoCalendario({ agendamentos, medicos, paciente
         .days-grid {
           display: grid;
           grid-template-columns: repeat(7, 1fr);
-          gap: 12px;
+          gap: 16px;
         }
 
         /* Botão de dia */
         .day-cell {
           aspect-ratio: 1;
+          min-height: 100px;
           display: flex;
           align-items: center;
           justify-content: center;
-          border-radius: 14px;
-          font-size: 18px;
+          border-radius: 16px;
+          font-size: 24px;
           font-weight: 600;
           cursor: pointer;
           transition: all 0.2s ease;
