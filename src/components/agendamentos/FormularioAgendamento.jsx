@@ -2865,45 +2865,43 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <Label htmlFor="desconto_manual" className="text-amber-800">Desconto (R$)</Label>
-                  <Input 
-                    id="desconto_manual" 
-                    name="desconto_manual" 
-                    value={formData.desconto_manual} 
-                    onChange={(e) => handleChange('desconto_manual', e.target.value)} 
-                    type="number" 
-                    step="0.01"
-                    min="0"
-                    placeholder="0,00"
-                    className="border-amber-300 focus:border-amber-500"
-                  />
-                </div>
+                    <Label htmlFor="desconto_manual">Desconto (R$)</Label>
+                    <Input 
+                      id="desconto_manual" 
+                      name="desconto_manual" 
+                      value={formData.desconto_manual} 
+                      onChange={(e) => handleChange('desconto_manual', e.target.value)} 
+                      type="number" 
+                      step="0.01"
+                      min="0"
+                      placeholder="0,00"
+                    />
+                  </div>
 
-                <div>
-                  <Label htmlFor="acrescimo_manual" className="text-amber-800">Acréscimo (R$)</Label>
-                  <Input 
-                    id="acrescimo_manual" 
-                    name="acrescimo_manual" 
-                    value={formData.acrescimo_manual} 
-                    onChange={(e) => handleChange('acrescimo_manual', e.target.value)} 
-                    type="number" 
-                    step="0.01"
-                    min="0"
-                    placeholder="0,00"
-                    className="border-amber-300 focus:border-amber-500"
-                  />
-                </div>
+                  <div>
+                    <Label htmlFor="acrescimo_manual">Acréscimo (R$)</Label>
+                    <Input 
+                      id="acrescimo_manual" 
+                      name="acrescimo_manual" 
+                      value={formData.acrescimo_manual} 
+                      onChange={(e) => handleChange('acrescimo_manual', e.target.value)} 
+                      type="number" 
+                      step="0.01"
+                      min="0"
+                      placeholder="0,00"
+                    />
+                  </div>
 
-                <div>
-                  <Label htmlFor="valor_final" className="text-amber-800 font-bold">Valor Final (R$)</Label>
-                  <Input 
-                    id="valor_final" 
-                    name="valor_final" 
-                    value={formData.valor_final} 
-                    readOnly
-                    className="bg-green-100 border-green-400 font-bold text-green-800 text-lg"
-                  />
-                </div>
+                  <div>
+                    <Label htmlFor="valor_final" className="font-bold">Valor Final (R$)</Label>
+                    <Input 
+                      id="valor_final" 
+                      name="valor_final" 
+                      value={formData.valor_final} 
+                      readOnly
+                      className="bg-gray-100 font-bold"
+                    />
+                  </div>
               </div>
 
               {/* Resumo visual */}
