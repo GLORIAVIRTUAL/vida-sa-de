@@ -607,8 +607,15 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
     const jaEmFluxoAgendamento = historicoConversa && /agendar|marcar|consulta|vamos agendar|seguir com o agendamento/i.test(historicoConversa);
     const querAgendar = querAgendarMensagem || jaEmFluxoAgendamento;
     
-    // Detectar especialidade mencionada - lista expandida
-    const especialidades = [
+    // Se cliente está em fluxo de VERIFICAÇÃO, NÃO entrar em fluxo de AGENDAMENTO
+    if (querVerificarAgendamento || (temPedidoVerificacaoNoHistorico && historicoConversa && /Para verificar seu agendamento/i.test(historicoConversa))) {
+      console.log('ℹ️ Cliente em fluxo de VERIFICAÇÃO - pulando lógica de agendamento');
+      // Deixar para o LLM genérico responder
+    } else {
+      // Cliente quer AGENDAR - processar normalmente
+
+      // Detectar especialidade mencionada - lista expandida
+      const especialidades = [
       'Cardiologia', 'Cardiologista', 'Clínico Geral', 'Clínico', 'Dermatologia', 'Dermatologista',
       'Endocrinologia', 'Endocrinologista', 'Ginecologia', 'Ginecologista', 
       'Nutrição', 'Nutricionista', 'Psicologia', 'Psicólogo', 'Psicóloga',
