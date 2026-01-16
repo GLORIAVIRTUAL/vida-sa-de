@@ -2860,11 +2860,8 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
               </div>
               </div>
 
-              {/* Campos de Desconto e Acréscimo Manual */}
-              <div className="p-4 border-2 border-amber-200 rounded-lg bg-amber-50 space-y-4">
-              <h4 className="font-medium text-amber-900 flex items-center gap-2">
-                💰 Ajustes no Valor do Orçamento
-              </h4>
+              <div className="p-4 border rounded-lg bg-gray-50 space-y-4">
+              <h4 className="font-medium text-gray-700">Ajustes de Valor</h4>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
