@@ -896,9 +896,14 @@ Retorne JSON.`;
         // Verificar quais dados faltam
         if (!extracao.nome_paciente) dadosFaltantes.push('nome completo');
         if (!extracao.data_nascimento) dadosFaltantes.push('data de nascimento');
-        if (!extracao.medico_nome && !extracao.medico_id) dadosFaltantes.push('médico');
+
+        // Só adiciona médico/data/horário como faltantes se o cliente ainda não escolheu
+        const jaEscolheuMedico = historicoConversa && /(Dr\.|👨‍⚕️|médico|doutor)/i.test(historicoConversa) && (extracao.medico_nome || extracao.medico_id);
+        const jaEscolheuHorario = historicoConversa && /\d{1,2}[h:]|14:00|15:00|16:00|hora/i.test(historicoConversa) && extracao.horario;
+
+        if (!extracao.medico_nome && !extracao.medico_id && !jaEscolheuMedico) dadosFaltantes.push('médico');
         if (!extracao.data_agendamento) dadosFaltantes.push('data da consulta');
-        if (!extracao.horario) dadosFaltantes.push('horário');
+        if (!extracao.horario && !jaEscolheuHorario) dadosFaltantes.push('horário');
 
         // Se temos TODOS os dados, criar agendamento IMEDIATAMENTE
         if (extracao.dados_completos && extracao.nome_paciente && extracao.data_nascimento && 
