@@ -2616,13 +2616,12 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                           ))}
                       </div>
                       
-                      {/* Barra de redimensionamento */}
                       <div 
-                        className={`absolute bottom-0 left-0 right-0 h-3 bg-gray-200 hover:bg-gray-300 cursor-row-resize flex items-center justify-center transition-colors ${redimensionandoExames ? 'bg-blue-300' : ''}`}
+                        className={`absolute bottom-0 left-0 right-0 h-3 bg-gray-300 hover:bg-gray-400 cursor-row-resize flex items-center justify-center transition-colors ${redimensionandoExames ? 'bg-gray-400' : ''}`}
                         onMouseDown={handleMouseDownResize}
-                        title="Arraste para redimensionar a lista"
+                        title="Arraste para redimensionar"
                       >
-                        <div className="w-12 h-1 bg-gray-400 rounded-full"></div>
+                        <div className="w-12 h-1 bg-gray-500 rounded-full"></div>
                       </div>
                     </div>
                     
