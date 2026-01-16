@@ -22,7 +22,12 @@ Deno.serve(async (req) => {
             return new Response(JSON.stringify({ error: 'Telefone e mensagem são obrigatórios' }), { status: 400 });
         }
         
-        const telefoneCompleto = `55${telefone.replace(/\D/g, '')}`;
+        // Formatar número de telefone (remover caracteres não numéricos)
+        let telefoneCompleto = telefone.replace(/\D/g, '');
+        // Adicionar código do país se não tiver
+        if (!telefoneCompleto.startsWith('55')) {
+            telefoneCompleto = '55' + telefoneCompleto;
+        }
         if (telefoneCompleto.length < 12) {
              return new Response(JSON.stringify({ error: 'Formato de telefone inválido' }), { status: 400 });
         }
@@ -97,6 +102,7 @@ Deno.serve(async (req) => {
                 return new Response(JSON.stringify({
                     sucesso: true,
                     messageId: resultadoApi.id || resultadoApi.messageId,
+                    telefone: telefoneCompleto
                 }));
 
             } catch (error) {
