@@ -7,7 +7,7 @@ import { ptBR } from 'date-fns/locale';
 
 const API_BASE = 'https://clinica-plus-7629e61a.base44.app/functions';
 
-export default function Confirmacao() {
+export default function ConfirmarPresenca() {
   const [loading, setLoading] = useState(true);
   const [confirmando, setConfirmando] = useState(false);
   const [agendamento, setAgendamento] = useState(null);

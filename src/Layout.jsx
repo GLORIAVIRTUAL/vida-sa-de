@@ -358,7 +358,7 @@ export default function Layout({ children, currentPageName }) {
 
   useEffect(() => {
     // Lista de páginas que devem ser públicas (sem necessidade de login)
-          const publicPages = ['AgendamentoOnline', 'Confirmacao'];
+          const publicPages = ['AgendamentoOnline', 'ConfirmarPresenca'];
     
     if (publicPages.includes(currentPageName)) {
         setIsPublicPage(true);
