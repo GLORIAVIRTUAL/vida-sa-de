@@ -1521,21 +1521,30 @@ INSTRUÇÕES GERAIS:
         const ultimasRespostasAssistente = historicoCompleto.slice(-5);
 
         // Se a nova resposta contém ORÇAMENTO, verificar se já existe um orçamento no histórico
-        if (llmResponse && /ORÇAMENTO/i.test(llmResponse) && /VALOR TOTAL/i.test(llmResponse)) {
-          const jaTemOrcamento = historicoCompleto.some(m => 
-            m.content && /ORÇAMENTO/i.test(m.content) && /VALOR TOTAL/i.test(m.content)
-          );
+          // MAS: se é um documento diferente ou é a primeira vez, permite enviar
+          if (llmResponse && /ORÇAMENTO/i.test(llmResponse) && /VALOR TOTAL/i.test(llmResponse)) {
+            // Verificar se o documento ATUAL é diferente do anterior
+            const ultimaMensagemUser = historicoCompleto.filter(m => m.role === 'user').slice(-1)[0];
+            const documentoMudou = !ultimaMensagemUser || ultimaMensagemUser.content !== messageText;
 
-          if (jaTemOrcamento) {
-            console.log('⚠️ Já existe orçamento no histórico - NÃO enviando duplicado');
-            return Response.json({ 
-              success: true, 
-              resposta: null,
-              duplicado: true,
-              message: 'Orçamento já enviado anteriormente'
-            });
+            if (!documentoMudou) {
+              const jaTemOrcamento = historicoCompleto.some(m => 
+                m.content && /ORÇAMENTO/i.test(m.content) && /VALOR TOTAL/i.test(m.content)
+              );
+
+              if (jaTemOrcamento) {
+                console.log('⚠️ Já existe orçamento para este documento - NÃO enviando duplicado');
+                return Response.json({ 
+                  success: true, 
+                  resposta: null,
+                  duplicado: true,
+                  message: 'Orçamento já enviado anteriormente'
+                });
+              }
+            } else {
+              console.log('✅ Documento diferente detectado - permitindo novo orçamento');
+            }
           }
-        }
 
         // Verificar se a mesma resposta já foi enviada recentemente (últimas 5 mensagens)
         const respostaExata = ultimasRespostasAssistente.some(m => {
