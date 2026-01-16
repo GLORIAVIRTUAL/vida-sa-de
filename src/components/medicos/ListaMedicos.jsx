@@ -16,7 +16,7 @@ const statusColors = {
 const diasSemanaMap = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
 
 export default function ListaMedicos({ medicos, loading, onEdit, onDelete }) {
-  
+
   const handleImprimirHorarios = (medico) => {
     const horariosOrdenados = (medico.horarios_atendimento || []).sort((a, b) => {
       if (a.dia_semana !== b.dia_semana) return a.dia_semana - b.dia_semana;
@@ -164,7 +164,7 @@ export default function ListaMedicos({ medicos, loading, onEdit, onDelete }) {
               </tr>
             </thead>
             <tbody>
-              ${horariosOrdenados.map(h => `
+              ${horariosOrdenados.map((h) => `
                 <tr>
                   <td class="dia-semana">${diasSemanaMap[h.dia_semana]}</td>
                   <td class="horario">${h.horario_inicio} às ${h.horario_fim}</td>
@@ -192,7 +192,7 @@ export default function ListaMedicos({ medicos, loading, onEdit, onDelete }) {
     janelaImpressao.document.write(conteudoImpressao);
     janelaImpressao.document.close();
     janelaImpressao.focus();
-    
+
     setTimeout(() => {
       janelaImpressao.print();
     }, 250);
@@ -201,8 +201,8 @@ export default function ListaMedicos({ medicos, loading, onEdit, onDelete }) {
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {Array(6).fill(0).map((_, i) => (
-          <Card key={i} className="overflow-hidden">
+        {Array(6).fill(0).map((_, i) =>
+        <Card key={i} className="overflow-hidden">
             <Skeleton className="h-56 w-full" />
             <CardContent className="p-4">
               <Skeleton className="h-6 w-3/4 mb-2" />
@@ -211,9 +211,9 @@ export default function ListaMedicos({ medicos, loading, onEdit, onDelete }) {
               <Skeleton className="h-4 w-2/3" />
             </CardContent>
           </Card>
-        ))}
-      </div>
-    );
+        )}
+      </div>);
+
   }
 
   if (medicos.length === 0) {
@@ -223,14 +223,14 @@ export default function ListaMedicos({ medicos, loading, onEdit, onDelete }) {
           <Stethoscope className="w-12 h-12 mx-auto mb-4 text-gray-300" />
           <p className="text-gray-500">Nenhum médico encontrado</p>
         </CardContent>
-      </Card>
-    );
+      </Card>);
+
   }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {medicos.map((medico) => (
-        <Card key={medico.id} className="overflow-hidden hover:shadow-xl transition-all duration-300 group">
+      {medicos.map((medico) =>
+      <Card key={medico.id} className="overflow-hidden hover:shadow-xl transition-all duration-300 group">
           {/* Informações do Médico */}
           <CardContent className="p-5">
             {/* Badge de Status */}
@@ -238,90 +238,90 @@ export default function ListaMedicos({ medicos, loading, onEdit, onDelete }) {
               <Badge className={`${statusColors[medico.status]}`}>
                 {medico.status}
               </Badge>
-              {medico.tipo_atendimento === "Ordem de Chegada" && (
-                <Badge variant="outline" className="text-xs">
+              {medico.tipo_atendimento === "Ordem de Chegada" &&
+            <Badge variant="outline" className="text-xs">
                   Ordem de Chegada
                 </Badge>
-              )}
+            }
             </div>
             <div className="mb-3">
-              <h3 className="font-bold text-lg text-gray-900 mb-1 line-clamp-1">
+              <h3 className="text-cyan-500 mb-1 text-lg font-bold line-clamp-1">
                 Dr(a). {medico.nome}
               </h3>
               <div className="flex items-center gap-2 text-blue-600">
                 <Stethoscope className="w-4 h-4 flex-shrink-0" />
                 <span className="text-sm font-medium line-clamp-1">{medico.especialidade}</span>
               </div>
-              {medico.crm && (
-                <p className="text-xs text-gray-500 mt-1">CRM: {medico.crm}</p>
-              )}
+              {medico.crm &&
+            <p className="text-xs text-gray-500 mt-1">CRM: {medico.crm}</p>
+            }
             </div>
 
             <div className="space-y-2 mb-4 text-sm text-gray-600">
-              {medico.telefone && (
-                <div className="flex items-center gap-2">
+              {medico.telefone &&
+            <div className="flex items-center gap-2">
                   <Phone className="w-4 h-4 flex-shrink-0 text-gray-400" />
                   <span className="line-clamp-1">{medico.telefone}</span>
                 </div>
-              )}
+            }
 
-              {medico.email && (
-                <div className="flex items-center gap-2">
+              {medico.email &&
+            <div className="flex items-center gap-2">
                   <Mail className="w-4 h-4 flex-shrink-0 text-gray-400" />
                   <span className="line-clamp-1 text-xs">{medico.email}</span>
                 </div>
-              )}
+            }
 
-              {medico.horarios_atendimento && medico.horarios_atendimento.length > 0 && (
-                <div className="flex items-center gap-2">
+              {medico.horarios_atendimento && medico.horarios_atendimento.length > 0 &&
+            <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 flex-shrink-0 text-gray-400" />
                   <span className="text-xs">{medico.horarios_atendimento.length} período(s) de atendimento</span>
                 </div>
-              )}
+            }
             </div>
 
             {/* Botões de Ação - Agora com mais espaço */}
             <div className="grid grid-cols-3 gap-2 pt-3 border-t">
               <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleImprimirHorarios(medico)}
-                className="text-purple-600 border-purple-200 hover:bg-purple-50 flex flex-col items-center justify-center h-auto py-2"
-                title="Imprimir horários"
-              >
+              variant="outline"
+              size="sm"
+              onClick={() => handleImprimirHorarios(medico)}
+              className="text-purple-600 border-purple-200 hover:bg-purple-50 flex flex-col items-center justify-center h-auto py-2"
+              title="Imprimir horários">
+
                 <Printer className="w-4 h-4 mb-1" />
                 <span className="text-xs">Imprimir</span>
               </Button>
 
               <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onEdit(medico)}
-                className="text-blue-600 border-blue-200 hover:bg-blue-50 flex flex-col items-center justify-center h-auto py-2"
-                title="Editar médico"
-              >
+              variant="outline"
+              size="sm"
+              onClick={() => onEdit(medico)}
+              className="text-blue-600 border-blue-200 hover:bg-blue-50 flex flex-col items-center justify-center h-auto py-2"
+              title="Editar médico">
+
                 <Edit className="w-4 h-4 mb-1" />
                 <span className="text-xs">Editar</span>
               </Button>
 
               <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  if (window.confirm(`Tem certeza que deseja excluir o médico "${medico.nome}"? Esta ação não pode ser desfeita.`)) {
-                    onDelete(medico.id);
-                  }
-                }}
-                className="text-red-600 border-red-200 hover:bg-red-50 flex flex-col items-center justify-center h-auto py-2"
-                title="Excluir médico"
-              >
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                if (window.confirm(`Tem certeza que deseja excluir o médico "${medico.nome}"? Esta ação não pode ser desfeita.`)) {
+                  onDelete(medico.id);
+                }
+              }}
+              className="text-red-600 border-red-200 hover:bg-red-50 flex flex-col items-center justify-center h-auto py-2"
+              title="Excluir médico">
+
                 <Trash2 className="w-4 h-4 mb-1" />
                 <span className="text-xs">Excluir</span>
               </Button>
             </div>
           </CardContent>
         </Card>
-      ))}
-    </div>
-  );
+      )}
+    </div>);
+
 }
