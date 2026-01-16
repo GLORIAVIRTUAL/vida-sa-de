@@ -110,12 +110,15 @@ async function processarMensagemRecebida(base44, payload) {
     );
 
     if (agendamentos.length === 0) {
+        console.log('❌ Nenhum agendamento pendente para:', pacientesEncontrados.map(p => p.nome));
         return new Response(JSON.stringify({ 
             message: "Nenhum agendamento pendente",
             pacientesEncontrados: pacientesEncontrados.map(p => ({ id: p.id, nome: p.nome })),
             totalAgendamentosEncontrados: todosAgendamentos.length
         }), { status: 200 });
     }
+    
+    console.log('📅 Agendamentos encontrados:', agendamentos.length);
 
     // Confirmar o agendamento mais próximo
     const agendamentoMaisProximo = agendamentos.sort((a, b) => 
