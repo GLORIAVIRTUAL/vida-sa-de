@@ -891,8 +891,16 @@ Retorne JSON.`;
           console.log('✅ Todos os dados coletados, criando agendamento...');
           console.log('📋 Médico extraído:', extracao.medico_nome, '| ID:', extracao.medico_id);
           
-          // Buscar médico - primeiro por ID se disponível, depois por nome
-          const medicos = await base44.asServiceRole.entities.Medico.filter({ status: 'Ativo' });
+          // Buscar médico - primeiro por ID se disponível, depois por nome (com timeout)
+          let medicos = [];
+          try {
+            medicos = await Promise.race([
+              base44.asServiceRole.entities.Medico.filter({ status: 'Ativo' }),
+              new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout Medicos')), 3000))
+            ]);
+          } catch (e) {
+            console.warn('⚠️ Timeout ao buscar médicos:', e.message);
+          }
           let medicoEncontrado = null;
           
           // Tentar primeiro pelo ID (mais preciso)
