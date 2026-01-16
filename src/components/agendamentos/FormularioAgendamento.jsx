@@ -2238,61 +2238,54 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                 </Select>
               </div>
             )}
+            </div>
 
-              {formData.tipo_servico === 'Procedimento' && (
-                <div className="md:col-span-2 space-y-2">
-                  <Label htmlFor="busca_procedimento">Buscar Procedimento</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="busca_procedimento"
-                      placeholder="Digite o nome ou código do procedimento..."
-                      value={buscaProcedimento}
-                      onChange={(e) => setBuscaProcedimento(e.target.value)}
-                      className="flex-1"
-                    />
-                    {buscaProcedimento && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setBuscaProcedimento('')}
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
+            {formData.tipo_servico === 'Procedimento' && (
+            <div className="space-y-3">
+              <Label htmlFor="busca_procedimento" className="text-sm font-medium">Buscar Procedimento</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="busca_procedimento"
+                  placeholder="Digite o nome..."
+                  value={buscaProcedimento}
+                  onChange={(e) => setBuscaProcedimento(e.target.value)}
+                  className="flex-1"
+                />
+                {buscaProcedimento && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setBuscaProcedimento('')}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
+
+              <div>
+                <Label htmlFor="procedimento_id" className="text-sm font-medium">Procedimento *</Label>
+                <Select 
+                  name="procedimento_id" 
+                  value={formData.procedimento_id} 
+                  onValueChange={(value) => handleChange('procedimento_id', value)}
+                >
+                  <SelectTrigger id="procedimento_id" className="mt-1">
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {procedimentosFiltrados.length === 0 ? (
+                      <SelectItem value="none" disabled>Nenhum encontrado</SelectItem>
+                    ) : (
+                      procedimentosFiltrados.map(p => (
+                        <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>
+                      ))
                     )}
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="procedimento_id">Procedimento * {procedimentosFiltrados.length > 0 && `(${procedimentosFiltrados.length} encontrado${procedimentosFiltrados.length !== 1 ? 's' : ''})`}</Label>
-                    <Select 
-                      name="procedimento_id" 
-                      value={formData.procedimento_id} 
-                      onValueChange={(value) => handleChange('procedimento_id', value)}
-                    >
-                      <SelectTrigger id="procedimento_id">
-                        <SelectValue placeholder="Selecione o procedimento" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {procedimentosFiltrados.length === 0 ? (
-                          <SelectItem value="none" disabled>Nenhum procedimento encontrado</SelectItem>
-                        ) : (
-                          procedimentosFiltrados.map(p => (
-                            <SelectItem key={p.id} value={p.id}>
-                              {p.nome} {p.codigo && `(${p.codigo})`}
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
-                    
-                    {buscaProcedimento && procedimentosFiltrados.length === 0 && (
-                      <p className="text-xs text-amber-600 mt-1">
-                        Nenhum procedimento encontrado com "{buscaProcedimento}"
-                      </p>
-                    )}
-                  </div>
-                </div>
-              )}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            )}
             </div>
             
             {/* NOVO: Bloco para Múltiplos Serviços */}
