@@ -855,22 +855,25 @@ REGRAS CRÍTICAS:
 
 Retorne JSON.`;
 
-        const extracao = await base44.asServiceRole.integrations.Core.InvokeLLM({
-          prompt: promptExtracao,
-          add_context_from_internet: false,
-          response_json_schema: {
-            type: "object",
-            properties: {
-              dados_completos: { type: "boolean" },
-              nome_paciente: { type: ["string", "null"] },
-              data_nascimento: { type: ["string", "null"] },
-              medico_nome: { type: ["string", "null"] },
-              medico_id: { type: ["string", "null"] },
-              data_agendamento: { type: ["string", "null"] },
-              horario: { type: ["string", "null"] }
+        const extracao = await Promise.race([
+          base44.asServiceRole.integrations.Core.InvokeLLM({
+            prompt: promptExtracao,
+            add_context_from_internet: false,
+            response_json_schema: {
+              type: "object",
+              properties: {
+                dados_completos: { type: "boolean" },
+                nome_paciente: { type: ["string", "null"] },
+                data_nascimento: { type: ["string", "null"] },
+                medico_nome: { type: ["string", "null"] },
+                medico_id: { type: ["string", "null"] },
+                data_agendamento: { type: ["string", "null"] },
+                horario: { type: ["string", "null"] }
+              }
             }
-          }
-        });
+          }),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout LLM Extracao')), 8000))
+        ]);
 
         console.log('📊 Extração de dados:', JSON.stringify(extracao));
 
