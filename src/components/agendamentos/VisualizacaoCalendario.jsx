@@ -256,23 +256,23 @@ export default function VisualizacaoCalendario({ agendamentos, medicos, paciente
             mode="single"
             selected={dataSelecionada}
             onSelect={setDataSelecionada}
-            className="calendar-grid w-full scale-150"
+            className="calendar-grid w-full"
             locale={ptBR}
             classNames={{
               months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
               month: "space-y-4 w-full",
-              caption: "flex justify-center pt-1 relative items-center mb-6",
-              caption_label: "text-2xl font-bold text-gray-800",
-              nav: "space-x-4 flex items-center",
-              nav_button: "h-10 w-10 bg-gray-100 hover:bg-gray-200 rounded-lg p-0",
+              caption: "flex justify-center pt-1 relative items-center mb-4",
+              caption_label: "text-xl font-bold text-gray-800",
+              nav: "space-x-3 flex items-center",
+              nav_button: "h-8 w-8 bg-gray-100 hover:bg-gray-200 rounded-lg p-0",
               nav_button_previous: "absolute left-0",
               nav_button_next: "absolute right-0",
-              table: "w-full border-collapse space-y-4",
-              head_row: "flex gap-4",
-              head_cell: "text-gray-600 font-bold text-lg w-16 h-16 flex items-center justify-center",
-              row: "flex w-full gap-4",
-              cell: "relative p-0 text-center h-20 w-20",
-              day: "h-20 w-20 p-0 font-semibold text-xl rounded-lg border-2 border-gray-200 hover:shadow-md transition-all",
+              table: "w-full border-collapse space-y-3",
+              head_row: "flex gap-3",
+              head_cell: "text-gray-600 font-bold text-sm w-14 h-14 flex items-center justify-center",
+              row: "flex w-full gap-3",
+              cell: "relative p-0 text-center h-16 w-16",
+              day: "h-16 w-16 p-0 font-semibold text-lg rounded-lg border-2 border-gray-200 hover:shadow-md transition-all",
               day_selected: "bg-gray-800 text-white border-gray-800",
               day_today: "bg-gray-200 text-gray-800",
               day_outside: "text-gray-300",
