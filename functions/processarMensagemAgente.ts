@@ -1366,9 +1366,11 @@ Confirme o recebimento e pergunte como pode ajudar.`;
     2. Quando o cliente fornecer um dado (nome, data nascimento, etc.), peça APENAS o PRÓXIMO dado faltante.
     3. NÃO repita dados que o cliente já forneceu.
     4. Dados necessários para agendar: nome completo, data de nascimento, médico, data e horário.
+    5. ⚠️ IMPORTANTE: Se o cliente já escolheu médico E horário, NÃO peça novamente - passe a pedir NOME E DATA DE NASCIMENTO IMEDIATAMENTE.
+    6. Mensagens ULTRA-CONCISAS no fluxo de agendamento (máx 1-2 linhas por pergunta).
     ${dadosFaltantes.length > 0 && dadosFaltantes.length < 5 ? `
     📋 DADOS FALTANTES PARA ESTE AGENDAMENTO: ${dadosFaltantes.join(', ')}
-    👉 Peça APENAS o PRÓXIMO dado faltante da lista acima. Seja direto e objetivo.` : ''}
+    👉 Peça APENAS o PRÓXIMO dado faltante. Máximo 1 frase, seja direto.` : ''}
 
     ⚠️ IMPORTANTE: Quando o cliente mencionar datas de agendamento (ex: "dia 14/11", "novembro"), use o ANO CORRETO (${dataAtualISO.split('-')[0]}) e verifique se a data ainda não passou.
     ${contextoPreviousConversation}
