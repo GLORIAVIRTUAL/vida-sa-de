@@ -16,7 +16,7 @@ import { useToast } from "@/components/ui/use-toast"; // Adicionado import para 
 const modelosMensagens = {
   lembrete_consulta: {
     nome: 'Lembrete de Consulta',
-    template: 'Olá [PACIENTE], aqui é a Glória do Centro Vida Saúde! 🏥\n\nPassando para lembrar da sua consulta:\n\n👨‍⚕️ Profissional: [MEDICO]\n📋 Procedimento: [PROCEDIMENTO]\n📆 Data: [DATA]\n🕐 Horário: [HORARIO]\n\n✅ Para CONFIRMAR sua presença, clique aqui:\n[LINK_CONFIRMACAO]\n\nPor favor, chegue com 10 minutos de antecedência. Aguardamos você! 😊'
+    template: 'Olá [PACIENTE], aqui é a Glória do Centro Vida Saúde! 🏥\n\nPassando para lembrar da sua consulta:\n\n👨‍⚕️ Profissional: [MEDICO]\n📋 Procedimento: [PROCEDIMENTO]\n📆 Data: [DATA]\n🕐 Horário: [HORARIO]\n\n✅ *Responda SIM para confirmar sua presença*\n\nPor favor, chegue com 10 minutos de antecedência. Aguardamos você! 😊'
   },
   confirmacao_agendamento: {
     nome: 'Confirmação de Agendamento',
