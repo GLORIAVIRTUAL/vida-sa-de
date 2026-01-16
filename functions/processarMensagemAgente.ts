@@ -522,8 +522,17 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
     const historicoLower = normalizarTexto(historicoConversa || '');
     const textoCompleto = msgLower + ' ' + historicoLower;
 
-    // Primeiro verificar se mencionou nome de médico específico
-    const todosMedicosParaDeteccao = await base44.asServiceRole.entities.Medico.filter({ status: 'Ativo' });
+    // Primeiro verificar se mencionou nome de médico específico (com timeout)
+    let todosMedicosParaDeteccao = [];
+    try {
+      todosMedicosParaDeteccao = await Promise.race([
+        base44.asServiceRole.entities.Medico.filter({ status: 'Ativo' }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout Medicos')), 3000))
+      ]);
+    } catch (e) {
+      console.warn('⚠️ Timeout ao buscar médicos:', e.message);
+    }
+    
     for (const medico of todosMedicosParaDeteccao) {
       const nomeMedicoLower = medico.nome.toLowerCase();
       const partesNome = nomeMedicoLower.split(' ').filter(p => p.length > 3);
