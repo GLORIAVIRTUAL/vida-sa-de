@@ -962,13 +962,21 @@ Retorne JSON.`;
               });
             }
 
-            // Verificar se horário ainda está disponível
-            const agendamentosExistentes = await base44.asServiceRole.entities.Agendamento.filter({
-              medico_id: medicoEncontrado.id,
-              data_agendamento: extracao.data_agendamento,
-              horario: extracao.horario,
-              status: { $ne: 'Cancelado' }
-            });
+            // Verificar se horário ainda está disponível (com timeout)
+            let agendamentosExistentes = [];
+            try {
+              agendamentosExistentes = await Promise.race([
+                base44.asServiceRole.entities.Agendamento.filter({
+                  medico_id: medicoEncontrado.id,
+                  data_agendamento: extracao.data_agendamento,
+                  horario: extracao.horario,
+                  status: { $ne: 'Cancelado' }
+                }),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout Agendamentos')), 2000))
+              ]);
+            } catch (e) {
+              console.warn('⚠️ Timeout ao buscar agendamentos:', e.message);
+            }
 
             if (agendamentosExistentes.length === 0) {
               // Buscar categoria "Particular" e valor da consulta
