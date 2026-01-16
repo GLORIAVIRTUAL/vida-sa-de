@@ -2957,10 +2957,9 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
               </div>
             </div>
 
-            {/* Campos para Múltiplas Formas de Pagamento */}
             {formData.forma_pagamento === 'Múltiplas Formas' && (
-              <div className="p-4 border-2 border-blue-200 rounded-lg bg-blue-50 space-y-4">
-                <h4 className="font-medium text-blue-900">Detalhar Formas de Pagamento</h4>
+              <div className="p-4 border rounded-lg bg-gray-50 space-y-4">
+                <h4 className="font-medium text-gray-700">Formas de Pagamento</h4>
                 
                 {/* Pagamento 1 */}
                 <div className="grid grid-cols-2 gap-3">
