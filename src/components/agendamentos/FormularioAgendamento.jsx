@@ -2674,7 +2674,7 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                   </SelectContent>
                 </Select>
                 {horariosDisponiveis.length > 0 && (
-                    <p className="text-xs text-green-600 mt-1">
+                    <p className="text-xs text-gray-600 mt-1">
                       {horariosDisponiveis.length} horário(s) disponível(is)
                     </p>
                 )}
