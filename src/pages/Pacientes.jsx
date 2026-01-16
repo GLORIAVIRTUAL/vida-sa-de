@@ -637,41 +637,37 @@ export default function Pacientes() {
 
                         <div className="flex items-center gap-2 ml-4 flex-shrink-0">
                           <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleImprimirPaciente(paciente)}
-                          className="text-purple-600 border-purple-200 hover:bg-purple-50"
-                          title="Imprimir cadastro completo">
-
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleImprimirPaciente(paciente)}
+                            className="text-purple-600 border-purple-200 hover:bg-purple-50"
+                            title="Imprimir cadastro completo"
+                          >
                             <Printer className="w-4 h-4" />
                           </Button>
                           
                           <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {setSelectedPaciente(paciente);setIsFormOpen(true);}}
-                          className={
-                          cartaoVerde ?
-                          'text-green-700 border-green-300 hover:bg-green-100' :
-                          'text-blue-600 border-blue-200 hover:bg-blue-50'
-                          }>
-
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {setSelectedPaciente(paciente);setIsFormOpen(true);}}
+                            className={cartaoVerde ? 'text-green-700 border-green-300 hover:bg-green-100' : 'text-blue-600 border-blue-200 hover:bg-blue-50'}
+                          >
                             <Edit className="w-4 h-4" />
                           </Button>
                           
-                          <ConfirmacaoExclusao
-                          titulo="Excluir Paciente"
-                          mensagem={`Tem certeza que deseja excluir o paciente "${paciente.nome}"?`}
-                          onConfirm={() => handleDelete(paciente.id)}>
-
-                            <Button
+                          <Button
                             variant="outline"
                             size="sm"
-                            className="text-red-600 border-red-200 hover:bg-red-50">
-
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </ConfirmacaoExclusao>
+                            onClick={() => {
+                              if (window.confirm(`Tem certeza que deseja excluir o paciente "${paciente.nome}"? Esta ação não pode ser desfeita.`)) {
+                                handleDelete(paciente.id);
+                              }
+                            }}
+                            className="text-red-600 border-red-200 hover:bg-red-50"
+                            title="Excluir paciente"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
                         </div>
                       </div>
                     </CardContent>
