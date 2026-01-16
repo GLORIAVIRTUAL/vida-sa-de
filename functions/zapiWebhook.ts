@@ -88,12 +88,15 @@ async function processarMensagemRecebida(base44, payload) {
     const pacienteIds = pacientesEncontrados.map(p => p.id);
 
     if (pacientesEncontrados.length === 0) {
+        console.log('❌ Paciente não encontrado para telefone:', telefoneNormalizado);
         return new Response(JSON.stringify({ 
             message: "Paciente não encontrado",
             telefone: telefoneNormalizado,
             totalPacientes: todosPacientes.length
         }), { status: 200 });
     }
+    
+    console.log('👤 Pacientes encontrados:', pacientesEncontrados.map(p => p.nome));
 
     // Buscar agendamentos futuros de QUALQUER um dos pacientes encontrados com status "Agendado"
     const hoje = new Date().toISOString().split('T')[0];
