@@ -2092,11 +2092,10 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
               <div className="space-y-2">
                 <Label htmlFor="busca_paciente">Buscar Paciente *</Label>
                 
-                {/* Campo de busca com botão de novo paciente */}
                 <div className="flex gap-2">
                   <Input
                     id="busca_paciente"
-                    placeholder="Digite nome, CPF ou telefone..."
+                    placeholder="Nome, CPF ou telefone..."
                     value={buscaPaciente}
                     onChange={(e) => setBuscaPaciente(e.target.value)}
                     onKeyPress={(e) => {
@@ -2111,11 +2110,12 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                     type="button"
                     onClick={buscarPacientesPorNome}
                     disabled={buscandoPaciente || buscaPaciente.trim().length < 2}
+                    className="bg-gray-700 hover:bg-gray-800"
                   >
                     {buscandoPaciente ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Buscando...
+                        Buscar...
                       </>
                     ) : (
                       <>
@@ -2128,10 +2128,8 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                     type="button"
                     variant="outline"
                     onClick={() => setCadastroRapidoAberto(true)}
-                    className="gap-2"
                   >
                     <Plus className="w-4 h-4" />
-                    Novo
                   </Button>
                 </div>
                 
