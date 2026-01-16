@@ -53,8 +53,11 @@ async function processarMensagemRecebida(base44, payload) {
     const ehConfirmacao = palavrasConfirmacao.some(p => mensagem === p || mensagem.startsWith(p + ' '));
 
     if (!ehConfirmacao) {
+        console.log('ℹ️ Mensagem não é confirmação:', mensagem);
         return new Response(JSON.stringify({ message: "Mensagem não é confirmação" }), { status: 200 });
     }
+    
+    console.log('✅ Confirmação detectada!');
 
     // Normalizar telefone
     const telefoneNormalizado = telefone.replace(/\D/g, '');
