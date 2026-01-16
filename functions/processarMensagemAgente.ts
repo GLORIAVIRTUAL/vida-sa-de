@@ -568,12 +568,12 @@ PERGUNTE ao cliente: "Para qual especialidade você gostaria de agendar? Temos v
           if (especialidadeDetectada) {
           const especialidadeLower = especialidadeDetectada.toLowerCase();
 
-          // Mapeamento de sinônimos para especialidades
+          // Mapeamento de sinônimos para especialidades (TUDO NORMALIZADO)
           const sinonimos = {
-            'clinico': ['clínico geral', 'clinico geral', 'clínico', 'clinico'],
-            'nutri': ['nutrição', 'nutricao', 'nutricionista'],
+            'clinico': ['clinico geral', 'clinico', 'general'],
+            'nutri': ['nutricao', 'nutricionista'],
             'fisio': ['fisioterapia', 'fisioterapeuta'],
-            'psico': ['psicologia', 'psicologo', 'psicóloga', 'psicologa'],
+            'psico': ['psicologia', 'psicologo', 'psicóloga'],
             'geriatra': ['geriatria', 'geriatra'],
             'ortopedista': ['ortopedia', 'ortopedista', 'traumatologia', 'traumatologista'],
             'eco': ['ecografia', 'ultrassom', 'ultrassonografia'],
@@ -591,11 +591,12 @@ PERGUNTE ao cliente: "Para qual especialidade você gostaria de agendar? Temos v
             'reumato': ['reumatologia', 'reumatologista']
           };
 
-          // Encontrar termos relacionados
+          // Encontrar termos relacionados (usando texto normalizado)
           let termosRelacionados = [especialidadeLower];
           for (const [key, valores] of Object.entries(sinonimos)) {
-            if (valores.some(v => especialidadeLower.includes(v) || v.includes(especialidadeLower))) {
-              termosRelacionados = [...termosRelacionados, ...valores];
+            const valoresNorm = valores.map(v => normalizarTexto(v));
+            if (valoresNorm.some(v => especialidadeLower.includes(v) || v.includes(especialidadeLower))) {
+              termosRelacionados = [...termosRelacionados, ...valoresNorm];
             }
           }
 
