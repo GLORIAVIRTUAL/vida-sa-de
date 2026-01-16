@@ -154,10 +154,10 @@ export default function EnviarNotificacao({
         });
 
       } else {
-        // Lógica de envio imediato
-        const { sendNotification } = await import("@/functions/sendNotification");
+        // Lógica de envio imediato via SDK
+        const { base44 } = await import("@/api/base44Client");
         
-        const resultado = await sendNotification({
+        const resultado = await base44.functions.invoke('sendNotification', {
           telefone: paciente.telefone,
           mensagem: mensagem.trim(),
           tipo: tipoCanal,
