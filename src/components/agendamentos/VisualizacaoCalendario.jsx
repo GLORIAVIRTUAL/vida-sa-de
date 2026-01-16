@@ -93,13 +93,13 @@ export default function VisualizacaoCalendario({ agendamentos, medicos, paciente
     <div className="grid lg:grid-cols-3 gap-6">
       <style>{`
         .day-with-events {
-          background-color: #e0f2fe; /* Azul claro para dias com agendamentos */
-          color: #0c4a6e;
+          background-color: #3b82f6; /* Azul vivo para dias com agendamentos */
+          color: white;
           border-radius: 50%;
           font-weight: bold;
         }
         .day-with-events:hover {
-          background-color: #bae6fd !important;
+          background-color: #2563eb !important;
         }
         .day-doctor-available {
           background-color: #dcfce7; /* Verde claro para dias de atendimento médico */
@@ -111,18 +111,31 @@ export default function VisualizacaoCalendario({ agendamentos, medicos, paciente
           background-color: #bbf7d0 !important;
         }
         .day-both {
-          background: linear-gradient(135deg, #e0f2fe 0%, #e0f2fe 50%, #dcfce7 50%, #dcfce7 100%);
-          color: #0c4a6e;
+          background: linear-gradient(135deg, #3b82f6 0%, #3b82f6 50%, #dcfce7 50%, #dcfce7 100%);
+          color: white;
           font-weight: bold;
           border: 2px solid #16a34a;
         }
+        
+        /* Aumentar tamanho do calendário */
+        .calendar-large table {
+          width: 100%;
+        }
+        .calendar-large td, .calendar-large th {
+          padding: 8px;
+        }
+        .calendar-large button {
+          width: 48px !important;
+          height: 48px !important;
+          font-size: 16px;
+        }
       `}</style>
       
-      <div className="lg:col-span-2 bg-white p-4 rounded-lg shadow">
+      <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow calendar-large">
         <div className="mb-4 text-sm text-gray-600">
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-2">
-              <div className="bg-sky-300 rounded w-4 h-4 border-2 border-blue-500"></div>
+              <div className="bg-blue-500 rounded w-4 h-4"></div>
               <span>Dias com agendamentos</span>
             </div>
             <div className="flex items-center gap-2">
