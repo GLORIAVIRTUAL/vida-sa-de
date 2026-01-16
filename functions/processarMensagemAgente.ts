@@ -584,14 +584,14 @@ PERGUNTE ao cliente: "Para qual especialidade você gostaria de agendar? Temos v
 
       try {
         // Buscar médicos e disponibilidades diretamente
-        let medicosParaBuscar = [];
-        
-        // Se detectou médico específico, usar apenas ele
-        if (medicoEspecificoDetectado) {
-          medicosParaBuscar = [medicoEspecificoDetectado];
-          console.log(`🎯 Usando médico específico: ${medicoEspecificoDetectado.nome}`);
-        } else {
-           // Buscar todos os médicos ativos (com timeout e cache)
+         let medicosParaBuscar = [];
+
+         // Se detectou médico específico, usar apenas ele
+         if (medicoEspecificoDetectado) {
+           medicosParaBuscar = [medicoEspecificoDetectado];
+           console.log(`🎯 Usando médico específico: ${medicoEspecificoDetectado.nome}`);
+         } else {
+           // Buscar todos os médicos ativos
            let todosMedicos = [];
            try {
              todosMedicos = await Promise.race([
@@ -600,6 +600,7 @@ PERGUNTE ao cliente: "Para qual especialidade você gostaria de agendar? Temos v
              ]);
            } catch (e) {
              console.warn('⚠️ Timeout ao buscar médicos:', e.message);
+             todosMedicos = [];
            }
         
           if (especialidadeDetectada) {
