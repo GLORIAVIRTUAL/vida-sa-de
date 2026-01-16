@@ -216,7 +216,17 @@ Deno.serve(async (req) => {
           mensagens_pendentes: [],
           ultimo_timestamp_pendente: null
         });
-        
+
+        // Detectar se a última mensagem do assistente é duplicada (para evitar loops)
+        const historicoAtual = contatoAtualizado?.historico_mensagens || [];
+        const ultimasMensagensAssistente = historicoAtual.filter(m => m.role === 'assistant').slice(-2);
+
+        if (ultimasMensagensAssistente.length >= 2 && 
+            ultimasMensagensAssistente[0]?.content === ultimasMensagensAssistente[1]?.content) {
+          console.log('⚠️ Última mensagem do assistente é duplicada! Pulando processamento para evitar loop.');
+          return Response.json({ success: true, status: 'duplicata_ignorada' });
+        }
+
         // Continuar com a mensagem completa
         var mensagemFinal = mensagemCompleta;
         
