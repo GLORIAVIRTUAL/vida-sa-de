@@ -66,9 +66,14 @@ async function processarMensagemRecebida(base44, payload) {
     console.log(`   Últimos 8 dígitos: ${ultimos8Digitos}`);
 
     // Buscar todos os pacientes e filtrar manualmente (mais confiável)
-    const todosPacientes = await base44.asServiceRole.entities.Paciente.list('-created_date', 1000);
-    
-    console.log(`📋 Total de pacientes encontrados: ${todosPacientes.length}`);
+    let todosPacientes = [];
+    try {
+        todosPacientes = await base44.asServiceRole.entities.Paciente.list('-created_date', 1000);
+        console.log(`📋 Total de pacientes encontrados: ${todosPacientes.length}`);
+    } catch (err) {
+        console.error('❌ Erro ao buscar pacientes:', err.message);
+        return new Response(JSON.stringify({ error: 'Erro ao buscar pacientes' }), { status: 500 });
+    }
     
     // Filtrar pacientes com correspondência de telefone
     const pacientesEncontrados = todosPacientes.filter(p => {
