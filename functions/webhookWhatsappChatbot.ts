@@ -174,21 +174,43 @@ Deno.serve(async (req) => {
           nome: contato.nome || senderName
         };
         
-        // Se é mídia, adicionar direto no histórico também (para visualização)
-        if (mediaUrl && (mediaType === 'image' || mediaType === 'document' || mediaType === 'audio')) {
+        // SEMPRE salvar mídia direto no histórico para visualização (especialmente em modo humano)
+        if (mediaUrl && (mediaType === 'image' || mediaType === 'document' || mediaType === 'audio' || mediaType === 'video')) {
           const historicoAtual = contato.historico_mensagens || [];
           historicoAtual.push({
             role: 'user',
             content: `${messageText}\n${mediaUrl}`,
             timestamp: agora,
             mediaType: mediaType,
-            mediaUrl: mediaUrl
+            mediaUrl: mediaUrl,
+            messageId: messageId
           });
           updateData.historico_mensagens = historicoAtual.slice(-50);
+          updateData.ultima_interacao = agora;
           console.log('💾 Mídia salva diretamente no histórico:', mediaUrl);
+        } else if (!mediaUrl && messageText) {
+          // Também salvar mensagens de texto normais quando em modo humano
+          if (contato.atendimento_humano) {
+            const historicoAtual = contato.historico_mensagens || [];
+            historicoAtual.push({
+              role: 'user',
+              content: messageText,
+              timestamp: agora,
+              messageId: messageId
+            });
+            updateData.historico_mensagens = historicoAtual.slice(-50);
+            updateData.ultima_interacao = agora;
+            console.log('💾 Mensagem salva no histórico (modo humano)');
+          }
         }
         
         await base44.asServiceRole.entities.Contato.update(contato.id, updateData);
+        
+        // Se está em atendimento humano, não processar pela IA - apenas salvar e sair
+        if (contato.atendimento_humano) {
+          console.log('👤 Contato em atendimento humano - mensagem salva, não processando IA');
+          return Response.json({ success: true, status: 'atendimento_humano' });
+        }
         
         // Se já havia mensagens pendentes, verificar se passou tempo suficiente
         if (ultimoTimestamp) {
