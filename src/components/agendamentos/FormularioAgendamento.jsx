@@ -2904,18 +2904,16 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                   </div>
               </div>
 
-              {/* Resumo visual */}
               {(parseFloat(formData.desconto_manual) > 0 || parseFloat(formData.acrescimo_manual) > 0) && (
-                <div className="pt-2 border-t border-amber-300 text-sm">
-                  <div className="flex flex-wrap gap-4 text-amber-900">
-                    <span>Valor Base: <strong>R$ {parseFloat(formData.valor_total).toFixed(2).replace('.', ',')}</strong></span>
+                <div className="pt-2 border-t border-gray-300 text-sm">
+                  <div className="flex flex-wrap gap-4 text-gray-700">
+                    <span>Base: <strong>R$ {parseFloat(formData.valor_total).toFixed(2).replace('.', ',')}</strong></span>
                     {parseFloat(formData.desconto_manual) > 0 && (
-                      <span className="text-red-600">- Desconto: <strong>R$ {parseFloat(formData.desconto_manual).toFixed(2).replace('.', ',')}</strong></span>
+                      <span>- Desc: <strong>R$ {parseFloat(formData.desconto_manual).toFixed(2).replace('.', ',')}</strong></span>
                     )}
                     {parseFloat(formData.acrescimo_manual) > 0 && (
-                      <span className="text-blue-600">+ Acréscimo: <strong>R$ {parseFloat(formData.acrescimo_manual).toFixed(2).replace('.', ',')}</strong></span>
+                      <span>+ Acrés: <strong>R$ {parseFloat(formData.acrescimo_manual).toFixed(2).replace('.', ',')}</strong></span>
                     )}
-                    <span className="text-green-700">= Final: <strong>R$ {parseFloat(formData.valor_final).toFixed(2).replace('.', ',')}</strong></span>
                   </div>
                 </div>
               )}
