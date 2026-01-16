@@ -234,8 +234,8 @@ export default function VisualizacaoCalendario({ agendamentos, medicos, paciente
         }
       `}</style>
       
-      <div className="lg:col-span-2 bg-white p-8 rounded-xl shadow-sm border border-gray-100 calendar-large">
-        <div className="w-full max-w-[600px] mb-8 flex justify-center">
+      <div className="lg:col-span-2 bg-white p-8 rounded-xl shadow-sm border border-gray-100">
+        <div className="mb-8 flex justify-center">
           <div className="inline-flex flex-wrap items-center gap-6 px-6 py-3 bg-gray-50 rounded-full border border-gray-100">
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 rounded-md bg-blue-500 shadow-sm"></div>
@@ -248,52 +248,54 @@ export default function VisualizacaoCalendario({ agendamentos, medicos, paciente
           </div>
         </div>
         
-        <Calendar
-          mode="single"
-          selected={dataSelecionada}
-          onSelect={setDataSelecionada}
-          className="p-0"
-          locale={ptBR}
-          modifiers={{
-            comEventos: (date) => {
-              const ano = date.getFullYear();
-              const mes = String(date.getMonth() + 1).padStart(2, '0');
-              const dia = String(date.getDate()).padStart(2, '0');
-              const dataFormatada = `${ano}-${mes}-${dia}`;
+        <div className="calendar-wrapper">
+          <Calendar
+            mode="single"
+            selected={dataSelecionada}
+            onSelect={setDataSelecionada}
+            className="calendar-grid w-full"
+            locale={ptBR}
+            modifiers={{
+              comEventos: (date) => {
+                const ano = date.getFullYear();
+                const mes = String(date.getMonth() + 1).padStart(2, '0');
+                const dia = String(date.getDate()).padStart(2, '0');
+                const dataFormatada = `${ano}-${mes}-${dia}`;
 
-              const temAgendamento = diasComEventos.has(dataFormatada);
-              const medicoAtende = verificarAlgumMedicoAtendeNaData(date);
+                const temAgendamento = diasComEventos.has(dataFormatada);
+                const medicoAtende = verificarAlgumMedicoAtendeNaData(date);
 
-              return temAgendamento && !medicoAtende;
-            },
-            medicoDisponivel: (date) => {
-              const ano = date.getFullYear();
-              const mes = String(date.getMonth() + 1).padStart(2, '0');
-              const dia = String(date.getDate()).padStart(2, '0');
-              const dataFormatada = `${ano}-${mes}-${dia}`;
+                return temAgendamento && !medicoAtende;
+              },
+              medicoDisponivel: (date) => {
+                const ano = date.getFullYear();
+                const mes = String(date.getMonth() + 1).padStart(2, '0');
+                const dia = String(date.getDate()).padStart(2, '0');
+                const dataFormatada = `${ano}-${mes}-${dia}`;
 
-              const temAgendamento = diasComEventos.has(dataFormatada);
-              const medicoAtende = verificarAlgumMedicoAtendeNaData(date);
+                const temAgendamento = diasComEventos.has(dataFormatada);
+                const medicoAtende = verificarAlgumMedicoAtendeNaData(date);
 
-              return medicoAtende && !temAgendamento;
-            },
-            ambos: (date) => {
-              const ano = date.getFullYear();
-              const mes = String(date.getMonth() + 1).padStart(2, '0');
-              const dia = String(date.getDate()).padStart(2, '0');
-              const dataFormatada = `${ano}-${mes}-${dia}`;
+                return medicoAtende && !temAgendamento;
+              },
+              ambos: (date) => {
+                const ano = date.getFullYear();
+                const mes = String(date.getMonth() + 1).padStart(2, '0');
+                const dia = String(date.getDate()).padStart(2, '0');
+                const dataFormatada = `${ano}-${mes}-${dia}`;
 
-              const temAgendamento = diasComEventos.has(dataFormatada);
-              const medicoAtende = verificarAlgumMedicoAtendeNaData(date);
+                const temAgendamento = diasComEventos.has(dataFormatada);
+                const medicoAtende = verificarAlgumMedicoAtendeNaData(date);
 
-              return temAgendamento && medicoAtende;
-            }
-          }}
-          modifiersClassNames={{
-            comEventos: 'day-with-events',
-            medicoDisponivel: 'day-doctor-available',
-            ambos: 'day-both'
-          }} />
+                return temAgendamento && medicoAtende;
+              }
+            }}
+            modifiersClassNames={{
+              comEventos: 'day-with-events',
+              medicoDisponivel: 'day-doctor-available',
+              ambos: 'day-both'
+            }} />
+        </div>
 
       </div>
 
