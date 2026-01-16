@@ -2829,15 +2829,15 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
             )}
 
              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="categoria_preco_id">Categoria de Preço *</Label>
-                <Select name="categoria_preco_id" value={formData.categoria_preco_id} onValueChange={(value) => handleChange('categoria_preco_id', value)}>
-                  <SelectTrigger id="categoria_preco_id"><SelectValue placeholder="Selecione a categoria" /></SelectTrigger>
-                  <SelectContent>
-                    {categorias.map(c => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
+                <div>
+                  <Label htmlFor="categoria_preco_id">Categoria de Preço *</Label>
+                  <Select name="categoria_preco_id" value={formData.categoria_preco_id} onValueChange={(value) => handleChange('categoria_preco_id', value)}>
+                    <SelectTrigger id="categoria_preco_id"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                    <SelectContent>
+                      {categorias.map(c => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
               <div>
                 <Label htmlFor="valor_total">Valor Base (R$)</Label>
                 <Input 
