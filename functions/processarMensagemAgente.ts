@@ -1128,6 +1128,23 @@ Retorne JSON.`;
       }
     }
 
+    // Verificar se cliente está confirmando agendamento (sim, ok, confirmo, etc.)
+    const estaConfirmando = /^(sim|s|ok|certo|correto|confirmo|pode|isso|claro|beleza|tudo bem|confirm|yes)$/i.test(messageText.trim());
+
+    if (estaConfirmando && historicoConversa && /Para confirmar o agendamento|data de nascimento|nome completo/i.test(historicoConversa)) {
+      console.log('✅ Cliente confirmando - extrair dados finais do histórico');
+
+      // Se confirmou, significa que já forneceu os dados - buscar no histórico
+      if (!dadosFaltantes.includes('nome completo') && 
+          !dadosFaltantes.includes('data de nascimento') &&
+          !dadosFaltantes.includes('médico') &&
+          !dadosFaltantes.includes('data da consulta') &&
+          !dadosFaltantes.includes('horário')) {
+        console.log('📊 Todos os dados já foram coletados! Criando agendamento...');
+        // Deixar passar para lógica de criação automática abaixo
+      }
+    }
+
     // Se agendamento foi criado, retornar mensagem de confirmação
     if (agendamentoCriado) {
       console.log('🎉 Retornando confirmação de agendamento');
