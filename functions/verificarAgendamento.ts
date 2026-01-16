@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
     const hoje = new Date().toISOString().split('T')[0];
     const agendamentos = await base44.asServiceRole.entities.Agendamento.filter({
       paciente_id: paciente.id,
-      status: { $ne: 'Cancelado' }
+      status: { $in: ['Agendado', 'Confirmado', 'Pago', 'Cancelado', 'Finalizado'] }
     });
 
     // Filtrar apenas futuros ou de hoje
