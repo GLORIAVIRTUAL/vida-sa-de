@@ -35,9 +35,9 @@ export default function Medicos() {
     try {
       setLoading(true);
       const [dataMedicos, dataCategorias] = await Promise.all([
-          Medico.list("-created_date"),
-          CategoriaPreco.list()
-      ]);
+      Medico.list("-created_date"),
+      CategoriaPreco.list()]
+      );
       setMedicos(dataMedicos);
       setCategorias(dataCategorias);
     } catch (error) {
@@ -45,7 +45,7 @@ export default function Medicos() {
       toast({
         title: "Erro ao carregar dados",
         description: "Não foi possível carregar a lista de médicos ou categorias.",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setLoading(false);
@@ -57,25 +57,25 @@ export default function Medicos() {
     try {
       console.log('🔄 Iniciando sincronização de preços...');
       const response = await syncMedicoPrices();
-      
+
       console.log('📊 Resposta da sincronização:', response);
-      
+
       if (response.data.success) {
         toast({
           title: "✅ Sincronização Concluída!",
           description: `${response.data.medicosAtualizados} médico(s) atualizado(s) com sucesso.`,
-          variant: "default",
+          variant: "default"
         });
-        
+
         if (response.data.erros && response.data.erros.length > 0) {
           console.warn('⚠️ Alguns erros ocorreram:', response.data.erros);
           toast({
             title: "⚠️ Atenção",
             description: `${response.data.erros.length} médico(s) com problemas. Verifique o console.`,
-            variant: "destructive",
+            variant: "destructive"
           });
         }
-        
+
         await carregarDados(); // Reload data after successful sync
       } else {
         // If success is false but no explicit error message is provided
@@ -86,7 +86,7 @@ export default function Medicos() {
       toast({
         title: "❌ Erro na Sincronização",
         description: error.message || "Não foi possível sincronizar os preços.",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setSyncing(false);
@@ -97,14 +97,14 @@ export default function Medicos() {
     try {
       console.log('🗑️ Deletando médico:', id);
       await Medico.delete(id);
-      
+
       toast({
         title: "Sucesso!",
         description: "Médico deletado com sucesso!"
       });
-      
+
       // Recarregar lista
-      await carregarDados(); 
+      await carregarDados();
     } catch (error) {
       console.error("❌ Erro ao deletar médico:", error);
       toast({
@@ -125,7 +125,7 @@ export default function Medicos() {
   // However, as per instructions to preserve other functionality not explicitly removed, it remains.
   const handleExcluirMedico = async () => {
     if (!medicoParaExcluir) return;
-    
+
     try {
       await Medico.delete(medicoParaExcluir.id);
       setMedicoParaExcluir(null);
@@ -133,14 +133,14 @@ export default function Medicos() {
       toast({
         title: "✅ Médico Excluído",
         description: `O médico "${medicoParaExcluir.nome}" foi excluído com sucesso.`,
-        variant: "default",
+        variant: "default"
       });
     } catch (error) {
       console.error("Erro ao excluir médico:", error);
       toast({
         title: "❌ Erro ao Excluir",
         description: `Não foi possível excluir o médico "${medicoParaExcluir.nome}".`,
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
@@ -156,16 +156,16 @@ export default function Medicos() {
     carregarDados();
   };
 
-  const medicosFiltrados = medicos.filter(medico => {
-    const buscaMatch = filtros.busca === "" || 
-      medico.nome?.toLowerCase().includes(filtros.busca.toLowerCase()) ||
-      medico.crm?.includes(filtros.busca);
-    
-    const especialidadeMatch = filtros.especialidade === "todas" || 
-      medico.especialidade === filtros.especialidade;
+  const medicosFiltrados = medicos.filter((medico) => {
+    const buscaMatch = filtros.busca === "" ||
+    medico.nome?.toLowerCase().includes(filtros.busca.toLowerCase()) ||
+    medico.crm?.includes(filtros.busca);
+
+    const especialidadeMatch = filtros.especialidade === "todas" ||
+    medico.especialidade === filtros.especialidade;
 
     const statusMatch = filtros.status === "todos" ||
-      medico.status === filtros.status;
+    medico.status === filtros.status;
 
     return buscaMatch && especialidadeMatch && statusMatch;
   });
@@ -176,65 +176,65 @@ export default function Medicos() {
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Médicos</h1>
+              <h1 className="text-cyan-500 text-3xl font-bold">Médicos</h1>
               <p className="text-gray-600 mt-1">
                 Gerencie os profissionais da clínica
               </p>
             </div>
             <div className="flex gap-2">
-              <Button 
+              <Button
                 onClick={handleSincronizarPrecos}
                 disabled={syncing}
                 variant="outline"
-                className="gap-2"
-              >
-                {syncing ? (
-                  <>
+                className="gap-2">
+
+                {syncing ?
+                <>
                     <RefreshCw className="w-4 h-4 animate-spin" />
                     Sincronizando...
-                  </>
-                ) : (
-                  <>
+                  </> :
+
+                <>
                     <RefreshCw className="w-4 h-4" />
                     Sincronizar Preços
                   </>
-                )}
+                }
               </Button>
-              <Button 
+              <Button
                 onClick={() => {
                   console.log('➕ Novo médico');
                   setMedicoSelecionado(null);
                   setMostrarForm(true);
                 }}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
+                className="bg-blue-600 hover:bg-blue-700">
+
                 <Plus className="w-4 h-4 mr-2" />
                 Novo Médico
               </Button>
             </div>
           </div>
 
-          <FiltrosMedicos 
+          <FiltrosMedicos
             filtros={filtros}
-            onFiltrosChange={setFiltros}
-          />
+            onFiltrosChange={setFiltros} />
+
 
           <ListaMedicos
             medicos={medicosFiltrados}
             loading={loading}
             onEdit={handleEditarMedico}
-            onDelete={handleDelete}
-          />
+            onDelete={handleDelete} />
+
 
           <FormularioMedico
             medico={medicoSelecionado}
             open={mostrarForm}
             onClose={handleFecharForm}
             onUpdate={handleAtualizarDados}
-            categorias={categorias}
-          />
+            categorias={categorias} />
+
         </div>
       </div>
-    </ProtectedRoute>
-  );
+    </ProtectedRoute>);
+
 }
