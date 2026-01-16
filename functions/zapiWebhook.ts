@@ -1,7 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 Deno.serve(async (req) => {
-    console.log('🚀 Webhook Z-API iniciado');
     const base44 = createClientFromRequest(req);
     
     if (req.method !== 'POST') {
@@ -10,11 +9,9 @@ Deno.serve(async (req) => {
 
     try {
         const payload = await req.json();
-        console.log('🔔 Webhook Z-API recebido:', JSON.stringify(payload));
 
         // Verificar se é uma mensagem RECEBIDA (do paciente)
         if (payload.isGroup === false && payload.fromMe === false && payload.text?.message) {
-            console.log('✅ Mensagem de texto recebida, processando...');
             return await processarMensagemRecebida(base44, payload);
         }
 
@@ -23,125 +20,86 @@ Deno.serve(async (req) => {
         const status = payload.status;
 
         if (messageId && status) {
-            console.log('📊 Atualização de status recebida');
             return await processarStatusMensagem(base44, messageId, status);
         }
 
-        console.log('⚠️ Payload não reconhecido, ignorando.');
         return new Response(JSON.stringify({ message: "OK" }), { status: 200 });
 
     } catch (error) {
-        console.error('❌ Erro ao processar webhook Z-API:', error);
         return new Response(JSON.stringify({ error: 'Erro interno', details: error.message }), { status: 500 });
     }
 });
 
 // Processa mensagens recebidas dos pacientes (confirmações)
 async function processarMensagemRecebida(base44, payload) {
-    const telefone = payload.phone; // Número do remetente
+    const telefone = payload.phone;
     const mensagem = payload.text?.message?.toLowerCase().trim() || '';
-    
-    console.log(`📩 Mensagem recebida de ${telefone}: "${mensagem}"`);
 
     // Palavras-chave para confirmação
     const palavrasConfirmacao = ['sim', 'confirmo', 'confirmar', 'confirmado', 'ok', 'vou', 'estarei', 'irei', 's', '1', 'yes'];
     const ehConfirmacao = palavrasConfirmacao.some(p => mensagem === p || mensagem.startsWith(p + ' '));
 
     if (!ehConfirmacao) {
-        console.log('📝 Mensagem não é uma confirmação, ignorando.');
         return new Response(JSON.stringify({ message: "Mensagem não é confirmação" }), { status: 200 });
     }
 
-    // Buscar agendamentos pendentes deste telefone
-    const telefoneNormalizado = normalizarTelefone(telefone);
-    
-    // Extrair diferentes partes do número para busca flexível
-    // telefoneNormalizado pode ser: 5587988020504 (13 dígitos com código país)
-    // ou 87988020504 (11 dígitos sem código país)
-    const ultimos11Digitos = telefoneNormalizado.slice(-11); // DDD + 9 dígitos (formato BR completo)
-    const ultimos10Digitos = telefoneNormalizado.slice(-10); // DDD + 8 dígitos (formato antigo)
-    const ultimos9Digitos = telefoneNormalizado.slice(-9);   // 9 dígitos do celular
-    const ultimos8Digitos = telefoneNormalizado.slice(-8);   // 8 dígitos principais
-    
-    console.log(`🔍 Buscando paciente para telefone: ${telefoneNormalizado}`);
-    console.log(`   Últimos 11 dígitos: ${ultimos11Digitos}`);
-    console.log(`   Últimos 9 dígitos: ${ultimos9Digitos}`);
-    console.log(`   Últimos 8 dígitos: ${ultimos8Digitos}`);
+    // Normalizar telefone
+    const telefoneNormalizado = telefone.replace(/\D/g, '');
+    const ultimos8Digitos = telefoneNormalizado.slice(-8);
+    const ultimos9Digitos = telefoneNormalizado.slice(-9);
+    const ultimos11Digitos = telefoneNormalizado.slice(-11);
 
-    // Buscar todos os pacientes e filtrar manualmente (mais confiável)
-    let todosPacientes = [];
-    try {
-        todosPacientes = await base44.asServiceRole.entities.Paciente.list('-created_date', 1000);
-        console.log(`📋 Total de pacientes encontrados: ${todosPacientes.length}`);
-    } catch (err) {
-        console.error('❌ Erro ao buscar pacientes:', err.message);
-        return new Response(JSON.stringify({ error: 'Erro ao buscar pacientes' }), { status: 500 });
-    }
+    // Buscar todos os pacientes
+    const todosPacientes = await base44.asServiceRole.entities.Paciente.list('-created_date', 1000);
     
-    // Filtrar pacientes com correspondência de telefone
-    const pacientesEncontrados = todosPacientes.filter(p => {
-        if (!p.telefone) return false;
-        const telPaciente = normalizarTelefone(p.telefone);
+    // Encontrar paciente pelo telefone
+    let pacienteEncontrado = null;
+    for (const p of todosPacientes) {
+        if (!p.telefone) continue;
+        const telPaciente = p.telefone.replace(/\D/g, '');
+        if (telPaciente.length < 8) continue;
         
-        // Verificar se o telefone tem pelo menos 8 dígitos (número válido)
-        if (telPaciente.length < 8) return false;
-        
-        // Comparar diferentes variações do número
-        // telPaciente pode ser: 87988020504 (sem código país) ou 5587988020504 (com código)
-        const match = 
-            // Telefone do paciente termina com os dígitos do webhook
-            telPaciente.endsWith(ultimos8Digitos) || 
+        if (telPaciente.endsWith(ultimos8Digitos) || 
             telPaciente.endsWith(ultimos9Digitos) ||
-            // OU o telefone do webhook termina com os dígitos do paciente
             telefoneNormalizado.endsWith(telPaciente.slice(-8)) ||
             telefoneNormalizado.endsWith(telPaciente.slice(-9)) ||
-            telefoneNormalizado.endsWith(telPaciente.slice(-10)) ||
-            telefoneNormalizado.endsWith(telPaciente.slice(-11)) ||
-            // OU comparação direta dos últimos 11 dígitos (formato BR)
-            telPaciente === ultimos11Digitos ||
-            telPaciente === ultimos10Digitos;
-        
-        if (match) {
-            console.log(`   🔗 Match encontrado: ${p.nome} - Tel cadastrado: ${p.telefone} -> Normalizado: ${telPaciente}`);
+            telPaciente === ultimos11Digitos) {
+            pacienteEncontrado = p;
+            break;
         }
-        
-        return match;
-    });
-
-    if (!pacientesEncontrados || pacientesEncontrados.length === 0) {
-        console.log('❌ Paciente não encontrado para este telefone');
-        return new Response(JSON.stringify({ message: "Paciente não encontrado" }), { status: 200 });
     }
 
-    const paciente = pacientesEncontrados[0];
-    console.log(`✅ Paciente encontrado: ${paciente.nome} (ID: ${paciente.id}, Tel: ${paciente.telefone})`);
+    if (!pacienteEncontrado) {
+        return new Response(JSON.stringify({ 
+            message: "Paciente não encontrado",
+            telefone: telefoneNormalizado,
+            totalPacientes: todosPacientes.length
+        }), { status: 200 });
+    }
 
     // Buscar agendamentos futuros deste paciente com status "Agendado"
     const hoje = new Date().toISOString().split('T')[0];
-    console.log(`🔍 Buscando agendamentos para paciente_id: ${paciente.id}, data >= ${hoje}`);
-    
-    // Buscar agendamentos do paciente
-    const todosAgendamentos = await base44.asServiceRole.entities.Agendamento.list('-data_agendamento', 200);
+    const todosAgendamentos = await base44.asServiceRole.entities.Agendamento.list('-data_agendamento', 500);
     
     const agendamentos = todosAgendamentos.filter(a => 
-        a.paciente_id === paciente.id && 
+        a.paciente_id === pacienteEncontrado.id && 
         a.status === 'Agendado' && 
         a.data_agendamento >= hoje
     );
-    
-    console.log(`📋 Encontrados ${agendamentos.length} agendamentos pendentes`);
 
-    if (!agendamentos || agendamentos.length === 0) {
-        console.log('❌ Nenhum agendamento pendente encontrado para confirmação');
-        return new Response(JSON.stringify({ message: "Nenhum agendamento pendente" }), { status: 200 });
+    if (agendamentos.length === 0) {
+        return new Response(JSON.stringify({ 
+            message: "Nenhum agendamento pendente",
+            paciente: pacienteEncontrado.nome,
+            pacienteId: pacienteEncontrado.id,
+            totalAgendamentosEncontrados: todosAgendamentos.length
+        }), { status: 200 });
     }
 
     // Confirmar o agendamento mais próximo
     const agendamentoMaisProximo = agendamentos.sort((a, b) => 
         new Date(a.data_agendamento) - new Date(b.data_agendamento)
     )[0];
-
-    console.log(`📅 Confirmando agendamento: ${agendamentoMaisProximo.id} - ${agendamentoMaisProximo.data_agendamento}`);
 
     await base44.asServiceRole.entities.Agendamento.update(agendamentoMaisProximo.id, {
         status: 'Confirmado'
@@ -151,30 +109,30 @@ async function processarMensagemRecebida(base44, payload) {
     try {
         await base44.asServiceRole.entities.Notification.create({
             type: 'confirmacao_recebida',
-            message: `✅ ${paciente.nome} confirmou presença para ${agendamentoMaisProximo.data_agendamento} às ${agendamentoMaisProximo.horario} via WhatsApp`,
+            message: `✅ ${pacienteEncontrado.nome} confirmou presença para ${agendamentoMaisProximo.data_agendamento} às ${agendamentoMaisProximo.horario} via WhatsApp`,
             data: { 
                 agendamentoId: agendamentoMaisProximo.id,
-                pacienteNome: paciente.nome,
+                pacienteNome: pacienteEncontrado.nome,
                 telefone: telefone
             }
         });
     } catch (e) {
-        console.log('Erro ao criar notificação:', e.message);
+        // Ignora erro de notificação
     }
 
     // Enviar mensagem de confirmação de volta
     try {
         await enviarMensagemZapi(telefone, 
-            `✅ Perfeito, ${paciente.nome.split(' ')[0]}! Sua presença está confirmada para o dia ${formatarData(agendamentoMaisProximo.data_agendamento)} às ${agendamentoMaisProximo.horario}.\n\nLembre-se de chegar com 10 minutos de antecedência. Até lá! 😊\n\n*Centro Vida Saúde*`
+            `✅ Perfeito, ${pacienteEncontrado.nome.split(' ')[0]}! Sua presença está confirmada para o dia ${formatarData(agendamentoMaisProximo.data_agendamento)} às ${agendamentoMaisProximo.horario}.\n\nLembre-se de chegar com 10 minutos de antecedência. Até lá! 😊\n\n*Centro Vida Saúde*`
         );
     } catch (e) {
-        console.log('Erro ao enviar confirmação:', e.message);
+        // Ignora erro de envio
     }
 
-    console.log(`🎉 Agendamento ${agendamentoMaisProximo.id} confirmado com sucesso!`);
     return new Response(JSON.stringify({ 
         message: "Confirmação processada",
-        agendamentoId: agendamentoMaisProximo.id 
+        agendamentoId: agendamentoMaisProximo.id,
+        paciente: pacienteEncontrado.nome
     }), { status: 200 });
 }
 
@@ -182,22 +140,12 @@ async function processarMensagemRecebida(base44, payload) {
 async function processarStatusMensagem(base44, messageId, status) {
     let nossoStatus;
     switch (status) {
-        case 'SENT':
-            nossoStatus = 'enviado';
-            break;
-        case 'DELIVERED':
-            nossoStatus = 'entregue';
-            break;
-        case 'READ':
-            nossoStatus = 'lido';
-            break;
+        case 'SENT': nossoStatus = 'enviado'; break;
+        case 'DELIVERED': nossoStatus = 'entregue'; break;
+        case 'READ': nossoStatus = 'lido'; break;
         case 'FAIL':
-        case 'NOT_SENT':
-            nossoStatus = 'falhou';
-            break;
-        default:
-            console.log(`Status "${status}" não mapeado.`);
-            return new Response(JSON.stringify({ message: "OK" }), { status: 200 });
+        case 'NOT_SENT': nossoStatus = 'falhou'; break;
+        default: return new Response(JSON.stringify({ message: "OK" }), { status: 200 });
     }
     
     const notificationLogs = await base44.asServiceRole.entities.NotificationLog.filter({
@@ -205,19 +153,12 @@ async function processarStatusMensagem(base44, messageId, status) {
     });
     
     if (notificationLogs && notificationLogs.length > 0) {
-        const log = notificationLogs[0];
-        console.log(`🔄 Atualizando log ${log.id} para: ${nossoStatus}`);
-        await base44.asServiceRole.entities.NotificationLog.update(log.id, {
+        await base44.asServiceRole.entities.NotificationLog.update(notificationLogs[0].id, {
             status_entrega: nossoStatus
         });
     }
 
     return new Response(JSON.stringify({ message: "Status atualizado" }), { status: 200 });
-}
-
-// Funções auxiliares
-function normalizarTelefone(telefone) {
-    return telefone.replace(/\D/g, '');
 }
 
 function formatarData(dataStr) {
