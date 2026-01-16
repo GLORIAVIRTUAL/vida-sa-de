@@ -2552,19 +2552,19 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                     </div>
                     
                     {analisando && uploadProgress > 0 && (
-                      <div className="mt-3 space-y-2">
-                        <div className="flex justify-between text-xs text-blue-600">
-                          <span>{uploadStatus}</span>
-                          <span>{uploadProgress}%</span>
-                        </div>
-                        <div className="w-full bg-blue-200 rounded-full h-2">
-                          <div 
-                            className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
-                            style={{ width: `${uploadProgress}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    )}
+                       <div className="mt-3 space-y-2">
+                         <div className="flex justify-between text-xs text-gray-600">
+                           <span>{uploadStatus}</span>
+                           <span>{uploadProgress}%</span>
+                         </div>
+                         <div className="w-full bg-gray-300 rounded-full h-2">
+                           <div 
+                             className="bg-gray-700 h-2 rounded-full transition-all duration-300" 
+                             style={{ width: `${uploadProgress}%` }}
+                           ></div>
+                         </div>
+                       </div>
+                     )}
                 </div>
 
                 <div>
