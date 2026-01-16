@@ -11,7 +11,7 @@ export default function VisualizacaoCalendario({ agendamentos, medicos, paciente
   useEffect(() => {
     // Ensure agendamentos is an array before mapping
     if (Array.isArray(agendamentos)) {
-      console.log('📅 Debug - Agendamentos recebidos:', agendamentos.map(a => ({
+      console.log('📅 Debug - Agendamentos recebidos:', agendamentos.map((a) => ({
         id: a.id,
         data_agendamento: a.data_agendamento,
         horario: a.horario,
@@ -23,7 +23,7 @@ export default function VisualizacaoCalendario({ agendamentos, medicos, paciente
   // CORREÇÃO: Lógica para colorir dias com eventos
   const diasComEventos = useMemo(() => {
     if (!agendamentos || agendamentos.length === 0) return new Set();
-    const datas = agendamentos.map(a => a.data_agendamento);
+    const datas = agendamentos.map((a) => a.data_agendamento);
     console.log('📅 Debug - Datas dos agendamentos:', datas);
     return new Set(datas);
   }, [agendamentos]);
@@ -36,11 +36,11 @@ export default function VisualizacaoCalendario({ agendamentos, medicos, paciente
 
     const diaSemana = data.getDay();
     const diaDoMes = data.getDate();
-    
+
     // Calcular qual semana do mês é essa data (1ª, 2ª, 3ª, 4ª)
     const semanaDoMes = Math.ceil(diaDoMes / 7);
 
-    return medico.horarios_atendimento.some(horario => {
+    return medico.horarios_atendimento.some((horario) => {
       if (horario.dia_semana !== diaSemana) return false;
 
       const recorrencia = horario.recorrencia || 'Toda Semana';
@@ -69,7 +69,7 @@ export default function VisualizacaoCalendario({ agendamentos, medicos, paciente
   // Função para verificar se algum médico atende na data
   const verificarAlgumMedicoAtendeNaData = (data) => {
     if (!medicos || medicos.length === 0) return false;
-    return medicos.some(medico => verificarMedicoAtendeNaData(medico, data));
+    return medicos.some((medico) => verificarMedicoAtendeNaData(medico, data));
   };
 
   const agendamentosDoDia = useMemo(() => {
@@ -78,14 +78,14 @@ export default function VisualizacaoCalendario({ agendamentos, medicos, paciente
     const mes = String(dataSelecionada.getMonth() + 1).padStart(2, '0');
     const dia = String(dataSelecionada.getDate()).padStart(2, '0');
     const dataFormatada = `${ano}-${mes}-${dia}`;
-    
+
     console.log('📅 Debug - Data selecionada formatada:', dataFormatada);
     // Ensure agendamentos is an array before filtering
-    const filteredAgendamentos = Array.isArray(agendamentos) 
-      ? agendamentos.filter(a => a.data_agendamento === dataFormatada)
-      : [];
+    const filteredAgendamentos = Array.isArray(agendamentos) ?
+    agendamentos.filter((a) => a.data_agendamento === dataFormatada) :
+    [];
     console.log('📅 Debug - Agendamentos filtrados:', filteredAgendamentos);
-    
+
     return filteredAgendamentos;
   }, [dataSelecionada, agendamentos]);
 
@@ -122,7 +122,7 @@ export default function VisualizacaoCalendario({ agendamentos, medicos, paciente
         <div className="mb-4 text-sm text-gray-600">
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-blue-200 border-2 border-blue-500"></div>
+              <div className="bg-sky-300 rounded w-4 h-4 border-2 border-blue-500"></div>
               <span>Dias com agendamentos</span>
             </div>
             <div className="flex items-center gap-2">
@@ -144,7 +144,7 @@ export default function VisualizacaoCalendario({ agendamentos, medicos, paciente
           mode="single"
           selected={dataSelecionada}
           onSelect={setDataSelecionada}
-          className="p-0 w-full [&_table]:w-full [&_td]:p-2 [&_th]:p-2 [&_button]:w-12 [&_button]:h-12 [&_button]:text-base"
+          className="p-0"
           locale={ptBR}
           modifiers={{
             comEventos: (date) => {
@@ -152,10 +152,10 @@ export default function VisualizacaoCalendario({ agendamentos, medicos, paciente
               const mes = String(date.getMonth() + 1).padStart(2, '0');
               const dia = String(date.getDate()).padStart(2, '0');
               const dataFormatada = `${ano}-${mes}-${dia}`;
-              
+
               const temAgendamento = diasComEventos.has(dataFormatada);
               const medicoAtende = verificarAlgumMedicoAtendeNaData(date);
-              
+
               return temAgendamento && !medicoAtende;
             },
             medicoDisponivel: (date) => {
@@ -163,10 +163,10 @@ export default function VisualizacaoCalendario({ agendamentos, medicos, paciente
               const mes = String(date.getMonth() + 1).padStart(2, '0');
               const dia = String(date.getDate()).padStart(2, '0');
               const dataFormatada = `${ano}-${mes}-${dia}`;
-              
+
               const temAgendamento = diasComEventos.has(dataFormatada);
               const medicoAtende = verificarAlgumMedicoAtendeNaData(date);
-              
+
               return medicoAtende && !temAgendamento;
             },
             ambos: (date) => {
@@ -174,10 +174,10 @@ export default function VisualizacaoCalendario({ agendamentos, medicos, paciente
               const mes = String(date.getMonth() + 1).padStart(2, '0');
               const dia = String(date.getDate()).padStart(2, '0');
               const dataFormatada = `${ano}-${mes}-${dia}`;
-              
+
               const temAgendamento = diasComEventos.has(dataFormatada);
               const medicoAtende = verificarAlgumMedicoAtendeNaData(date);
-              
+
               return temAgendamento && medicoAtende;
             }
           }}
@@ -185,8 +185,8 @@ export default function VisualizacaoCalendario({ agendamentos, medicos, paciente
             comEventos: 'day-with-events',
             medicoDisponivel: 'day-doctor-available',
             ambos: 'day-both'
-          }}
-        />
+          }} />
+
       </div>
 
       <div className="lg:col-span-1">
@@ -196,9 +196,9 @@ export default function VisualizacaoCalendario({ agendamentos, medicos, paciente
           medicos={medicos}
           pacientes={pacientes}
           loading={loading}
-          onUpdate={onUpdate}
-        />
+          onUpdate={onUpdate} />
+
       </div>
-    </div>
-  );
+    </div>);
+
 }
