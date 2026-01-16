@@ -235,7 +235,7 @@ export default function VisualizacaoCalendario({ agendamentos, medicos, paciente
         }
       `}</style>
       
-      <div className="lg:col-span-2 bg-white p-8 rounded-xl shadow-sm border border-gray-100">
+      <div className="lg:col-span-2 bg-white p-12 rounded-xl shadow-sm border border-gray-100">
         <div className="mb-8 flex justify-center">
           <div className="inline-flex flex-wrap items-center gap-6 px-6 py-3 bg-gray-50 rounded-full border border-gray-100">
             <div className="flex items-center gap-2">
