@@ -521,17 +521,17 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
     }
 
     // Se não encontrou médico específico, buscar por especialidade
-    if (!medicoEspecificoDetectado) {
-      for (const esp of especialidades) {
-        const espLower = esp.toLowerCase();
-        // Verifica se a mensagem ou histórico contém a especialidade
-        if (textoCompleto.includes(espLower)) {
-          especialidadeDetectada = esp;
-          console.log(`🎯 Especialidade detectada: ${esp}`);
-          break;
-        }
-      }
-    }
+     if (!medicoEspecificoDetectado) {
+       for (const esp of especialidades) {
+         const espNorm = normalizarTexto(esp);
+         // Verifica se a mensagem ou histórico contém a especialidade (normalizado)
+         if (textoCompleto.includes(espNorm)) {
+           especialidadeDetectada = esp;
+           console.log(`🎯 Especialidade detectada: ${esp}`);
+           break;
+         }
+       }
+     }
     
     // Só buscar disponibilidades se:
     // 1. Detectou médico específico OU especialidade específica, OU
