@@ -371,42 +371,60 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
       <div className="lg:col-span-1">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center justify-between">
-              Conversas
-              <Button onClick={buscarContatos} variant="ghost" size="sm">
-                <RefreshCw className="w-3 h-3" />
-              </Button>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0 max-h-[500px] overflow-y-auto">
-            {contatos.length === 0 ? (
-              <div className="p-4 text-center text-gray-500 text-sm">Nenhuma conversa</div>
-            ) : (
-              <div className="divide-y">
-                {contatos.map((contato) => (
-                  <button
-                    key={contato.id}
-                    onClick={() => setContatoSelecionado(contato)}
-                    className={`w-full text-left p-3 hover:bg-gray-50 transition ${
-                      contatoSelecionado?.id === contato.id ? 'bg-blue-50 border-l-2 border-blue-600' : ''
-                    } ${contato.conversa_finalizada ? 'opacity-60' : ''}`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium text-sm truncate flex-1">{contato.nome || 'Cliente'}</p>
-                      {contato.conversa_finalizada && (
-                        <Badge className="bg-gray-200 text-gray-600 text-[10px] px-1 py-0">Concluído</Badge>
-                      )}
-                    </div>
-                    <p className="text-xs text-gray-500 truncate">{contato.telefone}</p>
-                  </button>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+         <Card>
+           <CardHeader className="pb-2">
+             <CardTitle className="text-sm flex items-center justify-between">
+               <span>Conversas ({contatos.length})</span>
+               <Button onClick={buscarContatos} variant="ghost" size="sm">
+                 <RefreshCw className="w-3 h-3" />
+               </Button>
+             </CardTitle>
+           </CardHeader>
+           <CardContent className="p-0 max-h-[600px] overflow-y-auto">
+             {contatos.length === 0 ? (
+               <div className="p-4 text-center text-gray-500 text-sm">Nenhuma conversa</div>
+             ) : (
+               <div className="divide-y">
+                 {contatos.map((contato) => {
+                   const ultimaIntercao = contato.ultima_interacao 
+                     ? format(new Date(contato.ultima_interacao), 'HH:mm', { locale: ptBR })
+                     : '-';
+                   const numMensagens = contato.historico_mensagens?.length || 0;
+
+                   return (
+                     <button
+                       key={contato.id}
+                       onClick={() => setContatoSelecionado(contato)}
+                       className={`w-full text-left p-3 hover:bg-gray-50 transition border-l-4 ${
+                         contatoSelecionado?.id === contato.id 
+                           ? 'bg-blue-50 border-l-blue-600 border-blue-200' 
+                           : 'border-l-transparent'
+                       } ${contato.conversa_finalizada ? 'opacity-50' : ''}`}
+                     >
+                       <div className="flex items-center gap-2 mb-1">
+                         <p className="font-semibold text-sm truncate flex-1">{contato.nome || 'Cliente'}</p>
+                         <span className="text-[10px] text-gray-400">{ultimaIntercao}</span>
+                       </div>
+                       <div className="flex items-center gap-2">
+                         <p className="text-xs text-gray-500 truncate flex-1">{contato.telefone}</p>
+                         {numMensagens > 0 && (
+                           <Badge className="bg-blue-100 text-blue-700 text-[9px] px-1 py-0">{numMensagens}</Badge>
+                         )}
+                         {contato.atendimento_humano && (
+                           <Badge className="bg-green-100 text-green-700 text-[9px] px-1 py-0">👤</Badge>
+                         )}
+                         {contato.conversa_finalizada && (
+                           <Badge className="bg-gray-200 text-gray-600 text-[9px] px-1 py-0">✓</Badge>
+                         )}
+                       </div>
+                     </button>
+                   );
+                 })}
+               </div>
+             )}
+           </CardContent>
+         </Card>
+       </div>
 
       <div className="lg:col-span-3">
         <Card className="h-[500px] flex flex-col">
