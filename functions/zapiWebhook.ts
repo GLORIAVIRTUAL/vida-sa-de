@@ -128,9 +128,13 @@ async function processarMensagemRecebida(base44, payload) {
     // Encontrar o paciente específico deste agendamento
     const pacienteDoAgendamento = pacientesEncontrados.find(p => p.id === agendamentoMaisProximo.paciente_id) || pacientesEncontrados[0];
 
+    console.log('🔄 Confirmando agendamento:', agendamentoMaisProximo.id, 'de', pacienteDoAgendamento.nome);
+    
     await base44.asServiceRole.entities.Agendamento.update(agendamentoMaisProximo.id, {
         status: 'Confirmado'
     });
+    
+    console.log('✅ Agendamento confirmado com sucesso!');
 
     // Criar notificação para a equipe
     try {
