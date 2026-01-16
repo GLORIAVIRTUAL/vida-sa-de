@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
         // Se a conversa foi finalizada, NÃO usar o histórico antigo
         if (conversaFinalizada) {
           console.log('🗑️ Ignorando histórico antigo - conversa finalizada');
-          historicoConversa = '';
+          historicoConversa = '(primeira mensagem)';
         } else {
           const ultimas = contatos[0].historico_mensagens.slice(-10);
           historicoConversa = ultimas.map(m => `${m.role === 'user' ? 'CLIENTE' : 'ASSISTENTE'}: ${m.content}`).join('\n');
