@@ -165,13 +165,30 @@ Deno.serve(async (req) => {
         });
         
         // Atualizar contato com mensagem pendente
-        await base44.asServiceRole.entities.Contato.update(contato.id, {
+        // Se tiver mídia, salvar também no histórico imediatamente para visualização
+        let updateData = {
           mensagens_pendentes: mensagensPendentes,
           ultimo_timestamp_pendente: agora,
           conversa_finalizada: false,
           status: contato.conversa_finalizada ? 'Lead' : contato.status,
           nome: contato.nome || senderName
-        });
+        };
+        
+        // Se é mídia, adicionar direto no histórico também (para visualização)
+        if (mediaUrl && (mediaType === 'image' || mediaType === 'document' || mediaType === 'audio')) {
+          const historicoAtual = contato.historico_mensagens || [];
+          historicoAtual.push({
+            role: 'user',
+            content: `${messageText}\n${mediaUrl}`,
+            timestamp: agora,
+            mediaType: mediaType,
+            mediaUrl: mediaUrl
+          });
+          updateData.historico_mensagens = historicoAtual.slice(-50);
+          console.log('💾 Mídia salva diretamente no histórico:', mediaUrl);
+        }
+        
+        await base44.asServiceRole.entities.Contato.update(contato.id, updateData);
         
         // Se já havia mensagens pendentes, verificar se passou tempo suficiente
         if (ultimoTimestamp) {
