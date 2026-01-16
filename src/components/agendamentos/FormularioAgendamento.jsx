@@ -2453,16 +2453,27 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                                  <Select name="forma_pagamento" value={formData.forma_pagamento} onValueChange={(value) => handleChange('forma_pagamento', value)}>
                                    <SelectTrigger id="forma_pagamento" className="mt-1"><SelectValue /></SelectTrigger>
                                    <SelectContent>
-                                     {/* ... (Payment options) ... */}
+                                     <SelectItem value="Dinheiro">Dinheiro</SelectItem>
+                                     <SelectItem value="Cartão Débito">Cartão Débito</SelectItem>
+                                     <SelectItem value="Cartão Crédito">Cartão Crédito</SelectItem>
+                                     <SelectItem value="PIX">PIX</SelectItem>
+                                     <SelectItem value="Transferência">Transferência</SelectItem>
+                                     <SelectItem value="Convênio">Convênio</SelectItem>
                                    </SelectContent>
                                  </Select>
-                               </div>
-                               <div>
+                                 </div>
+                                 <div>
                                  <Label htmlFor="status">Status</Label>
                                  <Select value={formData.status} onValueChange={(v) => handleChange('status', v)}>
                                    <SelectTrigger id="status" className="mt-1"><SelectValue /></SelectTrigger>
                                    <SelectContent>
-                                     {/* ... (Status options) ... */}
+                                     <SelectItem value="Agendado">Agendado</SelectItem>
+                                     <SelectItem value="Confirmado">Confirmado</SelectItem>
+                                     <SelectItem value="Pago">Pago</SelectItem>
+                                     <SelectItem value="Em Atendimento">Em Atendimento</SelectItem>
+                                     <SelectItem value="Finalizado">Finalizado</SelectItem>
+                                     <SelectItem value="Cancelado">Cancelado</SelectItem>
+                                     <SelectItem value="Não Compareceu">Não Compareceu</SelectItem>
                                    </SelectContent>
                                  </Select>
                                </div>
