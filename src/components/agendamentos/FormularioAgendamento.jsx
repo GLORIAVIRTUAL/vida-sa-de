@@ -2449,7 +2449,7 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                         (servicoParaAdicionar.tipo === 'Consulta' && !servicoParaAdicionar.medicoId) ||
                         ((servicoParaAdicionar.tipo === 'Procedimento' || servicoParaAdicionar.tipo === 'Exame') && !servicoParaAdicionar.id)
                       }
-                      className="bg-purple-600 hover:bg-purple-700"
+                      className="bg-gray-700 hover:bg-gray-800"
                     >
                       <Plus className="w-4 h-4 mr-2" />
                       Adicionar
