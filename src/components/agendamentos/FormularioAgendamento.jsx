@@ -3017,12 +3017,11 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                   </div>
                 </div>
 
-                {/* Total das formas */}
                 {(pagamento1.valor || pagamento2.valor) && (
-                  <div className="pt-2 border-t border-blue-300">
+                  <div className="pt-2 border-t border-gray-300">
                     <div className="flex justify-between text-sm">
-                      <span className="text-blue-800">Total informado:</span>
-                      <span className="font-bold text-blue-900">
+                      <span className="text-gray-700">Total:</span>
+                      <span className="font-bold text-gray-900">
                         R$ {((parseFloat(pagamento1.valor) || 0) + (parseFloat(pagamento2.valor) || 0)).toFixed(2).replace('.', ',')}
                       </span>
                     </div>
