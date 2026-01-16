@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
     if (!agendamento) {
       return new Response(renderErrorPage(
         'Agendamento não encontrado',
-        `Não conseguimos localizar o agendamento. Código: ${codigo}`
+        `Não conseguimos localizar o agendamento.<br><br><small>Debug: ${JSON.stringify(debugInfo)}</small>`
       ), {
         headers: { 'Content-Type': 'text/html; charset=utf-8' }
       });
