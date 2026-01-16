@@ -2,19 +2,12 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 Deno.serve(async (req) => {
   try {
-    console.log('🔗 [ConfirmLink] Requisição recebida');
-    console.log('[ConfirmLink] URL completa:', req.url);
-    
     const base44 = createClientFromRequest(req);
-    
     const url = new URL(req.url);
     
-    // Tentar pegar código da query string primeiro, depois do body
+    // Pegar código da query string
     let codigo = url.searchParams.get('codigo');
     let confirmar = url.searchParams.get('confirmar');
-    
-    console.log('[ConfirmLink] Código da query string:', codigo);
-    console.log('[ConfirmLink] Todos os params:', Object.fromEntries(url.searchParams.entries()));
     
     // Se não veio na query, tentar do body (para testes)
     if (!codigo && req.method === 'POST') {
@@ -23,171 +16,163 @@ Deno.serve(async (req) => {
         const body = await clonedReq.json();
         codigo = body.codigo;
         confirmar = body.confirmar;
-        console.log('[ConfirmLink] Código do body:', codigo);
       } catch (e) {
-        console.log('[ConfirmLink] Erro ao parsear body:', e.message);
+        // Ignora erro de parse
       }
     }
     
-    console.log(`[ConfirmLink] Método: ${req.method}, Código Final: ${codigo}, Tamanho: ${codigo?.length || 0}`);
-    
+    // Limpar código de possíveis caracteres estranhos
+    if (codigo) {
+      codigo = codigo.trim();
+    }
+
     if (!codigo) {
-      return new Response(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1">
-          <title>Erro - Confirmação</title>
-          <style>
-            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f5f5f5; }
-            .container { background: white; padding: 40px; border-radius: 10px; max-width: 400px; margin: 0 auto; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-            .error { color: #dc3545; font-size: 48px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="error">❌</div>
-            <h2>Código inválido</h2>
-            <p>Por favor, use o link correto enviado no WhatsApp.</p>
-          </div>
-        </body>
-        </html>
-      `, {
+      return new Response(renderErrorPage('Código inválido', 'Por favor, use o link correto enviado no WhatsApp.'), {
         headers: { 'Content-Type': 'text/html; charset=utf-8' }
       });
     }
     
-    console.log(`[ConfirmLink] Código: ${codigo}`);
-    
-    // Buscar agendamento
-    let agendamento;
+    // Buscar agendamento usando filter ao invés de get
+    let agendamento = null;
     try {
-      agendamento = await base44.asServiceRole.entities.Agendamento.get(codigo);
-      console.log('[ConfirmLink] Agendamento encontrado:', agendamento?.id);
-    } catch (error) {
-      console.error('[ConfirmLink] Agendamento não encontrado:', error);
-      console.error('[ConfirmLink] Código buscado:', codigo);
-      console.error('[ConfirmLink] Erro detalhado:', JSON.stringify(error));
-      return new Response(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1">
-          <title>Erro - Confirmação</title>
-          <style>
-            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
-            .container { background: white; padding: 40px; border-radius: 15px; max-width: 450px; margin: 0 auto; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
-            .error { font-size: 64px; margin-bottom: 20px; }
-            h2 { color: #dc3545; }
-            .debug { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 20px; text-align: left; font-size: 12px; color: #666; word-break: break-all; }
-            .contact { margin-top: 25px; padding: 15px; background: #e3f2fd; border-radius: 8px; }
-            .contact a { color: #1976d2; text-decoration: none; font-weight: bold; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="error">😕</div>
-            <h2>Agendamento não encontrado</h2>
-            <p>Não conseguimos localizar este agendamento no sistema.</p>
-            <div class="debug">
-              <strong>Código recebido:</strong> ${codigo}<br>
-              <strong>Erro:</strong> ${error.message || 'Registro não existe'}
-            </div>
-            <div class="contact">
-              <p>Entre em contato com a clínica:</p>
-              <p>📞 <a href="https://wa.me/5551985505991">WhatsApp: 51 98550-5991</a></p>
-            </div>
-          </div>
-        </body>
-        </html>
-      `, {
+      const agendamentos = await base44.asServiceRole.entities.Agendamento.filter({ id: codigo });
+      if (agendamentos && agendamentos.length > 0) {
+        agendamento = agendamentos[0];
+      }
+    } catch (filterError) {
+      // Se filter falhar, tentar com get
+      try {
+        agendamento = await base44.asServiceRole.entities.Agendamento.get(codigo);
+      } catch (getError) {
+        // Ambos falharam
+      }
+    }
+
+    if (!agendamento) {
+      return new Response(renderErrorPage(
+        'Agendamento não encontrado',
+        `Não conseguimos localizar o agendamento. Código: ${codigo}`
+      ), {
         headers: { 'Content-Type': 'text/html; charset=utf-8' }
       });
     }
     
     // Se não passou o parâmetro confirmar=sim, mostrar página de confirmação
     if (confirmar !== 'sim') {
+      const dataFormatada = new Date(agendamento.data_agendamento + 'T12:00:00').toLocaleDateString('pt-BR', { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      });
+      
+      const jaConfirmado = agendamento.status === 'Confirmado';
+      
       return new Response(`
         <!DOCTYPE html>
         <html>
         <head>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1">
-          <title>Confirmar Presença</title>
+          <title>Confirmar Presença - Centro Vida Saúde</title>
           <style>
+            * { box-sizing: border-box; margin: 0; padding: 0; }
             body { 
-              font-family: Arial, sans-serif; 
-              text-align: center; 
-              padding: 20px; 
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
               background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
               min-height: 100vh;
               display: flex;
               align-items: center;
               justify-content: center;
+              padding: 20px;
             }
-            .container { 
+            .card { 
               background: white; 
-              padding: 40px; 
-              border-radius: 15px; 
-              max-width: 400px; 
-              margin: 0 auto; 
-              box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+              padding: 40px 30px; 
+              border-radius: 20px; 
+              max-width: 420px;
+              width: 100%;
+              box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+              text-align: center;
             }
-            .icon { font-size: 64px; margin-bottom: 20px; }
-            h2 { color: #333; margin: 20px 0; font-size: 24px; }
+            .logo { font-size: 50px; margin-bottom: 15px; }
+            h1 { color: #333; font-size: 22px; margin-bottom: 25px; }
             .info { 
               background: #f8f9fa; 
               padding: 20px; 
-              border-radius: 10px; 
-              margin: 25px 0;
+              border-radius: 12px; 
+              margin: 20px 0;
               text-align: left;
             }
-            .info p { 
+            .info-row { 
+              display: flex; 
+              align-items: flex-start;
               margin: 12px 0; 
-              color: #333;
-              font-size: 16px;
+              font-size: 15px;
+              color: #444;
+            }
+            .info-row span:first-child { 
+              min-width: 30px;
+              margin-right: 10px;
             }
             .btn {
+              display: block;
+              width: 100%;
               background: #28a745;
               color: white;
               border: none;
-              padding: 15px 40px;
+              padding: 16px;
               font-size: 18px;
-              font-weight: bold;
-              border-radius: 8px;
+              font-weight: 600;
+              border-radius: 12px;
               cursor: pointer;
-              width: 100%;
+              text-decoration: none;
               margin-top: 20px;
-              transition: background 0.3s;
+              transition: all 0.3s;
             }
-            .btn:hover {
-              background: #218838;
-            }
-            .status-badge {
+            .btn:hover { background: #218838; transform: translateY(-2px); }
+            .badge {
               display: inline-block;
-              padding: 5px 12px;
+              padding: 6px 14px;
               border-radius: 20px;
-              font-size: 14px;
-              font-weight: bold;
-              ${agendamento.status === 'Confirmado' ? 'background: #d4edda; color: #155724;' : 'background: #fff3cd; color: #856404;'}
+              font-size: 13px;
+              font-weight: 600;
+              ${jaConfirmado ? 'background: #d4edda; color: #155724;' : 'background: #fff3cd; color: #856404;'}
             }
+            .confirmed-msg { color: #28a745; font-weight: 600; margin-top: 20px; }
           </style>
         </head>
         <body>
-          <div class="container">
-            <div class="icon">📅</div>
-            <h2>Confirmar sua Presença</h2>
+          <div class="card">
+            <div class="logo">📅</div>
+            <h1>Confirmar Presença</h1>
+            
             <div class="info">
-              <p><strong>📋 Paciente:</strong><br>${agendamento.paciente_nome}</p>
-              <p><strong>📅 Data:</strong><br>${new Date(agendamento.data_agendamento + 'T00:00:00').toLocaleDateString('pt-BR', { dateStyle: 'long' })}</p>
-              <p><strong>🕐 Horário:</strong><br>${agendamento.horario}</p>
-              <p><strong>Status:</strong><br><span class="status-badge">${agendamento.status}</span></p>
+              <div class="info-row">
+                <span>👤</span>
+                <span><strong>Paciente:</strong><br>${agendamento.paciente_nome || 'Não informado'}</span>
+              </div>
+              <div class="info-row">
+                <span>📅</span>
+                <span><strong>Data:</strong><br>${dataFormatada}</span>
+              </div>
+              <div class="info-row">
+                <span>🕐</span>
+                <span><strong>Horário:</strong><br>${agendamento.horario}</span>
+              </div>
+              <div class="info-row">
+                <span>📋</span>
+                <span><strong>Serviço:</strong><br>${agendamento.tipo_servico || 'Consulta'}</span>
+              </div>
+              <div class="info-row">
+                <span>📌</span>
+                <span><strong>Status:</strong><br><span class="badge">${agendamento.status}</span></span>
+              </div>
             </div>
-            ${agendamento.status === 'Confirmado' 
-              ? '<p style="color: #28a745; font-weight: bold;">✅ Já confirmado anteriormente</p>'
-              : `<a href="?codigo=${codigo}&confirmar=sim"><button class="btn">✅ Confirmar Presença</button></a>`
+            
+            ${jaConfirmado 
+              ? '<p class="confirmed-msg">✅ Sua presença já está confirmada!</p>'
+              : `<a href="?codigo=${codigo}&confirmar=sim" class="btn">✅ Confirmar Minha Presença</a>`
             }
           </div>
         </body>
@@ -199,45 +184,12 @@ Deno.serve(async (req) => {
     
     // Verificar se já confirmado
     if (agendamento.status === 'Confirmado') {
-      return new Response(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1">
-          <title>Já Confirmado</title>
-          <style>
-            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f5f5f5; }
-            .container { background: white; padding: 40px; border-radius: 10px; max-width: 400px; margin: 0 auto; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-            .icon { color: #28a745; font-size: 64px; margin-bottom: 20px; }
-            h2 { color: #333; margin: 20px 0; }
-            .info { background: #e7f3ff; padding: 15px; border-radius: 5px; margin: 20px 0; }
-            .info p { margin: 5px 0; color: #0066cc; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="icon">✅</div>
-            <h2>Consulta Já Confirmada</h2>
-            <p>Sua consulta já estava confirmada anteriormente.</p>
-            <div class="info">
-              <p><strong>Paciente:</strong> ${agendamento.paciente_nome}</p>
-              <p><strong>Data:</strong> ${new Date(agendamento.data_agendamento + 'T00:00:00').toLocaleDateString('pt-BR')}</p>
-              <p><strong>Horário:</strong> ${agendamento.horario}</p>
-            </div>
-            <p style="color: #666; font-size: 14px; margin-top: 30px;">
-              Aguardamos você! 😊
-            </p>
-          </div>
-        </body>
-        </html>
-      `, {
+      return new Response(renderSuccessPage(agendamento, true), {
         headers: { 'Content-Type': 'text/html; charset=utf-8' }
       });
     }
     
     // Confirmar agendamento
-    console.log('[ConfirmLink] Confirmando agendamento...');
     await base44.asServiceRole.entities.Agendamento.update(agendamento.id, {
       status: 'Confirmado'
     });
@@ -246,130 +198,156 @@ Deno.serve(async (req) => {
     try {
       await base44.asServiceRole.entities.Notification.create({
         type: 'confirmacao_recebida',
-        message: `✅ Confirmação via link: ${agendamento.paciente_nome} confirmou presença para ${agendamento.data_agendamento} às ${agendamento.horario}`,
+        message: `✅ ${agendamento.paciente_nome} confirmou presença para ${agendamento.data_agendamento} às ${agendamento.horario}`,
         data: {
           agendamentoId: agendamento.id,
           paciente_nome: agendamento.paciente_nome,
           data_agendamento: agendamento.data_agendamento,
-          horario: agendamento.horario,
-          metodo: 'link'
+          horario: agendamento.horario
         }
       });
-    } catch (notifError) {
-      console.warn('[ConfirmLink] Erro ao criar notificação:', notifError);
+    } catch (e) {
+      // Ignora erro de notificação
     }
     
-    console.log('✅ [ConfirmLink] Confirmado com sucesso');
-    
-    // Página de sucesso
-    return new Response(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Confirmação Realizada</title>
-        <style>
-          body { 
-            font-family: Arial, sans-serif; 
-            text-align: center; 
-            padding: 50px; 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-          }
-          .container { 
-            background: white; 
-            padding: 40px; 
-            border-radius: 15px; 
-            max-width: 400px; 
-            margin: 0 auto; 
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-            color: #333;
-          }
-          .icon { 
-            font-size: 80px;
-            animation: bounce 1s;
-          }
-          @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-20px); }
-          }
-          h2 { 
-            color: #28a745; 
-            margin: 20px 0;
-            font-size: 28px;
-          }
-          .info { 
-            background: #e8f5e9; 
-            padding: 20px; 
-            border-radius: 10px; 
-            margin: 25px 0;
-            border-left: 4px solid #28a745;
-          }
-          .info p { 
-            margin: 10px 0; 
-            color: #2e7d32;
-            font-size: 16px;
-          }
-          .footer {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 2px solid #eee;
-            color: #666;
-            font-size: 14px;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="icon">🎉</div>
-          <h2>Consulta Confirmada!</h2>
-          <p style="font-size: 18px; color: #555;">
-            Sua presença foi confirmada com sucesso.
-          </p>
-          <div class="info">
-            <p><strong>📋 Paciente:</strong> ${agendamento.paciente_nome}</p>
-            <p><strong>📅 Data:</strong> ${new Date(agendamento.data_agendamento + 'T00:00:00').toLocaleDateString('pt-BR', { dateStyle: 'long' })}</p>
-            <p><strong>🕐 Horário:</strong> ${agendamento.horario}</p>
-          </div>
-          <div class="footer">
-            <p><strong>Centro Vida Saúde</strong></p>
-            <p>Aguardamos você! 😊</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `, {
+    return new Response(renderSuccessPage(agendamento, false), {
       headers: { 'Content-Type': 'text/html; charset=utf-8' }
     });
     
   } catch (error) {
-    console.error('❌ [ConfirmLink] Error:', error);
-    return new Response(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Erro</title>
-        <style>
-          body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f5f5f5; }
-          .container { background: white; padding: 40px; border-radius: 10px; max-width: 400px; margin: 0 auto; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-          .error { color: #dc3545; font-size: 48px; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="error">⚠️</div>
-          <h2>Erro ao confirmar</h2>
-          <p>Por favor, entre em contato com a clínica.</p>
-          <p style="font-size: 12px; color: #999; margin-top: 20px;">${error.message}</p>
-        </div>
-      </body>
-      </html>
-    `, {
+    return new Response(renderErrorPage('Erro ao processar', error.message), {
       status: 500,
       headers: { 'Content-Type': 'text/html; charset=utf-8' }
     });
   }
 });
+
+function renderErrorPage(titulo, mensagem) {
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Erro - Confirmação</title>
+      <style>
+        * { box-sizing: border-box; }
+        body { 
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          min-height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+        }
+        .card { 
+          background: white; 
+          padding: 40px; 
+          border-radius: 20px; 
+          max-width: 420px;
+          width: 100%;
+          box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+          text-align: center;
+        }
+        .icon { font-size: 60px; margin-bottom: 20px; }
+        h2 { color: #dc3545; margin-bottom: 15px; }
+        p { color: #666; line-height: 1.6; }
+        .contact { 
+          margin-top: 25px; 
+          padding: 15px; 
+          background: #e3f2fd; 
+          border-radius: 10px; 
+        }
+        .contact a { color: #1976d2; text-decoration: none; font-weight: 600; }
+      </style>
+    </head>
+    <body>
+      <div class="card">
+        <div class="icon">😕</div>
+        <h2>${titulo}</h2>
+        <p>${mensagem}</p>
+        <div class="contact">
+          <p>Entre em contato conosco:</p>
+          <p>📞 <a href="https://wa.me/5551985505991">WhatsApp: 51 98550-5991</a></p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+}
+
+function renderSuccessPage(agendamento, jaConfirmado) {
+  const dataFormatada = new Date(agendamento.data_agendamento + 'T12:00:00').toLocaleDateString('pt-BR', { 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  });
+  
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Presença Confirmada!</title>
+      <style>
+        * { box-sizing: border-box; }
+        body { 
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          min-height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+        }
+        .card { 
+          background: white; 
+          padding: 40px 30px; 
+          border-radius: 20px; 
+          max-width: 420px;
+          width: 100%;
+          box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+          text-align: center;
+        }
+        .icon { font-size: 70px; margin-bottom: 15px; animation: bounce 1s; }
+        @keyframes bounce {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-15px); }
+        }
+        h1 { color: #28a745; font-size: 24px; margin-bottom: 10px; }
+        .subtitle { color: #666; margin-bottom: 25px; }
+        .info { 
+          background: #e8f5e9; 
+          padding: 20px; 
+          border-radius: 12px;
+          border-left: 4px solid #28a745;
+          text-align: left;
+        }
+        .info p { margin: 10px 0; color: #2e7d32; font-size: 15px; }
+        .footer { margin-top: 30px; color: #888; font-size: 14px; }
+      </style>
+    </head>
+    <body>
+      <div class="card">
+        <div class="icon">🎉</div>
+        <h1>${jaConfirmado ? 'Já Confirmado!' : 'Presença Confirmada!'}</h1>
+        <p class="subtitle">${jaConfirmado ? 'Sua consulta já estava confirmada.' : 'Recebemos sua confirmação com sucesso!'}</p>
+        
+        <div class="info">
+          <p>👤 <strong>${agendamento.paciente_nome}</strong></p>
+          <p>📅 ${dataFormatada}</p>
+          <p>🕐 ${agendamento.horario}</p>
+        </div>
+        
+        <div class="footer">
+          <p><strong>Centro Vida Saúde</strong></p>
+          <p>Aguardamos você! 😊</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+}
