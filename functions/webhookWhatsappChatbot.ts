@@ -319,24 +319,6 @@ Deno.serve(async (req) => {
     }
     
     if (resultado.data?.resposta) {
-      // Verificar se resposta é igual à última enviada (deduplicação)
-      try {
-        const contatosCheck = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
-        if (contatosCheck.length > 0) {
-          const historico = contatosCheck[0].historico_mensagens || [];
-          const ultimasRespostasAssistente = historico.filter(m => m.role === 'assistant').slice(-3);
-          
-          if (ultimasRespostasAssistente.some(m => 
-            m.content && m.content.toLowerCase().replace(/\s+/g, ' ').trim() === 
-            resultado.data.resposta.toLowerCase().replace(/\s+/g, ' ').trim())) {
-            console.log('⚠️ Resposta idêntica já foi enviada recentemente - ignorando duplicata');
-            return Response.json({ success: true, status: 'resposta_duplicada' });
-          }
-        }
-      } catch (dedup) {
-        console.log('⚠️ Erro ao verificar duplicata:', dedup.message);
-      }
-      
       try {
         await enviarWhatsApp(phoneNumber, resultado.data.resposta);
         console.log('✅ WhatsApp texto enviado com sucesso');
