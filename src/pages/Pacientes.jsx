@@ -40,9 +40,9 @@ export default function Pacientes() {
     const nome = urlParams.get('nome');
     const telefone = urlParams.get('telefone');
     const abrirForm = urlParams.get('abrirForm');
-    
+
     console.log('URL params:', { nome, telefone, abrirForm });
-    
+
     if (abrirForm === 'true' || nome || telefone) {
       const dados = { nome: nome || '', telefone: telefone || '' };
       console.log('Abrindo formulário com dados:', dados);
@@ -75,7 +75,7 @@ export default function Pacientes() {
         setLoading(false);
       }
     };
-    
+
     carregarRecentes();
   }, []);
 
@@ -111,7 +111,7 @@ export default function Pacientes() {
 
   const buscarPacientes = async () => {
     const termo = searchTerm.trim();
-    
+
     if (termo.length < 2) {
       if (termo.length === 0) carregarRecentes();
       return;
@@ -122,16 +122,16 @@ export default function Pacientes() {
 
     try {
       console.log(`🔍 [DIRECT] Buscando: "${termo}"`);
-      
+
       // CHAMADA DIRETA para debug
       const response = await base44.functions.invoke('searchPatients', { termo, limit: 500 });
-      
+
       if (response?.data?.error) {
-         throw new Error(response.data.error);
+        throw new Error(response.data.error);
       }
 
       const resultados = response?.data;
-      
+
       if (Array.isArray(resultados)) {
         console.log(`✅ ${resultados.length} encontrados`);
         setPacientes(resultados);
@@ -175,7 +175,7 @@ export default function Pacientes() {
   const handleDelete = async (id) => {
     try {
       await Paciente.delete(id);
-      setPacientes(prev => prev.filter(p => p.id !== id));
+      setPacientes((prev) => prev.filter((p) => p.id !== id));
     } catch (error) {
       console.error("Erro ao deletar:", error);
       alert("Erro ao deletar paciente");
@@ -193,7 +193,7 @@ export default function Pacientes() {
     const nascimento = new Date(dataNascimento);
     let idade = hoje.getFullYear() - nascimento.getFullYear();
     const mes = hoje.getMonth() - nascimento.getMonth();
-    if (mes < 0 || (mes === 0 && hoje.getDate() < nascimento.getDate())) {
+    if (mes < 0 || mes === 0 && hoje.getDate() < nascimento.getDate()) {
       idade--;
     }
     return idade;
@@ -202,7 +202,7 @@ export default function Pacientes() {
   const handleImprimirPaciente = (paciente) => {
     const idade = calcularIdade(paciente.data_nascimento);
     const cartaoVerde = isCartaoMaisVida(paciente.convenio);
-    
+
     const htmlContent = `
       <!DOCTYPE html>
       <html>
@@ -432,9 +432,9 @@ export default function Pacientes() {
             <div class="info-item" style="grid-column: 1 / -1;">
               <div class="info-label">Prioridade</div>
               <div class="info-value">
-                ${paciente.prioridade && paciente.prioridade !== 'Normal' ? 
-                  '<span class="badge badge-priority">⚠️ ' + paciente.prioridade + '</span>' : 
-                  'Normal'}
+                ${paciente.prioridade && paciente.prioridade !== 'Normal' ?
+    '<span class="badge badge-priority">⚠️ ' + paciente.prioridade + '</span>' :
+    'Normal'}
               </div>
             </div>
           </div>
@@ -500,22 +500,22 @@ export default function Pacientes() {
           {/* Header */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Pacientes</h1>
+              <h1 className="text-cyan-500 text-3xl font-bold">Pacientes</h1>
               <p className="text-gray-600">
-                {pacientes.length > 0 
-                  ? `${pacientes.length} paciente${pacientes.length !== 1 ? 's' : ''} encontrado${pacientes.length !== 1 ? 's' : ''}`
-                  : 'Digite pelo menos 2 caracteres para buscar'}
+                {pacientes.length > 0 ?
+                `${pacientes.length} paciente${pacientes.length !== 1 ? 's' : ''} encontrado${pacientes.length !== 1 ? 's' : ''}` :
+                'Digite pelo menos 2 caracteres para buscar'}
               </p>
-              {totalCarregados > 0 && (
-                <p className="text-sm text-gray-500">
+              {totalCarregados > 0 &&
+              <p className="text-sm text-gray-500">
                   (Verificados todos os {totalCarregados} pacientes cadastrados)
                 </p>
-              )}
+              }
             </div>
-            <Button 
-              onClick={() => { setSelectedPaciente(null); setIsFormOpen(true); }} 
-              className="bg-blue-600 hover:bg-blue-700"
-            >
+            <Button
+              onClick={() => {setSelectedPaciente(null);setIsFormOpen(true);}}
+              className="bg-blue-600 hover:bg-blue-700">
+
               <Plus className="w-4 h-4 mr-2" />
               Novo Paciente
             </Button>
@@ -533,25 +533,25 @@ export default function Pacientes() {
                     onChange={(e) => setSearchTerm(e.target.value)}
                     onKeyPress={handleKeyPress}
                     className="pl-10"
-                    autoFocus
-                  />
+                    autoFocus />
+
                 </div>
-                <Button 
+                <Button
                   onClick={buscarPacientes}
                   disabled={loading || searchTerm.trim().length < 2}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  {loading ? (
-                    <>
+                  className="bg-blue-600 hover:bg-blue-700">
+
+                  {loading ?
+                  <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                       Buscando...
-                    </>
-                  ) : (
-                    <>
+                    </> :
+
+                  <>
                       <Search className="w-4 h-4 mr-2" />
                       Buscar
                     </>
-                  )}
+                  }
                 </Button>
               </div>
               
@@ -564,50 +564,50 @@ export default function Pacientes() {
           </Card>
 
           {/* Erro */}
-          {erro && (
-            <Alert className="mb-6 border-amber-200 bg-amber-50">
+          {erro &&
+          <Alert className="mb-6 border-amber-200 bg-amber-50">
               <AlertCircle className="w-5 h-5 text-amber-600" />
               <AlertDescription className="text-amber-800">
                 {erro}
               </AlertDescription>
             </Alert>
-          )}
+          }
 
           {/* Lista de Resultados */}
-          {!loading && pacientes.length > 0 && (
-            <div className="grid gap-4">
+          {!loading && pacientes.length > 0 &&
+          <div className="grid gap-4">
               {pacientes.map((paciente) => {
-                const cartaoVerde = isCartaoMaisVida(paciente.convenio);
-                
-                return (
-                  <Card 
-                    key={paciente.id} 
-                    className={`hover:shadow-md transition-shadow ${
-                      cartaoVerde ? 'border-2 border-green-500 bg-green-50' : ''
-                    }`}
-                  >
+              const cartaoVerde = isCartaoMaisVida(paciente.convenio);
+
+              return (
+                <Card
+                  key={paciente.id}
+                  className={`hover:shadow-md transition-shadow ${
+                  cartaoVerde ? 'border-2 border-green-500 bg-green-50' : ''}`
+                  }>
+
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-3 mb-2 flex-wrap">
                             <h3 className={`font-semibold text-lg ${
-                              cartaoVerde ? 'text-green-800' : 'text-gray-900'
-                            }`}>
+                          cartaoVerde ? 'text-green-800' : 'text-gray-900'}`
+                          }>
                               {paciente.nome}
                             </h3>
-                            {paciente.prioridade && paciente.prioridade !== 'Normal' && (
-                              <Badge className={`text-xs ${prioridadeColors[paciente.prioridade]}`}>
+                            {paciente.prioridade && paciente.prioridade !== 'Normal' &&
+                          <Badge className={`text-xs ${prioridadeColors[paciente.prioridade]}`}>
                                 {paciente.prioridade}
                               </Badge>
-                            )}
-                            <Badge 
-                              variant="outline" 
-                              className={`text-xs ${
-                                cartaoVerde 
-                                  ? 'bg-green-100 text-green-800 border-green-300 font-semibold' 
-                                  : ''
-                              }`}
-                            >
+                          }
+                            <Badge
+                            variant="outline"
+                            className={`text-xs ${
+                            cartaoVerde ?
+                            'bg-green-100 text-green-800 border-green-300 font-semibold' :
+                            ''}`
+                            }>
+
                               {cartaoVerde && '💳 '}
                               {paciente.convenio || 'Particular'}
                             </Badge>
@@ -619,92 +619,92 @@ export default function Pacientes() {
                               <span className="truncate">{paciente.cpf || 'CPF não informado'}</span>
                             </div>
                             
-                            {paciente.telefone && (
-                              <div className="flex items-center gap-1">
+                            {paciente.telefone &&
+                          <div className="flex items-center gap-1">
                                 <Phone className="w-4 h-4 flex-shrink-0" />
                                 <span>{paciente.telefone}</span>
                               </div>
-                            )}
+                          }
                             
-                            {paciente.endereco?.cidade && (
-                              <div className="flex items-center gap-1">
+                            {paciente.endereco?.cidade &&
+                          <div className="flex items-center gap-1">
                                 <MapPin className="w-4 h-4 flex-shrink-0" />
                                 <span>{paciente.endereco.cidade}, {paciente.endereco.estado}</span>
                               </div>
-                            )}
+                          }
                           </div>
                         </div>
 
                         <div className="flex items-center gap-2 ml-4 flex-shrink-0">
                           <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleImprimirPaciente(paciente)}
-                            className="text-purple-600 border-purple-200 hover:bg-purple-50"
-                            title="Imprimir cadastro completo"
-                          >
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleImprimirPaciente(paciente)}
+                          className="text-purple-600 border-purple-200 hover:bg-purple-50"
+                          title="Imprimir cadastro completo">
+
                             <Printer className="w-4 h-4" />
                           </Button>
                           
                           <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => { setSelectedPaciente(paciente); setIsFormOpen(true); }}
-                            className={
-                              cartaoVerde 
-                                ? 'text-green-700 border-green-300 hover:bg-green-100' 
-                                : 'text-blue-600 border-blue-200 hover:bg-blue-50'
-                            }
-                          >
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {setSelectedPaciente(paciente);setIsFormOpen(true);}}
+                          className={
+                          cartaoVerde ?
+                          'text-green-700 border-green-300 hover:bg-green-100' :
+                          'text-blue-600 border-blue-200 hover:bg-blue-50'
+                          }>
+
                             <Edit className="w-4 h-4" />
                           </Button>
                           
                           <ConfirmacaoExclusao
-                            titulo="Excluir Paciente"
-                            mensagem={`Tem certeza que deseja excluir o paciente "${paciente.nome}"?`}
-                            onConfirm={() => handleDelete(paciente.id)}
-                          >
+                          titulo="Excluir Paciente"
+                          mensagem={`Tem certeza que deseja excluir o paciente "${paciente.nome}"?`}
+                          onConfirm={() => handleDelete(paciente.id)}>
+
                             <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-red-600 border-red-200 hover:bg-red-50"
-                            >
+                            variant="outline"
+                            size="sm"
+                            className="text-red-600 border-red-200 hover:bg-red-50">
+
                               <Trash2 className="w-4 h-4" />
                             </Button>
                           </ConfirmacaoExclusao>
                         </div>
                       </div>
                     </CardContent>
-                  </Card>
-                );
-              })}
+                  </Card>);
+
+            })}
             </div>
-          )}
+          }
 
           {/* Loading State */}
-          {loading && (
-            <div className="flex flex-col justify-center items-center py-12">
+          {loading &&
+          <div className="flex flex-col justify-center items-center py-12">
               <Loader2 className="w-8 h-8 animate-spin text-blue-600 mb-4" />
               <p className="text-gray-600">Carregando pacientes...</p>
               <p className="text-sm text-gray-500">Isso pode levar alguns segundos</p>
             </div>
-          )}
+          }
 
           {/* Formulário */}
-          {isFormOpen && (
-            <FormularioPaciente
-              paciente={selectedPaciente}
-              dadosIniciais={dadosIniciais}
-              onSalvar={handleSave}
-              onCancelar={() => {
-                setIsFormOpen(false);
-                setSelectedPaciente(null);
-                setDadosIniciais(null);
-              }}
-            />
-          )}
+          {isFormOpen &&
+          <FormularioPaciente
+            paciente={selectedPaciente}
+            dadosIniciais={dadosIniciais}
+            onSalvar={handleSave}
+            onCancelar={() => {
+              setIsFormOpen(false);
+              setSelectedPaciente(null);
+              setDadosIniciais(null);
+            }} />
+
+          }
         </div>
       </div>
-    </ProtectedRoute>
-  );
+    </ProtectedRoute>);
+
 }
