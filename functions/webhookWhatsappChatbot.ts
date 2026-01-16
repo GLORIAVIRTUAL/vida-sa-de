@@ -245,6 +245,13 @@ Deno.serve(async (req) => {
         }
         
         const mensagemCompleta = todasMensagens.map(m => m.texto).join('\n');
+        // Pegar a última mídia se houver para novo contato
+        const ultimaMidiaNovoContato = todasMensagens.reverse().find(m => m.mediaUrl);
+        if (ultimaMidiaNovoContato) {
+          mediaUrl = ultimaMidiaNovoContato.mediaUrl;
+          mediaType = ultimaMidiaNovoContato.mediaType;
+          console.log(`📎 Novo contato - usando mídia: ${mediaType}`);
+        }
         console.log(`📝 Processando ${todasMensagens.length} mensagens acumuladas (novo contato)`);
         
         await base44.asServiceRole.entities.Contato.update(contatoCriado.id, {
