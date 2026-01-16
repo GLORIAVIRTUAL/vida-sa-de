@@ -1482,8 +1482,7 @@ INSTRUÇÕES GERAIS:
       llmResponse = `😊 Desculpe, estou com dificuldade para processar sua mensagem. Pode tentar novamente em alguns instantes?`;
     }
     
-    console.log('✅ LLM respondeu');
-    
+
     // Identificar motivo do contato
     let motivoIdentificado = null;
     const msgLowerMotivo = messageText.toLowerCase();
