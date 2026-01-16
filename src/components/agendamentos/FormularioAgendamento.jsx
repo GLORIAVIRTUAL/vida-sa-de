@@ -2457,29 +2457,21 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                   </div>
                 </div>
 
-                {/* Lista de serviços adicionados */}
                 {formData.itens_servico.length > 0 && (
                   <div className="space-y-2">
                     {formData.itens_servico.map((item, index) => (
                       <div 
                         key={item.id} 
-                        className="flex items-center justify-between p-3 bg-white rounded border border-purple-200 hover:bg-purple-50 transition-colors"
+                        className="flex items-center justify-between p-3 bg-white rounded border hover:bg-gray-50 transition-colors"
                       >
                         <div className="flex items-center gap-3">
-                          <Badge 
-                            variant="outline" 
-                            className={
-                              item.tipo === 'Consulta' ? 'bg-blue-50 text-blue-700 border-blue-300' :
-                              item.tipo === 'Procedimento' ? 'bg-green-50 text-green-700 border-green-300' :
-                              'bg-orange-50 text-orange-700 border-orange-300'
-                            }
-                          >
+                          <Badge variant="outline">
                             {item.tipo}
                           </Badge>
                           <span className="text-sm font-medium">{item.descricao}</span>
                         </div>
                         <div className="flex items-center gap-3">
-                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
+                          <Badge variant="outline">
                             R$ {item.valor.toFixed(2).replace('.', ',')}
                           </Badge>
                           <Button
