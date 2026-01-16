@@ -1417,7 +1417,17 @@ INSTRUÇÕES GERAIS:
       console.log('🖼️ Enviando mídia para análise:', mediaUrl);
     }
 
-    const llmResponse = await base44.asServiceRole.integrations.Core.InvokeLLM(llmParams);
+    // Chamar LLM com timeout e modelo otimizado
+    let llmResponse;
+    try {
+      llmResponse = await Promise.race([
+        base44.asServiceRole.integrations.Core.InvokeLLM(llmParams),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout LLM Principal')), 10000))
+      ]);
+    } catch (e) {
+      console.error('❌ Erro ou timeout no LLM:', e.message);
+      llmResponse = `😊 Desculpe, estou com dificuldade para processar sua mensagem. Pode tentar novamente em alguns instantes?`;
+    }
     
     console.log('✅ LLM respondeu');
     
