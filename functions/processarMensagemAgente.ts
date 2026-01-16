@@ -832,13 +832,20 @@ PERGUNTE ao cliente: "Para qual especialidade você gostaria de agendar? Temos v
           console.log('⚠️ Erro ao buscar médicos para extração');
         }
 
-        const promptExtracao = `Analise o histórico da conversa E a última mensagem para extrair dados de agendamento.
+        const promptExtracao = `Você é inteligentíssimo em extrair dados de agendamento. Analise MUITO BEM o histórico E a última mensagem.
 
-HISTÓRICO DA CONVERSA:
-${historicoConversa || '(sem histórico)'}
+        ⚠️ REGRAS CRÍTICAS DE INTERPRETAÇÃO:
+        1. Se cliente diz "João, 14 horas" = escolheu MÉDICO (João) E HORÁRIO (14:00)
+        2. Se cliente diz "14 horas" ou "14h" ou "às 14" = está confirmando o HORÁRIO que foi oferecido
+        3. Se cliente diz "segunda" ou "21/01" = está escolhendo a DATA
+        4. Se cliente diz nome próprio em contexto de agendamento = é o NOME DO MÉDICO ou NOME DO PACIENTE (use contexto!)
+        5. Se está no fluxo de agendamento (histórico menciona médicos/horários), interprete SEMPRE para preencher dados faltantes
 
-ÚLTIMA MENSAGEM DO CLIENTE:
-${messageText}
+        HISTÓRICO DA CONVERSA:
+        ${historicoConversa || '(sem histórico)'}
+
+        ÚLTIMA MENSAGEM DO CLIENTE:
+        ${messageText}
 
 ⚠️ DATA ATUAL: ${dataHojeFormatada} (${hoje.toISOString().split('T')[0]})
 
