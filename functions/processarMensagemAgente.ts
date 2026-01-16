@@ -101,8 +101,16 @@ Deno.serve(async (req) => {
         let agendamentosFuturos = [];
         let nomePaciente = '';
         
-        // 1. Primeiro buscar paciente pelo telefone
-        const pacientes = await base44.asServiceRole.entities.Paciente.filter({ telefone: phoneNumber });
+        // 1. Primeiro buscar paciente pelo telefone (com timeout)
+        let pacientes = [];
+        try {
+          pacientes = await Promise.race([
+            base44.asServiceRole.entities.Paciente.filter({ telefone: phoneNumber }),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout Paciente')), 4000))
+          ]);
+        } catch (e) {
+          console.warn('⚠️ Timeout ao buscar Paciente:', e.message);
+        }
         
         if (pacientes.length > 0) {
           const paciente = pacientes[0];
