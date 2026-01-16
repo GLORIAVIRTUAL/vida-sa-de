@@ -894,8 +894,8 @@ Retorne JSON.`;
         console.log('📊 Extração de dados:', JSON.stringify(extracao));
 
         // Verificar quais dados faltam
-        if (!extracao.nome_paciente) dadosFaltantes.push('nome completo');
-        if (!extracao.data_nascimento) dadosFaltantes.push('data de nascimento');
+            if (!extracao.nome_paciente) dadosFaltantes.push('nome completo');
+            if (!extracao.data_nascimento) dadosFaltantes.push('data de nascimento');
 
         // Só adiciona médico/data/horário como faltantes se o cliente ainda não escolheu
         const jaEscolheuMedico = historicoConversa && /(Dr\.|👨‍⚕️|médico|doutor)/i.test(historicoConversa) && (extracao.medico_nome || extracao.medico_id);
