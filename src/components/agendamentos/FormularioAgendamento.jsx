@@ -2590,17 +2590,16 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                       </span>
                     </div>
                     
-                    {/* Lista de exames com altura ajustável */}
                     <div 
-                      className="relative border rounded-lg bg-white shadow-sm"
+                      className="relative border rounded-lg bg-white"
                       style={{ height: `${alturaListaExames}px` }}
                     >
                       <div className="overflow-y-auto h-full p-2 space-y-2">
                         {selectedExames.map(exame => (
-                            <div key={exame.id} className="flex items-center justify-between p-3 bg-gray-50 rounded border hover:bg-gray-100 transition-colors">
+                            <div key={exame.id} className="flex items-center justify-between p-3 bg-white rounded border hover:bg-gray-50 transition-colors">
                               <span className="text-sm font-medium flex-grow">{exame.nome}</span>
                               <div className="flex items-center gap-3">
-                                 <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
+                                 <Badge variant="outline">
                                    R$ {exame.display_valor.toFixed(2).replace('.', ',')}
                                  </Badge>
                                  <Button 
