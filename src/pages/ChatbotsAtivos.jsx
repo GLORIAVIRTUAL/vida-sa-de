@@ -395,7 +395,7 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
            <CardHeader className="pb-2">
              <CardTitle className="text-sm flex items-center justify-between">
                <span>Conversas ({contatos.length})</span>
-               <Button onClick={buscarContatos} variant="ghost" size="sm">
+               <Button onClick={atualizarContatoSelecionado} variant="ghost" size="sm" title="Atualizar conversa atual">
                  <RefreshCw className="w-3 h-3" />
                </Button>
              </CardTitle>
