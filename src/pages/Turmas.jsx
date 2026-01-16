@@ -26,16 +26,16 @@ export default function Turmas() {
     setLoading(true);
     try {
       const [turmasData, medicosData, alunosTurmaData] = await Promise.all([
-        base44.entities.Turma.list(),
-        base44.entities.Medico.list(),
-        base44.entities.AlunoTurma.filter({ status: 'Ativo' })
-      ]);
+      base44.entities.Turma.list(),
+      base44.entities.Medico.list(),
+      base44.entities.AlunoTurma.filter({ status: 'Ativo' })]
+      );
       setTurmas(turmasData);
       setMedicos(medicosData);
-      
+
       // Contar alunos por turma
       const contagem = {};
-      alunosTurmaData.forEach(at => {
+      alunosTurmaData.forEach((at) => {
         contagem[at.turma_id] = (contagem[at.turma_id] || 0) + 1;
       });
       setAlunosPorTurma(contagem);
@@ -74,7 +74,7 @@ export default function Turmas() {
   };
 
   const getNomeMedico = (id) => {
-    const medico = medicos.find(m => m.id === id);
+    const medico = medicos.find((m) => m.id === id);
     return medico ? medico.nome : 'Não definido';
   };
 
@@ -93,19 +93,19 @@ export default function Turmas() {
           </Button>
         </div>
 
-        {loading ? (
-          <div className="text-center py-10">Carregando...</div>
-        ) : turmas.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-lg border border-dashed border-gray-300">
+        {loading ?
+        <div className="text-center py-10">Carregando...</div> :
+        turmas.length === 0 ?
+        <div className="text-center py-16 bg-white rounded-lg border border-dashed border-gray-300">
             <Users className="w-12 h-12 mx-auto text-gray-300 mb-4" />
             <h3 className="text-lg font-medium text-gray-900">Nenhuma turma criada</h3>
             <p className="text-gray-500 mb-4">Comece criando sua primeira turma de alunos.</p>
             <Button onClick={handleNovaTurma}>Criar Turma</Button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {turmas.map(turma => (
-              <Card key={turma.id} className="hover:shadow-md transition-shadow">
+          </div> :
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {turmas.map((turma) =>
+          <Card key={turma.id} className="hover:shadow-md transition-shadow">
                 <CardHeader className="pb-2">
                   <div className="flex justify-between items-start">
                     <Badge className="mb-2 bg-blue-100 text-blue-700 hover:bg-blue-100">
@@ -132,11 +132,11 @@ export default function Turmas() {
                     <div className="flex items-center gap-2">
                       <Calendar className="w-4 h-4 text-slate-500" />
                       <div className="flex gap-1">
-                        {turma.dias_semana?.sort().map(d => (
-                          <span key={d} className="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded text-xs font-medium">
+                        {turma.dias_semana?.sort().map((d) =>
+                    <span key={d} className="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded text-xs font-medium">
                             {diasLabel[d]}
                           </span>
-                        ))}
+                    )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -146,37 +146,37 @@ export default function Turmas() {
                     </div>
                   </div>
 
-                  <Button 
-                    className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white"
-                    onClick={() => handleGerenciarAlunos(turma)}
-                  >
+                  <Button className="bg-sky-200 text-sky-600 mt-4 px-4 py-2 text-sm font-medium rounded-md inline-flex items-center justify-center gap-2 whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 shadow h-9 w-full hover:bg-blue-700"
+
+              onClick={() => handleGerenciarAlunos(turma)}>
+
                     <UserPlus className="w-4 h-4 mr-2" /> Gerenciar Alunos & Agenda
                   </Button>
                 </CardContent>
               </Card>
-            ))}
+          )}
           </div>
-        )}
+        }
       </div>
 
-      {modalTurmaOpen && (
-        <FormularioTurma 
-          turma={turmaSelecionada} 
-          medicos={medicos} 
-          onClose={() => setModalTurmaOpen(false)} 
-          onSave={() => {
-            setModalTurmaOpen(false);
-            fetchData();
-          }} 
-        />
-      )}
+      {modalTurmaOpen &&
+      <FormularioTurma
+        turma={turmaSelecionada}
+        medicos={medicos}
+        onClose={() => setModalTurmaOpen(false)}
+        onSave={() => {
+          setModalTurmaOpen(false);
+          fetchData();
+        }} />
 
-      {modalAlunosOpen && turmaSelecionada && (
-        <GerenciarAlunos 
-          turma={turmaSelecionada} 
-          onClose={() => setModalAlunosOpen(false)} 
-        />
-      )}
-    </div>
-  );
+      }
+
+      {modalAlunosOpen && turmaSelecionada &&
+      <GerenciarAlunos
+        turma={turmaSelecionada}
+        onClose={() => setModalAlunosOpen(false)} />
+
+      }
+    </div>);
+
 }
