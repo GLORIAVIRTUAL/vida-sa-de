@@ -2088,72 +2088,67 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="flex-grow overflow-y-auto space-y-4 pr-2" id="formulario-agendamento">
-            <div className="grid grid-cols-1 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="busca_paciente">Buscar Paciente *</Label>
-                
-                <div className="flex gap-2">
-                  <Input
-                    id="busca_paciente"
-                    placeholder="Nome, CPF ou telefone..."
-                    value={buscaPaciente}
-                    onChange={(e) => setBuscaPaciente(e.target.value)}
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        buscarPacientesPorNome();
-                      }
-                    }}
-                    className="flex-1"
-                  />
-                  <Button
-                    type="button"
-                    onClick={buscarPacientesPorNome}
-                    disabled={buscandoPaciente || buscaPaciente.trim().length < 2}
-                    className="bg-gray-700 hover:bg-gray-800"
-                  >
-                    {buscandoPaciente ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Buscar...
-                      </>
-                    ) : (
-                      <>
-                        <Search className="w-4 h-4 mr-2" />
-                        Buscar
-                      </>
-                    )}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setCadastroRapidoAberto(true)}
-                  >
-                    <Plus className="w-4 h-4" />
-                  </Button>
+            {/* SEÇÃO 1: PACIENTE */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Paciente</h3>
+              <div className="p-4 border rounded-lg bg-gray-50 space-y-3">
+                <div>
+                  <Label htmlFor="busca_paciente" className="text-sm font-medium">Buscar Paciente *</Label>
+                  <div className="flex gap-2 mt-1">
+                    <Input
+                      id="busca_paciente"
+                      placeholder="Nome, CPF ou telefone..."
+                      value={buscaPaciente}
+                      onChange={(e) => setBuscaPaciente(e.target.value)}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          buscarPacientesPorNome();
+                        }
+                      }}
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      onClick={buscarPacientesPorNome}
+                      disabled={buscandoPaciente || buscaPaciente.trim().length < 2}
+                      className="bg-gray-700 hover:bg-gray-800"
+                      size="sm"
+                    >
+                      {buscandoPaciente ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setCadastroRapidoAberto(true)}
+                      size="sm"
+                      title="Cadastrar novo paciente"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Digite pelo menos 2 caracteres para buscar
+                  </p>
                 </div>
-                
-                <p className="text-xs text-gray-500">
-                  Digite o nome, CPF ou telefone e clique em "Buscar".
-                </p>
-                
+
                 {/* Select de pacientes encontrados */}
                 {pacientesEncontrados.length > 0 && (
-                  <div className="mt-2">
-                    <Label htmlFor="paciente_id">Selecione o Paciente ({pacientesEncontrados.length} encontrado{pacientesEncontrados.length !== 1 ? 's' : ''})</Label>
+                  <div>
+                    <Label htmlFor="paciente_id" className="text-sm font-medium">Selecione ({pacientesEncontrados.length})</Label>
                     <Select 
                       name="paciente_id" 
                       value={formData.paciente_id} 
                       onValueChange={(value) => handleChange('paciente_id', value)} 
                       required
                     >
-                      <SelectTrigger id="paciente_id">
+                      <SelectTrigger id="paciente_id" className="mt-1">
                         <SelectValue placeholder="Escolha o paciente da lista" />
                       </SelectTrigger>
                       <SelectContent>
                         {pacientesEncontrados.map((p) => (
                           <SelectItem key={p.id} value={p.id}>
-                            {p.nome} {p.cpf ? `- CPF: ${p.cpf}` : ''} {p.telefone ? `- Tel: ${p.telefone}` : ''}
+                            {p.nome} {p.cpf ? `- ${p.cpf}` : ''} {p.telefone ? `- ${p.telefone}` : ''}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -2162,10 +2157,13 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                 )}
               </div>
             </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="data_agendamento">Data *</Label>
+
+            {/* SEÇÃO 2: DATA E TIPO DE SERVIÇO */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Serviço e Agenda</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div>
+                  <Label htmlFor="data_agendamento" className="text-sm font-medium">Data *</Label>
                 {/* Calendário em Popover para destacar dias */}
                 <Popover>
                   <PopoverTrigger asChild>
