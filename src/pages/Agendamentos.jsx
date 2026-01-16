@@ -444,7 +444,7 @@ export default function Agendamentos() {
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
             <div>
               <h1 className="text-cyan-500 mb-2 text-3xl font-bold">Agendamentos</h1>
-              <p className="text-gray-600 mt-1">Gerencie os agendamentos da clínica</p>
+              <p className="text-gray-600 mt-1"></p>
               <div className="flex items-center gap-4">
                 {visualizacao === "lista" &&
                 <Popover>
