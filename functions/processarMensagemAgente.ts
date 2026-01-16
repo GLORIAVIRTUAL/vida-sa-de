@@ -580,7 +580,15 @@ PERGUNTE ao cliente: "Para qual especialidade você gostaria de agendar? Temos v
     }
     
     if (deveBuscarDisponibilidades) {
-      console.log('📅 Cliente quer agendar - buscando disponibilidades...');
+      // Verificar se já mostramos disponibilidades recentemente
+      const historico = historicoConversa || '';
+      const jaShowouDisponibilidades = /disponibilidades? encontradas|Dr\.|👨‍⚕️/i.test(historico) && /data_formatada|horários?|14:00|15:00|16:00/i.test(historico);
+
+      if (jaShowouDisponibilidades) {
+        console.log('⏭️ Disponibilidades já foram mostradas - cliente está escolhendo');
+        infoDisponibilidade = ''; // Não mostrar novamente
+      } else {
+        console.log('📅 Cliente quer agendar - buscando disponibilidades...');
 
       try {
         // Buscar médicos e disponibilidades diretamente
