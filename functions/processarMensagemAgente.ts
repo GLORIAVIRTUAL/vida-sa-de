@@ -1100,9 +1100,10 @@ Retorne JSON.`;
     }
 
     // Determinar se é primeira mensagem da conversa atual (para saudação)
-    const ehPrimeiraMensagem = !historicoConversa || historicoConversa.trim() === '' || historicoConversa === '(primeira mensagem)' || conversaFinalizada;
+    // Primeira mensagem = sem histórico OU conversa foi finalizada e recomeçou
+    const ehPrimeiraMensagem = conversaFinalizada || !historicoConversa || historicoConversa.trim() === '' || historicoConversa === '(primeira mensagem)';
     
-    console.log('📊 Estado da conversa:', { conversaFinalizada, ehPrimeiraMensagem, historicoTamanho: historicoConversa?.length || 0 });
+    console.log('📊 Estado da conversa:', { conversaFinalizada, ehPrimeiraMensagem, temHistorico: !!historicoConversa && historicoConversa !== '(primeira mensagem)', historicoTamanho: historicoConversa?.length || 0 });
 
     // Buscar procedimentos e exames disponíveis para orçamento
     let infoProcedimentosExames = '';
