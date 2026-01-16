@@ -87,8 +87,12 @@ Deno.serve(async (req) => {
     }
 
     // Verificar se cliente quer verificar status do agendamento
-    const querVerificarAgendamento = /verificar|consultar|checar|status|confirma|está confirmado|foi confirmado|agendamento/i.test(messageText) && 
-                                    !/cancelar|desmarcar|agendar|marcar/i.test(messageText);
+    // Contexto: se no histórico há pedido de verificação e agora cliente enviou nome + data
+    const temPedidoVerificacaoNoHistorico = historicoConversa && /verificar|consultar|checar|status|confirma|está confirmado|foi confirmado/i.test(historicoConversa) &&
+                                            !/agendar|marcar|nova consulta/i.test(historicoConversa);
+    const querVerificarAgendamento = (temPedidoVerificacaoNoHistorico && /(\d{1,2})\/(\d{1,2})\/(\d{4})|nascimento|nascido/i.test(messageText)) ||
+                                    (/verificar|consultar|checar|status|confirma|está confirmado|foi confirmado/i.test(messageText) && 
+                                     !/cancelar|desmarcar|agendar|marcar|nova|novo/i.test(messageText));
 
     // Verificar se cliente quer cancelar agendamento
     const querCancelar = /cancelar|desmarcar|n[aã]o (vou|posso|irei)|remarcar|adiar|desistir/i.test(messageText) ||
