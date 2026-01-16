@@ -236,11 +236,19 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
   const finalizarConversa = async () => {
     if (!contatoSelecionado) return;
     try {
+      const mensagemEncerramento = "Esta conversa foi encerrada. Agradecemos o seu contato e ficamos à disposição para o que mais precisar.";
+      await base44.functions.invoke('enviarMensagemHumano', {
+        phoneNumber: contatoSelecionado.telefone,
+        messageText: mensagemEncerramento,
+        contatoId: contatoSelecionado.id
+      });
+
       await base44.entities.Contato.update(contatoSelecionado.id, {
         status: 'Cliente',
         conversa_finalizada: true,
         atendimento_humano: false
       });
+
       // Atualizar o contato selecionado localmente para refletir a mudança imediata
       setContatoSelecionado({...contatoSelecionado, conversa_finalizada: true, status: 'Cliente', atendimento_humano: false});
       await buscarContatos();
