@@ -92,84 +92,119 @@ export default function VisualizacaoCalendario({ agendamentos, medicos, paciente
   return (
     <div className="grid lg:grid-cols-3 gap-6">
       <style>{`
+        /* Estilização Geral do Calendário */
+        .calendar-large {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+        }
+        .calendar-large table {
+          width: 100%;
+          max-width: 600px; /* Limita largura máxima para não esticar demais */
+          margin: 0 auto;
+          border-collapse: separate;
+          border-spacing: 8px; /* Espaço entre as células */
+        }
+        .calendar-large th {
+          text-align: center;
+          padding-bottom: 12px;
+          font-size: 14px;
+          font-weight: 600;
+          color: #64748b;
+          text-transform: capitalize;
+        }
+        .calendar-large td {
+          padding: 0;
+          text-align: center;
+        }
+
+        /* Estilo Base dos Botões de Dia */
+        .calendar-large button.rdp-day {
+          width: 52px !important;
+          height: 52px !important;
+          font-size: 16px;
+          border-radius: 14px !important; /* Quadrado arredondado */
+          margin: 0 auto;
+          transition: all 0.2s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #1e293b !important; /* Cor padrão do texto */
+        }
+        
+        /* Dia Selecionado (padrão do componente) */
+        .calendar-large button.rdp-day_selected:not(.day-with-events):not(.day-both) {
+          background-color: #1e293b !important;
+          color: white !important;
+        }
+
+        /* Modificador: Dia com Agendamentos (Azul) */
         .day-with-events {
-          background-color: #3b82f6; /* Azul vivo para dias com agendamentos */
-          color: white;
-          border-radius: 50%;
-          font-weight: bold;
+          background-color: #3b82f6 !important;
+          color: white !important;
+          font-weight: 600;
+          box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
         }
         .day-with-events:hover {
           background-color: #2563eb !important;
+          transform: translateY(-2px);
         }
+
+        /* Modificador: Médico Disponível (Verde) */
         .day-doctor-available {
-          background-color: #dcfce7; /* Verde claro para dias de atendimento médico */
-          color: #166534;
-          font-weight: bold;
-          border: 2px solid #16a34a;
+          background-color: #ecfdf5 !important;
+          color: #047857 !important;
+          font-weight: 600;
+          border: 2px solid #10b981 !important;
         }
         .day-doctor-available:hover {
-          background-color: #bbf7d0 !important;
+          background-color: #d1fae5 !important;
+          transform: translateY(-2px);
         }
+
+        /* Modificador: Ambos (Azul com borda Verde) */
         .day-both {
-          background: linear-gradient(135deg, #3b82f6 0%, #3b82f6 50%, #dcfce7 50%, #dcfce7 100%);
-          color: white;
-          font-weight: bold;
-          border: 2px solid #16a34a;
-        }
-        
-        /* Aumentar tamanho do calendário */
-        .calendar-large table {
-          width: 100%;
-        }
-        .calendar-large td, .calendar-large th {
-          padding: 8px;
-        }
-        .calendar-large button {
-          width: 48px !important;
-          height: 48px !important;
-          font-size: 16px;
-          color: #000 !important;
-        }
-        .calendar-large .day-with-events {
+          background-color: #3b82f6 !important;
           color: white !important;
-        }
-        .calendar-large .day-both {
-          color: white !important;
-        }
-        /* Dias da semana e navegação do mês */
-        .calendar-large th {
-          font-size: 14px;
           font-weight: 600;
+          border: 3px solid #4ade80 !important; /* Borda verde indicando disponibilidade extra */
+          box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.4);
         }
+        .day-both:hover {
+          background-color: #2563eb !important;
+          transform: translateY(-2px);
+        }
+
+        /* Navegação */
         .calendar-large [role="heading"] {
-          font-size: 18px !important;
-          font-weight: 600;
+          font-size: 1.25rem !important;
+          font-weight: 700;
+          text-transform: capitalize;
+          margin-bottom: 16px;
+          color: #334155;
         }
         .calendar-large nav button {
-          width: 36px !important;
-          height: 36px !important;
+          width: 40px !important;
+          height: 40px !important;
+          border-radius: 10px;
+          background-color: #f1f5f9;
+        }
+        .calendar-large nav button:hover {
+          background-color: #e2e8f0;
         }
       `}</style>
       
-      <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow calendar-large">
-        <div className="mb-4 text-sm text-gray-600">
-          <div className="flex flex-wrap items-center gap-4">
+      <div className="lg:col-span-2 bg-white p-8 rounded-xl shadow-sm border border-gray-100 calendar-large">
+        <div className="w-full max-w-[600px] mb-8 flex justify-center">
+          <div className="inline-flex flex-wrap items-center gap-6 px-6 py-3 bg-gray-50 rounded-full border border-gray-100">
             <div className="flex items-center gap-2">
-              <div className="bg-blue-500 rounded w-4 h-4"></div>
-              <span>Dias com agendamentos</span>
+              <div className="w-4 h-4 rounded-md bg-blue-500 shadow-sm"></div>
+              <span className="text-sm font-medium text-gray-600">Com agendamentos</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-green-200 border-2 border-green-500"></div>
-              <span>Dias de atendimento médico</span>
+              <div className="w-4 h-4 rounded-md bg-emerald-50 border-2 border-emerald-500"></div>
+              <span className="text-sm font-medium text-gray-600">Médico disponível</span>
             </div>
-          </div>
-          
-          {/* DEBUG: Mostrar quantos agendamentos existem */}
-          <div className="mt-2 text-xs text-gray-500">
-            Total de agendamentos: {Array.isArray(agendamentos) ? agendamentos.length : 0} | 
-            Dias com eventos: {diasComEventos.size} |
-            Data selecionada: {format(dataSelecionada, 'yyyy-MM-dd')} |
-            Agendamentos do dia: {agendamentosDoDia.length}
           </div>
         </div>
         
