@@ -990,13 +990,19 @@ Retorne JSON.`;
                 if (categorias.length > 0) {
                   categoriaParticularId = categorias[0].id;
                   
-                  // Buscar valor da consulta na tabela de preços
+                  // Buscar valor da consulta na tabela de preços (com timeout)
                   // Procurar procedimento de consulta da especialidade do médico
                   try {
-                    const tabelaPrecos = await base44.asServiceRole.entities.TabelaPreco.filter({
-                      categoria_id: categoriaParticularId
-                    });
-                    const procedimentos = await base44.asServiceRole.entities.Procedimento.filter({ status: 'Ativo' });
+                    const [tabelaPrecos, procedimentos] = await Promise.all([
+                      Promise.race([
+                        base44.asServiceRole.entities.TabelaPreco.filter({ categoria_id: categoriaParticularId }),
+                        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout TabelaPrecos')), 2000))
+                      ]).catch(() => []),
+                      Promise.race([
+                        base44.asServiceRole.entities.Procedimento.filter({ status: 'Ativo' }),
+                        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout Procedimentos')), 2000))
+                      ]).catch(() => [])
+                    ]);
                     
                     // Buscar procedimento de consulta para a especialidade do médico
                     const especialidadeMedico = (medicoEncontrado.especialidade || '').toLowerCase();
