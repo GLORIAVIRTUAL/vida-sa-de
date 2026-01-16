@@ -2257,7 +2257,33 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
 
                              {formData.is_recorrente && !agendamento && (
                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2 p-3 bg-gray-100 rounded-md">
-                                {/* ... (Recorrência Logic) ... */}
+                                 <div>
+                                   <Label htmlFor="recorrencia_tipo">Frequência *</Label>
+                                   <Select value={formData.recorrencia_tipo} onValueChange={(value) => handleChange('recorrencia_tipo', value)}>
+                                     <SelectTrigger id="recorrencia_tipo" className="mt-1">
+                                       <SelectValue placeholder="Selecione a frequência" />
+                                     </SelectTrigger>
+                                     <SelectContent>
+                                       <SelectItem value="Semanal">Semanal</SelectItem>
+                                       <SelectItem value="Quinzenal">Quinzenal</SelectItem>
+                                       <SelectItem value="Mensal">Mensal</SelectItem>
+                                     </SelectContent>
+                                   </Select>
+                                 </div>
+                                 <div>
+                                   <Label htmlFor="recorrencia_data_fim">Repetir até *</Label>
+                                   <Popover>
+                                     <PopoverTrigger asChild>
+                                       <Button variant="outline" className="w-full justify-start text-left font-normal mt-1">
+                                         <CalendarIcon className="mr-2 h-4 w-4" />
+                                         {formData.recorrencia_data_fim ? format(new Date(formData.recorrencia_data_fim + 'T00:00:00'), "PPP", { locale: ptBR }) : <span>Selecione a data final</span>}
+                                       </Button>
+                                     </PopoverTrigger>
+                                     <PopoverContent className="w-auto p-0">
+                                       <Calendar mode="single" selected={formData.recorrencia_data_fim ? new Date(formData.recorrencia_data_fim + 'T00:00:00') : undefined} onSelect={(date) => { if (date) { handleChange('recorrencia_data_fim', format(date, 'yyyy-MM-dd')); } }} disabled={(date) => date < new Date(formData.data_agendamento + 'T00:00:00')} initialFocus locale={ptBR} />
+                                     </PopoverContent>
+                                   </Popover>
+                                 </div>
                                </div>
                              )}
                            </div>
