@@ -16,13 +16,13 @@ import { useToast } from "@/components/ui/use-toast";
 import FormularioPaciente from '../pacientes/FormularioPaciente';
 
 const statusColors = {
-  "Agendado": "bg-sky-100 text-sky-700 border-sky-200",
-  "Confirmado": "bg-green-200 text-green-700 border-green-300",
-  "Pago": "bg-teal-100 text-teal-700 border-teal-200",
-  "Em Atendimento": "bg-amber-100 text-amber-700 border-amber-200",
-  "Finalizado": "bg-emerald-100 text-emerald-700 border-emerald-200",
-  "Cancelado": "bg-red-100 text-red-700 border-red-200",
-  "Não Compareceu": "bg-gray-200 text-gray-600 border-gray-300"
+  "Agendado": "bg-blue-100 text-blue-800 border-blue-200",
+  "Confirmado": "bg-emerald-600 text-white border-emerald-700",
+  "Pago": "bg-teal-100 text-teal-800 border-teal-200",
+  "Em Atendimento": "bg-yellow-100 text-yellow-800 border-yellow-200",
+  "Finalizado": "bg-emerald-100 text-emerald-800 border-emerald-200",
+  "Cancelado": "bg-red-100 text-red-800 border-red-200",
+  "Não Compareceu": "bg-gray-100 text-gray-800 border-gray-200"
 };
 
 export default function VisualizacaoDiaria({ agendamentos, medicos, pacientes, onEditarAgendamento, loading, dia, onUpdate, periodo }) {
@@ -146,7 +146,7 @@ export default function VisualizacaoDiaria({ agendamentos, medicos, pacientes, o
         <CardHeader className="border-b">
           <div className="flex justify-between items-center">
             <div>
-              <CardTitle className="flex items-center gap-2 text-xl">
+              <CardTitle className="text-cyan-600 text-xl font-semibold tracking-tight flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-blue-600" />
                 {periodo === 'dia' ? 'Agendamentos do Dia' :
                 periodo === 'semana' ? 'Agendamentos da Semana' :
@@ -200,7 +200,7 @@ export default function VisualizacaoDiaria({ agendamentos, medicos, pacientes, o
                     }
                           <Clock className="w-4 h-4 text-gray-500" />
                           <span className="font-semibold text-lg">{agendamento.horario || 'Sem horário'}</span>
-                          <Badge className={`${statusColors[agendamento.status]} border`}>
+                          <Badge className="bg-green-200 text-lime-700 px-2.5 py-0.5 text-xs font-semibold rounded-md inline-flex items-center transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 shadow hover:bg-primary/80 border-pink-200 border">
                             {agendamento.status}
                           </Badge>
                           {agendamento.is_reserva &&
