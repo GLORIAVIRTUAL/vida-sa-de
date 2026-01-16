@@ -205,9 +205,9 @@ Deno.serve(async (req) => {
           resposta: respostaPedirDados
         });
       }
-    }
+      } // FIM VERIFICAÇÃO
 
-    if (querCancelar) {
+      if (querCancelar) {
       console.log('❌ Cliente quer cancelar agendamento...');
 
       // Buscar agendamentos do contato - tentar múltiplas formas
