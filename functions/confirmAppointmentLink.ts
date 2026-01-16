@@ -1,6 +1,4 @@
-import { createClient } from 'npm:@base44/sdk@0.8.6';
-
-const APP_ID = Deno.env.get('BASE44_APP_ID');
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 Deno.serve(async (req) => {
   try {
@@ -26,23 +24,24 @@ Deno.serve(async (req) => {
       return htmlResponse(renderErrorPage('Código inválido', 'Por favor, use o link correto enviado no WhatsApp.'));
     }
     
-    // Criar cliente com service role
-    const base44 = createClient({ appId: APP_ID });
+    // Criar cliente
+    const base44 = createClientFromRequest(req);
     
-    // Buscar agendamento
+    // Buscar agendamento usando service role
     let agendamento = null;
     try {
-      const agendamentos = await base44.entities.Agendamento.filter({ id: codigo });
+      const agendamentos = await base44.asServiceRole.entities.Agendamento.filter({ id: codigo });
       if (agendamentos && agendamentos.length > 0) {
         agendamento = agendamentos[0];
       }
     } catch (e1) {
-      // Tentar listar e encontrar
+      console.log('Erro filter:', e1.message);
+      // Tentar listar
       try {
-        const lista = await base44.entities.Agendamento.list('-created_date', 200);
+        const lista = await base44.asServiceRole.entities.Agendamento.list('-created_date', 200);
         agendamento = lista.find(a => a.id === codigo);
       } catch (e2) {
-        // Falhou
+        console.log('Erro list:', e2.message);
       }
     }
 
@@ -64,11 +63,11 @@ Deno.serve(async (req) => {
     }
     
     // Confirmar agendamento
-    await base44.entities.Agendamento.update(agendamento.id, { status: 'Confirmado' });
+    await base44.asServiceRole.entities.Agendamento.update(agendamento.id, { status: 'Confirmado' });
     
     // Notificação (opcional)
     try {
-      await base44.entities.Notification.create({
+      await base44.asServiceRole.entities.Notification.create({
         type: 'confirmacao_recebida',
         message: `✅ ${agendamento.paciente_nome} confirmou presença para ${agendamento.data_agendamento} às ${agendamento.horario}`,
         data: { agendamentoId: agendamento.id }
@@ -78,6 +77,7 @@ Deno.serve(async (req) => {
     return htmlResponse(renderSuccessPage(agendamento, false));
     
   } catch (error) {
+    console.log('Erro geral:', error.message);
     return htmlResponse(renderErrorPage('Erro ao processar', error.message), 500);
   }
 });
