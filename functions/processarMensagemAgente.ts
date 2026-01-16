@@ -792,7 +792,8 @@ PERGUNTE ao cliente: "Para qual especialidade você gostaria de agendar? Temos v
       } catch (e) {
         console.error('⚠️ Erro ao buscar disponibilidades:', e.message);
       }
-    } // fim do if deveBuscarDisponibilidades
+      }
+      } // fim do if deveBuscarDisponibilidades
 
     // Verificar no histórico se já temos médico, data e horário escolhidos
     let agendamentoCriado = false;
