@@ -1784,9 +1784,15 @@ INSTRUÇÕES GERAIS:
           });
         }
 
-        // Adicionar novas mensagens ao histórico
+        // Incluir URL da mídia no conteúdo se houver
+        let conteudoUsuario = messageText;
+        if (mediaUrl) {
+          conteudoUsuario = `${messageText}\n${mediaUrl}`;
+        }
+
+        // Adicionar novas mensagens ao histórico (com mídia se houver)
         historicoAtual.push(
-          { role: 'user', content: messageText, timestamp, messageId },
+          { role: 'user', content: conteudoUsuario, timestamp, messageId, mediaType, mediaUrl },
           { role: 'assistant', content: llmResponse, timestamp }
         );
         
