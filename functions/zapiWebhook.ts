@@ -51,20 +51,31 @@ async function processarMensagemRecebida(base44, payload) {
 
     // Buscar agendamentos pendentes deste telefone
     const telefoneNormalizado = normalizarTelefone(telefone);
-    console.log(`🔍 Buscando agendamentos para telefone: ${telefoneNormalizado}`);
+    const ultimos9Digitos = telefoneNormalizado.slice(-9); // Últimos 9 dígitos (DDD + número)
+    const ultimos8Digitos = telefoneNormalizado.slice(-8); // Últimos 8 dígitos
+    
+    console.log(`🔍 Buscando paciente para telefone: ${telefoneNormalizado}`);
+    console.log(`   Últimos 9 dígitos: ${ultimos9Digitos}`);
+    console.log(`   Últimos 8 dígitos: ${ultimos8Digitos}`);
 
-    // Buscar paciente pelo telefone
-    const pacientes = await base44.asServiceRole.entities.Paciente.filter({
-        telefone: { $regex: telefoneNormalizado.slice(-8) } // Últimos 8 dígitos
+    // Buscar todos os pacientes e filtrar manualmente (mais confiável)
+    const todosPacientes = await base44.asServiceRole.entities.Paciente.list('-created_date', 500);
+    
+    const pacientesEncontrados = todosPacientes.filter(p => {
+        if (!p.telefone) return false;
+        const telPaciente = normalizarTelefone(p.telefone);
+        return telPaciente.includes(ultimos8Digitos) || 
+               telPaciente.endsWith(ultimos9Digitos) ||
+               telefoneNormalizado.endsWith(telPaciente.slice(-8));
     });
 
-    if (!pacientes || pacientes.length === 0) {
+    if (!pacientesEncontrados || pacientesEncontrados.length === 0) {
         console.log('❌ Paciente não encontrado para este telefone');
         return new Response(JSON.stringify({ message: "Paciente não encontrado" }), { status: 200 });
     }
 
-    const paciente = pacientes[0];
-    console.log(`✅ Paciente encontrado: ${paciente.nome} (ID: ${paciente.id})`);
+    const paciente = pacientesEncontrados[0];
+    console.log(`✅ Paciente encontrado: ${paciente.nome} (ID: ${paciente.id}, Tel: ${paciente.telefone})`);
 
     // Buscar agendamentos futuros deste paciente com status "Agendado"
     const hoje = new Date().toISOString().split('T')[0];
