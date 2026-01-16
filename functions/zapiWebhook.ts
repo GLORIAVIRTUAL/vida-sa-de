@@ -79,11 +79,18 @@ async function processarMensagemRecebida(base44, payload) {
 
     // Buscar agendamentos futuros deste paciente com status "Agendado"
     const hoje = new Date().toISOString().split('T')[0];
-    const agendamentos = await base44.asServiceRole.entities.Agendamento.filter({
-        paciente_id: paciente.id,
-        status: 'Agendado',
-        data_agendamento: { $gte: hoje }
-    });
+    console.log(`🔍 Buscando agendamentos para paciente_id: ${paciente.id}, data >= ${hoje}`);
+    
+    // Buscar agendamentos do paciente
+    const todosAgendamentos = await base44.asServiceRole.entities.Agendamento.list('-data_agendamento', 200);
+    
+    const agendamentos = todosAgendamentos.filter(a => 
+        a.paciente_id === paciente.id && 
+        a.status === 'Agendado' && 
+        a.data_agendamento >= hoje
+    );
+    
+    console.log(`📋 Encontrados ${agendamentos.length} agendamentos pendentes`);
 
     if (!agendamentos || agendamentos.length === 0) {
         console.log('❌ Nenhum agendamento pendente encontrado para confirmação');
