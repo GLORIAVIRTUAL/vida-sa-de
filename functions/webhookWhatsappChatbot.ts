@@ -200,8 +200,15 @@ Deno.serve(async (req) => {
           return Response.json({ success: true, status: 'delegado' });
         }
         
-        // Juntar todas as mensagens pendentes em uma só
+        // Juntar todas as mensagens pendentes em uma só - MANTER ÚLTIMA MÍDIA
         const mensagemCompleta = todasMensagens.map(m => m.texto).join('\n');
+        // Pegar a última mídia se houver (para requisições com múltiplas mensagens de texto)
+        const ultimaMidia = todasMensagens.reverse().find(m => m.mediaUrl);
+        if (ultimaMidia) {
+          mediaUrl = ultimaMidia.mediaUrl;
+          mediaType = ultimaMidia.mediaType;
+          console.log(`📎 Usando última mídia encontrada: ${mediaType}`);
+        }
         console.log(`📝 Processando ${todasMensagens.length} mensagens acumuladas`);
         
         // Limpar mensagens pendentes
