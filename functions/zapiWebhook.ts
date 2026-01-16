@@ -51,10 +51,17 @@ async function processarMensagemRecebida(base44, payload) {
 
     // Buscar agendamentos pendentes deste telefone
     const telefoneNormalizado = normalizarTelefone(telefone);
-    const ultimos9Digitos = telefoneNormalizado.slice(-9); // Últimos 9 dígitos (DDD + número)
-    const ultimos8Digitos = telefoneNormalizado.slice(-8); // Últimos 8 dígitos
+    
+    // Extrair diferentes partes do número para busca flexível
+    // telefoneNormalizado pode ser: 5587988020504 (13 dígitos com código país)
+    // ou 87988020504 (11 dígitos sem código país)
+    const ultimos11Digitos = telefoneNormalizado.slice(-11); // DDD + 9 dígitos (formato BR completo)
+    const ultimos10Digitos = telefoneNormalizado.slice(-10); // DDD + 8 dígitos (formato antigo)
+    const ultimos9Digitos = telefoneNormalizado.slice(-9);   // 9 dígitos do celular
+    const ultimos8Digitos = telefoneNormalizado.slice(-8);   // 8 dígitos principais
     
     console.log(`🔍 Buscando paciente para telefone: ${telefoneNormalizado}`);
+    console.log(`   Últimos 11 dígitos: ${ultimos11Digitos}`);
     console.log(`   Últimos 9 dígitos: ${ultimos9Digitos}`);
     console.log(`   Últimos 8 dígitos: ${ultimos8Digitos}`);
 
@@ -71,11 +78,20 @@ async function processarMensagemRecebida(base44, payload) {
         // Verificar se o telefone tem pelo menos 8 dígitos (número válido)
         if (telPaciente.length < 8) return false;
         
-        // Comparar últimos 8 ou 9 dígitos para maior precisão
-        const match = telPaciente.endsWith(ultimos8Digitos) || 
-               telPaciente.endsWith(ultimos9Digitos) ||
-               telefoneNormalizado.endsWith(telPaciente.slice(-8)) ||
-               telefoneNormalizado.endsWith(telPaciente.slice(-9));
+        // Comparar diferentes variações do número
+        // telPaciente pode ser: 87988020504 (sem código país) ou 5587988020504 (com código)
+        const match = 
+            // Telefone do paciente termina com os dígitos do webhook
+            telPaciente.endsWith(ultimos8Digitos) || 
+            telPaciente.endsWith(ultimos9Digitos) ||
+            // OU o telefone do webhook termina com os dígitos do paciente
+            telefoneNormalizado.endsWith(telPaciente.slice(-8)) ||
+            telefoneNormalizado.endsWith(telPaciente.slice(-9)) ||
+            telefoneNormalizado.endsWith(telPaciente.slice(-10)) ||
+            telefoneNormalizado.endsWith(telPaciente.slice(-11)) ||
+            // OU comparação direta dos últimos 11 dígitos (formato BR)
+            telPaciente === ultimos11Digitos ||
+            telPaciente === ultimos10Digitos;
         
         if (match) {
             console.log(`   🔗 Match encontrado: ${p.nome} - Tel cadastrado: ${p.telefone} -> Normalizado: ${telPaciente}`);
