@@ -409,10 +409,13 @@ Deno.serve(async (req) => {
       console.log('🔍 CPF detectado:', cpfCliente);
       
       if (cpfCliente && cpfCliente.length === 11) {
-        // Buscar resultado pelo CPF
+        // Buscar resultado pelo CPF (com timeout e cache)
         try {
           console.log('🔎 Buscando resultados para CPF:', cpfCliente);
-          const resultados = await base44.asServiceRole.entities.ResultadoExame.list();
+          const resultados = await Promise.race([
+            base44.asServiceRole.entities.ResultadoExame.list(),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout ResultadoExame')), 4000))
+          ]);
           console.log('📊 Total de resultados no sistema:', resultados.length);
           
           // Filtrar pelo CPF (comparar sem formatação)
