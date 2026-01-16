@@ -2201,64 +2201,43 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
               </div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="tipo_servico" className="text-sm font-medium">Tipo de Serviço *</Label>
+              <Select 
+                name="tipo_servico" 
+                value={formData.tipo_servico} 
+                onValueChange={(value) => {
+                  handleChange('tipo_servico', value);
+                  if (value !== 'Múltiplos Serviços') {
+                    setModoMultiplosServicos(false);
+                    handleChange('itens_servico', []);
+                  }
+                }}
+              >
+                <SelectTrigger id="tipo_servico" className="mt-1"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Consulta">Consulta</SelectItem>
+                  <SelectItem value="Retorno">Retorno</SelectItem>
+                  <SelectItem value="Procedimento">Procedimento</SelectItem>
+                  <SelectItem value="Exame">Exame</SelectItem>
+                  <SelectItem value="Múltiplos Serviços">Múltiplos Serviços</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {(formData.tipo_servico === 'Retorno' || formData.tipo_servico === 'Consulta' || formData.tipo_servico === 'Procedimento') && (
               <div>
-                <Label htmlFor="tipo_servico">Tipo de Serviço *</Label>
-                <Select 
-                  name="tipo_servico" 
-                  value={formData.tipo_servico} 
-                  onValueChange={(value) => {
-                    handleChange('tipo_servico', value);
-                    if (value !== 'Múltiplos Serviços') {
-                      setModoMultiplosServicos(false);
-                      handleChange('itens_servico', []);
-                    }
-                  }}
-                >
-                  <SelectTrigger id="tipo_servico"><SelectValue /></SelectTrigger>
+                <Label htmlFor="medico_id" className="text-sm font-medium">
+                  Médico {formData.tipo_servico === 'Procedimento' ? '(Opt.)' : '*'}
+                </Label>
+                <Select name="medico_id" value={formData.medico_id} onValueChange={(value) => handleChange('medico_id', value)}>
+                  <SelectTrigger id="medico_id" className="mt-1"><SelectValue placeholder="Selecione..." /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Consulta">Consulta</SelectItem>
-                    <SelectItem value="Retorno">Retorno</SelectItem>
-                    <SelectItem value="Procedimento">Procedimento</SelectItem>
-                    <SelectItem value="Exame">Exame</SelectItem>
-                    <SelectItem value="Múltiplos Serviços">
-                      <div className="flex items-center gap-2">
-                        <Layers className="w-4 h-4" />
-                        Múltiplos Serviços
-                      </div>
-                    </SelectItem>
+                    {medicos.map(m => <SelectItem key={m.id} value={m.id}>Dr(a). {m.nome}</SelectItem>)}
                   </SelectContent>
                 </Select>
-                {formData.tipo_servico === 'Retorno' && (
-                  <p className="text-xs text-green-600 mt-1">
-                    ✅ Retornos são sempre gratuitos para o paciente
-                  </p>
-                )}
-                {formData.tipo_servico === 'Múltiplos Serviços' && (
-                  <p className="text-xs text-purple-600 mt-1">
-                    🔄 Adicione consultas, procedimentos e exames no mesmo agendamento
-                  </p>
-                )}
               </div>
-
-              {(formData.tipo_servico === 'Retorno' || formData.tipo_servico === 'Consulta' || formData.tipo_servico === 'Procedimento') && (
-                <div>
-                  <Label htmlFor="medico_id">
-                    Médico {formData.tipo_servico === 'Procedimento' ? '(Opcional)' : '*'}
-                  </Label>
-                  <Select name="medico_id" value={formData.medico_id} onValueChange={(value) => handleChange('medico_id', value)}>
-                    <SelectTrigger id="medico_id"><SelectValue placeholder="Selecione o médico" /></SelectTrigger>
-                    <SelectContent>
-                      {medicos.map(m => <SelectItem key={m.id} value={m.id}>Dr(a). {m.nome} - {m.especialidade}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                  {formData.tipo_servico === 'Procedimento' && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      Selecione um médico se desejar vincular o procedimento para cálculo de repasse.
-                    </p>
-                  )}
-                </div>
-              )}
+            )}
 
               {formData.tipo_servico === 'Procedimento' && (
                 <div className="md:col-span-2 space-y-2">
