@@ -1,74 +1,195 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.7.0';
-
-// Este é o endpoint que o Z-API irá chamar para nos notificar
-// sobre o status das mensagens.
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     
-    // Este endpoint é público e deve ser chamado apenas pelo Z-API
     if (req.method !== 'POST') {
         return new Response(JSON.stringify({ message: "Método não permitido. Use POST." }), { status: 405 });
     }
 
     try {
         const payload = await req.json();
-        console.log('🔔 Webhook Z-API recebido:', payload);
+        console.log('🔔 Webhook Z-API recebido:', JSON.stringify(payload));
 
-        // Extrair os dados importantes do payload do Z-API
+        // Verificar se é uma mensagem RECEBIDA (do paciente)
+        if (payload.isGroup === false && payload.fromMe === false && payload.text?.message) {
+            return await processarMensagemRecebida(base44, payload);
+        }
+
+        // Caso seja atualização de STATUS de mensagem enviada
         const messageId = payload.id;
-        const eventType = payload.event;
-        const status = payload.status; // ex: SENT, DELIVERED, READ, FAIL
+        const status = payload.status;
 
-        if (!messageId || !status) {
-            console.log('⚠️ Payload do webhook inválido (sem ID ou status)');
-            return new Response(JSON.stringify({ message: "Payload inválido." }), { status: 400 });
+        if (messageId && status) {
+            return await processarStatusMensagem(base44, messageId, status);
         }
 
-        // Mapear status do Z-API para o nosso sistema
-        let nossoStatus;
-        switch (status) {
-            case 'SENT':
-                nossoStatus = 'enviado';
-                break;
-            case 'DELIVERED':
-                nossoStatus = 'entregue';
-                break;
-            case 'READ':
-                nossoStatus = 'lido';
-                break;
-            case 'FAIL':
-            case 'NOT_SENT':
-                nossoStatus = 'falhou';
-                break;
-            default:
-                console.log(`Status Z-API "${status}" não mapeado. Ignorando.`);
-                return new Response(JSON.stringify({ message: "Status não mapeado" }), { status: 200 });
-        }
-        
-        // Encontrar o log da notificação usando o ID da mensagem da API
-        const notificationLogs = await base44.asServiceRole.entities.NotificationLog.filter({
-            api_message_id: messageId
-        });
-        
-        if (notificationLogs && notificationLogs.length > 0) {
-            const logParaAtualizar = notificationLogs[0];
-            console.log(`🔄 Atualizando log ${logParaAtualizar.id} para status: ${nossoStatus}`);
-            
-            await base44.asServiceRole.entities.NotificationLog.update(logParaAtualizar.id, {
-                status_entrega: nossoStatus
-            });
-            
-            console.log(`✅ Log ${logParaAtualizar.id} atualizado com sucesso.`);
-        } else {
-            console.log(`⚠️ Nenhum log de notificação encontrado para messageId: ${messageId}`);
-        }
-
-        // Responder rapidamente para o Z-API com status 200 para confirmar o recebimento
-        return new Response(JSON.stringify({ message: "Webhook recebido com sucesso!" }), { status: 200 });
+        console.log('⚠️ Payload não reconhecido, ignorando.');
+        return new Response(JSON.stringify({ message: "OK" }), { status: 200 });
 
     } catch (error) {
         console.error('❌ Erro ao processar webhook Z-API:', error);
-        return new Response(JSON.stringify({ error: 'Erro interno ao processar webhook' }), { status: 500 });
+        return new Response(JSON.stringify({ error: 'Erro interno' }), { status: 500 });
     }
 });
+
+// Processa mensagens recebidas dos pacientes (confirmações)
+async function processarMensagemRecebida(base44, payload) {
+    const telefone = payload.phone; // Número do remetente
+    const mensagem = payload.text?.message?.toLowerCase().trim() || '';
+    
+    console.log(`📩 Mensagem recebida de ${telefone}: "${mensagem}"`);
+
+    // Palavras-chave para confirmação
+    const palavrasConfirmacao = ['sim', 'confirmo', 'confirmar', 'confirmado', 'ok', 'vou', 'estarei', 'irei', 's', '1', 'yes'];
+    const ehConfirmacao = palavrasConfirmacao.some(p => mensagem === p || mensagem.startsWith(p + ' '));
+
+    if (!ehConfirmacao) {
+        console.log('📝 Mensagem não é uma confirmação, ignorando.');
+        return new Response(JSON.stringify({ message: "Mensagem não é confirmação" }), { status: 200 });
+    }
+
+    // Buscar agendamentos pendentes deste telefone
+    const telefoneNormalizado = normalizarTelefone(telefone);
+    console.log(`🔍 Buscando agendamentos para telefone: ${telefoneNormalizado}`);
+
+    // Buscar paciente pelo telefone
+    const pacientes = await base44.asServiceRole.entities.Paciente.filter({
+        telefone: { $regex: telefoneNormalizado.slice(-8) } // Últimos 8 dígitos
+    });
+
+    if (!pacientes || pacientes.length === 0) {
+        console.log('❌ Paciente não encontrado para este telefone');
+        return new Response(JSON.stringify({ message: "Paciente não encontrado" }), { status: 200 });
+    }
+
+    const paciente = pacientes[0];
+    console.log(`✅ Paciente encontrado: ${paciente.nome} (ID: ${paciente.id})`);
+
+    // Buscar agendamentos futuros deste paciente com status "Agendado"
+    const hoje = new Date().toISOString().split('T')[0];
+    const agendamentos = await base44.asServiceRole.entities.Agendamento.filter({
+        paciente_id: paciente.id,
+        status: 'Agendado',
+        data_agendamento: { $gte: hoje }
+    });
+
+    if (!agendamentos || agendamentos.length === 0) {
+        console.log('❌ Nenhum agendamento pendente encontrado para confirmação');
+        return new Response(JSON.stringify({ message: "Nenhum agendamento pendente" }), { status: 200 });
+    }
+
+    // Confirmar o agendamento mais próximo
+    const agendamentoMaisProximo = agendamentos.sort((a, b) => 
+        new Date(a.data_agendamento) - new Date(b.data_agendamento)
+    )[0];
+
+    console.log(`📅 Confirmando agendamento: ${agendamentoMaisProximo.id} - ${agendamentoMaisProximo.data_agendamento}`);
+
+    await base44.asServiceRole.entities.Agendamento.update(agendamentoMaisProximo.id, {
+        status: 'Confirmado'
+    });
+
+    // Criar notificação para a equipe
+    try {
+        await base44.asServiceRole.entities.Notification.create({
+            type: 'confirmacao_recebida',
+            message: `✅ ${paciente.nome} confirmou presença para ${agendamentoMaisProximo.data_agendamento} às ${agendamentoMaisProximo.horario} via WhatsApp`,
+            data: { 
+                agendamentoId: agendamentoMaisProximo.id,
+                pacienteNome: paciente.nome,
+                telefone: telefone
+            }
+        });
+    } catch (e) {
+        console.log('Erro ao criar notificação:', e.message);
+    }
+
+    // Enviar mensagem de confirmação de volta
+    try {
+        await enviarMensagemZapi(telefone, 
+            `✅ Perfeito, ${paciente.nome.split(' ')[0]}! Sua presença está confirmada para o dia ${formatarData(agendamentoMaisProximo.data_agendamento)} às ${agendamentoMaisProximo.horario}.\n\nLembre-se de chegar com 10 minutos de antecedência. Até lá! 😊\n\n*Centro Vida Saúde*`
+        );
+    } catch (e) {
+        console.log('Erro ao enviar confirmação:', e.message);
+    }
+
+    console.log(`🎉 Agendamento ${agendamentoMaisProximo.id} confirmado com sucesso!`);
+    return new Response(JSON.stringify({ 
+        message: "Confirmação processada",
+        agendamentoId: agendamentoMaisProximo.id 
+    }), { status: 200 });
+}
+
+// Processa atualizações de status de mensagens enviadas
+async function processarStatusMensagem(base44, messageId, status) {
+    let nossoStatus;
+    switch (status) {
+        case 'SENT':
+            nossoStatus = 'enviado';
+            break;
+        case 'DELIVERED':
+            nossoStatus = 'entregue';
+            break;
+        case 'READ':
+            nossoStatus = 'lido';
+            break;
+        case 'FAIL':
+        case 'NOT_SENT':
+            nossoStatus = 'falhou';
+            break;
+        default:
+            console.log(`Status "${status}" não mapeado.`);
+            return new Response(JSON.stringify({ message: "OK" }), { status: 200 });
+    }
+    
+    const notificationLogs = await base44.asServiceRole.entities.NotificationLog.filter({
+        api_message_id: messageId
+    });
+    
+    if (notificationLogs && notificationLogs.length > 0) {
+        const log = notificationLogs[0];
+        console.log(`🔄 Atualizando log ${log.id} para: ${nossoStatus}`);
+        await base44.asServiceRole.entities.NotificationLog.update(log.id, {
+            status_entrega: nossoStatus
+        });
+    }
+
+    return new Response(JSON.stringify({ message: "Status atualizado" }), { status: 200 });
+}
+
+// Funções auxiliares
+function normalizarTelefone(telefone) {
+    return telefone.replace(/\D/g, '');
+}
+
+function formatarData(dataStr) {
+    try {
+        const d = new Date(dataStr + 'T12:00:00');
+        return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    } catch {
+        return dataStr;
+    }
+}
+
+async function enviarMensagemZapi(telefone, mensagem) {
+    const instanceId = Deno.env.get('ZAPI_INSTANCE_ID');
+    const token = Deno.env.get('ZAPI_TOKEN');
+    const clientToken = Deno.env.get('ZAPI_CLIENT_TOKEN');
+
+    const telefoneFormatado = telefone.replace(/\D/g, '');
+    
+    const response = await fetch(`https://api.z-api.io/instances/${instanceId}/token/${token}/send-text`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Client-Token': clientToken
+        },
+        body: JSON.stringify({
+            phone: telefoneFormatado,
+            message: mensagem
+        })
+    });
+
+    return response.json();
+}
