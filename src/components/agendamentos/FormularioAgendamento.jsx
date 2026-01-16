@@ -2708,9 +2708,8 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
               </div>
              </div>
 
-            {/* NOVA SEÇÃO: RECORRÊNCIA - Mostrar apenas para novo agendamento de consulta */}
             {!agendamento && (formData.tipo_servico === 'Consulta' || formData.tipo_servico === 'Retorno') && (
-              <div className="p-4 border-2 border-purple-200 rounded-lg bg-purple-50 space-y-4">
+              <div className="p-4 border rounded-lg bg-gray-50 space-y-4">
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id="is_recorrente"
@@ -2727,15 +2726,15 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                     htmlFor="is_recorrente"
                     className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex items-center gap-2"
                   >
-                    <Repeat className="w-4 h-4 text-purple-600" />
-                    <span className="font-semibold text-purple-900">Agendar Consultas Recorrentes</span>
+                    <Repeat className="w-4 h-4 text-gray-700" />
+                    <span className="font-semibold text-gray-800">Recorrente</span>
                   </label>
                 </div>
-                
+
                 {formData.is_recorrente && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3 ml-6">
                     <div>
-                      <Label htmlFor="recorrencia_tipo" className="text-purple-900">
+                      <Label htmlFor="recorrencia_tipo" className="text-gray-800">
                         Frequência *
                       </Label>
                       <Select 
