@@ -2512,16 +2512,12 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
             {/* Bloco para seleção de exames com retry e compressão */}
             {formData.tipo_servico === 'Exame' && (
               <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
-                <h3 className="font-medium text-lg">Orçamento de Exames</h3>
-                
-                <div className='p-4 border-l-4 border-blue-500 bg-blue-50 text-blue-800 rounded-r-lg'>
-                    <p className='font-bold mb-2'>🤖 Análise de Pedido com IA</p>
-                    <p className='text-sm mb-3 text-blue-700'>
-                      Envie uma foto ou PDF do pedido médico. Nossa IA identifica automaticamente os exames solicitados.
-                      <br/>
-                      <span className='text-xs text-blue-600'>
-                        💡 Arquivos grandes são otimizados automaticamente. Sistema com retry automático em caso de falhas.
-                      </span>
+                <h3 className="font-medium text-lg text-gray-800">Exames</h3>
+
+                <div className='p-4 border-l-4 bg-gray-100 rounded-r-lg'>
+                    <p className='font-bold mb-2 text-gray-800'>Análise Automática com IA</p>
+                    <p className='text-sm mb-3 text-gray-700'>
+                      Envie uma foto ou PDF do pedido médico.
                     </p>
                     
                     <div className="flex flex-col md:flex-row items-end gap-3">
