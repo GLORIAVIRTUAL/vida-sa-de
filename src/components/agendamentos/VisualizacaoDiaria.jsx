@@ -311,7 +311,7 @@ export default function VisualizacaoDiaria({ agendamentos, medicos, pacientes, o
                         </Button>
                       )}
                       
-                      {!agendamento.is_reserva && agendamento.status === "Agendado" && (
+                      {!agendamento.is_reserva && (agendamento.status === "Agendado" || agendamento.status === "Confirmado") && (
                         <>
                           <Link to={createPageUrl('ordem-servico')} state={{ agendamento }}>
                             <Button size="sm" variant="outline" className="text-green-600 hover:bg-green-50">
