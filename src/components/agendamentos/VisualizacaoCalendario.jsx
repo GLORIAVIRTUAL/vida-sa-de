@@ -97,12 +97,14 @@ export default function VisualizacaoCalendario({ agendamentos, medicos, paciente
           width: 100%;
           display: flex;
           justify-content: center;
+          overflow-x: auto;
+          padding: 20px;
         }
 
         /* Calendário estilo grade */
         .calendar-grid {
-          width: 100%;
-          max-width: 100%;
+          width: auto;
+          min-width: max-content;
         }
 
         /* Cabeçalho com mês e navegação */
