@@ -671,8 +671,9 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
       'Pediatria', 'Pediatra', 'Pneumologia', 'Pneumologista',
       'Neurologia', 'Neurologista', 'Quiropraxia', 'Quiropraxista',
       'Massoterapia', 'Massoterapeuta', 'Massagem', 'Optometria', 'Optometrista',
-      'Hidroginástica', 'Hidroterapia', 'Pilates', 'Psicopedagoga', 'Psicopedagogia'
-    ];
+      'Hidroginástica', 'Hidroterapia', 'Pilates', 'Psicopedagoga', 'Psicopedagogia',
+      'Odontologia', 'Odontologista', 'Dentista', 'Dentário', 'Dente', 'Dentes'
+      ];
 
     // Função para normalizar texto (remover acentos e converter para lowercase)
     const normalizarTexto = (texto) => {
@@ -800,8 +801,9 @@ PERGUNTE ao cliente: "Para qual especialidade você gostaria de agendar? Temos v
             'otorrino': ['otorrinolaringologia', 'otorrino'],
             'pedia': ['pediatria', 'pediatra'],
             'pneumo': ['pneumologia', 'pneumologista'],
-            'reumato': ['reumatologia', 'reumatologista']
-          };
+            'reumato': ['reumatologia', 'reumatologista'],
+            'dent': ['odontologia', 'odontologista', 'dentista', 'dentario', 'dente', 'dentes']
+            };
 
           // Encontrar termos relacionados (usando texto normalizado)
           let termosRelacionados = [especialidadeLower];
