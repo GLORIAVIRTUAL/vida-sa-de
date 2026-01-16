@@ -1466,19 +1466,31 @@ INSTRUÇÕES GERAIS:
     // Chamar LLM com timeout e modelo otimizado
     let llmResponse;
     try {
+      console.log('🤖 Iniciando chamada ao LLM com params:', { 
+        promptTamanho: promptCompleto.length,
+        temMidia: !!mediaUrl,
+        tipoMidia: mediaType,
+        modelo: config.modelo_llm
+      });
+
+      const inicioLLM = Date.now();
       llmResponse = await Promise.race([
         base44.asServiceRole.integrations.Core.InvokeLLM(llmParams),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout LLM Principal')), 10000))
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout LLM Principal (30s)')), 30000))
       ]);
-      console.log('✅ LLM respondeu com sucesso');
+      const tempoLLM = Date.now() - inicioLLM;
+      console.log(`✅ LLM respondeu com sucesso em ${tempoLLM}ms`);
+      console.log('📝 Resposta LLM (primeiros 200 caracteres):', (llmResponse || '').substring(0, 200));
     } catch (e) {
       console.error('❌ Erro ou timeout no LLM:', e.message);
       console.error('📋 Params enviados:', {
         promptTamanho: promptCompleto.length,
         mediaUrl: mediaUrl ? 'SIM' : 'NÃO',
         mediaType: mediaType,
-        modelo: config.modelo_llm
+        modelo: config.modelo_llm,
+        temHistorico: !!historicoConversa
       });
+      console.error('❌ Stack erro:', e.stack);
       llmResponse = `😊 Desculpe, estou com dificuldade para processar sua mensagem. Pode tentar novamente em alguns instantes?`;
     }
     
