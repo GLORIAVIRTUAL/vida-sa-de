@@ -708,9 +708,9 @@ PERGUNTE ao cliente: "Para qual especialidade você gostaria de agendar? Temos v
 
       if (jaShowouDisponibilidades) {
         console.log('⏭️ Disponibilidades já foram mostradas - cliente está escolhendo');
-        infoDisponibilidade = ''; // Não mostrar novamente
-      } else {
-        console.log('📅 Cliente quer agendar - buscando disponibilidades...');
+          infoDisponibilidade = ''; // Não mostrar novamente
+        } else if (!querVerificarAgendamento) {
+          console.log('📅 Cliente quer agendar - buscando disponibilidades...');
 
       try {
         // Buscar médicos e disponibilidades diretamente
