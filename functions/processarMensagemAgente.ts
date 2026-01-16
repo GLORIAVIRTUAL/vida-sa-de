@@ -86,6 +86,10 @@ Deno.serve(async (req) => {
       console.log('⚠️ Não foi possível buscar histórico');
     }
 
+    // Verificar se cliente quer verificar status do agendamento
+    const querVerificarAgendamento = /verificar|consultar|checar|status|confirma|está confirmado|foi confirmado|agendamento/i.test(messageText) && 
+                                    !/cancelar|desmarcar|agendar|marcar/i.test(messageText);
+
     // Verificar se cliente quer cancelar agendamento
     const querCancelar = /cancelar|desmarcar|n[aã]o (vou|posso|irei)|remarcar|adiar|desistir/i.test(messageText) ||
                         /cancelar|desmarcar/i.test(historicoConversa || '');
