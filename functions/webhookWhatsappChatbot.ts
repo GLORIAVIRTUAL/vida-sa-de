@@ -370,15 +370,30 @@ Deno.serve(async (req) => {
 });
 
 async function enviarWhatsApp(phoneNumber, mensagem) {
+  console.log('📤 Iniciando envio WhatsApp para:', phoneNumber);
+  console.log('💬 Mensagem:', mensagem.substring(0, 100));
+  
   const phoneNumberId = Deno.env.get('META_PHONE_NUMBER_ID');
   const accessToken = Deno.env.get('META_ACCESS_TOKEN');
 
   if (!phoneNumberId || !accessToken) {
-    console.warn('⚠️ WhatsApp não configurado');
-    return;
+    console.error('❌ ERRO CRÍTICO: WhatsApp não configurado!');
+    console.error('   - phoneNumberId:', phoneNumberId ? '✅ SET' : '❌ MISSING');
+    console.error('   - accessToken:', accessToken ? '✅ SET' : '❌ MISSING');
+    throw new Error('WhatsApp não configurado');
   }
 
   const url = `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`;
+  console.log('🔗 URL:', url);
+
+  const requestBody = {
+    messaging_product: 'whatsapp',
+    to: phoneNumber,
+    type: 'text',
+    text: { body: mensagem }
+  };
+
+  console.log('📋 Request body:', JSON.stringify(requestBody));
 
   const response = await fetch(url, {
     method: 'POST',
@@ -386,20 +401,19 @@ async function enviarWhatsApp(phoneNumber, mensagem) {
       'Authorization': `Bearer ${accessToken}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      messaging_product: 'whatsapp',
-      to: phoneNumber,
-      type: 'text',
-      text: { body: mensagem }
-    })
+    body: JSON.stringify(requestBody)
   });
 
   const result = await response.json();
+  
+  console.log('📊 Response status:', response.status);
+  console.log('📊 Response body:', JSON.stringify(result));
 
   if (!response.ok) {
-    console.error('❌ Erro WhatsApp:', result);
+    console.error('❌ Erro WhatsApp API:', result);
+    throw new Error(`Erro WhatsApp: ${JSON.stringify(result)}`);
   } else {
-    console.log('✅ WhatsApp enviado:', result);
+    console.log('✅ WhatsApp enviado com sucesso!');
   }
 }
 
