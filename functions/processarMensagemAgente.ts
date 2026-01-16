@@ -37,9 +37,18 @@ Deno.serve(async (req) => {
       });
     }
     
-    // Buscar configuração do chatbot
-    const configs = await base44.asServiceRole.entities.ChatbotConfig.filter({ ativo: true });
-    const config = configs[0];
+    // Buscar configuração do chatbot (com timeout)
+    let config;
+    try {
+      const configs = await Promise.race([
+        base44.asServiceRole.entities.ChatbotConfig.filter({ ativo: true }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout ChatbotConfig')), 5000))
+      ]);
+      config = configs[0];
+    } catch (e) {
+      console.error('⚠️ Erro ao buscar ChatbotConfig:', e.message);
+      config = null;
+    }
     
     if (!config) {
       console.log('❌ ChatbotConfig não encontrado');
