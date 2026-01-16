@@ -85,7 +85,7 @@ export default function Turmas() {
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Turmas e Grupos</h1>
+            <h1 className="text-cyan-500 text-3xl font-bold">Turmas e Grupos</h1>
             <p className="text-gray-600">Gerencie aulas de Hidroginástica, Pilates e outras atividades coletivas.</p>
           </div>
           <Button onClick={handleNovaTurma} className="bg-blue-600 hover:bg-blue-700">
