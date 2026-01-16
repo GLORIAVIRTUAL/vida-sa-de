@@ -141,11 +141,10 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
 
   const buscarContatos = async () => {
     try {
-      const lista = await base44.entities.Contato.list('-ultima_interacao', 100);
+      const lista = await base44.entities.Contato.list('-ultima_interacao', 50);
       const comHistorico = lista.filter(c => 
         (c.historico_mensagens && c.historico_mensagens.length > 0) || c.ultima_mensagem
       );
-      // Ordenar: ativas primeiro (não finalizadas), depois por última interação (descendente)
       const ordenados = [...comHistorico].sort((a, b) => {
         const aFinalizado = a.conversa_finalizada === true;
         const bFinalizado = b.conversa_finalizada === true;
@@ -164,9 +163,30 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
     }
   };
 
+  // Atualizar contato selecionado em tempo real
+  const atualizarContatoSelecionado = async () => {
+    if (!contatoSelecionado?.id) return;
+    try {
+      const contatoAtualizado = await base44.entities.Contato.get(contatoSelecionado.id);
+      if (contatoAtualizado) {
+        setContatoSelecionado(contatoAtualizado);
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar:', error);
+    }
+  };
+
   useEffect(() => { buscarContatos(); }, []);
+  
+  // Atualizar apenas contato selecionado a cada 2 segundos (rápido)
   useEffect(() => {
-    const interval = setInterval(buscarContatos, 10000);
+    const interval = setInterval(atualizarContatoSelecionado, 2000);
+    return () => clearInterval(interval);
+  }, [contatoSelecionado?.id]);
+  
+  // Atualizar lista geral a cada 15 segundos (menos frequente)
+  useEffect(() => {
+    const interval = setInterval(buscarContatos, 15000);
     return () => clearInterval(interval);
   }, []);
 
