@@ -1133,9 +1133,30 @@ Retorne JSON.`;
       console.log('📋 Carregando lista de procedimentos e exames para orçamento...');
       
       try {
-        const procedimentos = await base44.asServiceRole.entities.Procedimento.filter({ status: 'Ativo' });
-        const exames = await base44.asServiceRole.entities.Exame.filter({ status: 'Ativo' });
-        const tabelaPrecos = await base44.asServiceRole.entities.TabelaPreco.list();
+        // Carregamento paralelo com timeout
+        const [procedimentos, exames, tabelaPrecos] = await Promise.all([
+          Promise.race([
+            base44.asServiceRole.entities.Procedimento.filter({ status: 'Ativo' }),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout Procedimentos')), 3000))
+          ]).catch(e => {
+            console.warn('⚠️ Erro procedimentos:', e.message);
+            return [];
+          }),
+          Promise.race([
+            base44.asServiceRole.entities.Exame.filter({ status: 'Ativo' }),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout Exames')), 3000))
+          ]).catch(e => {
+            console.warn('⚠️ Erro exames:', e.message);
+            return [];
+          }),
+          Promise.race([
+            base44.asServiceRole.entities.TabelaPreco.list(),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout TabelaPrecos')), 3000))
+          ]).catch(e => {
+            console.warn('⚠️ Erro tabela preços:', e.message);
+            return [];
+          })
+        ]);
         
         if (procedimentos.length > 0 || exames.length > 0) {
           infoProcedimentosExames = `\n\n📋 BASE DE DADOS - PROCEDIMENTOS E EXAMES COM PREÇOS:\n`;
