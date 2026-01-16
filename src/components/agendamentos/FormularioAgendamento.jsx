@@ -2289,8 +2289,124 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                            </div>
                          </div>
 
-                         {/* SEÇÃO DE DETALHES DO SERVIÇO (PROCEDIMENTO, EXAME, ETC) */}
-                        {/* ... (Logic for specific service types) ... */}
+                         {formData.tipo_servico === 'Procedimento' && (
+                           <div className="space-y-3">
+                             <h3 className="text-base font-semibold text-gray-800 border-b pb-2">Procedimento</h3>
+                             <div className="p-4 border rounded-lg bg-gray-50 space-y-4">
+                               <div>
+                                 <Label htmlFor="busca_procedimento">Buscar Procedimento</Label>
+                                 <Input id="busca_procedimento" placeholder="Digite o nome..." value={buscaProcedimento} onChange={(e) => setBuscaProcedimento(e.target.value)} className="mt-1" />
+                               </div>
+                               <div>
+                                 <Label htmlFor="procedimento_id">Procedimento *</Label>
+                                 <Select value={formData.procedimento_id} onValueChange={(value) => handleChange('procedimento_id', value)}>
+                                   <SelectTrigger id="procedimento_id" className="mt-1">
+                                     <SelectValue placeholder="Selecione..." />
+                                   </SelectTrigger>
+                                   <SelectContent>
+                                     {procedimentosFiltrados.length === 0 ? (
+                                       <SelectItem value="none" disabled>Nenhum encontrado</SelectItem>
+                                     ) : (
+                                       procedimentosFiltrados.map(p => <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>)
+                                     )}
+                                   </SelectContent>
+                                 </Select>
+                               </div>
+                             </div>
+                           </div>
+                         )}
+
+                         {formData.tipo_servico === 'Exame' && (
+                           <div className="space-y-3">
+                             <h3 className="text-base font-semibold text-gray-800 border-b pb-2">Exames</h3>
+                             <div className="p-4 border rounded-lg bg-gray-50 space-y-4">
+                               <div>
+                                 <Label>Adicionar Exame</Label>
+                                 <Select onValueChange={adicionarExame} value="">
+                                   <SelectTrigger><SelectValue placeholder="Selecione um exame para adicionar..." /></SelectTrigger>
+                                   <SelectContent>
+                                     {exames.filter(e => !formData.exames_ids.includes(e.id)).map(e => (
+                                       <SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>
+                                     ))}
+                                   </SelectContent>
+                                 </Select>
+                               </div>
+                               {selectedExames.length > 0 && (
+                                 <div>
+                                   <Label className="font-medium">Selecionados ({selectedExames.length})</Label>
+                                   <div className="space-y-2 mt-2">
+                                     {selectedExames.map(exame => (
+                                       <div key={exame.id} className="flex items-center justify-between p-2 bg-white rounded border">
+                                         <span className="text-sm">{exame.nome}</span>
+                                         <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => removerExame(exame.id)}>
+                                           <X className="w-4 h-4" />
+                                         </Button>
+                                       </div>
+                                     ))}
+                                   </div>
+                                 </div>
+                               )}
+                             </div>
+                           </div>
+                         )}
+
+                         {formData.tipo_servico === 'Múltiplos Serviços' && (
+                           <div className="space-y-3">
+                             <h3 className="text-base font-semibold text-gray-800 border-b pb-2">Serviços ({formData.itens_servico.length})</h3>
+                             <div className="p-4 border rounded-lg bg-gray-50 space-y-4">
+                               <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                                 <Select value={servicoParaAdicionar.tipo} onValueChange={(v) => setServicoParaAdicionar(prev => ({ ...prev, tipo: v, id: '', medicoId: '' }))}>
+                                   <SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger>
+                                   <SelectContent>
+                                     <SelectItem value="Consulta">Consulta</SelectItem>
+                                     <SelectItem value="Procedimento">Procedimento</SelectItem>
+                                     <SelectItem value="Exame">Exame</SelectItem>
+                                   </SelectContent>
+                                 </Select>
+                                 {servicoParaAdicionar.tipo === 'Consulta' ? (
+                                   <Select value={servicoParaAdicionar.medicoId} onValueChange={(v) => setServicoParaAdicionar(prev => ({ ...prev, medicoId: v }))}>
+                                     <SelectTrigger><SelectValue placeholder="Médico" /></SelectTrigger>
+                                     <SelectContent>
+                                       {medicos.map(m => <SelectItem key={m.id} value={m.id}>Dr(a). {m.nome}</SelectItem>)}
+                                     </SelectContent>
+                                   </Select>
+                                 ) : servicoParaAdicionar.tipo === 'Procedimento' ? (
+                                   <Select value={servicoParaAdicionar.id} onValueChange={(v) => setServicoParaAdicionar(prev => ({ ...prev, id: v }))}>
+                                     <SelectTrigger><SelectValue placeholder="Procedimento" /></SelectTrigger>
+                                     <SelectContent>
+                                       {procedimentos.map(p => <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>)}
+                                     </SelectContent>
+                                   </Select>
+                                 ) : servicoParaAdicionar.tipo === 'Exame' ? (
+                                   <Select value={servicoParaAdicionar.id} onValueChange={(v) => setServicoParaAdicionar(prev => ({ ...prev, id: v }))}>
+                                     <SelectTrigger><SelectValue placeholder="Exame" /></SelectTrigger>
+                                     <SelectContent>
+                                       {exames.map(e => <SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>)}
+                                     </SelectContent>
+                                   </Select>
+                                 ) : null}
+                                 <Button type="button" onClick={() => { if (servicoParaAdicionar.tipo === 'Consulta' && servicoParaAdicionar.medicoId) { adicionarItemServico('Consulta', null, servicoParaAdicionar.medicoId); } else if (servicoParaAdicionar.tipo === 'Procedimento' && servicoParaAdicionar.id) { adicionarItemServico('Procedimento', servicoParaAdicionar.id); } else if (servicoParaAdicionar.tipo === 'Exame' && servicoParaAdicionar.id) { adicionarItemServico('Exame', servicoParaAdicionar.id); } setServicoParaAdicionar({ tipo: '', id: '', medicoId: '' }); }}>
+                                   <Plus className="w-4 h-4" />
+                                 </Button>
+                               </div>
+                               {formData.itens_servico.length > 0 && (
+                                 <div className="space-y-2">
+                                   {formData.itens_servico.map(item => (
+                                     <div key={item.id} className="flex items-center justify-between p-2 bg-white rounded border">
+                                       <div className="flex-1">
+                                         <p className="text-sm font-medium">{item.descricao}</p>
+                                         <p className="text-xs text-gray-500">R$ {item.valor.toFixed(2).replace('.', ',')}</p>
+                                       </div>
+                                       <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => removerItemServico(item.id)}>
+                                         <Trash2 className="w-4 h-4 text-red-500" />
+                                       </Button>
+                                     </div>
+                                   ))}
+                                 </div>
+                               )}
+                             </div>
+                           </div>
+                         )}
 
                          {/* SEÇÃO VALORES E PAGAMENTO */}
                          <div className="space-y-3">
