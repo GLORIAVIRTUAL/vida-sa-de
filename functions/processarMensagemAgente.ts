@@ -601,18 +601,18 @@ PERGUNTE ao cliente: "Para qual especialidade você gostaria de agendar? Temos v
           }
 
           medicosParaBuscar = todosMedicos.filter(m => {
-            // Verifica no campo principal 'especialidade'
-            const espPrincipal = (m.especialidade || '').toLowerCase();
+            // Verifica no campo principal 'especialidade' (NORMALIZADO)
+            const espPrincipal = normalizarTexto(m.especialidade || '');
             const matchPrincipal = termosRelacionados.some(t => espPrincipal.includes(t) || t.includes(espPrincipal.split(' ')[0]));
 
-            // Verifica no array 'especialidades'
+            // Verifica no array 'especialidades' (NORMALIZADO)
             const matchArray = m.especialidades?.some(e => {
-              const eLower = e.toLowerCase();
+              const eLower = normalizarTexto(e);
               return termosRelacionados.some(t => eLower.includes(t) || t.includes(eLower.split(' ')[0]));
             });
 
-            // Verifica também no nome do médico (alguns podem ter especialidade no nome)
-            const nomeLower = (m.nome || '').toLowerCase();
+            // Verifica também no nome do médico (NORMALIZADO)
+            const nomeLower = normalizarTexto(m.nome || '');
             const matchNome = termosRelacionados.some(t => nomeLower.includes(t));
 
             return matchPrincipal || matchArray || matchNome;
