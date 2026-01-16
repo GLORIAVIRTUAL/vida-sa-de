@@ -19,8 +19,8 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  TableRow } from
+"@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -29,7 +29,7 @@ import { format, startOfMonth, endOfMonth } from "date-fns";
 const statusPagamentoColors = {
   "Pendente": "bg-yellow-100 text-yellow-800",
   "Pago": "bg-green-100 text-green-800",
-  "Cancelado": "bg-red-100 text-red-800",
+  "Cancelado": "bg-red-100 text-red-800"
 };
 
 export default function OrdemDeServico() {
@@ -53,7 +53,7 @@ export default function OrdemDeServico() {
   const [mostrarForm, setMostrarForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [corrigindo, setCorrigindo] = useState(false);
-  
+
   // Filtros
   const [dataInicio, setDataInicio] = useState(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
   const [dataFim, setDataFim] = useState(format(endOfMonth(new Date()), 'yyyy-MM-dd'));
@@ -62,23 +62,23 @@ export default function OrdemDeServico() {
   const handleCorrigirNomes = async () => {
     setCorrigindo(true);
     try {
-        toast({ title: "Sincronizando...", description: "Buscando e corrigindo nomes faltantes..." });
-        const res = await base44.functions.invoke('fixOsPatientNames', {});
-        if (res.data?.success) {
-            toast({ 
-                title: "Sucesso", 
-                description: res.data.message || "Nomes sincronizados com sucesso!",
-                className: "bg-green-50 border-green-200" 
-            });
-            await carregarDados();
-        } else {
-            toast({ title: "Aviso", description: "Não foi possível completar a sincronização.", variant: "destructive" });
-        }
+      toast({ title: "Sincronizando...", description: "Buscando e corrigindo nomes faltantes..." });
+      const res = await base44.functions.invoke('fixOsPatientNames', {});
+      if (res.data?.success) {
+        toast({
+          title: "Sucesso",
+          description: res.data.message || "Nomes sincronizados com sucesso!",
+          className: "bg-green-50 border-green-200"
+        });
+        await carregarDados();
+      } else {
+        toast({ title: "Aviso", description: "Não foi possível completar a sincronização.", variant: "destructive" });
+      }
     } catch (error) {
-        console.error(error);
-        toast({ title: "Erro", description: "Falha ao chamar função de correção.", variant: "destructive" });
+      console.error(error);
+      toast({ title: "Erro", description: "Falha ao chamar função de correção.", variant: "destructive" });
     } finally {
-        setCorrigindo(false);
+      setCorrigindo(false);
     }
   };
 
@@ -105,25 +105,25 @@ export default function OrdemDeServico() {
       return;
     }
 
-    const categoria = categorias.find(c => c.id === agendamento.categoria_preco_id);
+    const categoria = categorias.find((c) => c.id === agendamento.categoria_preco_id);
     console.log('✅ Categoria encontrada:', categoria?.nome);
     console.log('═══════════════════════════════════════\n');
 
     // Buscar paciente se não estiver na lista carregada
-    let paciente = pacientes.find(p => p.id === agendamento.paciente_id);
+    let paciente = pacientes.find((p) => p.id === agendamento.paciente_id);
     if (!paciente && agendamento.paciente_id) {
-        try {
-            console.log('🔍 Paciente não encontrado na lista local, buscando na API...');
-            const res = await Paciente.filter({ id: agendamento.paciente_id });
-            if (res && res.length > 0) {
-                paciente = res[0];
-                console.log('✅ Paciente recuperado da API:', paciente.nome);
-            }
-        } catch (e) {
-            console.error('❌ Erro ao buscar paciente:', e);
+      try {
+        console.log('🔍 Paciente não encontrado na lista local, buscando na API...');
+        const res = await Paciente.filter({ id: agendamento.paciente_id });
+        if (res && res.length > 0) {
+          paciente = res[0];
+          console.log('✅ Paciente recuperado da API:', paciente.nome);
         }
+      } catch (e) {
+        console.error('❌ Erro ao buscar paciente:', e);
+      }
     }
-    
+
     setPacienteFormulario(paciente);
     setAgendamentoParaOS(agendamento);
     setMostrarForm(true);
@@ -139,54 +139,54 @@ export default function OrdemDeServico() {
     try {
       setLoading(true);
       console.log('🔄 Carregando dados da página OS...');
-      
+
       // Carregar dados em etapas para evitar rate limit
       // Etapa 1: Dados essenciais
       const [medicosData, categoriasData] = await Promise.all([
-        Medico.list("nome", 500),
-        CategoriaPreco.list(),
-      ]);
-      
+      Medico.list("nome", 500),
+      CategoriaPreco.list()]
+      );
+
       setMedicos(medicosData || []);
       setCategorias(categoriasData || []);
-      
+
       // Etapa 2: Ordens de Serviço
       let ordensData = [];
       try {
         console.log('🔄 Tentando carregar OS via função backend...');
         const res = await base44.functions.invoke('listOrdensServico', {});
         if (res?.data?.ordens) {
-           ordensData = res.data.ordens;
-           console.log('✅ OS carregadas via função:', ordensData.length);
+          ordensData = res.data.ordens;
+          console.log('✅ OS carregadas via função:', ordensData.length);
         } else {
-           throw new Error("Formato de resposta inválido");
+          throw new Error("Formato de resposta inválido");
         }
       } catch (err) {
         console.warn("⚠️ Falha na função backend, usando fallback SDK:", err);
         ordensData = await OrdemServico.list("-data_execucao", 500);
         console.log('✅ OS carregadas via fallback:', ordensData?.length);
       }
-      
+
       setOrdens(ordensData || []);
-      
+
       // Etapa 3: Dados secundários (com pequeno delay para evitar rate limit)
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
       const [pacientesData, procedimentosData, examesData] = await Promise.all([
-        Paciente.list("nome", 1000),
-        Procedimento.list("-created_date", 500),
-        Exame.list("-created_date", 500),
-      ]);
-      
+      Paciente.list("nome", 1000),
+      Procedimento.list("-created_date", 500),
+      Exame.list("-created_date", 500)]
+      );
+
       setPacientes(pacientesData || []);
       setProcedimentos(procedimentosData || []);
       setExames(examesData || []);
-      
+
       // Etapa 4: Agendamentos (opcional, carregar sob demanda)
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 200));
       const agendamentosData = await Agendamento.list("-data_agendamento", 500);
       setAgendamentos(agendamentosData || []);
-      
+
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
       toast({
@@ -201,7 +201,7 @@ export default function OrdemDeServico() {
 
   const getNome = useCallback((id, tipo) => {
     const lista = tipo === 'paciente' ? pacientes : medicos;
-    const item = lista.find(i => i.id === id);
+    const item = lista.find((i) => i.id === id);
     return item ? item.nome : "Não encontrado";
   }, [pacientes, medicos]);
 
@@ -221,19 +221,19 @@ export default function OrdemDeServico() {
 
       if (novaOS.status_pagamento === 'Pago' && agendamentoParaOS) {
         // Tenta pegar nome da OS (snapshot histórico) ou da lista
-        const nomePaciente = novaOS.paciente_nome || pacientes.find(p => p.id === novaOS.paciente_id)?.nome || 'Paciente Não Identificado';
+        const nomePaciente = novaOS.paciente_nome || pacientes.find((p) => p.id === novaOS.paciente_id)?.nome || 'Paciente Não Identificado';
         const tipoServico = agendamentoParaOS.tipo_servico;
 
         let categoriaReceita = "Outros";
-        if (tipoServico === "Consulta") categoriaReceita = "Receita Consultas";
-        else if (tipoServico === "Procedimento") categoriaReceita = "Receita Procedimentos";
-        else if (tipoServico === "Exame") categoriaReceita = "Receita Exames";
+        if (tipoServico === "Consulta") categoriaReceita = "Receita Consultas";else
+        if (tipoServico === "Procedimento") categoriaReceita = "Receita Procedimentos";else
+        if (tipoServico === "Exame") categoriaReceita = "Receita Exames";
 
         let descricaoConvenio = "";
         if (agendamentoParaOS.convenio) {
-             descricaoConvenio = agendamentoParaOS.convenio === "Prefeituras"
-                ? `(${agendamentoParaOS.convenio} - ${agendamentoParaOS.nome_prefeitura || ''})`
-                : `(${agendamentoParaOS.convenio})`;
+          descricaoConvenio = agendamentoParaOS.convenio === "Prefeituras" ?
+          `(${agendamentoParaOS.convenio} - ${agendamentoParaOS.nome_prefeitura || ''})` :
+          `(${agendamentoParaOS.convenio})`;
         }
 
         const dadosLancamento = {
@@ -289,18 +289,18 @@ export default function OrdemDeServico() {
   };
 
   const ordensFiltradas = useMemo(() => {
-    return ordens.filter(os => {
+    return ordens.filter((os) => {
       // Filtro de data
       if (os.data_execucao) {
         const dentroData = os.data_execucao >= dataInicio && os.data_execucao <= dataFim;
         if (!dentroData) return false;
       }
-      
+
       // Filtro de status de pagamento
       if (statusPagamentoFiltro !== "todos" && os.status_pagamento !== statusPagamentoFiltro) {
         return false;
       }
-      
+
       // Filtro de busca por texto
       if (searchTerm) {
         const termoBusca = searchTerm.toLowerCase();
@@ -308,7 +308,7 @@ export default function OrdemDeServico() {
         const nomeMedico = getNome(os.medico_id, 'medico').toLowerCase();
         return nomePaciente.includes(termoBusca) || nomeMedico.includes(termoBusca);
       }
-      
+
       return true;
     });
   }, [ordens, dataInicio, dataFim, statusPagamentoFiltro, searchTerm, getNome]);
@@ -319,19 +319,19 @@ export default function OrdemDeServico() {
     }
 
     // Usar pacienteFormulario se disponível, senão tentar buscar na lista
-    const paciente = pacienteFormulario || pacientes.find(p => p.id === agendamentoParaOS.paciente_id);
-    
-    const medico = medicos.find(m => m.id === agendamentoParaOS.medico_id);
-    const categoriaPreco = categorias.find(c => c.id === agendamentoParaOS.categoria_preco_id);
+    const paciente = pacienteFormulario || pacientes.find((p) => p.id === agendamentoParaOS.paciente_id);
+
+    const medico = medicos.find((m) => m.id === agendamentoParaOS.medico_id);
+    const categoriaPreco = categorias.find((c) => c.id === agendamentoParaOS.categoria_preco_id);
 
     let procedimento = null;
     if (agendamentoParaOS.tipo_servico === 'Procedimento' && agendamentoParaOS.procedimento_id) {
-      procedimento = procedimentos.find(p => p.id === agendamentoParaOS.procedimento_id);
+      procedimento = procedimentos.find((p) => p.id === agendamentoParaOS.procedimento_id);
     }
 
     let examesSelecionados = [];
     if (agendamentoParaOS.tipo_servico === 'Exame' && agendamentoParaOS.exames_ids) {
-      examesSelecionados = exames.filter(e => agendamentoParaOS.exames_ids.includes(e.id));
+      examesSelecionados = exames.filter((e) => agendamentoParaOS.exames_ids.includes(e.id));
     }
 
     return { paciente, medico, procedimento, exames: examesSelecionados, categoriaPreco };
@@ -342,10 +342,10 @@ export default function OrdemDeServico() {
       return null;
     }
 
-    const paciente = pacientes.find(p => p.id === osSelecionada.paciente_id);
-    const medico = medicos.find(m => m.id === osSelecionada.medico_id);
-    const agendamento = agendamentos.find(a => a.id === osSelecionada.agendamento_id);
-    const categoria = categorias.find(c => c.id === osSelecionada.categoria_preco_id);
+    const paciente = pacientes.find((p) => p.id === osSelecionada.paciente_id);
+    const medico = medicos.find((m) => m.id === osSelecionada.medico_id);
+    const agendamento = agendamentos.find((a) => a.id === osSelecionada.agendamento_id);
+    const categoria = categorias.find((c) => c.id === osSelecionada.categoria_preco_id);
 
     return { paciente, medico, agendamento, categoria };
   }, [osSelecionada, pacientes, medicos, agendamentos, categorias]);
@@ -355,42 +355,42 @@ export default function OrdemDeServico() {
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-              <FileText className="w-8 h-8 text-blue-600" />
-              Ordem de Serviço
+            <h1 className="text-cyan-500 text-3xl font-bold flex items-center gap-2">Ordem de Serviço
+
+
             </h1>
             <p className="text-gray-600 mt-1">
               Gerencie e visualize as Ordens de Serviço da clínica.
             </p>
           </div>
-          <Button 
-            variant="outline" 
-            onClick={handleCorrigirNomes} 
+          <Button
+            variant="outline"
+            onClick={handleCorrigirNomes}
             disabled={corrigindo}
-            className="gap-2"
-          >
+            className="gap-2">
+
             <RefreshCw className={`w-4 h-4 ${corrigindo ? 'animate-spin' : ''}`} />
             Sincronizar Nomes
           </Button>
         </div>
 
-        {mostrarForm && osFormData && (
-          <FormularioOS
-            agendamento={agendamentoParaOS}
-            paciente={osFormData.paciente}
-            medico={osFormData.medico}
-            procedimento={osFormData.procedimento}
-            exames={osFormData.exames}
-            categorias={categorias}
-            medicos={medicos}
-            procedimentos={procedimentos}
-            onSalvar={handleSalvarOS}
-            onCancelar={handleCancelarForm}
-          />
-        )}
+        {mostrarForm && osFormData &&
+        <FormularioOS
+          agendamento={agendamentoParaOS}
+          paciente={osFormData.paciente}
+          medico={osFormData.medico}
+          procedimento={osFormData.procedimento}
+          exames={osFormData.exames}
+          categorias={categorias}
+          medicos={medicos}
+          procedimentos={procedimentos}
+          onSalvar={handleSalvarOS}
+          onCancelar={handleCancelarForm} />
 
-        {!mostrarForm && (
-          <Card>
+        }
+
+        {!mostrarForm &&
+        <Card>
             <CardHeader>
               <CardTitle>Histórico de Ordens de Serviço</CardTitle>
             </CardHeader>
@@ -406,23 +406,23 @@ export default function OrdemDeServico() {
                   <div className="flex items-center gap-2">
                     <Label htmlFor="dataInicio" className="text-sm text-gray-600">De:</Label>
                     <Input
-                      id="dataInicio"
-                      type="date"
-                      value={dataInicio}
-                      onChange={(e) => setDataInicio(e.target.value)}
-                      className="w-40"
-                    />
+                    id="dataInicio"
+                    type="date"
+                    value={dataInicio}
+                    onChange={(e) => setDataInicio(e.target.value)}
+                    className="w-40" />
+
                   </div>
                   
                   <div className="flex items-center gap-2">
                     <Label htmlFor="dataFim" className="text-sm text-gray-600">Até:</Label>
                     <Input
-                      id="dataFim"
-                      type="date"
-                      value={dataFim}
-                      onChange={(e) => setDataFim(e.target.value)}
-                      className="w-40"
-                    />
+                    id="dataFim"
+                    type="date"
+                    value={dataFim}
+                    onChange={(e) => setDataFim(e.target.value)}
+                    className="w-40" />
+
                   </div>
                   
                   <div className="flex items-center gap-2">
@@ -443,11 +443,11 @@ export default function OrdemDeServico() {
                   <div className="flex items-center gap-2 flex-1">
                     <Search className="w-5 h-5 text-gray-500" />
                     <Input
-                      placeholder="Buscar por paciente ou médico..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="max-w-sm"
-                    />
+                    placeholder="Buscar por paciente ou médico..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="max-w-sm" />
+
                   </div>
                 </div>
               </div>
@@ -463,23 +463,23 @@ export default function OrdemDeServico() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {loading ? (
-                    Array(5).fill(0).map((_, i) => (
-                      <TableRow key={i}>
+                  {loading ?
+                Array(5).fill(0).map((_, i) =>
+                <TableRow key={i}>
                         <TableCell colSpan={6}><Skeleton className="h-6 w-full" /></TableCell>
                       </TableRow>
-                    ))
-                  ) : ordensFiltradas.length === 0 ? (
-                    <TableRow>
+                ) :
+                ordensFiltradas.length === 0 ?
+                <TableRow>
                       <TableCell colSpan={6} className="h-24 text-center">
                         Nenhuma ordem de serviço encontrada.
                       </TableCell>
-                    </TableRow>
-                  ) : (
-                    ordensFiltradas.map((os) => {
-                      const dataExecucao = os.data_execucao ? new Date(os.data_execucao + 'T00:00:00') : null;
-                      return (
-                        <TableRow key={os.id}>
+                    </TableRow> :
+
+                ordensFiltradas.map((os) => {
+                  const dataExecucao = os.data_execucao ? new Date(os.data_execucao + 'T00:00:00') : null;
+                  return (
+                    <TableRow key={os.id}>
                           <TableCell>{dataExecucao && !isNaN(dataExecucao.getTime()) ? format(dataExecucao, 'dd/MM/yyyy') : 'N/A'}</TableCell>
                           <TableCell>{os.paciente_nome || getNome(os.paciente_id, 'paciente')}</TableCell>
                           <TableCell>{getNome(os.medico_id, 'medico')}</TableCell>
@@ -494,28 +494,28 @@ export default function OrdemDeServico() {
                               Ver
                             </Button>
                           </TableCell>
-                        </TableRow>
-                      );
-                    })
-                  )}
+                        </TableRow>);
+
+                })
+                }
                 </TableBody>
               </Table>
             </CardContent>
           </Card>
-        )}
+        }
 
-        {osSelecionada && detalhesData && (
-          <DetalhesOS
-            os={osSelecionada}
-            pacienteNome={osSelecionada.paciente_nome || detalhesData.paciente?.nome || 'N/A'}
-            medicoNome={detalhesData.medico?.nome || 'N/A'}
-            categoriaNome={detalhesData.categoria?.nome || ''}
-            open={true}
-            onClose={handleFecharDetalhes}
-            onUpdate={handleAtualizarOS}
-          />
-        )}
+        {osSelecionada && detalhesData &&
+        <DetalhesOS
+          os={osSelecionada}
+          pacienteNome={osSelecionada.paciente_nome || detalhesData.paciente?.nome || 'N/A'}
+          medicoNome={detalhesData.medico?.nome || 'N/A'}
+          categoriaNome={detalhesData.categoria?.nome || ''}
+          open={true}
+          onClose={handleFecharDetalhes}
+          onUpdate={handleAtualizarOS} />
+
+        }
       </div>
-    </div>
-  );
+    </div>);
+
 }
