@@ -52,8 +52,8 @@ async function processarMensagemRecebida(base44, payload) {
     // Buscar todos os pacientes
     const todosPacientes = await base44.asServiceRole.entities.Paciente.list('-created_date', 1000);
     
-    // Encontrar paciente pelo telefone
-    let pacienteEncontrado = null;
+    // Encontrar TODOS os pacientes que correspondem ao telefone
+    const pacientesEncontrados = [];
     for (const p of todosPacientes) {
         if (!p.telefone) continue;
         const telPaciente = p.telefone.replace(/\D/g, '');
@@ -64,10 +64,12 @@ async function processarMensagemRecebida(base44, payload) {
             telefoneNormalizado.endsWith(telPaciente.slice(-8)) ||
             telefoneNormalizado.endsWith(telPaciente.slice(-9)) ||
             telPaciente === ultimos11Digitos) {
-            pacienteEncontrado = p;
-            break;
+            pacientesEncontrados.push(p);
         }
     }
+    
+    // Pegar IDs de todos os pacientes encontrados
+    const pacienteIds = pacientesEncontrados.map(p => p.id);
 
     if (!pacienteEncontrado) {
         return new Response(JSON.stringify({ 
