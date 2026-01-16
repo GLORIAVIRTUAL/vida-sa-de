@@ -128,6 +128,26 @@ export default function VisualizacaoCalendario({ agendamentos, medicos, paciente
           width: 48px !important;
           height: 48px !important;
           font-size: 16px;
+          color: #000 !important;
+        }
+        .calendar-large .day-with-events {
+          color: white !important;
+        }
+        .calendar-large .day-both {
+          color: white !important;
+        }
+        /* Dias da semana e navegação do mês */
+        .calendar-large th {
+          font-size: 14px;
+          font-weight: 600;
+        }
+        .calendar-large [role="heading"] {
+          font-size: 18px !important;
+          font-weight: 600;
+        }
+        .calendar-large nav button {
+          width: 36px !important;
+          height: 36px !important;
         }
       `}</style>
       
