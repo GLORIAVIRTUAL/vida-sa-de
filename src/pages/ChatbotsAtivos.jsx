@@ -35,11 +35,17 @@ function renderMensagemContent(content, isUser, msgData = {}) {
   // Também detecta URLs sem extensão visível mas com parâmetros de storage
   const urlMatch = content.match(/(https?:\/\/[^\s\]]+\.(jpg|jpeg|png|gif|webp|pdf|doc|docx|mp3|ogg|wav|webm|m4a|opus)(\?[^\s\]]*)?)/i);
   
-  // Também detectar URLs de storage que não têm extensão clara (incluindo base44)
-  const storageUrlMatch = content.match(/(https?:\/\/[^\s\]]*(?:supabase|storage|blob|base44)[^\s\]]*)/i);
+  // Também detectar URLs de storage que não têm extensão clara (incluindo base44, supabase)
+  // Captura URLs que terminam com extensão dentro de query params ou paths
+  const storageUrlMatch = content.match(/(https?:\/\/[^\s\n\]]+(?:supabase|storage|blob|base44|whatsapp)[^\s\n\]]*)/i);
+  
+  // Detectar qualquer URL http/https no conteúdo (última linha geralmente é a URL)
+  const anyUrlMatch = content.match(/(https?:\/\/[^\s\n\]]+)/i);
   
   // Priorizar mediaUrl do objeto se existir
-  const finalMediaUrl = mediaUrlFromData || (urlMatch ? urlMatch[1] : null) || (storageUrlMatch ? storageUrlMatch[1] : null);
+  const finalMediaUrl = mediaUrlFromData || (urlMatch ? urlMatch[1] : null) || (storageUrlMatch ? storageUrlMatch[1] : null) || (anyUrlMatch ? anyUrlMatch[1] : null);
+  
+  console.log('renderMensagemContent:', { content: content?.substring(0, 50), mediaUrlFromData, mediaTypeFromData, finalMediaUrl });
   
   // Detectar padrões de mídia enviada
   const isImage = /\[Imagem recebida\]|\[.*📷.*\]|📷 Imagem|Imagem enviada/i.test(content);
@@ -138,11 +144,12 @@ function renderMensagemContent(content, isUser, msgData = {}) {
   
   // Se é indicação de imagem sem URL, mostrar placeholder clicável
   if (isImage && !urlMatch) {
-    // Tentar extrair URL do storage se existir
-    if (storageUrlMatch) {
+    // Tentar extrair URL do storage ou qualquer URL no conteúdo
+    const urlParaUsar = finalMediaUrl || storageUrlMatch?.[1] || anyUrlMatch?.[1];
+    if (urlParaUsar) {
       return (
         <div className="space-y-2">
-          <img src={storageUrlMatch[1]} alt="Imagem" className="max-w-full rounded-lg max-h-64 object-contain cursor-pointer hover:opacity-90" onClick={() => window.open(storageUrlMatch[1], '_blank')} />
+          <img src={urlParaUsar} alt="Imagem" className="max-w-full rounded-lg max-h-64 object-contain cursor-pointer hover:opacity-90" onClick={() => window.open(urlParaUsar, '_blank')} />
         </div>
       );
     }
@@ -160,11 +167,12 @@ function renderMensagemContent(content, isUser, msgData = {}) {
   // Se é indicação de documento sem URL visível
   if ((isDocument || documentoMatch) && !urlMatch) {
     const nomeArquivo = documentoMatch ? documentoMatch[1] : 'Documento recebido';
-    // Tentar extrair URL do storage se existir
-    if (storageUrlMatch) {
+    // Tentar extrair URL do storage ou qualquer URL
+    const urlParaUsar = finalMediaUrl || storageUrlMatch?.[1] || anyUrlMatch?.[1];
+    if (urlParaUsar) {
       return (
         <a 
-          href={storageUrlMatch[1]} 
+          href={urlParaUsar} 
           target="_blank" 
           rel="noopener noreferrer"
           className="flex items-center gap-2 p-3 rounded-lg border bg-gray-50 hover:bg-gray-100 border-gray-200"
@@ -190,11 +198,12 @@ function renderMensagemContent(content, isUser, msgData = {}) {
   
   // Se é indicação de áudio sem URL
   if (isAudio && !urlMatch) {
-    if (storageUrlMatch) {
+    const urlParaUsar = finalMediaUrl || storageUrlMatch?.[1] || anyUrlMatch?.[1];
+    if (urlParaUsar) {
       return (
         <div className="space-y-2">
           <audio controls className="max-w-full">
-            <source src={storageUrlMatch[1]} />
+            <source src={urlParaUsar} />
           </audio>
         </div>
       );
