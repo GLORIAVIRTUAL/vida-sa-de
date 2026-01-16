@@ -658,21 +658,64 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
     } else {
       // Cliente quer AGENDAR - processar normalmente
 
-      // Detectar especialidade mencionada - lista expandida
+      // Detectar especialidade mencionada - lista expandida com sinônimos
       const especialidades = [
-      'Cardiologia', 'Cardiologista', 'Clínico Geral', 'Clínico', 'Dermatologia', 'Dermatologista',
-      'Endocrinologia', 'Endocrinologista', 'Ginecologia', 'Ginecologista', 
-      'Nutrição', 'Nutricionista', 'Psicologia', 'Psicólogo', 'Psicóloga',
-      'Ortopedia', 'Ortopedista', 'Urologia', 'Urologista', 'Geriatria', 'Geriatra',
-      'Gastroenterologia', 'Gastro', 'Reumatologia', 'Reumatologista', 
-      'Psiquiatria', 'Psiquiatra', 'Fisioterapia', 'Fisioterapeuta', 'Fisio',
-      'Ecografia', 'Eco', 'Ultrassom', 'Traumatologia', 'Traumatologista',
-      'Oftalmologia', 'Oftalmologista', 'Otorrino', 'Otorrinolaringologia',
-      'Pediatria', 'Pediatra', 'Pneumologia', 'Pneumologista',
-      'Neurologia', 'Neurologista', 'Quiropraxia', 'Quiropraxista',
-      'Massoterapia', 'Massoterapeuta', 'Massagem', 'Optometria', 'Optometrista',
-      'Hidroginástica', 'Hidroterapia', 'Pilates', 'Psicopedagoga', 'Psicopedagogia',
-      'Odontologia', 'Odontologista', 'Dentista', 'Dentário', 'Dente', 'Dentes'
+      // Cardiologia
+      'Cardiologia', 'Cardiologista', 'Cardio', 'Coração', 'Coracao', 'Arritmia', 'Pressão Alta', 'Pressao Alta', 'Hipertensão', 'Hipertensao',
+      // Clínico Geral
+      'Clínico Geral', 'Clinico Geral', 'Clínico', 'Clinico', 'Médico Geral', 'Medico Geral', 'Consulta Geral', 'Check-up', 'Checkup',
+      // Dermatologia
+      'Dermatologia', 'Dermatologista', 'Dermato', 'Pele', 'Acne', 'Manchas', 'Espinhas',
+      // Endocrinologia
+      'Endocrinologia', 'Endocrinologista', 'Endocrino', 'Tireoide', 'Tireóide', 'Diabetes', 'Hormônio', 'Hormonio', 'Metabolismo',
+      // Ginecologia
+      'Ginecologia', 'Ginecologista', 'Gineco', 'Preventivo', 'Papanicolau', 'Útero', 'Utero', 'Ovário', 'Ovario', 'Menstruação', 'Menstruacao',
+      // Nutrição
+      'Nutrição', 'Nutricao', 'Nutricionista', 'Nutri', 'Dieta', 'Emagrecer', 'Alimentação', 'Alimentacao', 'Peso',
+      // Psicologia
+      'Psicologia', 'Psicólogo', 'Psicologo', 'Psicóloga', 'Psicologa', 'Psico', 'Terapia', 'Terapeuta', 'Ansiedade', 'Depressão', 'Depressao',
+      // Ortopedia
+      'Ortopedia', 'Ortopedista', 'Orto', 'Osso', 'Ossos', 'Fratura', 'Coluna', 'Joelho', 'Ombro', 'Articulação', 'Articulacao',
+      // Urologia
+      'Urologia', 'Urologista', 'Uro', 'Próstata', 'Prostata', 'Rim', 'Rins', 'Bexiga', 'Urina',
+      // Geriatria
+      'Geriatria', 'Geriatra', 'Idoso', 'Idosos', 'Terceira Idade', 'Envelhecimento',
+      // Gastroenterologia
+      'Gastroenterologia', 'Gastro', 'Gastroenterologista', 'Estômago', 'Estomago', 'Intestino', 'Fígado', 'Figado', 'Digestão', 'Digestao', 'Azia', 'Refluxo',
+      // Reumatologia
+      'Reumatologia', 'Reumatologista', 'Reumato', 'Reumatismo', 'Artrite', 'Artrose', 'Lupus', 'Fibromialgia',
+      // Psiquiatria
+      'Psiquiatria', 'Psiquiatra', 'Remédio Controlado', 'Remedio Controlado', 'Medicação Psiquiátrica', 'Medicacao Psiquiatrica',
+      // Fisioterapia
+      'Fisioterapia', 'Fisioterapeuta', 'Fisio', 'RPG', 'Reabilitação', 'Reabilitacao', 'Dor nas Costas', 'Alongamento',
+      // Ecografia/Ultrassom
+      'Ecografia', 'Eco', 'Ultrassom', 'Ultrassonografia', 'Ultra', 'Ecografista',
+      // Traumatologia
+      'Traumatologia', 'Traumatologista', 'Trauma', 'Acidente', 'Lesão', 'Lesao',
+      // Oftalmologia
+      'Oftalmologia', 'Oftalmologista', 'Oftalmo', 'Olho', 'Olhos', 'Vista', 'Visão', 'Visao', 'Óculos', 'Oculos', 'Catarata', 'Glaucoma',
+      // Otorrinolaringologia
+      'Otorrinolaringologia', 'Otorrino', 'Otorrinolaringologista', 'Ouvido', 'Nariz', 'Garganta', 'Sinusite', 'Rinite', 'Amígdala', 'Amigdala',
+      // Pediatria
+      'Pediatria', 'Pediatra', 'Criança', 'Crianca', 'Crianças', 'Criancas', 'Bebê', 'Bebe', 'Infantil',
+      // Pneumologia
+      'Pneumologia', 'Pneumologista', 'Pneumo', 'Pulmão', 'Pulmao', 'Respiração', 'Respiracao', 'Asma', 'Bronquite', 'Tosse',
+      // Neurologia
+      'Neurologia', 'Neurologista', 'Neuro', 'Cérebro', 'Cerebro', 'Cabeça', 'Cabeca', 'Enxaqueca', 'Dor de Cabeça', 'Dor de Cabeca', 'Convulsão', 'Convulsao',
+      // Quiropraxia
+      'Quiropraxia', 'Quiropraxista', 'Quiro', 'Ajuste', 'Coluna Vertebral',
+      // Massoterapia
+      'Massoterapia', 'Massoterapeuta', 'Massagem', 'Relaxamento', 'Tensão Muscular', 'Tensao Muscular',
+      // Optometria
+      'Optometria', 'Optometrista', 'Grau', 'Lente', 'Lentes',
+      // Hidroginástica/Hidroterapia/Pilates
+      'Hidroginástica', 'Hidroginastica', 'Hidroterapia', 'Hidro', 'Pilates', 'Natação', 'Natacao', 'Piscina', 'Exercício na Água', 'Exercicio na Agua',
+      // Psicopedagogia
+      'Psicopedagoga', 'Psicopedagogia', 'Psicopedagogo', 'Aprendizagem', 'Dificuldade Escolar',
+      // Odontologia
+      'Odontologia', 'Odontologista', 'Dentista', 'Dentário', 'Dentario', 'Dente', 'Dentes', 'Ortodontia', 'Implante', 'Canal', 'Prótese Dentária', 'Protese Dentaria', 'Limpeza Dental', 'Extração', 'Extracao', 'Cárie', 'Carie',
+      // Eletrocardiograma
+      'Eletrocardiograma', 'ECG', 'Eletro'
       ];
 
     // Função para normalizar texto (remover acentos e converter para lowercase)
@@ -783,27 +826,36 @@ PERGUNTE ao cliente: "Para qual especialidade você gostaria de agendar? Temos v
 
           // Mapeamento de sinônimos para especialidades (TUDO NORMALIZADO)
           const sinonimos = {
-            'clinico': ['clinico geral', 'clinico', 'general'],
-            'nutri': ['nutricao', 'nutricionista'],
-            'fisio': ['fisioterapia', 'fisioterapeuta'],
-            'psico': ['psicologia', 'psicologo', 'psicóloga'],
-            'geriatra': ['geriatria', 'geriatra'],
-            'ortopedista': ['ortopedia', 'ortopedista', 'traumatologia', 'traumatologista'],
-            'eco': ['ecografia', 'ultrassom', 'ultrassonografia'],
-            'psiquiatra': ['psiquiatria', 'psiquiatra'],
-            'uro': ['urologia', 'urologista'],
-            'cardio': ['cardiologia', 'cardiologista'],
-            'dermato': ['dermatologia', 'dermatologista'],
-            'gineco': ['ginecologia', 'ginecologista'],
-            'gastro': ['gastroenterologia', 'gastro'],
-            'neuro': ['neurologia', 'neurologista'],
-            'oftalmo': ['oftalmologia', 'oftalmologista'],
-            'otorrino': ['otorrinolaringologia', 'otorrino'],
-            'pedia': ['pediatria', 'pediatra'],
-            'pneumo': ['pneumologia', 'pneumologista'],
-            'reumato': ['reumatologia', 'reumatologista'],
-            'dent': ['odontologia', 'odontologista', 'dentista', 'dentario', 'dente', 'dentes']
-            };
+            'clinico': ['clinico geral', 'clinico', 'general', 'medico geral', 'consulta geral', 'check-up', 'checkup'],
+            'nutri': ['nutricao', 'nutricionista', 'dieta', 'emagrecer', 'alimentacao', 'peso'],
+            'fisio': ['fisioterapia', 'fisioterapeuta', 'rpg', 'reabilitacao', 'dor nas costas', 'alongamento'],
+            'psico': ['psicologia', 'psicologo', 'psicologa', 'terapia', 'terapeuta', 'ansiedade', 'depressao'],
+            'geriatra': ['geriatria', 'geriatra', 'idoso', 'idosos', 'terceira idade', 'envelhecimento'],
+            'ortopedista': ['ortopedia', 'ortopedista', 'orto', 'osso', 'ossos', 'fratura', 'coluna', 'joelho', 'ombro', 'articulacao'],
+            'traumato': ['traumatologia', 'traumatologista', 'trauma', 'acidente', 'lesao'],
+            'eco': ['ecografia', 'ultrassom', 'ultrassonografia', 'ultra', 'ecografista'],
+            'psiquiatra': ['psiquiatria', 'psiquiatra', 'remedio controlado', 'medicacao psiquiatrica'],
+            'uro': ['urologia', 'urologista', 'prostata', 'rim', 'rins', 'bexiga', 'urina'],
+            'cardio': ['cardiologia', 'cardiologista', 'coracao', 'arritmia', 'pressao alta', 'hipertensao'],
+            'dermato': ['dermatologia', 'dermatologista', 'pele', 'acne', 'manchas', 'espinhas'],
+            'gineco': ['ginecologia', 'ginecologista', 'preventivo', 'papanicolau', 'utero', 'ovario', 'menstruacao'],
+            'gastro': ['gastroenterologia', 'gastro', 'gastroenterologista', 'estomago', 'intestino', 'figado', 'digestao', 'azia', 'refluxo'],
+            'neuro': ['neurologia', 'neurologista', 'cerebro', 'cabeca', 'enxaqueca', 'dor de cabeca', 'convulsao'],
+            'oftalmo': ['oftalmologia', 'oftalmologista', 'olho', 'olhos', 'vista', 'visao', 'oculos', 'catarata', 'glaucoma'],
+            'otorrino': ['otorrinolaringologia', 'otorrino', 'otorrinolaringologista', 'ouvido', 'nariz', 'garganta', 'sinusite', 'rinite', 'amigdala'],
+            'pedia': ['pediatria', 'pediatra', 'crianca', 'criancas', 'bebe', 'infantil'],
+            'pneumo': ['pneumologia', 'pneumologista', 'pulmao', 'respiracao', 'asma', 'bronquite', 'tosse'],
+            'reumato': ['reumatologia', 'reumatologista', 'reumatismo', 'artrite', 'artrose', 'lupus', 'fibromialgia'],
+            'dent': ['odontologia', 'odontologista', 'dentista', 'dentario', 'dente', 'dentes', 'ortodontia', 'implante', 'canal', 'protese dentaria', 'limpeza dental', 'extracao', 'carie'],
+            'endo': ['endocrinologia', 'endocrinologista', 'tireoide', 'diabetes', 'hormonio', 'metabolismo'],
+            'quiro': ['quiropraxia', 'quiropraxista', 'ajuste', 'coluna vertebral'],
+            'masso': ['massoterapia', 'massoterapeuta', 'massagem', 'relaxamento', 'tensao muscular'],
+            'opto': ['optometria', 'optometrista', 'grau', 'lente', 'lentes'],
+            'hidro': ['hidroginastica', 'hidroterapia', 'natacao', 'piscina', 'exercicio na agua'],
+            'pilates': ['pilates'],
+            'psicopeda': ['psicopedagogia', 'psicopedagoga', 'psicopedagogo', 'aprendizagem', 'dificuldade escolar'],
+            'eletro': ['eletrocardiograma', 'ecg', 'eletro']
+          };
 
           // Encontrar termos relacionados (usando texto normalizado)
           let termosRelacionados = [especialidadeLower];
