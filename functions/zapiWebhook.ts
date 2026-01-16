@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 Deno.serve(async (req) => {
+    console.log('🚀 Webhook Z-API iniciado');
     const base44 = createClientFromRequest(req);
     
     if (req.method !== 'POST') {
@@ -13,6 +14,7 @@ Deno.serve(async (req) => {
 
         // Verificar se é uma mensagem RECEBIDA (do paciente)
         if (payload.isGroup === false && payload.fromMe === false && payload.text?.message) {
+            console.log('✅ Mensagem de texto recebida, processando...');
             return await processarMensagemRecebida(base44, payload);
         }
 
@@ -21,6 +23,7 @@ Deno.serve(async (req) => {
         const status = payload.status;
 
         if (messageId && status) {
+            console.log('📊 Atualização de status recebida');
             return await processarStatusMensagem(base44, messageId, status);
         }
 
@@ -29,7 +32,7 @@ Deno.serve(async (req) => {
 
     } catch (error) {
         console.error('❌ Erro ao processar webhook Z-API:', error);
-        return new Response(JSON.stringify({ error: 'Erro interno' }), { status: 500 });
+        return new Response(JSON.stringify({ error: 'Erro interno', details: error.message }), { status: 500 });
     }
 });
 
