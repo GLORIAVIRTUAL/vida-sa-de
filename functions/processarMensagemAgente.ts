@@ -487,11 +487,19 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
       'Massoterapia', 'Massoterapeuta', 'Massagem', 'Optometria', 'Optometrista',
       'Hidroginástica', 'Hidroterapia', 'Pilates', 'Psicopedagoga', 'Psicopedagogia'
     ];
-    
+
+    // Função para normalizar texto (remover acentos e converter para lowercase)
+    const normalizarTexto = (texto) => {
+      return (texto || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+    };
+
     let especialidadeDetectada = null;
     let medicoEspecificoDetectado = null;
-    const msgLower = messageText.toLowerCase();
-    const historicoLower = (historicoConversa || '').toLowerCase();
+    const msgLower = normalizarTexto(messageText);
+    const historicoLower = normalizarTexto(historicoConversa || '');
     const textoCompleto = msgLower + ' ' + historicoLower;
 
     // Primeiro verificar se mencionou nome de médico específico
