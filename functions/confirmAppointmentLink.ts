@@ -59,8 +59,11 @@ Deno.serve(async (req) => {
     let agendamento;
     try {
       agendamento = await base44.asServiceRole.entities.Agendamento.get(codigo);
+      console.log('[ConfirmLink] Agendamento encontrado:', agendamento?.id);
     } catch (error) {
       console.error('[ConfirmLink] Agendamento não encontrado:', error);
+      console.error('[ConfirmLink] Código buscado:', codigo);
+      console.error('[ConfirmLink] Erro detalhado:', JSON.stringify(error));
       return new Response(`
         <!DOCTYPE html>
         <html>
@@ -69,16 +72,28 @@ Deno.serve(async (req) => {
           <meta name="viewport" content="width=device-width, initial-scale=1">
           <title>Erro - Confirmação</title>
           <style>
-            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f5f5f5; }
-            .container { background: white; padding: 40px; border-radius: 10px; max-width: 400px; margin: 0 auto; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-            .error { color: #dc3545; font-size: 48px; }
+            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+            .container { background: white; padding: 40px; border-radius: 15px; max-width: 450px; margin: 0 auto; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+            .error { font-size: 64px; margin-bottom: 20px; }
+            h2 { color: #dc3545; }
+            .debug { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 20px; text-align: left; font-size: 12px; color: #666; word-break: break-all; }
+            .contact { margin-top: 25px; padding: 15px; background: #e3f2fd; border-radius: 8px; }
+            .contact a { color: #1976d2; text-decoration: none; font-weight: bold; }
           </style>
         </head>
         <body>
           <div class="container">
-            <div class="error">❌</div>
+            <div class="error">😕</div>
             <h2>Agendamento não encontrado</h2>
-            <p>Entre em contato com a clínica.</p>
+            <p>Não conseguimos localizar este agendamento no sistema.</p>
+            <div class="debug">
+              <strong>Código recebido:</strong> ${codigo}<br>
+              <strong>Erro:</strong> ${error.message || 'Registro não existe'}
+            </div>
+            <div class="contact">
+              <p>Entre em contato com a clínica:</p>
+              <p>📞 <a href="https://wa.me/5551985505991">WhatsApp: 51 98550-5991</a></p>
+            </div>
           </div>
         </body>
         </html>
