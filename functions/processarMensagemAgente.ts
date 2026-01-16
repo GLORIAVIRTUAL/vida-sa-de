@@ -96,6 +96,113 @@ Deno.serve(async (req) => {
     let infoCancelamento = '';
     let agendamentoCancelado = false;
 
+    if (querVerificarAgendamento) {
+      console.log('🔍 Cliente quer verificar agendamento...');
+
+      // Extrair nome e data de nascimento da conversa
+      let nomeExtraido = null;
+      let dataNascimentoExtraida = null;
+
+      // Buscar nome na mensagem
+      const nomeMatch = messageText.match(/(?:nome[:\s]+|sou\s+o?\s*|me chamo\s+|é\s+)([A-Za-zÀ-ÿ]+(?:\s+[A-Za-zÀ-ÿ]+)*)/i);
+      if (nomeMatch) nomeExtraido = nomeMatch[1];
+
+      // Buscar data de nascimento
+      const dataMatch = messageText.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+      if (dataMatch) dataNascimentoExtraida = `${dataMatch[3]}-${String(dataMatch[2]).padStart(2,'0')}-${String(dataMatch[1]).padStart(2,'0')}`;
+
+      console.log('📋 Dados extraídos:', { nomeExtraido, dataNascimentoExtraida });
+
+      if (nomeExtraido && dataNascimentoExtraida) {
+        // Chamar função de verificação
+        try {
+          const resultadoVerificacao = await base44.asServiceRole.functions.invoke('verificarAgendamento', {
+            nome: nomeExtraido,
+            data_nascimento: dataNascimentoExtraida
+          });
+
+          console.log('✅ Verificação realizada:', resultadoVerificacao.data);
+
+          if (resultadoVerificacao.data?.sucesso && resultadoVerificacao.data?.agendamentos?.length > 0) {
+            // Formatar resposta com agendamentos
+            let respostaVerificacao = `✅ ${resultadoVerificacao.data.mensagem}\n\n`;
+
+            resultadoVerificacao.data.agendamentos.forEach((ag, idx) => {
+              respostaVerificacao += `${idx + 1}️⃣ *${ag.data_formatada}* às *${ag.horario}*\n`;
+              respostaVerificacao += `👨‍⚕️ ${ag.medico_nome} (${ag.especialidade})\n`;
+              respostaVerificacao += `🏥 ${ag.tipo_servico} - Status: ${ag.status}\n`;
+              if (ag.observacoes) respostaVerificacao += `📝 ${ag.observacoes}\n`;
+              respostaVerificacao += '\n';
+            });
+
+            respostaVerificacao += '✨ Seus agendamentos estão confirmados! Lembramos de chegar 10 minutos antes.';
+
+            // Retornar resposta e salvar no histórico
+            try {
+              const contatosCheck = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
+              if (contatosCheck.length > 0) {
+                const historicoAtual = contatosCheck[0].historico_mensagens || [];
+                const timestamp = new Date().toISOString();
+
+                historicoAtual.push(
+                  { role: 'user', content: messageText, timestamp },
+                  { role: 'assistant', content: respostaVerificacao, timestamp }
+                );
+
+                await base44.asServiceRole.entities.Contato.update(contatosCheck[0].id, {
+                  historico_mensagens: historicoAtual.slice(-50)
+                });
+              }
+            } catch (e) {
+              console.log('⚠️ Erro ao salvar histórico:', e.message);
+            }
+
+            return Response.json({ 
+              success: true, 
+              resposta: respostaVerificacao,
+              verificado: true
+            });
+          } else {
+            const respostaNaoEncontrado = `😔 Não encontramos agendamentos confirmados para você.\n\nDeseja agendar uma consulta conosco?`;
+
+            try {
+              const contatosCheck = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
+              if (contatosCheck.length > 0) {
+                const historicoAtual = contatosCheck[0].historico_mensagens || [];
+                const timestamp = new Date().toISOString();
+
+                historicoAtual.push(
+                  { role: 'user', content: messageText, timestamp },
+                  { role: 'assistant', content: respostaNaoEncontrado, timestamp }
+                );
+
+                await base44.asServiceRole.entities.Contato.update(contatosCheck[0].id, {
+                  historico_mensagens: historicoAtual.slice(-50)
+                });
+              }
+            } catch (e) {
+              console.log('⚠️ Erro ao salvar histórico:', e.message);
+            }
+
+            return Response.json({ 
+              success: true, 
+              resposta: respostaNaoEncontrado,
+              verificado: true
+            });
+          }
+        } catch (e) {
+          console.error('❌ Erro ao verificar agendamento:', e.message);
+        }
+      } else {
+        // Pedir dados faltantes
+        const respostaPedirDados = `Para verificar seu agendamento, preciso:\n\n📝 Seu nome completo\n📅 Sua data de nascimento (DD/MM/AAAA)\n\nEx: "Me chamo Antonio Thiago Cavalcanti Alves, nascido em 19/04/1982"`;
+        return Response.json({ 
+          success: true, 
+          resposta: respostaPedirDados
+        });
+      }
+    }
+
     if (querCancelar) {
       console.log('❌ Cliente quer cancelar agendamento...');
 
