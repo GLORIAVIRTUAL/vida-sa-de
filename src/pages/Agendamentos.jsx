@@ -474,7 +474,7 @@ export default function Agendamentos() {
                 size="sm"
                 onClick={handleCorrigirNomes}
                 disabled={corrigindo}
-                className="gap-2 text-gray-600">
+                className="gap-2">
 
                 <RefreshCw className={`w-4 h-4 ${corrigindo ? 'animate-spin' : ''}`} />
                 Corrigir Nomes
@@ -513,9 +513,10 @@ export default function Agendamentos() {
               <Button
                 onClick={() => setIsReservaOpen(true)}
                 variant="outline"
-                className="bg-orange-50 text-orange-700 border-orange-300 hover:bg-orange-100">
+                size="sm"
+                className="gap-2">
 
-                <Clock className="w-4 h-4 mr-2" />
+                <Clock className="w-4 h-4" />
                 Reserva de Horário
               </Button>
 
