@@ -21,7 +21,8 @@ import EnviarNotificacao from './EnviarNotificacao';
 
 const statusColors = {
   "Agendado": "bg-blue-100 text-blue-800",
-  "Pago": "bg-green-100 text-green-800",
+  "Confirmado": "bg-green-100 text-green-800",
+  "Pago": "bg-teal-100 text-teal-800",
   "Em Atendimento": "bg-yellow-100 text-yellow-800",
   "Finalizado": "bg-emerald-100 text-emerald-800",
   "Cancelado": "bg-red-100 text-red-800",
@@ -33,6 +34,7 @@ const statusColors = {
 // unless specified, but the Badge icon is removed per outline.
 const statusIcons = {
   "Agendado": Clock,
+  "Confirmado": CheckCircle,
   "Pago": CheckCircle,
   "Em Atendimento": AlertCircle,
   "Finalizado": CheckCircle,
