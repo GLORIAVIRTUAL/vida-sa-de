@@ -2487,11 +2487,10 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                       </div>
                     ))}
 
-                    {/* Total */}
-                    <div className="mt-3 p-3 bg-purple-100 rounded-lg border border-purple-300">
+                    <div className="mt-3 p-3 bg-gray-100 rounded-lg border">
                       <div className="flex justify-between items-center">
-                        <span className="font-semibold text-purple-900">Total dos Serviços:</span>
-                        <span className="font-bold text-xl text-purple-900">
+                        <span className="font-semibold text-gray-800">Total:</span>
+                        <span className="font-bold text-lg text-gray-900">
                           R$ {formData.itens_servico.reduce((total, item) => total + item.valor, 0).toFixed(2).replace('.', ',')}
                         </span>
                       </div>
