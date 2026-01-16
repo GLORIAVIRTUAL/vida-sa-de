@@ -92,106 +92,145 @@ export default function VisualizacaoCalendario({ agendamentos, medicos, paciente
   return (
     <div className="grid lg:grid-cols-3 gap-6">
       <style>{`
-        /* Estilização Geral do Calendário */
-        .calendar-large {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-        }
-        .calendar-large table {
+        /* Container principal */
+        .calendar-wrapper {
           width: 100%;
-          max-width: 100%; /* Ocupar toda largura disponível */
-          margin: 0 auto;
-          border-collapse: separate;
-          border-spacing: 12px; /* Espaço maior entre as células */
+          display: flex;
+          justify-content: center;
         }
-        .calendar-large th {
-          text-align: center;
-          padding-bottom: 16px;
-          font-size: 16px;
+
+        /* Calendário estilo grade */
+        .calendar-grid {
+          width: 100%;
+          max-width: 100%;
+        }
+
+        /* Cabeçalho com mês e navegação */
+        .calendar-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 24px;
+          gap: 16px;
+        }
+
+        .calendar-header button {
+          width: 40px;
+          height: 40px;
+          border-radius: 8px;
+          background-color: #f1f5f9;
+          border: 1px solid #e2e8f0;
+          cursor: pointer;
+          font-size: 18px;
+          transition: all 0.2s ease;
+        }
+
+        .calendar-header button:hover {
+          background-color: #e2e8f0;
+        }
+
+        .calendar-header h2 {
+          font-size: 20px;
           font-weight: 700;
-          color: #64748b;
+          color: #1e293b;
           text-transform: capitalize;
-        }
-        .calendar-large td {
-          padding: 0;
+          flex: 1;
           text-align: center;
         }
 
-        /* Estilo Base dos Botões de Dia */
-        .calendar-large button.rdp-day {
-          width: 100% !important; /* Ocupar largura da célula */
-          min-width: 60px !important;
-          height: 80px !important; /* Altura fixa maior */
-          font-size: 20px;
-          border-radius: 16px !important; /* Quadrado arredondado */
-          margin: 0 auto;
-          transition: all 0.2s ease;
+        /* Dias da semana */
+        .weekdays {
+          display: grid;
+          grid-template-columns: repeat(7, 1fr);
+          gap: 12px;
+          margin-bottom: 12px;
+        }
+
+        .weekday {
+          text-align: center;
+          font-size: 14px;
+          font-weight: 700;
+          color: #64748b;
+          padding: 8px 0;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        /* Grid de dias */
+        .days-grid {
+          display: grid;
+          grid-template-columns: repeat(7, 1fr);
+          gap: 12px;
+        }
+
+        /* Botão de dia */
+        .day-cell {
+          aspect-ratio: 1;
           display: flex;
           align-items: center;
           justify-content: center;
-          color: #1e293b !important; /* Cor padrão do texto */
-        }
-        
-        /* Dia Selecionado (padrão do componente) */
-        .calendar-large button.rdp-day_selected:not(.day-with-events):not(.day-both) {
-          background-color: #1e293b !important;
-          color: white !important;
+          border-radius: 14px;
+          font-size: 18px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          border: none;
+          background-color: #ffffff;
+          color: #1e293b;
+          border: 2px solid #e2e8f0;
         }
 
-        /* Modificador: Dia com Agendamentos (Azul) */
+        .day-cell:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Dia com agendamentos (Azul) */
         .day-with-events {
           background-color: #3b82f6 !important;
           color: white !important;
-          font-weight: 600;
+          border: none !important;
           box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
         }
+
         .day-with-events:hover {
           background-color: #2563eb !important;
-          transform: translateY(-2px);
         }
 
-        /* Modificador: Médico Disponível (Verde) */
+        /* Médico disponível (Verde) */
         .day-doctor-available {
           background-color: #ecfdf5 !important;
           color: #047857 !important;
-          font-weight: 600;
           border: 2px solid #10b981 !important;
         }
+
         .day-doctor-available:hover {
           background-color: #d1fae5 !important;
-          transform: translateY(-2px);
         }
 
-        /* Modificador: Ambos (Azul com borda Verde) */
+        /* Ambos (Azul com borda Verde) */
         .day-both {
           background-color: #3b82f6 !important;
           color: white !important;
-          font-weight: 600;
-          border: 3px solid #4ade80 !important; /* Borda verde indicando disponibilidade extra */
+          border: 3px solid #10b981 !important;
           box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.4);
         }
+
         .day-both:hover {
           background-color: #2563eb !important;
-          transform: translateY(-2px);
         }
 
-        /* Navegação */
-        .calendar-large [role="heading"] {
-          font-size: 1.25rem !important;
-          font-weight: 700;
-          text-transform: capitalize;
-          margin-bottom: 16px;
-          color: #334155;
+        /* Dia fora do mês */
+        .day-outside {
+          color: #cbd5e1;
+          pointer-events: none;
         }
-        .calendar-large nav button {
-          width: 40px !important;
-          height: 40px !important;
-          border-radius: 10px;
-          background-color: #f1f5f9;
-        }
-        .calendar-large nav button:hover {
-          background-color: #e2e8f0;
+
+        /* Dia de hoje */
+        .day-today {
+          background-color: #1e293b !important;
+          color: white !important;
+          border: 2px solid #1e293b !important;
         }
       `}</style>
       
