@@ -791,8 +791,7 @@ export default function Relatorios() {
                   .map(([nomeMedico, dadosMedico]) => {
                     // Filtrar OS deste médico
                     const osMedico = dadosFiltrados.filter(os => {
-                      const med = medicos.find(m => m.id === os.medico_id);
-                      return med?.nome === nomeMedico;
+                      return obterNomeMedico(os) === nomeMedico;
                     });
                     
                     // Agrupar por categoria
