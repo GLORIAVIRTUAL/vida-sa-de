@@ -77,6 +77,23 @@ export default function Relatorios() {
     }
   };
 
+  // Função para obter nome da categoria (definida antes de ser usada em dadosFiltrados)
+  const obterNomeCategoria = (os) => {
+    // Primeiro tenta encontrar na lista de categorias atual
+    const cat = categorias.find(c => c.id === os.categoria_preco_id);
+    if (cat) return cat.nome;
+    
+    // Fallback: usar mapeamento de IDs legados
+    if (MAPEAMENTO_CATEGORIA_LEGADO[os.categoria_preco_id]) {
+      return MAPEAMENTO_CATEGORIA_LEGADO[os.categoria_preco_id];
+    }
+    
+    // Fallback: usar forma_pagamento como indicador
+    if (os.forma_pagamento === 'Convênio') return 'Convênio (não identificado)';
+    
+    return 'Não informado';
+  };
+
   // Função auxiliar para verificar se OS pertence ao médico selecionado
   const osPertenceAoMedico = (os, medicoIdFiltro) => {
     // Primeiro verifica pelo ID direto
