@@ -119,6 +119,14 @@ export default function Dashboard() {
 
   useEffect(() => {
     carregarDados();
+    
+    // Subscription para atualizar em tempo real quando agendamentos mudam
+    const unsubscribe = Agendamento.subscribe((event) => {
+      console.log('📡 Dashboard: Agendamento atualizado em tempo real:', event.type);
+      carregarDados();
+    });
+    
+    return () => unsubscribe();
   }, [carregarDados]);
 
   const estatisticas = {
