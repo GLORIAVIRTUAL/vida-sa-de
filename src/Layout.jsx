@@ -227,7 +227,7 @@ function MainLayout({ children, currentPageName, currentUser, onUserUpdate }) {
                   />
                 ) : (
                   <>
-                    <item.icon className={`w-5 h-5 flex-shrink-0 ${isSidebarCollapsed ? '' : 'mr-3'}`} />
+                    {React.createElement(item.icon, { className: `w-5 h-5 flex-shrink-0 ${isSidebarCollapsed ? '' : 'mr-3'}` })}
                     {!isSidebarCollapsed && <span>{item.name}</span>}
                   </>
                 )}
