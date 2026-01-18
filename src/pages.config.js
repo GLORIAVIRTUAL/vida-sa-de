@@ -27,6 +27,7 @@ import Pacientes from './pages/Pacientes';
 import PortalMedico from './pages/PortalMedico';
 import Procedimentos from './pages/Procedimentos';
 import ProcessarRequisicao from './pages/ProcessarRequisicao';
+import Relatorios from './pages/Relatorios';
 import ResultadosExames from './pages/ResultadosExames';
 import Turmas from './pages/Turmas';
 import Usuarios from './pages/Usuarios';
@@ -34,7 +35,6 @@ import VendaCartao from './pages/VendaCartao';
 import VerificacaoAssinatura from './pages/VerificacaoAssinatura';
 import WebhookLogs from './pages/WebhookLogs';
 import ordemServico from './pages/ordem-servico';
-import Relatorios from './pages/Relatorios';
 import __Layout from './Layout.jsx';
 
 
@@ -68,6 +68,7 @@ export const PAGES = {
     "PortalMedico": PortalMedico,
     "Procedimentos": Procedimentos,
     "ProcessarRequisicao": ProcessarRequisicao,
+    "Relatorios": Relatorios,
     "ResultadosExames": ResultadosExames,
     "Turmas": Turmas,
     "Usuarios": Usuarios,
@@ -75,7 +76,6 @@ export const PAGES = {
     "VerificacaoAssinatura": VerificacaoAssinatura,
     "WebhookLogs": WebhookLogs,
     "ordem-servico": ordemServico,
-    "Relatorios": Relatorios,
 }
 
 export const pagesConfig = {

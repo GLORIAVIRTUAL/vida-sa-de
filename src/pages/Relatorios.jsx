@@ -278,99 +278,122 @@ export default function Relatorios() {
   }, [estatisticas]);
 
   const handlePrint = () => {
-    const printContent = printRef.current;
     const printWindow = window.open('', '_blank');
+    
+    // Montar filtros aplicados para exibir no relatório
+    const filtrosAplicados = [];
+    if (filtros.medicoId !== 'todos') {
+      const med = medicos.find(m => m.id === filtros.medicoId);
+      if (med) filtrosAplicados.push(`Profissional: ${med.nome}`);
+    }
+    if (filtros.categoriaNome !== 'todos') {
+      filtrosAplicados.push(`Categoria: ${filtros.categoriaNome}`);
+    }
+    if (filtros.formaPagamento !== 'todos') {
+      filtrosAplicados.push(`Pagamento: ${filtros.formaPagamento}`);
+    }
+    if (filtros.statusPagamento !== 'todos') {
+      filtrosAplicados.push(`Status: ${filtros.statusPagamento}`);
+    }
     
     printWindow.document.write(`
       <html>
         <head>
-          <title>Relatório Financeiro - Centro Vida Saúde</title>
+          <title>Relatório Financeiro - Glória Clínica</title>
           <style>
-            body { font-family: Arial, sans-serif; margin: 20px; }
-            h1 { color: #1e40af; }
-            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            th { background-color: #f3f4f6; }
-            .header { text-align: center; margin-bottom: 30px; }
-            .stats { display: flex; gap: 20px; margin-bottom: 20px; }
-            .stat-card { border: 1px solid #ddd; padding: 15px; border-radius: 8px; }
+            body { font-family: Arial, sans-serif; margin: 20px; font-size: 12px; }
+            h1 { color: #1e40af; font-size: 18px; margin-bottom: 5px; }
+            h2 { font-size: 14px; margin-top: 0; color: #666; }
+            h3 { font-size: 13px; margin-top: 15px; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
+            th { background-color: #f3f4f6; font-size: 11px; }
+            td { font-size: 11px; }
+            .header { text-align: center; margin-bottom: 20px; }
+            .filtros { background: #f9fafb; padding: 10px; border-radius: 5px; margin-bottom: 15px; font-size: 11px; }
+            .stats { display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap; }
+            .stat-card { border: 1px solid #ddd; padding: 10px; border-radius: 5px; min-width: 120px; }
+            .stat-card strong { font-size: 10px; color: #666; }
+            .stat-card .valor { font-size: 14px; font-weight: bold; color: #1e40af; }
             .total { font-weight: bold; background-color: #f0f9ff; }
-            @media print { .no-print { display: none; } }
+            .text-right { text-align: right; }
+            @media print { 
+              .no-print { display: none; } 
+              body { margin: 10px; }
+            }
           </style>
         </head>
         <body>
           <div class="header">
-            <h1>CENTRO VIDA SAÚDE</h1>
-            <h2>Relatório de Controle Financeiro</h2>
+            <h1>GLÓRIA CLÍNICA</h1>
+            <h2>Relatório Financeiro</h2>
             <p>Período: ${format(parseISO(filtros.dataInicio), 'dd/MM/yyyy')} a ${format(parseISO(filtros.dataFim), 'dd/MM/yyyy')}</p>
-            <p>Gerado em: ${format(new Date(), "dd/MM/yyyy 'às' HH:mm")}</p>
+            <p style="font-size: 10px; color: #666;">Gerado em: ${format(new Date(), "dd/MM/yyyy 'às' HH:mm")}</p>
           </div>
           
-          <h3>Resumo Geral</h3>
+          ${filtrosAplicados.length > 0 ? `
+            <div class="filtros">
+              <strong>Filtros aplicados:</strong> ${filtrosAplicados.join(' | ')}
+            </div>
+          ` : ''}
+          
           <div class="stats">
             <div class="stat-card">
-              <strong>Total Vendido:</strong><br/>
-              R$ ${estatisticas.totalVendido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              <strong>Total Vendido</strong><br/>
+              <span class="valor">R$ ${estatisticas.totalVendido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
             </div>
             <div class="stat-card">
-              <strong>Repasse Médicos:</strong><br/>
-              R$ ${estatisticas.totalRepasse.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              <strong>Receita Clínica</strong><br/>
+              <span class="valor" style="color: #16a34a;">R$ ${estatisticas.totalClinica.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
             </div>
             <div class="stat-card">
-              <strong>Receita Clínica:</strong><br/>
-              R$ ${estatisticas.totalClinica.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              <strong>Repasse Médicos</strong><br/>
+              <span class="valor" style="color: #9333ea;">R$ ${estatisticas.totalRepasse.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
             </div>
             <div class="stat-card">
-              <strong>Total Atendimentos:</strong><br/>
-              ${estatisticas.totalAtendimentos}
+              <strong>Atendimentos</strong><br/>
+              <span class="valor">${estatisticas.totalAtendimentos}</span>
             </div>
           </div>
-          
-          <h3>Por Forma de Pagamento</h3>
-          <table>
-            <tr><th>Forma</th><th>Qtd</th><th>Valor</th></tr>
-            ${Object.entries(estatisticas.porFormaPagamento).map(([forma, dados]) => 
-              `<tr><td>${forma}</td><td>${dados.quantidade}</td><td>R$ ${dados.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td></tr>`
-            ).join('')}
-          </table>
-          
-          <h3>Por Categoria/Convênio</h3>
-          <table>
-            <tr><th>Categoria</th><th>Qtd</th><th>Valor</th><th>Repasse</th></tr>
-            ${Object.entries(estatisticas.porCategoria).map(([cat, dados]) => 
-              `<tr><td>${cat}</td><td>${dados.quantidade}</td><td>R$ ${dados.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td><td>R$ ${dados.repasse.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td></tr>`
-            ).join('')}
-          </table>
-          
-          <h3>Por Profissional</h3>
-          <table>
-            <tr><th>Médico</th><th>Qtd</th><th>Valor</th><th>Repasse</th></tr>
-            ${Object.entries(estatisticas.porMedico).map(([med, dados]) => 
-              `<tr><td>${med}</td><td>${dados.quantidade}</td><td>R$ ${dados.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td><td>R$ ${dados.repasse.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td></tr>`
-            ).join('')}
-          </table>
           
           <h3>Detalhamento (${dadosFiltrados.length} registros)</h3>
           <table>
-            <tr><th>Data</th><th>Paciente</th><th>Médico</th><th>Categoria</th><th>Pagamento</th><th>Valor</th><th>Repasse</th></tr>
-            ${dadosFiltrados.slice(0, 500).map(os => {
-              const med = medicos.find(m => m.id === os.medico_id);
-              const cat = categorias.find(c => c.id === os.categoria_preco_id);
-              return `<tr>
-                <td>${os.data_execucao ? format(parseISO(os.data_execucao), 'dd/MM/yy') : '-'}</td>
-                <td>${os.paciente_nome || '-'}</td>
-                <td>${med?.nome?.split(' ').slice(0, 2).join(' ') || '-'}</td>
-                <td>${cat?.nome || '-'}</td>
-                <td>${os.forma_pagamento || '-'}</td>
-                <td>R$ ${(os.valor_final || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                <td>R$ ${(os.valor_repasse_medico || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-              </tr>`;
-            }).join('')}
-            <tr class="total">
-              <td colspan="5"><strong>TOTAL</strong></td>
-              <td><strong>R$ ${estatisticas.totalVendido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong></td>
-              <td><strong>R$ ${estatisticas.totalRepasse.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong></td>
-            </tr>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Paciente</th>
+                <th>Médico</th>
+                <th>Categoria</th>
+                <th>Pagamento</th>
+                <th class="text-right">Valor</th>
+                <th class="text-right">Repasse</th>
+                <th class="text-right">Clínica</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${dadosFiltrados.map(os => {
+                const nomeMed = obterNomeMedico(os);
+                const nomeCat = obterNomeCategoria(os);
+                return `<tr>
+                  <td>${os.data_execucao ? format(parseISO(os.data_execucao), 'dd/MM/yy') : '-'}</td>
+                  <td>${os.paciente_nome || '-'}</td>
+                  <td>${nomeMed.split(' ').slice(0, 2).join(' ')}</td>
+                  <td>${nomeCat}</td>
+                  <td>${os.forma_pagamento || '-'}</td>
+                  <td class="text-right">R$ ${(os.valor_final || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                  <td class="text-right">R$ ${(os.valor_repasse_medico || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                  <td class="text-right">R$ ${(os.valor_clinica || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+            <tfoot>
+              <tr class="total">
+                <td colspan="5"><strong>TOTAL</strong></td>
+                <td class="text-right"><strong>R$ ${estatisticas.totalVendido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong></td>
+                <td class="text-right"><strong>R$ ${estatisticas.totalRepasse.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong></td>
+                <td class="text-right"><strong>R$ ${estatisticas.totalClinica.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong></td>
+              </tr>
+            </tfoot>
           </table>
         </body>
       </html>
