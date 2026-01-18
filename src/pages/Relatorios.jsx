@@ -32,7 +32,7 @@ export default function Relatorios() {
     dataInicio: format(new Date(new Date().setFullYear(new Date().getFullYear() - 1)), 'yyyy-MM-dd'),
     dataFim: format(new Date(), 'yyyy-MM-dd'),
     medicoId: 'todos',
-    categoriaId: 'todos',
+    categoriaNome: 'todos', // Mudado de categoriaId para categoriaNome
     formaPagamento: 'todos',
     statusPagamento: 'todos',
     ordenacao: 'nome'
