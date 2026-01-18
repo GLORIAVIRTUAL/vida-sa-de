@@ -1048,6 +1048,15 @@ function DashboardTab() {
 export default function ChatbotsAtivos() {
   const [activeTab, setActiveTab] = useState('chat');
   const [contatoParaConversa, setContatoParaConversa] = useState(null);
+  const [somAtivo, setSomAtivo] = useState(() => {
+    const saved = localStorage.getItem('chatSomAtivo');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+
+  // Salvar preferência de som no localStorage
+  useEffect(() => {
+    localStorage.setItem('chatSomAtivo', JSON.stringify(somAtivo));
+  }, [somAtivo]);
 
   const handleIniciarConversa = (contato) => {
     setContatoParaConversa(contato);
@@ -1065,12 +1074,28 @@ export default function ChatbotsAtivos() {
               className="h-12"
             />
           </div>
-          <Link to={createPageUrl('ConfiguracaoChatbot')}>
-            <Button variant="outline" size="sm">
-              <Settings className="w-4 h-4 mr-2" />
-              Configurações
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSomAtivo(!somAtivo)}
+              className={somAtivo ? 'bg-green-100 hover:bg-green-200 border-green-300' : 'bg-gray-100 hover:bg-gray-200'}
+              title={somAtivo ? 'Som de notificação ativado' : 'Som de notificação desativado'}
+            >
+              {somAtivo ? (
+                <Volume2 className="w-4 h-4 text-green-600" />
+              ) : (
+                <VolumeX className="w-4 h-4 text-gray-500" />
+              )}
+              <span className="ml-2 text-xs">{somAtivo ? 'Som On' : 'Som Off'}</span>
             </Button>
-          </Link>
+            <Link to={createPageUrl('ConfiguracaoChatbot')}>
+              <Button variant="outline" size="sm">
+                <Settings className="w-4 h-4 mr-2" />
+                Configurações
+              </Button>
+            </Link>
+          </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
