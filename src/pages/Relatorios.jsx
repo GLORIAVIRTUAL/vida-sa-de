@@ -20,6 +20,18 @@ import { OrdemServico, Medico, CategoriaPreco, Paciente } from '@/entities/all';
 
 const CORES_GRAFICO = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
 
+// Mapeamento de IDs de categoria antigos para novos nomes
+const MAPEAMENTO_CATEGORIA_LEGADO = {
+  '68cdd084c8857d27e40c6967': 'Particular',
+  '68cdd084c8857d27e40c6968': 'Cartão Mais Vida', 
+  '68cdd084c8857d27e40c6969': 'Prefeitura de Tramandaí',
+  '68cdd084c8857d27e40c696a': 'Prefeitura de Imbé',
+  '68cdd084c8857d27e40c696b': 'Prefeitura de Pinhal',
+  '68cdd084c8857d27e40c696c': 'FUMAM',
+  '68cdd084c8857d27e40c696d': 'SMEC',
+  '68cdd084c8857d27e40c696e': 'Óticas Parceiras'
+};
+
 export default function Relatorios() {
   const [loading, setLoading] = useState(true);
   const [ordensServico, setOrdensServico] = useState([]);
