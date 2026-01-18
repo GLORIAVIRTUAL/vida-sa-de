@@ -468,7 +468,7 @@ export default function Relatorios() {
                         <SelectItem key={c.id} value={c.nome}>{c.nome}</SelectItem>
                       ))}
                       {/* Categorias legadas (para dados antigos) */}
-                      {Object.values(mapeamentoCategoriaLegado)
+                      {Object.values(MAPEAMENTO_CATEGORIA_LEGADO)
                         .filter(nome => !categorias.some(c => c.nome === nome))
                         .map(nome => (
                           <SelectItem key={nome} value={nome}>{nome} (legado)</SelectItem>
