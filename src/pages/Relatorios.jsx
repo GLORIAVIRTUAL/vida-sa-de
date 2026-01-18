@@ -490,7 +490,11 @@ export default function Relatorios() {
                 <Building2 className="w-4 h-4" />
                 Por Categoria
               </TabsTrigger>
-            </TabsList>
+              <TabsTrigger value="relatorio-medico" className="flex items-center gap-2">
+                <FileText className="w-4 h-4" />
+                Relatório por Médico
+              </TabsTrigger>
+              </TabsList>
 
             {/* Tab Gráficos */}
             <TabsContent value="graficos">
