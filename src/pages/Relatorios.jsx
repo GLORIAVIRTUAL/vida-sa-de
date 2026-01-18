@@ -195,23 +195,6 @@ export default function Relatorios() {
     return 'Não informado';
   };
 
-  // Função para obter nome da categoria
-  const obterNomeCategoria = (os) => {
-    // Primeiro tenta encontrar na lista de categorias atual
-    const cat = categorias.find(c => c.id === os.categoria_preco_id);
-    if (cat) return cat.nome;
-    
-    // Fallback: usar mapeamento de IDs legados
-    if (MAPEAMENTO_CATEGORIA_LEGADO[os.categoria_preco_id]) {
-      return MAPEAMENTO_CATEGORIA_LEGADO[os.categoria_preco_id];
-    }
-    
-    // Fallback: usar forma_pagamento como indicador
-    if (os.forma_pagamento === 'Convênio') return 'Convênio (não identificado)';
-    
-    return 'Não informado';
-  };
-
   // Estatísticas
   const estatisticas = useMemo(() => {
     const totalVendido = dadosFiltrados.reduce((acc, os) => acc + (os.valor_final || 0), 0);
