@@ -918,12 +918,12 @@ export default function Relatorios() {
                                 </TableHeader>
                                 <TableBody>
                                   {osMedico.slice(0, 50).map(os => {
-                                    const cat = categorias.find(c => c.id === os.categoria_preco_id);
+                                    const nomeCat = obterNomeCategoria(os);
                                     return (
                                       <TableRow key={os.id}>
                                         <TableCell>{os.data_execucao ? format(parseISO(os.data_execucao), 'dd/MM/yy') : '-'}</TableCell>
                                         <TableCell className="font-medium">{os.paciente_nome || '-'}</TableCell>
-                                        <TableCell><Badge variant="outline" className="text-xs">{cat?.nome || '-'}</Badge></TableCell>
+                                        <TableCell><Badge variant="outline" className="text-xs">{nomeCat}</Badge></TableCell>
                                         <TableCell>{os.forma_pagamento || '-'}</TableCell>
                                         <TableCell className="text-right">{formatCurrency(os.valor_final)}</TableCell>
                                         <TableCell className="text-right text-purple-600">{formatCurrency(os.valor_repasse_medico)}</TableCell>
