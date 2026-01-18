@@ -65,6 +65,38 @@ export default function Relatorios() {
     }
   };
 
+  // Função auxiliar para verificar se OS pertence ao médico selecionado
+  const osPertenceAoMedico = (os, medicoIdFiltro) => {
+    // Primeiro verifica pelo ID direto
+    if (os.medico_id === medicoIdFiltro) return true;
+    
+    // Se não bateu, buscar o médico pelo nome e verificar
+    const medicoFiltro = medicos.find(m => m.id === medicoIdFiltro);
+    if (!medicoFiltro) return false;
+    
+    // Tentar extrair nome do médico do campo itens
+    if (os.itens) {
+      try {
+        const itensArray = typeof os.itens === 'string' ? JSON.parse(os.itens) : os.itens;
+        if (itensArray && itensArray.length > 0) {
+          const descricao = itensArray[0].descricao || '';
+          // Verificar se a descrição contém o nome do médico
+          const nomeMedicoLower = medicoFiltro.nome.toLowerCase();
+          const descricaoLower = descricao.toLowerCase();
+          
+          // Verificar partes do nome
+          const partesNome = nomeMedicoLower.split(' ').filter(p => p.length > 2);
+          const matchNome = partesNome.some(parte => descricaoLower.includes(parte));
+          if (matchNome) return true;
+        }
+      } catch (e) {
+        // Ignorar erros de parse
+      }
+    }
+    
+    return false;
+  };
+
   // Dados filtrados
   const dadosFiltrados = useMemo(() => {
     return ordensServico.filter(os => {
@@ -72,8 +104,10 @@ export default function Relatorios() {
       if (filtros.dataInicio && os.data_execucao < filtros.dataInicio) return false;
       if (filtros.dataFim && os.data_execucao > filtros.dataFim) return false;
       
-      // Filtro de médico
-      if (filtros.medicoId !== 'todos' && os.medico_id !== filtros.medicoId) return false;
+      // Filtro de médico (com fallback para nome)
+      if (filtros.medicoId !== 'todos') {
+        if (!osPertenceAoMedico(os, filtros.medicoId)) return false;
+      }
       
       // Filtro de categoria
       if (filtros.categoriaId !== 'todos' && os.categoria_preco_id !== filtros.categoriaId) return false;
@@ -95,7 +129,7 @@ export default function Relatorios() {
       }
       return 0;
     });
-  }, [ordensServico, filtros]);
+  }, [ordensServico, filtros, medicos]);
 
   // Função para extrair nome do médico do campo itens (fallback)
   const extrairNomeMedicoDeItens = (os) => {
