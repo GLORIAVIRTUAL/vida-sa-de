@@ -109,8 +109,11 @@ export default function Relatorios() {
         if (!osPertenceAoMedico(os, filtros.medicoId)) return false;
       }
       
-      // Filtro de categoria
-      if (filtros.categoriaId !== 'todos' && os.categoria_preco_id !== filtros.categoriaId) return false;
+      // Filtro de categoria (por nome, não por ID)
+      if (filtros.categoriaNome !== 'todos') {
+        const nomeCategoria = obterNomeCategoria(os);
+        if (nomeCategoria !== filtros.categoriaNome) return false;
+      }
       
       // Filtro de forma de pagamento
       if (filtros.formaPagamento !== 'todos' && os.forma_pagamento !== filtros.formaPagamento) return false;
