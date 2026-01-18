@@ -97,6 +97,49 @@ export default function Relatorios() {
     });
   }, [ordensServico, filtros]);
 
+  // Função para extrair nome do médico do campo itens (fallback)
+  const extrairNomeMedicoDeItens = (os) => {
+    if (!os.itens) return null;
+    try {
+      const itensArray = typeof os.itens === 'string' ? JSON.parse(os.itens) : os.itens;
+      if (itensArray && itensArray.length > 0) {
+        const descricao = itensArray[0].descricao || '';
+        // Formato: "Consulta Psicologia - Dr(a). Joeci de Oliveira"
+        const match = descricao.match(/Dr\(a\)\.\s*(.+)$/) || descricao.match(/Dr\.\s*(.+)$/) || descricao.match(/Dra\.\s*(.+)$/);
+        if (match) return match[1].trim();
+        // Outro formato possível: "Consulta Especialidade - Nome do Médico"
+        const parts = descricao.split(' - ');
+        if (parts.length > 1) return parts[parts.length - 1].trim();
+      }
+    } catch (e) {
+      console.warn('Erro ao extrair médico de itens:', e);
+    }
+    return null;
+  };
+
+  // Função para obter nome do médico (ID ou fallback de itens)
+  const obterNomeMedico = (os) => {
+    const med = medicos.find(m => m.id === os.medico_id);
+    if (med) return med.nome;
+    
+    // Fallback: tentar extrair do campo itens
+    const nomeDeItens = extrairNomeMedicoDeItens(os);
+    if (nomeDeItens) return nomeDeItens;
+    
+    return 'Não informado';
+  };
+
+  // Função para obter nome da categoria
+  const obterNomeCategoria = (os) => {
+    const cat = categorias.find(c => c.id === os.categoria_preco_id);
+    if (cat) return cat.nome;
+    
+    // Fallback: usar forma_pagamento como indicador
+    if (os.forma_pagamento === 'Convênio') return 'Convênio (não identificado)';
+    
+    return 'Não informado';
+  };
+
   // Estatísticas
   const estatisticas = useMemo(() => {
     const totalVendido = dadosFiltrados.reduce((acc, os) => acc + (os.valor_final || 0), 0);
@@ -118,8 +161,7 @@ export default function Relatorios() {
     // Por categoria (convênio/particular)
     const porCategoria = {};
     dadosFiltrados.forEach(os => {
-      const cat = categorias.find(c => c.id === os.categoria_preco_id);
-      const nomeCategoria = cat?.nome || 'Não informado';
+      const nomeCategoria = obterNomeCategoria(os);
       if (!porCategoria[nomeCategoria]) {
         porCategoria[nomeCategoria] = { quantidade: 0, valor: 0, repasse: 0 };
       }
@@ -131,10 +173,9 @@ export default function Relatorios() {
     // Por médico
     const porMedico = {};
     dadosFiltrados.forEach(os => {
-      const med = medicos.find(m => m.id === os.medico_id);
-      const nomeMedico = med?.nome || 'Não informado';
+      const nomeMedico = obterNomeMedico(os);
       if (!porMedico[nomeMedico]) {
-        porMedico[nomeMedico] = { quantidade: 0, valor: 0, repasse: 0 };
+        porMedico[nomeMedico] = { quantidade: 0, valor: 0, repasse: 0, medicoId: os.medico_id };
       }
       porMedico[nomeMedico].quantidade++;
       porMedico[nomeMedico].valor += (os.valor_final || 0);
