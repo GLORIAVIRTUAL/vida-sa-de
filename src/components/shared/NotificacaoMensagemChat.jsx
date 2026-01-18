@@ -190,23 +190,6 @@ export default function NotificacaoMensagemChat() {
 
   return (
     <>
-      {/* Botão de toggle do som - fixo no canto */}
-      <div className="fixed bottom-4 left-4 z-50">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => setSomAtivo(!somAtivo)}
-          className={`rounded-full shadow-lg ${somAtivo ? 'bg-green-100 hover:bg-green-200' : 'bg-gray-100 hover:bg-gray-200'}`}
-          title={somAtivo ? 'Som ativado - Clique para desativar' : 'Som desativado - Clique para ativar'}
-        >
-          {somAtivo ? (
-            <Volume2 className="h-5 w-5 text-green-600" />
-          ) : (
-            <VolumeX className="h-5 w-5 text-gray-500" />
-          )}
-        </Button>
-      </div>
-
       {/* Notificações */}
       <div className="fixed top-20 right-4 z-50 flex flex-col gap-2 max-w-sm">
         {notificacoes.map(notificacao => (
