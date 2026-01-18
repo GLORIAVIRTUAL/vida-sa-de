@@ -457,15 +457,23 @@ export default function Relatorios() {
                 </div>
                 <div>
                   <Label>Categoria</Label>
-                  <Select value={filtros.categoriaId} onValueChange={(v) => setFiltros({ ...filtros, categoriaId: v })}>
+                  <Select value={filtros.categoriaNome} onValueChange={(v) => setFiltros({ ...filtros, categoriaNome: v })}>
                     <SelectTrigger>
                       <SelectValue placeholder="Todas" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="todos">Todas</SelectItem>
+                      {/* Categorias atuais */}
                       {categorias.map(c => (
-                        <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
+                        <SelectItem key={c.id} value={c.nome}>{c.nome}</SelectItem>
                       ))}
+                      {/* Categorias legadas (para dados antigos) */}
+                      {Object.values(mapeamentoCategoriaLegado)
+                        .filter(nome => !categorias.some(c => c.nome === nome))
+                        .map(nome => (
+                          <SelectItem key={nome} value={nome}>{nome} (legado)</SelectItem>
+                        ))
+                      }
                     </SelectContent>
                   </Select>
                 </div>
