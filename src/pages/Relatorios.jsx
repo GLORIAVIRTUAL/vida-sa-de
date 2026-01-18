@@ -797,8 +797,7 @@ export default function Relatorios() {
                     // Agrupar por categoria
                     const porCategoriaLocal = {};
                     osMedico.forEach(os => {
-                      const cat = categorias.find(c => c.id === os.categoria_preco_id);
-                      const nomeCat = cat?.nome || 'Não informado';
+                      const nomeCat = obterNomeCategoria(os);
                       if (!porCategoriaLocal[nomeCat]) {
                         porCategoriaLocal[nomeCat] = { quantidade: 0, valor: 0 };
                       }
