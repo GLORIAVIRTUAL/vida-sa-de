@@ -741,6 +741,171 @@ export default function Relatorios() {
                 </CardContent>
               </Card>
             </TabsContent>
+
+            {/* Tab Relatório Detalhado por Médico */}
+            <TabsContent value="relatorio-medico">
+              <div className="space-y-6">
+                {Object.entries(estatisticas.porMedico)
+                  .sort((a, b) => a[0].localeCompare(b[0]))
+                  .map(([nomeMedico, dadosMedico]) => {
+                    // Filtrar OS deste médico
+                    const osMedico = dadosFiltrados.filter(os => {
+                      const med = medicos.find(m => m.id === os.medico_id);
+                      return med?.nome === nomeMedico;
+                    });
+                    
+                    // Agrupar por categoria
+                    const porCategoriaLocal = {};
+                    osMedico.forEach(os => {
+                      const cat = categorias.find(c => c.id === os.categoria_preco_id);
+                      const nomeCat = cat?.nome || 'Não informado';
+                      if (!porCategoriaLocal[nomeCat]) {
+                        porCategoriaLocal[nomeCat] = { quantidade: 0, valor: 0 };
+                      }
+                      porCategoriaLocal[nomeCat].quantidade++;
+                      porCategoriaLocal[nomeCat].valor += (os.valor_final || 0);
+                    });
+                    
+                    // Agrupar por forma de pagamento
+                    const porPagamentoLocal = {};
+                    osMedico.forEach(os => {
+                      const forma = os.forma_pagamento || 'Não informado';
+                      if (!porPagamentoLocal[forma]) {
+                        porPagamentoLocal[forma] = { quantidade: 0, valor: 0 };
+                      }
+                      porPagamentoLocal[forma].quantidade++;
+                      porPagamentoLocal[forma].valor += (os.valor_final || 0);
+                    });
+                    
+                    return (
+                      <Card key={nomeMedico}>
+                        <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50">
+                          <div className="flex justify-between items-center">
+                            <CardTitle className="flex items-center gap-2">
+                              <Users className="w-5 h-5" />
+                              {nomeMedico}
+                            </CardTitle>
+                            <div className="flex gap-4 text-sm">
+                              <div className="text-right">
+                                <span className="text-gray-500">Atendimentos:</span>
+                                <span className="ml-2 font-bold">{dadosMedico.quantidade}</span>
+                              </div>
+                              <div className="text-right">
+                                <span className="text-gray-500">Faturado:</span>
+                                <span className="ml-2 font-bold text-blue-600">{formatCurrency(dadosMedico.valor)}</span>
+                              </div>
+                              <div className="text-right">
+                                <span className="text-gray-500">Repasse:</span>
+                                <span className="ml-2 font-bold text-purple-600">{formatCurrency(dadosMedico.repasse)}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="pt-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Por Categoria */}
+                            <div>
+                              <h4 className="font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                                <Building2 className="w-4 h-4" />
+                                Por Categoria/Convênio
+                              </h4>
+                              <Table>
+                                <TableHeader>
+                                  <TableRow>
+                                    <TableHead>Categoria</TableHead>
+                                    <TableHead className="text-center">Qtd</TableHead>
+                                    <TableHead className="text-right">Valor</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {Object.entries(porCategoriaLocal)
+                                    .sort((a, b) => b[1].valor - a[1].valor)
+                                    .map(([cat, d]) => (
+                                      <TableRow key={cat}>
+                                        <TableCell>
+                                          <Badge variant="outline">{cat}</Badge>
+                                        </TableCell>
+                                        <TableCell className="text-center">{d.quantidade}</TableCell>
+                                        <TableCell className="text-right font-medium">{formatCurrency(d.valor)}</TableCell>
+                                      </TableRow>
+                                    ))}
+                                </TableBody>
+                              </Table>
+                            </div>
+                            
+                            {/* Por Forma de Pagamento */}
+                            <div>
+                              <h4 className="font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                                <CreditCard className="w-4 h-4" />
+                                Por Forma de Pagamento
+                              </h4>
+                              <Table>
+                                <TableHeader>
+                                  <TableRow>
+                                    <TableHead>Pagamento</TableHead>
+                                    <TableHead className="text-center">Qtd</TableHead>
+                                    <TableHead className="text-right">Valor</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {Object.entries(porPagamentoLocal)
+                                    .sort((a, b) => b[1].valor - a[1].valor)
+                                    .map(([pag, d]) => (
+                                      <TableRow key={pag}>
+                                        <TableCell>{pag}</TableCell>
+                                        <TableCell className="text-center">{d.quantidade}</TableCell>
+                                        <TableCell className="text-right font-medium">{formatCurrency(d.valor)}</TableCell>
+                                      </TableRow>
+                                    ))}
+                                </TableBody>
+                              </Table>
+                            </div>
+                          </div>
+                          
+                          {/* Lista de atendimentos */}
+                          <div className="mt-4 pt-4 border-t">
+                            <h4 className="font-semibold text-gray-700 mb-2">Atendimentos Detalhados</h4>
+                            <div className="max-h-[300px] overflow-auto">
+                              <Table>
+                                <TableHeader>
+                                  <TableRow>
+                                    <TableHead>Data</TableHead>
+                                    <TableHead>Paciente</TableHead>
+                                    <TableHead>Categoria</TableHead>
+                                    <TableHead>Pagamento</TableHead>
+                                    <TableHead className="text-right">Valor</TableHead>
+                                    <TableHead className="text-right">Repasse</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {osMedico.slice(0, 50).map(os => {
+                                    const cat = categorias.find(c => c.id === os.categoria_preco_id);
+                                    return (
+                                      <TableRow key={os.id}>
+                                        <TableCell>{os.data_execucao ? format(parseISO(os.data_execucao), 'dd/MM/yy') : '-'}</TableCell>
+                                        <TableCell className="font-medium">{os.paciente_nome || '-'}</TableCell>
+                                        <TableCell><Badge variant="outline" className="text-xs">{cat?.nome || '-'}</Badge></TableCell>
+                                        <TableCell>{os.forma_pagamento || '-'}</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(os.valor_final)}</TableCell>
+                                        <TableCell className="text-right text-purple-600">{formatCurrency(os.valor_repasse_medico)}</TableCell>
+                                      </TableRow>
+                                    );
+                                  })}
+                                </TableBody>
+                              </Table>
+                              {osMedico.length > 50 && (
+                                <p className="text-center text-gray-500 text-sm mt-2">
+                                  Mostrando 50 de {osMedico.length} atendimentos
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+              </div>
+            </TabsContent>
           </Tabs>
         </div>
       </div>
