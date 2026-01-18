@@ -178,18 +178,6 @@ export default function Relatorios() {
     return 'Não informado';
   };
 
-  // Mapeamento de IDs de categoria antigos para novos nomes
-  const mapeamentoCategoriaLegado = {
-    '68cdd084c8857d27e40c6967': 'Particular',
-    '68cdd084c8857d27e40c6968': 'Cartão Mais Vida', 
-    '68cdd084c8857d27e40c6969': 'Prefeitura de Tramandaí',
-    '68cdd084c8857d27e40c696a': 'Prefeitura de Imbé',
-    '68cdd084c8857d27e40c696b': 'Prefeitura de Pinhal',
-    '68cdd084c8857d27e40c696c': 'FUMAM',
-    '68cdd084c8857d27e40c696d': 'SMEC',
-    '68cdd084c8857d27e40c696e': 'Óticas Parceiras'
-  };
-
   // Função para obter nome da categoria
   const obterNomeCategoria = (os) => {
     // Primeiro tenta encontrar na lista de categorias atual
@@ -197,8 +185,8 @@ export default function Relatorios() {
     if (cat) return cat.nome;
     
     // Fallback: usar mapeamento de IDs legados
-    if (mapeamentoCategoriaLegado[os.categoria_preco_id]) {
-      return mapeamentoCategoriaLegado[os.categoria_preco_id];
+    if (MAPEAMENTO_CATEGORIA_LEGADO[os.categoria_preco_id]) {
+      return MAPEAMENTO_CATEGORIA_LEGADO[os.categoria_preco_id];
     }
     
     // Fallback: usar forma_pagamento como indicador
