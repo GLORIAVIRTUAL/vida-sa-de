@@ -262,7 +262,7 @@ function MainLayout({ children, currentPageName, currentUser, onUserUpdate }) {
                       onClick={() => setSidebarOpen(false)}
                       title={isSidebarCollapsed ? item.name : ''}
                       >
-                      <item.icon className={`w-4 h-4 flex-shrink-0 ${isSidebarCollapsed ? '' : 'mr-3'}`} />
+                      {React.createElement(item.icon, { className: `w-4 h-4 flex-shrink-0 ${isSidebarCollapsed ? '' : 'mr-3'}` })}
                       {!isSidebarCollapsed && <span>{item.name}</span>}
                       </Link>
                   );
