@@ -27,10 +27,10 @@ export default function Relatorios() {
   const [categorias, setCategorias] = useState([]);
   const [pacientes, setPacientes] = useState([]);
   
-  // Filtros
+  // Filtros - iniciar com dados do último ano para mostrar registros
   const [filtros, setFiltros] = useState({
-    dataInicio: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
-    dataFim: format(endOfMonth(new Date()), 'yyyy-MM-dd'),
+    dataInicio: format(new Date(new Date().setFullYear(new Date().getFullYear() - 1)), 'yyyy-MM-dd'),
+    dataFim: format(new Date(), 'yyyy-MM-dd'),
     medicoId: 'todos',
     categoriaId: 'todos',
     formaPagamento: 'todos',
