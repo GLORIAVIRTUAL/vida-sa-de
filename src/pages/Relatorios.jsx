@@ -649,15 +649,15 @@ export default function Relatorios() {
                       </TableHeader>
                       <TableBody>
                         {dadosFiltrados.slice(0, 200).map((os) => {
-                          const med = medicos.find(m => m.id === os.medico_id);
-                          const cat = categorias.find(c => c.id === os.categoria_preco_id);
+                          const nomeMedico = obterNomeMedico(os);
+                          const nomeCategoria = obterNomeCategoria(os);
                           return (
                             <TableRow key={os.id}>
                               <TableCell>{os.data_execucao ? format(parseISO(os.data_execucao), 'dd/MM/yy') : '-'}</TableCell>
                               <TableCell className="font-medium">{os.paciente_nome || '-'}</TableCell>
-                              <TableCell>{med?.nome?.split(' ').slice(0, 2).join(' ') || '-'}</TableCell>
+                              <TableCell>{nomeMedico.split(' ').slice(0, 2).join(' ')}</TableCell>
                               <TableCell>
-                                <Badge variant="outline">{cat?.nome || '-'}</Badge>
+                                <Badge variant="outline">{nomeCategoria}</Badge>
                               </TableCell>
                               <TableCell>{os.forma_pagamento || '-'}</TableCell>
                               <TableCell>
