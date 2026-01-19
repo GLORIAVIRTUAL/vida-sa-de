@@ -145,7 +145,7 @@ export default function Relatorios() {
     if (nomeOSNorm === nomeFiltroNorm) return true;
     if (nomeOSNorm.includes(nomeFiltroNorm) || nomeFiltroNorm.includes(nomeOSNorm)) return true;
     
-    // Comparar palavras significativas do nome (pelo menos 2 devem bater)
+    // Comparar palavras significativas do nome
     const palavrasFiltro = nomeFiltroNorm.split(' ').filter(p => p.length > 2);
     const palavrasOS = nomeOSNorm.split(' ').filter(p => p.length > 2);
     
@@ -156,13 +156,18 @@ export default function Relatorios() {
       }
     }
     
-    // Se pelo menos 2 palavras significativas batem, considera match
-    if (matches >= 2) return true;
+    // Precisa bater pelo menos 2 palavras E o primeiro nome ou sobrenome principal
+    // Para evitar confusão com nomes parecidos (ex: "Altamiro da Costa" vs "Antônio da Costa")
+    const primeiroNomeFiltro = palavrasFiltro[0];
+    const primeiroNomeOS = palavrasOS[0];
     
-    // Ou se o sobrenome (última palavra) bate
-    const sobrenomeFiltro = palavrasFiltro[palavrasFiltro.length - 1];
-    const sobrenomeOS = palavrasOS[palavrasOS.length - 1];
-    if (sobrenomeFiltro && sobrenomeOS && sobrenomeFiltro === sobrenomeOS) return true;
+    // Primeiro nome deve bater
+    if (primeiroNomeFiltro && primeiroNomeOS && primeiroNomeFiltro === primeiroNomeOS) {
+      return true;
+    }
+    
+    // Ou se pelo menos 3 palavras significativas batem (para nomes longos)
+    if (matches >= 3) return true;
     
     return false;
   };
