@@ -102,7 +102,7 @@ export default function Relatorios() {
     // Primeiro verifica pelo ID direto
     if (os.medico_id === medicoIdFiltro) return true;
     
-    // Se não bateu, buscar o médico pelo nome e verificar
+    // Se não bateu pelo ID, buscar o médico pelo nome e verificar no campo itens
     const medicoFiltro = medicos.find(m => m.id === medicoIdFiltro);
     if (!medicoFiltro) return false;
     
@@ -112,14 +112,21 @@ export default function Relatorios() {
         const itensArray = typeof os.itens === 'string' ? JSON.parse(os.itens) : os.itens;
         if (itensArray && itensArray.length > 0) {
           const descricao = itensArray[0].descricao || '';
-          // Verificar se a descrição contém o nome do médico
-          const nomeMedicoLower = medicoFiltro.nome.toLowerCase();
           const descricaoLower = descricao.toLowerCase();
           
-          // Verificar partes do nome
-          const partesNome = nomeMedicoLower.split(' ').filter(p => p.length > 2);
-          const matchNome = partesNome.some(parte => descricaoLower.includes(parte));
-          if (matchNome) return true;
+          // Verificar nome completo do médico primeiro
+          const nomeMedicoLower = medicoFiltro.nome.toLowerCase();
+          if (descricaoLower.includes(nomeMedicoLower)) return true;
+          
+          // Verificar partes significativas do nome (palavras com mais de 3 letras, exceto prefixos comuns)
+          const prefixosIgnorar = ['dr.', 'dra.', 'dr(a).', 'de', 'da', 'do', 'dos', 'das'];
+          const partesNome = nomeMedicoLower.split(' ')
+            .filter(p => p.length > 3 && !prefixosIgnorar.includes(p));
+          
+          // Precisa bater pelo menos 2 partes do nome ou 1 parte se só tiver 1
+          const partesQueBatem = partesNome.filter(parte => descricaoLower.includes(parte));
+          if (partesNome.length === 1 && partesQueBatem.length >= 1) return true;
+          if (partesNome.length >= 2 && partesQueBatem.length >= 2) return true;
         }
       } catch (e) {
         // Ignorar erros de parse
