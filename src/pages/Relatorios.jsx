@@ -212,7 +212,7 @@ export default function Relatorios() {
     });
   }, [ordensServico, filtros, medicos]);
 
-  // Estatísticas
+  // Calcular estatísticas
   const estatisticas = useMemo(() => {
     const totalVendido = dadosFiltrados.reduce((acc, os) => acc + (os.valor_final || 0), 0);
     const totalRepasse = dadosFiltrados.reduce((acc, os) => acc + (os.valor_repasse_medico || 0), 0);
