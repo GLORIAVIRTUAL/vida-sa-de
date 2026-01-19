@@ -106,32 +106,51 @@ export default function Relatorios() {
     const medicoFiltro = medicos.find(m => m.id === medicoIdFiltro);
     if (!medicoFiltro) return false;
     
-    // Tentar extrair nome do médico do campo itens
-    if (os.itens) {
+    // Obter nome do médico da OS usando a mesma lógica de obterNomeMedico
+    const nomeMedicoOS = (() => {
+      // Primeiro tenta pelo medico_id
+      const med = medicos.find(m => m.id === os.medico_id);
+      if (med) return med.nome;
+      
+      // Fallback: extrair do campo itens
+      if (!os.itens) return null;
       try {
         const itensArray = typeof os.itens === 'string' ? JSON.parse(os.itens) : os.itens;
         if (itensArray && itensArray.length > 0) {
           const descricao = itensArray[0].descricao || '';
-          const descricaoLower = descricao.toLowerCase();
-          
-          // Verificar nome completo do médico primeiro
-          const nomeMedicoLower = medicoFiltro.nome.toLowerCase();
-          if (descricaoLower.includes(nomeMedicoLower)) return true;
-          
-          // Verificar partes significativas do nome (palavras com mais de 3 letras, exceto prefixos comuns)
-          const prefixosIgnorar = ['dr.', 'dra.', 'dr(a).', 'de', 'da', 'do', 'dos', 'das'];
-          const partesNome = nomeMedicoLower.split(' ')
-            .filter(p => p.length > 3 && !prefixosIgnorar.includes(p));
-          
-          // Precisa bater pelo menos 2 partes do nome ou 1 parte se só tiver 1
-          const partesQueBatem = partesNome.filter(parte => descricaoLower.includes(parte));
-          if (partesNome.length === 1 && partesQueBatem.length >= 1) return true;
-          if (partesNome.length >= 2 && partesQueBatem.length >= 2) return true;
+          const match = descricao.match(/Dr\(a\)\.\s*(.+)$/) || descricao.match(/Dr\.\s*(.+)$/) || descricao.match(/Dra\.\s*(.+)$/);
+          if (match) return match[1].trim();
+          const parts = descricao.split(' - ');
+          if (parts.length > 1) return parts[parts.length - 1].trim();
         }
-      } catch (e) {
-        // Ignorar erros de parse
-      }
-    }
+      } catch (e) {}
+      return null;
+    })();
+    
+    if (!nomeMedicoOS) return false;
+    
+    // Normalizar nomes para comparação
+    const normalizarNome = (nome) => nome.toLowerCase()
+      .replace(/dr\.|dra\.|dr\(a\)\./gi, '')
+      .trim();
+    
+    const nomeFiltroNorm = normalizarNome(medicoFiltro.nome);
+    const nomeOSNorm = normalizarNome(nomeMedicoOS);
+    
+    // Comparação direta
+    if (nomeOSNorm === nomeFiltroNorm) return true;
+    if (nomeOSNorm.includes(nomeFiltroNorm) || nomeFiltroNorm.includes(nomeOSNorm)) return true;
+    
+    // Comparar sobrenomes (última palavra significativa)
+    const getSobrenome = (nome) => {
+      const palavras = nome.split(' ').filter(p => p.length > 2);
+      return palavras[palavras.length - 1] || '';
+    };
+    
+    const sobrenomeFiltro = getSobrenome(nomeFiltroNorm);
+    const sobrenomeOS = getSobrenome(nomeOSNorm);
+    
+    if (sobrenomeFiltro && sobrenomeOS && sobrenomeFiltro === sobrenomeOS) return true;
     
     return false;
   };
