@@ -427,7 +427,12 @@ export default function Relatorios() {
           <div className="mb-6 flex justify-between items-start">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">Relatórios Financeiros</h1>
-              <p className="text-gray-600">Controle detalhado de vendas, repasses e receitas</p>
+              <p className="text-gray-600">
+                Controle detalhado de vendas, repasses e receitas 
+                <span className="ml-2 text-blue-600 font-medium">
+                  ({ordensServico.length} OS carregadas, {dadosFiltrados.length} no período)
+                </span>
+              </p>
             </div>
             <div className="flex gap-2">
               <Button variant="outline" onClick={carregarDados}>
