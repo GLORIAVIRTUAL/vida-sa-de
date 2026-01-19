@@ -102,36 +102,40 @@ export default function Relatorios() {
     // Primeiro verifica pelo ID direto
     if (os.medico_id === medicoIdFiltro) return true;
     
-    // Se não bateu pelo ID, buscar o médico pelo nome e verificar no campo itens
+    // Se não bateu pelo ID, buscar o médico pelo nome e comparar com o nome na OS
     const medicoFiltro = medicos.find(m => m.id === medicoIdFiltro);
     if (!medicoFiltro) return false;
     
-    // Obter nome do médico da OS usando a mesma lógica de obterNomeMedico
-    const nomeMedicoOS = (() => {
-      // Primeiro tenta pelo medico_id
-      const med = medicos.find(m => m.id === os.medico_id);
-      if (med) return med.nome;
-      
-      // Fallback: extrair do campo itens
-      if (!os.itens) return null;
+    // Extrair nome do médico do campo itens da OS
+    let nomeMedicoOS = null;
+    if (os.itens) {
       try {
         const itensArray = typeof os.itens === 'string' ? JSON.parse(os.itens) : os.itens;
         if (itensArray && itensArray.length > 0) {
           const descricao = itensArray[0].descricao || '';
-          const match = descricao.match(/Dr\(a\)\.\s*(.+)$/) || descricao.match(/Dr\.\s*(.+)$/) || descricao.match(/Dra\.\s*(.+)$/);
-          if (match) return match[1].trim();
-          const parts = descricao.split(' - ');
-          if (parts.length > 1) return parts[parts.length - 1].trim();
+          // Formato: "Consulta Cardiologia - Dr(a). Dr. Altamiro Reis da Costa"
+          const match = descricao.match(/Dr\(a\)\.\s*(.+)$/i) || 
+                        descricao.match(/Dr\.\s*(.+)$/i) || 
+                        descricao.match(/Dra\.\s*(.+)$/i);
+          if (match) {
+            nomeMedicoOS = match[1].trim();
+          } else {
+            const parts = descricao.split(' - ');
+            if (parts.length > 1) {
+              nomeMedicoOS = parts[parts.length - 1].trim();
+            }
+          }
         }
       } catch (e) {}
-      return null;
-    })();
+    }
     
     if (!nomeMedicoOS) return false;
     
-    // Normalizar nomes para comparação
+    // Normalizar nomes para comparação (remover prefixos Dr., Dra., etc)
     const normalizarNome = (nome) => nome.toLowerCase()
-      .replace(/dr\.|dra\.|dr\(a\)\./gi, '')
+      .replace(/^dr\.\s*/i, '')
+      .replace(/^dra\.\s*/i, '')
+      .replace(/^dr\(a\)\.\s*/i, '')
       .trim();
     
     const nomeFiltroNorm = normalizarNome(medicoFiltro.nome);
@@ -141,15 +145,23 @@ export default function Relatorios() {
     if (nomeOSNorm === nomeFiltroNorm) return true;
     if (nomeOSNorm.includes(nomeFiltroNorm) || nomeFiltroNorm.includes(nomeOSNorm)) return true;
     
-    // Comparar sobrenomes (última palavra significativa)
-    const getSobrenome = (nome) => {
-      const palavras = nome.split(' ').filter(p => p.length > 2);
-      return palavras[palavras.length - 1] || '';
-    };
+    // Comparar palavras significativas do nome (pelo menos 2 devem bater)
+    const palavrasFiltro = nomeFiltroNorm.split(' ').filter(p => p.length > 2);
+    const palavrasOS = nomeOSNorm.split(' ').filter(p => p.length > 2);
     
-    const sobrenomeFiltro = getSobrenome(nomeFiltroNorm);
-    const sobrenomeOS = getSobrenome(nomeOSNorm);
+    let matches = 0;
+    for (const palavraFiltro of palavrasFiltro) {
+      if (palavrasOS.some(p => p === palavraFiltro)) {
+        matches++;
+      }
+    }
     
+    // Se pelo menos 2 palavras significativas batem, considera match
+    if (matches >= 2) return true;
+    
+    // Ou se o sobrenome (última palavra) bate
+    const sobrenomeFiltro = palavrasFiltro[palavrasFiltro.length - 1];
+    const sobrenomeOS = palavrasOS[palavrasOS.length - 1];
     if (sobrenomeFiltro && sobrenomeOS && sobrenomeFiltro === sobrenomeOS) return true;
     
     return false;
