@@ -66,6 +66,9 @@ export default function Relatorios() {
         Paciente.list('nome', 5000)
       ]);
       
+      console.log('Ordens de Serviço carregadas:', osData?.length || 0);
+      console.log('Amostra OS:', osData?.slice(0, 2));
+      
       setOrdensServico(osData || []);
       setMedicos(medicosData || []);
       setCategorias(categoriasData || []);
