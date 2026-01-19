@@ -379,12 +379,29 @@ export default function Layout({ children, currentPageName }) {
     }
   }, [currentUser, currentPageName]);
 
-  // Se é uma página pública, renderiza direto sem layout de login
-  if (isPublicPage) {
+  // Se é uma página pública e usuário NÃO está logado, renderiza direto sem layout
+  if (isPublicPage && !currentUser) {
     return (
       <>
         {children}
         <ChatbotAjuda />
+      </>
+    );
+  }
+  
+  // Se é uma página pública e usuário ESTÁ logado, renderiza com layout completo
+  if (isPublicPage && currentUser) {
+    return (
+      <>
+        <MainLayout 
+          currentUser={currentUser} 
+          currentPageName={currentPageName}
+          onUserUpdate={fetchUser}
+        >
+          {children}
+        </MainLayout>
+        <ChatbotAjuda />
+        <NotificacaoMensagemChat />
       </>
     );
   }
