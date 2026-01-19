@@ -212,38 +212,6 @@ export default function Relatorios() {
     });
   }, [ordensServico, filtros, medicos]);
 
-  // Função para extrair nome do médico do campo itens (fallback)
-  const extrairNomeMedicoDeItens = (os) => {
-    if (!os.itens) return null;
-    try {
-      const itensArray = typeof os.itens === 'string' ? JSON.parse(os.itens) : os.itens;
-      if (itensArray && itensArray.length > 0) {
-        const descricao = itensArray[0].descricao || '';
-        // Formato: "Consulta Psicologia - Dr(a). Joeci de Oliveira"
-        const match = descricao.match(/Dr\(a\)\.\s*(.+)$/) || descricao.match(/Dr\.\s*(.+)$/) || descricao.match(/Dra\.\s*(.+)$/);
-        if (match) return match[1].trim();
-        // Outro formato possível: "Consulta Especialidade - Nome do Médico"
-        const parts = descricao.split(' - ');
-        if (parts.length > 1) return parts[parts.length - 1].trim();
-      }
-    } catch (e) {
-      console.warn('Erro ao extrair médico de itens:', e);
-    }
-    return null;
-  };
-
-  // Função para obter nome do médico (ID ou fallback de itens)
-  const obterNomeMedico = (os) => {
-    const med = medicos.find(m => m.id === os.medico_id);
-    if (med) return med.nome;
-    
-    // Fallback: tentar extrair do campo itens
-    const nomeDeItens = extrairNomeMedicoDeItens(os);
-    if (nomeDeItens) return nomeDeItens;
-    
-    return 'Não informado';
-  };
-
   // Estatísticas
   const estatisticas = useMemo(() => {
     const totalVendido = dadosFiltrados.reduce((acc, os) => acc + (os.valor_final || 0), 0);
