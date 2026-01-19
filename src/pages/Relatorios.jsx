@@ -106,36 +106,18 @@ export default function Relatorios() {
     const medicoFiltro = medicos.find(m => m.id === medicoIdFiltro);
     if (!medicoFiltro) return false;
     
-    // Extrair nome do médico do campo itens da OS
-    let nomeMedicoOS = null;
-    if (os.itens) {
-      try {
-        const itensArray = typeof os.itens === 'string' ? JSON.parse(os.itens) : os.itens;
-        if (itensArray && itensArray.length > 0) {
-          const descricao = itensArray[0].descricao || '';
-          // Formato: "Consulta Cardiologia - Dr(a). Dr. Altamiro Reis da Costa"
-          const match = descricao.match(/Dr\(a\)\.\s*(.+)$/i) || 
-                        descricao.match(/Dr\.\s*(.+)$/i) || 
-                        descricao.match(/Dra\.\s*(.+)$/i);
-          if (match) {
-            nomeMedicoOS = match[1].trim();
-          } else {
-            const parts = descricao.split(' - ');
-            if (parts.length > 1) {
-              nomeMedicoOS = parts[parts.length - 1].trim();
-            }
-          }
-        }
-      } catch (e) {}
-    }
-    
-    if (!nomeMedicoOS) return false;
+    // Obter o nome do médico que aparece na OS (usando a mesma função usada nas estatísticas)
+    const nomeMedicoOS = obterNomeMedico(os);
+    if (!nomeMedicoOS || nomeMedicoOS === 'Não informado') return false;
     
     // Normalizar nomes para comparação (remover prefixos Dr., Dra., etc)
     const normalizarNome = (nome) => nome.toLowerCase()
-      .replace(/^dr\.\s*/i, '')
-      .replace(/^dra\.\s*/i, '')
-      .replace(/^dr\(a\)\.\s*/i, '')
+      .replace(/^dr\.\s*/gi, '')
+      .replace(/^dra\.\s*/gi, '')
+      .replace(/^dr\(a\)\.\s*/gi, '')
+      .replace(/dr\.\s*/gi, '')
+      .replace(/dra\.\s*/gi, '')
+      .replace(/dr\(a\)\.\s*/gi, '')
       .trim();
     
     const nomeFiltroNorm = normalizarNome(medicoFiltro.nome);
@@ -145,29 +127,18 @@ export default function Relatorios() {
     if (nomeOSNorm === nomeFiltroNorm) return true;
     if (nomeOSNorm.includes(nomeFiltroNorm) || nomeFiltroNorm.includes(nomeOSNorm)) return true;
     
-    // Comparar palavras significativas do nome
-    const palavrasFiltro = nomeFiltroNorm.split(' ').filter(p => p.length > 2);
-    const palavrasOS = nomeOSNorm.split(' ').filter(p => p.length > 2);
+    // Comparar palavras significativas do nome (ignorar preposições)
+    const ignorar = ['de', 'da', 'do', 'dos', 'das'];
+    const palavrasFiltro = nomeFiltroNorm.split(' ').filter(p => p.length > 2 && !ignorar.includes(p));
+    const palavrasOS = nomeOSNorm.split(' ').filter(p => p.length > 2 && !ignorar.includes(p));
     
-    let matches = 0;
-    for (const palavraFiltro of palavrasFiltro) {
-      if (palavrasOS.some(p => p === palavraFiltro)) {
-        matches++;
-      }
-    }
-    
-    // Precisa bater pelo menos 2 palavras E o primeiro nome ou sobrenome principal
-    // Para evitar confusão com nomes parecidos (ex: "Altamiro da Costa" vs "Antônio da Costa")
+    // Primeiro nome deve bater para considerar match
     const primeiroNomeFiltro = palavrasFiltro[0];
     const primeiroNomeOS = palavrasOS[0];
     
-    // Primeiro nome deve bater
     if (primeiroNomeFiltro && primeiroNomeOS && primeiroNomeFiltro === primeiroNomeOS) {
       return true;
     }
-    
-    // Ou se pelo menos 3 palavras significativas batem (para nomes longos)
-    if (matches >= 3) return true;
     
     return false;
   };
