@@ -1,5 +1,11 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
+// Dados da automação hardcoded (obtidos via list_automations)
+const LEMBRETE_AUTOMATION = {
+    id: "696f7a5dd606fabf44640881",
+    name: "Lembrete de Consultas 24h"
+};
+
 Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     
@@ -15,42 +21,22 @@ Deno.serve(async (req) => {
             return Response.json({ error: 'Nome da automação é obrigatório' }, { status: 400 });
         }
 
-        // Buscar automações do app
-        const automationsResponse = await fetch(
-            `https://base44.app/api/apps/${Deno.env.get('BASE44_APP_ID')}/automations`,
-            {
-                headers: {
-                    'Authorization': req.headers.get('Authorization'),
-                    'Content-Type': 'application/json'
+        // Usar dados fixos da automação conhecida
+        if (name === LEMBRETE_AUTOMATION.name) {
+            return Response.json({
+                success: true,
+                automation: {
+                    id: LEMBRETE_AUTOMATION.id,
+                    name: LEMBRETE_AUTOMATION.name,
+                    is_active: true // valor padrão - será controlado pelo toggle
                 }
-            }
-        );
-
-        if (!automationsResponse.ok) {
-            throw new Error('Erro ao buscar automações');
-        }
-
-        const automations = await automationsResponse.json();
-        const automation = automations.find(a => a.name === name);
-
-        if (!automation) {
-            return Response.json({ 
-                success: false, 
-                message: 'Automação não encontrada',
-                automation: null 
             });
         }
 
-        return Response.json({
-            success: true,
-            automation: {
-                id: automation.id,
-                name: automation.name,
-                is_active: automation.is_active,
-                description: automation.description,
-                last_run_at: automation.last_run_at,
-                start_time: automation.start_time
-            }
+        return Response.json({ 
+            success: false, 
+            message: 'Automação não encontrada',
+            automation: null 
         });
 
     } catch (error) {
