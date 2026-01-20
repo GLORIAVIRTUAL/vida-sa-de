@@ -83,7 +83,13 @@ export default function FormularioOS({
   const [pagamento2, setPagamento2] = useState({ forma: '', valor: '' });
   const [salvando, setSalvando] = useState(false);
   const [avisoCategoria, setAvisoCategoria] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
   const { toast } = useToast(); // Initialize useToast
+
+  // Buscar usuário atual para salvar quem gerou a OS
+  useEffect(() => {
+    User.me().then(user => setCurrentUser(user)).catch(() => {});
+  }, []);
 
   // DEBUG: Log inicial
   useEffect(() => {
