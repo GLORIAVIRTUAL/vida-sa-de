@@ -163,12 +163,13 @@ Deno.serve(async (req) => {
         const mensagensPendentes = contato.mensagens_pendentes || [];
         const ultimoTimestamp = contato.ultimo_timestamp_pendente;
         
-        // Adicionar nova mensagem ao buffer (com mídia se houver)
+        // Adicionar nova mensagem ao buffer (com mídia se houver) - incluindo messageId para evitar duplicatas
         mensagensPendentes.push({
           texto: messageText,
           timestamp: agora,
           mediaType: mediaType,
-          mediaUrl: mediaUrl
+          mediaUrl: mediaUrl,
+          messageId: messageId
         });
         
         // Atualizar contato com mensagem pendente
