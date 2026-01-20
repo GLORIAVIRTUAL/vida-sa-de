@@ -62,8 +62,15 @@ export default function VisualizacaoDiaria({ agendamentos, medicos, pacientes, o
 
   const getDentistaDoAgendamento = (observacoes) => {
     if (!observacoes) return null;
+    // Buscar padrão "Dentista: ..." nas observações
     const match = observacoes.match(/Dentista:\s*(.+?)(\n|$)/);
-    return match ? match[1].trim() : null;
+    if (match) {
+      let dentista = match[1].trim();
+      // Remover "Dr(a)." duplicado se já existir no início
+      dentista = dentista.replace(/^Dr\(a\)\.\s*/i, '').replace(/^Dra?\.\s*/i, '');
+      return dentista;
+    }
+    return null;
   };
 
   const atualizarStatus = async (agendamentoId, novoStatus) => {
