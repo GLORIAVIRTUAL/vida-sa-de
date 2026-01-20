@@ -116,7 +116,7 @@ Deno.serve(async (req) => {
                     // Registrar envio no log
                     await base44.asServiceRole.entities.NotificationLog.create({
                         tipo_canal: 'whatsapp',
-                        api_message_id: result.zapiMessageId,
+                        api_message_id: result.zapiMessageId || result.messageId || result.zaapId,
                         telefone_destino: telefone,
                         mensagem_enviada: `[lembrete 24h] ${mensagem.substring(0, 200)}...`,
                         agendamento_id: agendamento.id,
