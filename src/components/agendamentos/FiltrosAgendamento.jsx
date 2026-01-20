@@ -72,14 +72,14 @@ export default function FiltrosAgendamento({ filtros, onFiltrosChange, medicos }
             value={filtros.medico} 
             onValueChange={(value) => handleFiltroChange("medico", value)}
           >
-            <SelectTrigger className="w-48">
+            <SelectTrigger className="w-56">
               <SelectValue placeholder="Todos os médicos" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="todos">Todos os médicos</SelectItem>
-              {medicos.map((medico) => (
+              {medicosAgrupados.map((medico) => (
                 <SelectItem key={medico.id} value={medico.id}>
-                  Dr(a). {medico.nome}
+                  {medico.isAgrupado ? medico.nome : `Dr(a). ${medico.nome}`}
                 </SelectItem>
               ))}
             </SelectContent>
