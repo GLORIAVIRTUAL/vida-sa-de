@@ -103,7 +103,11 @@ Deno.serve(async (req) => {
             // Se houver horários com data específica, usar eles; senão, usar horários recorrentes
             const horariosDoDia = horariosDataEspecifica.length > 0 
                 ? horariosDataEspecifica 
-                : horariosAtendimento.filter(h => h.dia_semana === diaSemana && !h.data_especifica);
+                : horariosAtendimento.filter(h => 
+                    h.dia_semana === diaSemana && 
+                    !h.data_especifica && 
+                    checkRecorrencia(h.recorrencia, dataObj)
+                );
             
             console.log('📋 Horários filtrados:', {
                 data_especifica_encontrada: horariosDataEspecifica.length > 0,
