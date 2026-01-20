@@ -93,6 +93,47 @@ export default function ContatosTab({ onIniciarConversa }) {
     return telefone;
   };
 
+  // Extrair arquivos do histórico de mensagens
+  const extrairArquivosDoContato = (contato) => {
+    if (!contato?.historico_mensagens) return [];
+    
+    const arquivos = [];
+    contato.historico_mensagens.forEach((msg, index) => {
+      // Verificar se tem mediaUrl
+      if (msg.mediaUrl) {
+        arquivos.push({
+          url: msg.mediaUrl,
+          tipo: msg.mediaType || 'document',
+          nome: msg.content?.match(/📄\s*([^:]+):/)?.[1] || msg.content?.match(/\[Documento:\s*([^\]]+)\]/)?.[1] || 'Arquivo',
+          data: msg.timestamp,
+          remetente: msg.role === 'user' ? 'Cliente' : 'Clínica'
+        });
+      }
+      
+      // Verificar URLs no conteúdo
+      const urlMatch = msg.content?.match(/(https?:\/\/[^\s\]]+\.(jpg|jpeg|png|gif|webp|pdf|doc|docx)(\?[^\s\]]*)?)/i);
+      if (urlMatch && !msg.mediaUrl) {
+        const ext = urlMatch[2].toLowerCase();
+        arquivos.push({
+          url: urlMatch[1],
+          tipo: ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext) ? 'image' : 'document',
+          nome: msg.content?.match(/📄\s*([^:]+):/)?.[1] || msg.content?.match(/\[Documento:\s*([^\]]+)\]/)?.[1] || `Arquivo.${ext}`,
+          data: msg.timestamp,
+          remetente: msg.role === 'user' ? 'Cliente' : 'Clínica'
+        });
+      }
+    });
+    
+    return arquivos;
+  };
+
+  const abrirArquivos = (contato) => {
+    setContatoArquivos(contato);
+    const arquivos = extrairArquivosDoContato(contato);
+    setArquivosContato(arquivos);
+    setModalArquivosAberto(true);
+  };
+
   const getMotivoBadge = (interesses) => {
     if (!interesses || interesses.length === 0) return <Badge variant="outline">Não informado</Badge>;
     
