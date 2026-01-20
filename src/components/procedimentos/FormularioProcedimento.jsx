@@ -43,7 +43,10 @@ export default function FormularioProcedimento({ procedimento, categorias, preco
         duracao_minutos: procedimento.duracao_minutos !== null ? String(procedimento.duracao_minutos) : '',
         valor_repasse_medico: procedimento.valor_repasse_medico !== null ? String(procedimento.valor_repasse_medico) : '',
         descricao: procedimento.descricao || '',
-        status: procedimento.status || 'Ativo'
+        status: procedimento.status || 'Ativo',
+        is_pacote: procedimento.is_pacote || false,
+        itens_pacote: procedimento.itens_pacote || [],
+        desconto_pacote: procedimento.desconto_pacote !== null ? String(procedimento.desconto_pacote) : ''
       });
       const precosIniciais = {};
       categorias.forEach(cat => {
