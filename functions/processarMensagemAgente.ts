@@ -1061,6 +1061,9 @@ PERGUNTE ao cliente: "Para qual especialidade você gostaria de agendar? Temos v
         3. Se cliente diz "segunda" ou "21/01" = está escolhendo a DATA
         4. Se cliente diz nome próprio em contexto de agendamento = é o NOME DO MÉDICO ou NOME DO PACIENTE (use contexto!)
         5. Se está no fluxo de agendamento (histórico menciona médicos/horários), interprete SEMPRE para preencher dados faltantes
+        6. ⚠️ CRÍTICO: Se cliente envia "Nome Completo DD/MM/AAAA" (ex: "Antonio thiago cavalcanti 19/04/1982"), extraia:
+           - nome_paciente = "Antonio Thiago Cavalcanti" (tudo antes da data, capitalize corretamente)
+           - data_nascimento = "19/04/1982" (a data no final)
 
         HISTÓRICO DA CONVERSA:
         ${historicoConversa || '(sem histórico)'}
@@ -1074,8 +1077,8 @@ PERGUNTE ao cliente: "Para qual especialidade você gostaria de agendar? Temos v
 ${medicosDisponiveis}
 
 EXTRAIA OS DADOS QUE CONSEGUIR ENCONTRAR:
-1. nome_paciente: nome completo (ex: "Antonio Thiago Cavalcanti Alves")
-2. data_nascimento: formato DD/MM/YYYY (ex: "19/04/1982")
+1. nome_paciente: nome completo (ex: "Antonio Thiago Cavalcanti Alves") - se vier junto com data, separe!
+2. data_nascimento: formato DD/MM/YYYY (ex: "19/04/1982") - pode vir no final da mensagem junto com nome
 3. medico_nome: nome EXATO do médico escolhido da lista acima (ex: "Dr. João Inocencio Rodrigues Gonçalves")
 4. medico_id: ID do médico escolhido da lista acima (se encontrar)
 5. data_agendamento: formato YYYY-MM-DD (converta "14/01" para "${anoAtual}-01-14", "hoje" para "${hoje.toISOString().split('T')[0]}")
@@ -1089,6 +1092,7 @@ REGRAS CRÍTICAS:
 - IMPORTANTE: Use o nome EXATO do médico que foi OFERECIDO no histórico da conversa
 - Se o assistente ofereceu "Dr. Douglas Filipe Bianchi", use EXATAMENTE esse nome
 - NÃO confunda médicos diferentes - verifique qual médico foi mencionado na conversa
+- ⚠️ MUITO IMPORTANTE: Se o cliente enviou nome e data de nascimento juntos (ex: "Antonio thiago 19/04/1982"), EXTRAIA AMBOS! O nome é tudo antes da data, a data de nascimento é a data no formato DD/MM/AAAA.
 
 Retorne JSON.`;
 
