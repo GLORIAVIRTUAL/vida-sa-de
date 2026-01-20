@@ -39,11 +39,24 @@ export default function FormularioAgendamentoOnline({ onSucesso }) {
   const [erro, setErro] = useState('');
 
   const carregarMedicos = useCallback(async () => {
+    // Verificar cache local primeiro
+    const cacheKey = 'medicos_cache';
+    const cacheTimeKey = 'medicos_cache_time';
+    const cached = localStorage.getItem(cacheKey);
+    const cachedTime = localStorage.getItem(cacheTimeKey);
+    
+    // Cache válido por 5 minutos
+    if (cached && cachedTime && (Date.now() - parseInt(cachedTime)) < 5 * 60 * 1000) {
+      console.log('📦 Usando médicos do cache local');
+      setMedicos(JSON.parse(cached));
+      setLoadingMedicos(false);
+      return;
+    }
+
     setLoadingMedicos(true);
     setErro('');
     try {
       console.log('🔍 Tentando carregar médicos (função pública)...');
-      console.log('URL completa:', `${window.location.origin}/functions/listMedicos`);
       
       const response = await fetch('/functions/listMedicos', {
         method: 'POST', 
@@ -51,8 +64,16 @@ export default function FormularioAgendamentoOnline({ onSucesso }) {
         body: JSON.stringify({})
       });
 
-      console.log('📡 Response status:', response.status);
-      console.log('📡 Response headers:', [...response.headers.entries()]);
+      if (response.status === 429) {
+        // Rate limit - tentar usar cache mesmo expirado
+        if (cached) {
+          console.log('⚠️ Rate limit - usando cache expirado');
+          setMedicos(JSON.parse(cached));
+          setErro('');
+          return;
+        }
+        throw new Error('Muitas requisições. Por favor, aguarde alguns segundos e tente novamente.');
+      }
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -61,12 +82,23 @@ export default function FormularioAgendamentoOnline({ onSucesso }) {
       }
 
       const data = await response.json();
-      console.log('✅ Médicos carregados:', data);
-      console.log('✅ Total de médicos:', data.length);
+      console.log('✅ Médicos carregados:', data.length);
+      
+      // Salvar no cache
+      localStorage.setItem(cacheKey, JSON.stringify(data));
+      localStorage.setItem(cacheTimeKey, Date.now().toString());
+      
       setMedicos(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("❌ Erro ao carregar médicos:", err);
-      setErro(`Não foi possível carregar a lista de médicos: ${err.message}`);
+      // Tentar usar cache em caso de erro
+      if (cached) {
+        console.log('⚠️ Erro na API - usando cache como fallback');
+        setMedicos(JSON.parse(cached));
+        setErro('');
+      } else {
+        setErro(`Erro ao Carregar: ${err.message}`);
+      }
     } finally {
       setLoadingMedicos(false);
     }
