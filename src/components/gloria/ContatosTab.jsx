@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Search, Users, Phone, Calendar, FileText, RefreshCw, Loader2, Filter, UserPlus, MessageCircle } from "lucide-react";
+import { Search, Users, Phone, Calendar, FileText, RefreshCw, Loader2, Filter, UserPlus, MessageCircle, FolderOpen, Download, Image, File } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -38,6 +38,9 @@ export default function ContatosTab({ onIniciarConversa }) {
     data_nascimento: '',
     motivo: ''
   });
+  const [modalArquivosAberto, setModalArquivosAberto] = useState(false);
+  const [contatoArquivos, setContatoArquivos] = useState(null);
+  const [arquivosContato, setArquivosContato] = useState([]);
 
   const carregarContatos = async () => {
     setLoading(true);
