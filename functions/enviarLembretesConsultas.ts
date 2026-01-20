@@ -112,7 +112,7 @@ Deno.serve(async (req) => {
 
                 const result = await response.json();
 
-                if (response.ok && result.zapiMessageId) {
+                if (response.ok && (result.zapiMessageId || result.messageId || result.zaapId)) {
                     // Registrar envio no log
                     await base44.asServiceRole.entities.NotificationLog.create({
                         tipo_canal: 'whatsapp',
