@@ -1,10 +1,43 @@
-
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Filter } from "lucide-react";
 
+// Função para normalizar strings (remover acentos e converter para maiúsculas)
+const normalizeString = (str) => {
+  if (!str) return '';
+  return String(str).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+};
+
 export default function FiltrosAgendamento({ filtros, onFiltrosChange, medicos }) {
+  // Agrupar médicos - odontologia vira uma única opção
+  const medicosAgrupados = useMemo(() => {
+    const medicosOdontologia = medicos.filter(m => normalizeString(m.especialidade) === 'ODONTOLOGIA');
+    const outrosMedicos = medicos.filter(m => normalizeString(m.especialidade) !== 'ODONTOLOGIA');
+    
+    const resultado = [];
+    
+    // Se tem dentistas, criar opção única de Odontologia
+    if (medicosOdontologia.length > 0) {
+      resultado.push({
+        id: medicosOdontologia[0].id, // Usar o ID do primeiro para o filtro
+        nome: '🦷 Odontologia',
+        especialidade: 'Odontologia',
+        isAgrupado: true
+      });
+    }
+    
+    // Adicionar outros médicos normalmente
+    outrosMedicos.forEach(m => {
+      resultado.push({
+        ...m,
+        isAgrupado: false
+      });
+    });
+    
+    return resultado;
+  }, [medicos]);
+
   const handleFiltroChange = (tipo, valor) => {
     onFiltrosChange(prev => ({
       ...prev,
