@@ -801,7 +801,25 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
       // Se houver horários com data específica, usar eles; senão, usar horários recorrentes
       const horariosDoMedico = horariosDataEspecifica.length > 0 
         ? horariosDataEspecifica 
-        : medicoSelecionado.horarios_atendimento.filter(h => h.dia_semana === diaSemana && !h.data_especifica);
+        : medicoSelecionado.horarios_atendimento.filter(h => {
+            if (h.dia_semana !== diaSemana || h.data_especifica) return false;
+            
+            // Verificar recorrência
+            const recorrencia = h.recorrencia || 'Toda Semana';
+            if (recorrencia === 'Toda Semana') return true;
+            if (recorrencia === 'Apenas uma vez') return false;
+            
+            const weekOfMonth = getWeekOfMonth(dataObj);
+            switch (recorrencia) {
+              case '1ª e 3ª Semana do Mês': return weekOfMonth === 1 || weekOfMonth === 3;
+              case '2ª e 4ª Semana do Mês': return weekOfMonth === 2 || weekOfMonth === 4;
+              case 'Apenas 1ª Semana do Mês': return weekOfMonth === 1;
+              case 'Apenas 2ª Semana do Mês': return weekOfMonth === 2;
+              case 'Apenas 3ª Semana do Mês': return weekOfMonth === 3;
+              case 'Apenas 4ª Semana do Mês': return weekOfMonth === 4;
+              default: return true;
+            }
+          });
       
       if (horariosDoMedico.length === 0) {
         setHorariosMultiplosServicos([]);
