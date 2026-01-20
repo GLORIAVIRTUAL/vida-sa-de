@@ -2267,16 +2267,94 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                                </div>
                                {(formData.tipo_servico === 'Retorno' || formData.tipo_servico === 'Consulta' || formData.tipo_servico === 'Procedimento') && (
                                  <div>
-                                   <Label htmlFor="medico_id">Médico {formData.tipo_servico === 'Procedimento' ? '(Opcional)' : '*'}</Label>
+                                   <Label htmlFor="medico_id">
+                                     {(() => {
+                                       // Verificar se existe algum médico de odontologia
+                                       const temOdontologia = medicos.some(m => normalizeString(m.especialidade) === 'ODONTOLOGIA');
+                                       if (temOdontologia && formData.tipo_servico !== 'Procedimento') {
+                                         return 'Especialidade *';
+                                       }
+                                       return formData.tipo_servico === 'Procedimento' ? 'Médico (Opcional)' : 'Médico *';
+                                     })()}
+                                   </Label>
                                    <Select name="medico_id" value={formData.medico_id} onValueChange={(value) => handleChange('medico_id', value)}>
                                      <SelectTrigger id="medico_id" className="mt-1"><SelectValue placeholder="Selecione..." /></SelectTrigger>
                                      <SelectContent>
-                                       {medicos.map(m => <SelectItem key={m.id} value={m.id}>Dr(a). {m.nome}</SelectItem>)}
+                                       {/* Agrupar médicos - mostrar especialidades únicas para Odontologia */}
+                                       {(() => {
+                                         const medicosOdontologia = medicos.filter(m => normalizeString(m.especialidade) === 'ODONTOLOGIA');
+                                         const outrosMedicos = medicos.filter(m => normalizeString(m.especialidade) !== 'ODONTOLOGIA');
+
+                                         // Se tem mais de 1 dentista, criar uma opção "Odontologia" genérica
+                                         if (medicosOdontologia.length > 1) {
+                                           return (
+                                             <>
+                                               {/* Opção de Odontologia (agenda unificada) */}
+                                               <SelectItem value={medicosOdontologia[0].id}>
+                                                 🦷 Odontologia (Agenda Unificada)
+                                               </SelectItem>
+                                               {/* Outros médicos */}
+                                               {outrosMedicos.map(m => (
+                                                 <SelectItem key={m.id} value={m.id}>Dr(a). {m.nome} - {m.especialidade}</SelectItem>
+                                               ))}
+                                             </>
+                                           );
+                                         }
+
+                                         // Caso contrário, mostrar todos normalmente
+                                         return medicos.map(m => (
+                                           <SelectItem key={m.id} value={m.id}>Dr(a). {m.nome} - {m.especialidade}</SelectItem>
+                                         ));
+                                       })()}
                                      </SelectContent>
                                    </Select>
                                  </div>
                                )}
                              </div>
+
+                             {/* Seletor de profissional específico para Odontologia */}
+                             {(() => {
+                               const medicoSelecionado = medicos.find(m => m.id === formData.medico_id);
+                               const medicosOdontologia = medicos.filter(m => normalizeString(m.especialidade) === 'ODONTOLOGIA');
+
+                               if (medicoSelecionado && 
+                                   normalizeString(medicoSelecionado.especialidade) === 'ODONTOLOGIA' && 
+                                   medicosOdontologia.length > 1 &&
+                                   (formData.tipo_servico === 'Consulta' || formData.tipo_servico === 'Retorno')) {
+                                 return (
+                                   <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                     <Label htmlFor="dentista_especifico" className="text-blue-800 font-medium flex items-center gap-2">
+                                       🦷 Selecione o Dentista para este agendamento
+                                     </Label>
+                                     <Select 
+                                       value={formData.observacoes?.includes('Dentista:') ? formData.observacoes.split('Dentista:')[1]?.split('\n')[0]?.trim() : ''} 
+                                       onValueChange={(value) => {
+                                         // Salvar o dentista selecionado nas observações
+                                         const obsAtual = formData.observacoes || '';
+                                         const obsLimpa = obsAtual.replace(/Dentista:.*(\n|$)/g, '').trim();
+                                         const novaObs = obsLimpa ? `${obsLimpa}\nDentista: ${value}` : `Dentista: ${value}`;
+                                         handleChange('observacoes', novaObs);
+                                       }}
+                                     >
+                                       <SelectTrigger id="dentista_especifico" className="mt-2 bg-white">
+                                         <SelectValue placeholder="Escolha o dentista..." />
+                                       </SelectTrigger>
+                                       <SelectContent>
+                                         {medicosOdontologia.map(d => (
+                                           <SelectItem key={d.id} value={d.nome}>
+                                             Dr(a). {d.nome}
+                                           </SelectItem>
+                                         ))}
+                                       </SelectContent>
+                                     </Select>
+                                     <p className="text-xs text-blue-600 mt-2">
+                                       A agenda de Odontologia é unificada. Selecione qual dentista irá atender.
+                                     </p>
+                                   </div>
+                                 );
+                               }
+                               return null;
+                             })()}
 
                              <div className="flex items-center space-x-6 pt-2">
                                <div className="flex items-center space-x-2">
