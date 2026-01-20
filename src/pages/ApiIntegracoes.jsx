@@ -44,6 +44,11 @@ export default function ApiIntegracoes() {
   const [widgetUrl, setWidgetUrl] = useState('');
   const [copiedEmbedCode, setCopiedEmbedCode] = useState(false);
 
+  // Estado para automação de lembretes
+  const [lembreteAtivo, setLembreteAtivo] = useState(false);
+  const [lembreteLoading, setLembreteLoading] = useState(true);
+  const [lembreteAutomationId, setLembreteAutomationId] = useState(null);
+
   const setupPage = useCallback(async () => {
     setLoading(true);
     setLoadingWidget(true);
