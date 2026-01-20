@@ -186,6 +186,43 @@ export default function ApiIntegracoes() {
           </div>
           
           {/* Card para Agendamento Online simplificado */}
+          {/* Card para Lembrete Automático */}
+          <Card className="mb-8 border-2 border-green-200 bg-green-50/50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                {lembreteAtivo ? <Bell className="w-6 h-6 text-green-600" /> : <BellOff className="w-6 h-6 text-gray-400" />}
+                Lembrete Automático de Consultas (WhatsApp)
+              </CardTitle>
+              <p className="text-gray-600">
+                Envia automaticamente lembretes via WhatsApp para pacientes com consultas agendadas para o dia seguinte.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between p-4 bg-white rounded-lg border">
+                <div>
+                  <p className="font-medium">Envio diário às 15:00</p>
+                  <p className="text-sm text-gray-500">Lembra pacientes das consultas do dia seguinte</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  {lembreteLoading ? (
+                    <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+                  ) : (
+                    <>
+                      <span className={`text-sm font-medium ${lembreteAtivo ? 'text-green-600' : 'text-gray-500'}`}>
+                        {lembreteAtivo ? 'Ativo' : 'Desativado'}
+                      </span>
+                      <Switch 
+                        checked={lembreteAtivo} 
+                        onCheckedChange={toggleLembrete}
+                        disabled={lembreteLoading || !lembreteAutomationId}
+                      />
+                    </>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card className="mb-8 border-2 border-blue-200 bg-blue-50/50">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
