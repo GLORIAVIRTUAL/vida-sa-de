@@ -150,14 +150,13 @@ export default function ChatToolbar({
         try {
           const { file_url } = await base44.integrations.Core.UploadFile({ file: audioFile });
           
+          // A função enviarMensagemHumano já registra no histórico, não precisa chamar onSendMessage
           await base44.functions.invoke('enviarMensagemHumano', {
             phoneNumber,
             contatoId,
             messageType: 'audio',
             mediaUrl: file_url
           });
-          
-          onSendMessage('[🎤 Áudio enviado]', true);
         } catch (error) {
           alert('Erro ao enviar áudio: ' + error.message);
         } finally {
