@@ -332,7 +332,7 @@ export default function ContatosTab({ onIniciarConversa }) {
                     <TableHead>Data</TableHead>
                     <TableHead>Motivo</TableHead>
                     <TableHead>Origem</TableHead>
-                    <TableHead className="w-12"></TableHead>
+                    <TableHead className="w-24"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -360,15 +360,26 @@ export default function ContatosTab({ onIniciarConversa }) {
                         <Badge variant="outline">{contato.origem || 'Site'}</Badge>
                       </TableCell>
                       <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-blue-600 hover:text-blue-800 hover:bg-blue-50"
-                          onClick={() => onIniciarConversa && onIniciarConversa(contato)}
-                          title="Iniciar conversa"
-                        >
-                          <MessageCircle className="w-4 h-4" />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                            onClick={() => onIniciarConversa && onIniciarConversa(contato)}
+                            title="Iniciar conversa"
+                          >
+                            <MessageCircle className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-amber-600 hover:text-amber-800 hover:bg-amber-50"
+                            onClick={() => abrirArquivos(contato)}
+                            title="Ver arquivos"
+                          >
+                            <FolderOpen className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
