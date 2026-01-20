@@ -2,6 +2,40 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.7.0';
 
 const diasSemanaMap = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
 
+// Helper para obter o número da semana no mês (1 a 4/5)
+const getWeekOfMonth = (date) => {
+    const adjustedDayOfMonth = date.getUTCDate();
+    const dayOfWeekOfFirstDay = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1)).getUTCDay();
+    return Math.ceil((adjustedDayOfMonth + dayOfWeekOfFirstDay) / 7);
+};
+
+// Helper para verificar a recorrência
+const checkRecorrencia = (recorrencia, date) => {
+    if (!recorrencia || recorrencia === "Toda Semana") {
+        return true;
+    }
+    if (recorrencia === "Apenas uma vez") {
+        return false;
+    }
+    const weekOfMonth = getWeekOfMonth(date);
+    switch (recorrencia) {
+        case "1ª e 3ª Semana do Mês":
+            return weekOfMonth === 1 || weekOfMonth === 3;
+        case "2ª e 4ª Semana do Mês":
+            return weekOfMonth === 2 || weekOfMonth === 4;
+        case "Apenas 1ª Semana do Mês":
+            return weekOfMonth === 1;
+        case "Apenas 2ª Semana do Mês":
+            return weekOfMonth === 2;
+        case "Apenas 3ª Semana do Mês":
+            return weekOfMonth === 3;
+        case "Apenas 4ª Semana do Mês":
+            return weekOfMonth === 4;
+        default:
+            return true;
+    }
+};
+
 Deno.serve(async (req) => {
     try {
         const base44 = createClientFromRequest(req);
