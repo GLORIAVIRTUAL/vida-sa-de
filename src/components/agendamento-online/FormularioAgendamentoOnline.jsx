@@ -130,6 +130,22 @@ export default function FormularioAgendamentoOnline({ onSucesso }) {
 
   const buscarDisponibilidade = useCallback(async () => {
     if (!medicoSelecionado) return;
+    
+    // Verificar cache de disponibilidade
+    const cacheKey = `disponibilidade_${medicoSelecionado.id}`;
+    const cacheTimeKey = `disponibilidade_time_${medicoSelecionado.id}`;
+    const cached = localStorage.getItem(cacheKey);
+    const cachedTime = localStorage.getItem(cacheTimeKey);
+    
+    // Cache válido por 2 minutos para disponibilidade
+    if (cached && cachedTime && (Date.now() - parseInt(cachedTime)) < 2 * 60 * 1000) {
+      console.log('📦 Usando disponibilidade do cache');
+      const data = JSON.parse(cached);
+      setDatasDisponiveis(data.disponibilidades || []);
+      setEtapa(2);
+      return;
+    }
+    
     setLoadingDatas(true);
     setErro('');
     console.log('📅 Buscando disponibilidade para médico:', medicoSelecionado.nome);
@@ -146,6 +162,17 @@ export default function FormularioAgendamentoOnline({ onSucesso }) {
         })
       });
 
+      if (response.status === 429) {
+        if (cached) {
+          console.log('⚠️ Rate limit - usando cache de disponibilidade');
+          const data = JSON.parse(cached);
+          setDatasDisponiveis(data.disponibilidades || []);
+          setEtapa(2);
+          return;
+        }
+        throw new Error('Muitas requisições. Por favor, aguarde alguns segundos.');
+      }
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(`HTTP ${response.status}: ${errorData.error || response.statusText}`);
@@ -153,11 +180,23 @@ export default function FormularioAgendamentoOnline({ onSucesso }) {
 
       const data = await response.json();
       console.log('✅ Disponibilidade carregada:', data);
+      
+      // Salvar no cache
+      localStorage.setItem(cacheKey, JSON.stringify(data));
+      localStorage.setItem(cacheTimeKey, Date.now().toString());
+      
       setDatasDisponiveis(data.disponibilidades || []);
       setEtapa(2); 
     } catch (err) {
       console.error("❌ Erro ao buscar datas:", err);
-      setErro(err.message || "Não foi possível buscar as datas disponíveis para este profissional.");
+      if (cached) {
+        console.log('⚠️ Erro - usando cache como fallback');
+        const data = JSON.parse(cached);
+        setDatasDisponiveis(data.disponibilidades || []);
+        setEtapa(2);
+      } else {
+        setErro(err.message || "Não foi possível buscar as datas disponíveis para este profissional.");
+      }
     } finally {
       setLoadingDatas(false);
     }
