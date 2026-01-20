@@ -255,17 +255,43 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
   const navigate = useNavigate();
   
   const chatContainerRef = useRef(null);
+  const prevMensagensLengthRef = useRef(0);
+  const userScrolledUpRef = useRef(false);
   
   // Scroll para última mensagem (apenas dentro do container do chat)
-  const scrollToBottom = () => {
-    if (chatContainerRef.current) {
+  const scrollToBottom = (force = false) => {
+    if (chatContainerRef.current && (force || !userScrolledUpRef.current)) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
   };
   
+  // Detectar se o usuário rolou manualmente para cima
+  const handleScroll = () => {
+    if (chatContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
+      // Se o usuário está a mais de 100px do fundo, ele rolou para cima
+      const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+      userScrolledUpRef.current = !isNearBottom;
+    }
+  };
+  
+  // Scroll apenas quando houver novas mensagens E usuário não rolou para cima
   useEffect(() => {
-    scrollToBottom();
-  }, [contatoSelecionado?.historico_mensagens]);
+    const currentLength = contatoSelecionado?.historico_mensagens?.length || 0;
+    const hadNewMessage = currentLength > prevMensagensLengthRef.current;
+    prevMensagensLengthRef.current = currentLength;
+    
+    if (hadNewMessage) {
+      scrollToBottom();
+    }
+  }, [contatoSelecionado?.historico_mensagens?.length]);
+  
+  // Resetar scroll quando mudar de contato
+  useEffect(() => {
+    userScrolledUpRef.current = false;
+    prevMensagensLengthRef.current = contatoSelecionado?.historico_mensagens?.length || 0;
+    scrollToBottom(true);
+  }, [contatoSelecionado?.id]);
 
   const buscarContatos = async () => {
     try {
