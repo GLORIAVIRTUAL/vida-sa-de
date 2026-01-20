@@ -66,6 +66,49 @@ export default function FormularioProcedimento({ procedimento, categorias, preco
     setPrecos(prev => ({ ...prev, [categoriaId]: value }));
   };
 
+  const adicionarItemPacote = () => {
+    if (!procedimentoSelecionado) return;
+    const proc = todosProcedimentos.find(p => p.id === procedimentoSelecionado);
+    if (!proc) return;
+    
+    // Verificar se já existe
+    if (formData.itens_pacote.some(item => item.procedimento_id === proc.id)) {
+      alert('Este serviço já está no pacote');
+      return;
+    }
+    
+    setFormData(prev => ({
+      ...prev,
+      itens_pacote: [...prev.itens_pacote, {
+        procedimento_id: proc.id,
+        nome: proc.nome,
+        quantidade: 1
+      }]
+    }));
+    setProcedimentoSelecionado('');
+  };
+
+  const removerItemPacote = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      itens_pacote: prev.itens_pacote.filter((_, i) => i !== index)
+    }));
+  };
+
+  const atualizarQuantidadeItem = (index, quantidade) => {
+    setFormData(prev => ({
+      ...prev,
+      itens_pacote: prev.itens_pacote.map((item, i) => 
+        i === index ? { ...item, quantidade: Math.max(1, parseInt(quantidade) || 1) } : item
+      )
+    }));
+  };
+
+  // Filtrar procedimentos disponíveis (excluindo pacotes e o próprio procedimento)
+  const procedimentosDisponiveis = todosProcedimentos.filter(p => 
+    !p.is_pacote && p.id !== procedimento?.id && p.status === 'Ativo'
+  );
+
   const handleSave = async () => {
     setLoading(true);
     try {
