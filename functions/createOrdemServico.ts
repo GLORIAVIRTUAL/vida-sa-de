@@ -43,11 +43,22 @@ Deno.serve(async (req) => {
         };
         const novaOS = await base44.asServiceRole.entities.OrdemServico.create(dadosOS);
 
-        const isPagamentoIntegrado = (forma_pagamento === 'Cartão Crédito' || forma_pagamento === 'Cartão Débito') && bandeira_cartao;
+        // Verificar se há integração de pagamento configurada
+        let API_URL = Deno.env.get("EVOLUSERVICES_API_URL");
+        const API_TOKEN = Deno.env.get("EVOLUSERVICES_TOKEN");
+        const MERCHANT_ID = Deno.env.get("EVOLUSERVICES_MERCHANT_ID");
+        
+        const temIntegracaoPagamento = API_URL && API_TOKEN && MERCHANT_ID;
+        const isPagamentoIntegrado = temIntegracaoPagamento && (forma_pagamento === 'Cartão Crédito' || forma_pagamento === 'Cartão Débito') && bandeira_cartao;
         let transactionResponse = null;
 
         if (isPagamentoIntegrado) {
             console.log('💳 Iniciando transação na EvoluServices...');
+            
+            // Sanitizar URL
+            API_URL = API_URL.trim();
+            if (API_URL.endsWith('/')) API_URL = API_URL.slice(0, -1);
+            if (API_URL.endsWith('/remote/transaction')) API_URL = API_URL.replace('/remote/transaction', '');
             
             const host = req.headers.get("host") || "";
             const callbackUrl = `https://${host}/functions/callbackOrdemServico`;
