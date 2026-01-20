@@ -92,7 +92,40 @@ export default function ApiIntegracoes() {
 
   useEffect(() => {
     setupPage();
+    carregarStatusLembrete();
   }, [setupPage]);
+
+  const carregarStatusLembrete = async () => {
+    setLembreteLoading(true);
+    try {
+      const response = await base44.functions.invoke('getAutomationStatus', { name: 'Lembrete de Consultas 24h' });
+      if (response.data?.automation) {
+        setLembreteAtivo(response.data.automation.is_active);
+        setLembreteAutomationId(response.data.automation.id);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar status do lembrete:', error);
+    } finally {
+      setLembreteLoading(false);
+    }
+  };
+
+  const toggleLembrete = async () => {
+    if (!lembreteAutomationId) return;
+    setLembreteLoading(true);
+    try {
+      await base44.functions.invoke('toggleAutomation', { 
+        automationId: lembreteAutomationId,
+        action: lembreteAtivo ? 'disable' : 'enable'
+      });
+      setLembreteAtivo(!lembreteAtivo);
+    } catch (error) {
+      console.error('Erro ao alterar status do lembrete:', error);
+      alert('Erro ao alterar status do lembrete automático');
+    } finally {
+      setLembreteLoading(false);
+    }
+  };
 
   const handleCreateKey = async () => {
     if (!newKeyName.trim()) return;
