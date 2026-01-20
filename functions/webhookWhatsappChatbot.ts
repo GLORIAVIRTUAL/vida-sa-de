@@ -299,7 +299,7 @@ Deno.serve(async (req) => {
           telefone: phoneNumber,
           origem: 'WhatsApp',
           status: 'Novo',
-          mensagens_pendentes: [{ texto: messageText, timestamp: agora, mediaType: mediaType, mediaUrl: mediaUrl }],
+          mensagens_pendentes: [{ texto: messageText, timestamp: agora, mediaType: mediaType, mediaUrl: mediaUrl, messageId: messageId }],
           ultimo_timestamp_pendente: agora
         });
         
