@@ -1,10 +1,11 @@
-
 import React, { useState, useEffect, useCallback } from "react";
 import { ApiKey } from "@/entities/all";
+import { base44 } from "@/api/base44Client";
 import ProtectedRoute from "../components/auth/ProtectedRoute";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, KeyRound, Copy, Check, Trash2, Power, PowerOff, Calendar, Loader2 } from "lucide-react";
+import { Plus, KeyRound, Copy, Check, Trash2, Power, PowerOff, Calendar, Loader2, Bell, BellOff } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import {
   Table,
   TableBody,
