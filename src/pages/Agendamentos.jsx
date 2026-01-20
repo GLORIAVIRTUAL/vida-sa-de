@@ -168,10 +168,31 @@ export default function Agendamentos() {
 
   const agendamentosPorPeriodo = getAgendamentosPorPeriodo();
 
+  // Função para normalizar strings (remover acentos e converter para maiúsculas)
+  const normalizeString = (str) => {
+    if (!str) return '';
+    return String(str).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+  };
+
+  // Identificar médicos de odontologia
+  const medicosOdontologia = useMemo(() => {
+    return medicos.filter(m => normalizeString(m.especialidade) === 'ODONTOLOGIA').map(m => m.id);
+  }, [medicos]);
+
   const agendamentosFiltrados = Array.isArray(agendamentosPorPeriodo) ? agendamentosPorPeriodo.filter((agendamento) => {
     if (!agendamento) return false;
 
-    const filtroMedico = filtros.medico === "todos" || agendamento.medico_id === filtros.medico;
+    // Lógica especial para odontologia: se filtrar por qualquer dentista, mostrar todos de odontologia
+    let filtroMedico = false;
+    if (filtros.medico === "todos") {
+      filtroMedico = true;
+    } else if (medicosOdontologia.includes(filtros.medico)) {
+      // Se o filtro é um dentista, mostrar agendamentos de TODOS os dentistas
+      filtroMedico = medicosOdontologia.includes(agendamento.medico_id);
+    } else {
+      filtroMedico = agendamento.medico_id === filtros.medico;
+    }
+
     const filtroStatus = filtros.status === "todos" || agendamento.status === filtros.status;
     const filtroTipo = filtros.tipo === "todos" || agendamento.tipo_servico === filtros.tipo;
 
