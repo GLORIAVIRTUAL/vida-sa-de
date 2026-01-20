@@ -45,10 +45,17 @@ Deno.serve(async (req) => {
     try {
       const contatos = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
       if (contatos.length > 0) {
-        const historicoMensagens = contatos[0].historico_mensagens || [];
-        const jaProcessada = historicoMensagens.some(m => m.messageId === messageId);
+        const contato = contatos[0];
+        const historicoMensagens = contato.historico_mensagens || [];
+        const mensagensPendentes = contato.mensagens_pendentes || [];
         
-        if (jaProcessada) {
+        // Verificar duplicata por messageId no histórico
+        const jaProcessadaHistorico = historicoMensagens.some(m => m.messageId === messageId);
+        
+        // Verificar duplicata por messageId nas pendentes
+        const jaProcessadaPendente = mensagensPendentes.some(m => m.messageId === messageId);
+        
+        if (jaProcessadaHistorico || jaProcessadaPendente) {
           console.log('⏭️ Mensagem já processada. Ignorando duplicata:', messageId);
           return Response.json({ success: true, status: 'duplicata_ignorada' });
         }
