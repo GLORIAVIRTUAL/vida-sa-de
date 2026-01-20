@@ -311,12 +311,27 @@ export default function VisualizacaoDiaria({ agendamentos, medicos, pacientes, o
                             </button>
                           </p>
                           <p className="text-sm text-gray-600">
-                            {getNomeMedico(agendamento.medico_id, agendamento.observacoes)} • {agendamento.tipo_servico}
+                            {(() => {
+                              const medico = medicos.find(m => m.id === agendamento.medico_id);
+                              const isOdontologia = medico && normalizeString(medico.especialidade) === 'ODONTOLOGIA';
+                              const dentistaObs = getDentistaDoAgendamento(agendamento.observacoes);
+                              
+                              if (isOdontologia && dentistaObs) {
+                                // Tem dentista nas observações - mostrar "Dr(a). NomeDentista"
+                                return `Dr(a). ${dentistaObs}`;
+                              } else if (isOdontologia && medico) {
+                                // Não tem nas observações, usa o médico vinculado
+                                return `Dr(a). ${medico.nome}`;
+                              } else if (medico) {
+                                return `Dr(a). ${medico.nome}`;
+                              }
+                              return "Médico não encontrado";
+                            })()} • {agendamento.tipo_servico}
                           </p>
-                          {/* Mostrar dentista específico se for odontologia */}
-                          {getDentistaDoAgendamento(agendamento.observacoes) && (
+                          {/* Mostrar Odontologia como tag se for dentista */}
+                          {medicos.find(m => m.id === agendamento.medico_id && normalizeString(m.especialidade) === 'ODONTOLOGIA') && (
                             <p className="text-xs text-cyan-600">
-                              🦷 Dentista: {getDentistaDoAgendamento(agendamento.observacoes)}
+                              🦷 Odontologia
                             </p>
                           )}
                         </>
