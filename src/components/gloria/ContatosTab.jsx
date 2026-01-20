@@ -390,6 +390,70 @@ export default function ContatosTab({ onIniciarConversa }) {
         </CardContent>
       </Card>
 
+      {/* Modal de Arquivos */}
+      <Dialog open={modalArquivosAberto} onOpenChange={setModalArquivosAberto}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FolderOpen className="w-5 h-5 text-amber-600" />
+              Arquivos de {contatoArquivos?.nome || 'Cliente'}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="py-4">
+            {arquivosContato.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <FolderOpen className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                <p>Nenhum arquivo encontrado</p>
+                <p className="text-sm text-gray-400 mt-1">Arquivos enviados na conversa aparecerão aqui</p>
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                {arquivosContato.map((arquivo, index) => (
+                  <div 
+                    key={index}
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border hover:bg-gray-100 transition"
+                  >
+                    <div className="flex items-center gap-3">
+                      {arquivo.tipo === 'image' ? (
+                        <div className="w-10 h-10 bg-blue-100 rounded flex items-center justify-center">
+                          <Image className="w-5 h-5 text-blue-600" />
+                        </div>
+                      ) : (
+                        <div className="w-10 h-10 bg-amber-100 rounded flex items-center justify-center">
+                          <File className="w-5 h-5 text-amber-600" />
+                        </div>
+                      )}
+                      <div>
+                        <p className="font-medium text-sm truncate max-w-[200px]">{arquivo.nome}</p>
+                        <p className="text-xs text-gray-500">
+                          {arquivo.remetente} • {arquivo.data ? format(new Date(arquivo.data), "dd/MM/yyyy HH:mm", { locale: ptBR }) : '-'}
+                        </p>
+                      </div>
+                    </div>
+                    <a 
+                      href={arquivo.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="p-2 hover:bg-gray-200 rounded-full transition"
+                      title="Abrir arquivo"
+                    >
+                      <Download className="w-4 h-4 text-gray-600" />
+                    </a>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setModalArquivosAberto(false)}>
+              Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Modal de Adicionar Contato */}
       <Dialog open={modalAberto} onOpenChange={setModalAberto}>
         <DialogContent className="sm:max-w-md">
