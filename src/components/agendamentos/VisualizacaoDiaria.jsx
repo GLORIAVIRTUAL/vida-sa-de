@@ -43,9 +43,27 @@ export default function VisualizacaoDiaria({ agendamentos, medicos, pacientes, o
     return agendamento.paciente_nome || "Paciente não encontrado";
   };
 
-  const getNomeMedico = (medicoId) => {
+  const normalizeString = (str) => {
+    if (!str) return '';
+    return String(str).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+  };
+
+  const getNomeMedico = (medicoId, observacoes) => {
     const medico = medicos.find((m) => m.id === medicoId);
-    return medico ? `Dr(a). ${medico.nome}` : "Médico não encontrado";
+    if (!medico) return "Médico não encontrado";
+    
+    // Se for odontologia, mostrar "Odontologia" como especialidade
+    if (normalizeString(medico.especialidade) === 'ODONTOLOGIA') {
+      return "Odontologia";
+    }
+    
+    return `Dr(a). ${medico.nome}`;
+  };
+
+  const getDentistaDoAgendamento = (observacoes) => {
+    if (!observacoes) return null;
+    const match = observacoes.match(/Dentista:\s*(.+?)(\n|$)/);
+    return match ? match[1].trim() : null;
   };
 
   const atualizarStatus = async (agendamentoId, novoStatus) => {
