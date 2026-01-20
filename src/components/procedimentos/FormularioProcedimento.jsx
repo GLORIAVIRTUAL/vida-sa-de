@@ -17,7 +17,7 @@ const especialidades = [
   "Psicologia", "Psicopedagoga", "Psiquiatria", "Quiropraxia", "Traumatologia", "Urologia"
 ];
 
-export default function FormularioProcedimento({ procedimento, categorias, precosExistentes, onClose, onSave }) {
+export default function FormularioProcedimento({ procedimento, categorias, precosExistentes, onClose, onSave, todosProcedimentos = [] }) {
   const [formData, setFormData] = useState({
     nome: '',
     codigo: '',
@@ -25,10 +25,14 @@ export default function FormularioProcedimento({ procedimento, categorias, preco
     duracao_minutos: '',
     valor_repasse_medico: '',
     descricao: '',
-    status: 'Ativo'
+    status: 'Ativo',
+    is_pacote: false,
+    itens_pacote: [],
+    desconto_pacote: ''
   });
   const [precos, setPrecos] = useState({});
   const [loading, setLoading] = useState(false);
+  const [procedimentoSelecionado, setProcedimentoSelecionado] = useState('');
 
   useEffect(() => {
     if (procedimento) {
