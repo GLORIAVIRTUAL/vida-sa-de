@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Procedimento, TabelaPreco } from '@/entities/all'; // TabelaPreco is already here, CategoriaPreco is not used in the outline, Procedimento is
-import { Loader2 } from 'lucide-react';
+import { Loader2, Plus, Trash2, Package } from 'lucide-react';
+import { Checkbox } from "@/components/ui/checkbox";
 
 const especialidades = [
   "Cardiologia", "Clínico Geral", "Dermatologia", "Eletrocardiograma", "Endocrinologia", "Fisioterapeuta",
