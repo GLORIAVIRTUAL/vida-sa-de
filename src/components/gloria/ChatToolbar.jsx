@@ -118,6 +118,7 @@ export default function ChatToolbar({
       const { file_url } = await base44.integrations.Core.UploadFile({ file: fileToUpload });
       
       // Enviar via WhatsApp (apenas mídia, sem texto)
+      // A função enviarMensagemHumano já registra no histórico, não precisa chamar onSendMessage
       await base44.functions.invoke('enviarMensagemHumano', {
         phoneNumber,
         contatoId,
@@ -125,8 +126,6 @@ export default function ChatToolbar({
         mediaUrl: file_url,
         fileName: file.name
       });
-      
-      onSendMessage(`[${type === 'image' ? '📷 Imagem' : '📎 Arquivo'}: ${file.name}]`, true);
     } catch (error) {
       alert('Erro ao enviar arquivo: ' + error.message);
     } finally {
