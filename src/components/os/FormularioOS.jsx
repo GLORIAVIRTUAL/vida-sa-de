@@ -14,6 +14,7 @@ import { OrdemServico } from "@/entities/all";
 import { format } from 'date-fns';
 import { useToast } from "@/components/ui/use-toast"; // Import useToast
 import { base44 } from "@/api/base44Client";
+import { User } from "@/entities/all";
 
 const formasPagamento = ["Dinheiro", "Cartão Débito", "Cartão Crédito", "PIX", "Transferência", "Convênio", "Múltiplas Formas"];
 
