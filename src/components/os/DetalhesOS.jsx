@@ -413,6 +413,12 @@ export default function DetalhesOS({ os, pacienteNome, medicoNome, categoriaNome
                 <strong>Pagamento:</strong><br/>
                 ${infoPagamento}
               </div>
+              ${os.gerado_por ? `
+              <div class="canhoto-gerado" style="margin-top: 10px; font-size: 9px;">
+                <strong>Gerado por:</strong><br/>
+                ${os.gerado_por}
+              </div>
+              ` : ''}
             </div>
             
             <div class="canhoto-recibo-num">
