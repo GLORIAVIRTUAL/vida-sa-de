@@ -248,6 +248,84 @@ export default function FormularioProcedimento({ procedimento, categorias, preco
                 />
               </div>
             ))}
+
+            {/* Seção de Pacote */}
+            {formData.is_pacote && (
+              <div className="mt-6 pt-4 border-t">
+                <h3 className="font-semibold text-lg border-b pb-2 flex items-center gap-2">
+                  <Package className="w-5 h-5 text-purple-600" />
+                  Serviços do Pacote
+                </h3>
+                
+                <div className="mt-4 space-y-3">
+                  {/* Adicionar serviço */}
+                  <div className="flex gap-2">
+                    <Select value={procedimentoSelecionado} onValueChange={setProcedimentoSelecionado}>
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Selecione um serviço..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {procedimentosDisponiveis.map(p => (
+                          <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button type="button" size="icon" onClick={adicionarItemPacote} disabled={!procedimentoSelecionado}>
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
+
+                  {/* Lista de itens do pacote */}
+                  {formData.itens_pacote.length > 0 ? (
+                    <div className="space-y-2">
+                      {formData.itens_pacote.map((item, index) => (
+                        <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                          <span className="flex-1 text-sm">{item.nome}</span>
+                          <Input
+                            type="number"
+                            min="1"
+                            value={item.quantidade}
+                            onChange={(e) => atualizarQuantidadeItem(index, e.target.value)}
+                            className="w-16 h-8 text-center"
+                          />
+                          <Button 
+                            type="button" 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-red-500 hover:text-red-700"
+                            onClick={() => removerItemPacote(index)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500 text-center py-3">
+                      Nenhum serviço adicionado ao pacote
+                    </p>
+                  )}
+
+                  {/* Desconto do pacote */}
+                  <div className="pt-3 border-t mt-3">
+                    <Label htmlFor="desconto_pacote">Desconto do Pacote (%)</Label>
+                    <Input
+                      type="number"
+                      id="desconto_pacote"
+                      name="desconto_pacote"
+                      min="0"
+                      max="100"
+                      value={formData.desconto_pacote}
+                      onChange={handleChange}
+                      placeholder="Ex: 10"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Desconto aplicado sobre o valor total dos serviços
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
