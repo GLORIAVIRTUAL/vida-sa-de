@@ -10,22 +10,6 @@ Deno.serve(async (req) => {
             return Response.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // 2. Verificar Segredos
-        let API_URL = Deno.env.get("EVOLUSERVICES_API_URL");
-        const API_TOKEN = Deno.env.get("EVOLUSERVICES_TOKEN");
-        const MERCHANT_ID = Deno.env.get("EVOLUSERVICES_MERCHANT_ID");
-
-        if (!API_URL || !API_TOKEN || !MERCHANT_ID) {
-            return Response.json({ 
-                error: 'Configuração de pagamento incompleta.' 
-            }, { status: 500 });
-        }
-
-        // Sanitizar URL
-        API_URL = API_URL.trim();
-        if (API_URL.endsWith('/')) API_URL = API_URL.slice(0, -1);
-        if (API_URL.endsWith('/remote/transaction')) API_URL = API_URL.replace('/remote/transaction', '');
-
         const body = await req.json();
         const {
             paciente_id,
