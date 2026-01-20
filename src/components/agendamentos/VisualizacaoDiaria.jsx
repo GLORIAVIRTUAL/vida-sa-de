@@ -304,15 +304,22 @@ export default function VisualizacaoDiaria({ agendamentos, medicos, pacientes, o
                             </button>
                           </p>
                           <p className="text-sm text-gray-600">
-                            {getNomeMedico(agendamento.medico_id)} • {agendamento.tipo_servico}
+                            {getNomeMedico(agendamento.medico_id, agendamento.observacoes)} • {agendamento.tipo_servico}
                           </p>
+                          {/* Mostrar dentista específico se for odontologia */}
+                          {getDentistaDoAgendamento(agendamento.observacoes) && (
+                            <p className="text-xs text-cyan-600">
+                              🦷 Dentista: {getDentistaDoAgendamento(agendamento.observacoes)}
+                            </p>
+                          )}
                         </>
                 }
-                      {agendamento.observacoes &&
-                <p className="text-xs text-gray-500 mt-2">
-                          {agendamento.observacoes}
+                      {/* Mostrar observações, excluindo a linha do dentista */}
+                      {agendamento.observacoes && !agendamento.observacoes.match(/^Dentista:/) && (
+                        <p className="text-xs text-gray-500 mt-2">
+                          {agendamento.observacoes.replace(/Dentista:.*(\n|$)/g, '').trim()}
                         </p>
-                }
+                      )}
                     </div>
 
                     {/* Botões de ação baseados no status */}
