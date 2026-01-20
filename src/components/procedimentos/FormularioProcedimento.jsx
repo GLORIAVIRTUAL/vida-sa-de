@@ -217,6 +217,16 @@ export default function FormularioProcedimento({ procedimento, categorias, preco
                 </SelectContent>
               </Select>
             </div>
+            <div className="flex items-center space-x-2 pt-2">
+              <Checkbox 
+                id="is_pacote" 
+                checked={formData.is_pacote} 
+                onCheckedChange={(checked) => setFormData(p => ({...p, is_pacote: checked}))}
+              />
+              <Label htmlFor="is_pacote" className="text-sm font-normal cursor-pointer">
+                Este é um pacote (ex: consulta + preventivo)
+              </Label>
+            </div>
             <div>
               <Label htmlFor="descricao">Descrição</Label>
               <Textarea id="descricao" name="descricao" value={formData.descricao} onChange={handleChange} />
