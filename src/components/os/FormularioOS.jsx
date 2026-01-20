@@ -425,6 +425,9 @@ export default function FormularioOS({
         }
       }
 
+      // Nome do usuário que está gerando a OS
+      const nomeUsuario = currentUser?.display_name || currentUser?.full_name || currentUser?.email;
+
       const osData = {
         agendamento_id: agendamento.id,
         paciente_id: agendamento.paciente_id,
@@ -446,7 +449,8 @@ export default function FormularioOS({
         itens: dados.itens,
         valor_repasse_medico: dados.valor_repasse_medico,
         valor_repasse_laboratorio: dados.valor_repasse_laboratorio,
-        valor_clinica: dados.valor_clinica
+        valor_clinica: dados.valor_clinica,
+        gerado_por: nomeUsuario // Nome do usuário que gerou a OS
       };
 
       if (agendamento.tipo_servico === 'Procedimento' && agendamento.procedimento_id) {
