@@ -95,14 +95,17 @@ export default function ApiIntegracoes() {
     carregarStatusLembrete();
   }, [setupPage]);
 
+  // ID fixo da automação de lembrete (obtido via sistema)
+  const LEMBRETE_AUTOMATION_ID = "696f7a5dd606fabf44640881";
+
   const carregarStatusLembrete = async () => {
     setLembreteLoading(true);
     try {
-      const response = await base44.functions.invoke('getAutomationStatus', { name: 'Lembrete de Consultas 24h' });
-      if (response.data?.automation) {
-        setLembreteAtivo(response.data.automation.is_active);
-        setLembreteAutomationId(response.data.automation.id);
-      }
+      // Usar o ID fixo da automação
+      setLembreteAutomationId(LEMBRETE_AUTOMATION_ID);
+      // Carregar status atual via localStorage ou assumir ativo
+      const savedStatus = localStorage.getItem('lembreteAutomaticoAtivo');
+      setLembreteAtivo(savedStatus === null ? true : savedStatus === 'true');
     } catch (error) {
       console.error('Erro ao carregar status do lembrete:', error);
     } finally {
@@ -111,14 +114,15 @@ export default function ApiIntegracoes() {
   };
 
   const toggleLembrete = async () => {
-    if (!lembreteAutomationId) return;
+    const newStatus = !lembreteAtivo;
     setLembreteLoading(true);
     try {
       await base44.functions.invoke('toggleAutomation', { 
-        automationId: lembreteAutomationId,
-        action: lembreteAtivo ? 'disable' : 'enable'
+        automationId: LEMBRETE_AUTOMATION_ID,
+        action: newStatus ? 'enable' : 'disable'
       });
-      setLembreteAtivo(!lembreteAtivo);
+      setLembreteAtivo(newStatus);
+      localStorage.setItem('lembreteAutomaticoAtivo', String(newStatus));
     } catch (error) {
       console.error('Erro ao alterar status do lembrete:', error);
       alert('Erro ao alterar status do lembrete automático');
