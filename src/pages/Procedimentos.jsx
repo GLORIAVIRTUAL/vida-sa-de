@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Search, Trash2 } from "lucide-react";
+import { PlusCircle, Search, Trash2, Package } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import FormularioProcedimento from "../components/procedimentos/FormularioProcedimento";
 import { Procedimento, CategoriaPreco, TabelaPreco } from "@/entities/all";
@@ -132,7 +133,17 @@ export default function Procedimentos() {
                   </tr>
                 ) : filteredProcedimentos.map((proc) => (
                  <tr key={proc.id} className="border-b hover:bg-gray-50">
-                   <td className="p-2 font-medium text-xs">{proc.nome || `ID: ${proc.id}`}</td>
+                   <td className="p-2 font-medium text-xs">
+                       <div className="flex items-center gap-2">
+                         {proc.nome || `ID: ${proc.id}`}
+                         {proc.is_pacote && (
+                           <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5 bg-purple-100 text-purple-700">
+                             <Package className="w-3 h-3 mr-1" />
+                             Pacote
+                           </Badge>
+                         )}
+                       </div>
+                     </td>
                    <td className="p-2 text-xs">{proc.especialidade || '-'}</td>
                     {categorias.map(cat => (
                       <td key={cat.id} className="p-2 text-xs">{getPreco(proc.id, cat.id)}</td>
@@ -167,6 +178,7 @@ export default function Procedimentos() {
           precosExistentes={tabelaPrecos.filter(p => p.procedimento_id === selectedProcedimento?.id)}
           onClose={handleCloseForm}
           onSave={handleSave}
+          todosProcedimentos={procedimentos}
         />
       )}
     </div>
