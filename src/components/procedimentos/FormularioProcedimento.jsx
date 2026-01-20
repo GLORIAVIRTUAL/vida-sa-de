@@ -117,6 +117,8 @@ export default function FormularioProcedimento({ procedimento, categorias, preco
         ...formData,
         duracao_minutos: formData.duracao_minutos ? Number(formData.duracao_minutos) : null,
         valor_repasse_medico: formData.valor_repasse_medico ? Number(formData.valor_repasse_medico) : null,
+        desconto_pacote: formData.desconto_pacote ? Number(formData.desconto_pacote) : null,
+        itens_pacote: formData.is_pacote ? formData.itens_pacote : [],
       };
 
       // 1. Salvar ou atualizar o procedimento principal
