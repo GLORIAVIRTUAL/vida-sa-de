@@ -452,7 +452,7 @@ export default function DetalhesOS({ os, pacienteNome, medicoNome, categoriaNome
                 <div class="recibo-recebido-title">Recebido:</div>
                 <div><strong>Forma de Pagamento:</strong> ${infoPagamento}</div>
                 <div style="margin-top: 5px;"><strong>Valor:</strong> R$ ${valorFormatado}</div>
-                ${os.created_by ? `<div style="margin-top: 5px;"><strong>Gerado por:</strong> ${os.created_by}</div>` : ''}
+                ${os.gerado_por ? `<div style="margin-top: 5px;"><strong>Gerado por:</strong> ${os.gerado_por}</div>` : ''}
               </div>
             </div>
 
