@@ -809,8 +809,33 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
       // Cliente quer agendar mas NÃO especificou especialidade - perguntar qual
       console.log('📅 Cliente quer agendar mas não especificou especialidade - PERGUNTAR qual especialidade');
       
-      // Retornar resposta direta perguntando a especialidade - NÃO deixar o LLM inventar
-      const respostaPerguntaEspecialidade = 'Para qual especialidade você gostaria de agendar uma consulta? Temos Clínico Geral, Cardiologia, Psicologia, Nutrição, entre outras. 😊';
+      // Buscar especialidades disponíveis dinamicamente
+      let especialidadesDisponiveis = [];
+      try {
+        const medicosAtivos = await base44.asServiceRole.entities.Medico.filter({ status: 'Ativo' });
+        const especialidadesSet = new Set();
+        medicosAtivos.forEach(m => {
+          if (m.especialidade && m.especialidade.trim()) {
+            especialidadesSet.add(m.especialidade);
+          }
+          if (m.especialidades && Array.isArray(m.especialidades)) {
+            m.especialidades.forEach(e => {
+              if (e && e.trim()) especialidadesSet.add(e);
+            });
+          }
+        });
+        especialidadesDisponiveis = Array.from(especialidadesSet).sort();
+        console.log('📋 Especialidades disponíveis:', especialidadesDisponiveis.slice(0, 10).join(', '));
+      } catch (e) {
+        console.log('⚠️ Erro ao buscar especialidades:', e.message);
+      }
+      
+      // Montar lista de especialidades para mostrar
+      const listaEspecialidades = especialidadesDisponiveis.length > 0 
+        ? especialidadesDisponiveis.slice(0, 8).join(', ')
+        : 'Clínico Geral, Cardiologia, Psicologia, Nutrição';
+      
+      const respostaPerguntaEspecialidade = `Para qual especialidade você gostaria de agendar uma consulta? Temos ${listaEspecialidades}, entre outras. 😊`;
       
       // Salvar no histórico
       try {
@@ -833,6 +858,23 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
             total_mensagens: (contato.total_mensagens || 0) + 2,
             conversa_finalizada: false,
             interesses: [...(contato.interesses || []), 'Agendamento'].filter((v, i, a) => a.indexOf(v) === i)
+          });
+        } else {
+          // Criar novo contato
+          await base44.asServiceRole.entities.Contato.create({
+            nome: senderName,
+            telefone: phoneNumber,
+            ultima_mensagem: messageText,
+            ultima_resposta: respostaPerguntaEspecialidade,
+            historico_mensagens: [
+              { role: 'user', content: messageText, timestamp, messageId },
+              { role: 'assistant', content: respostaPerguntaEspecialidade, timestamp }
+            ],
+            ultima_interacao: timestamp,
+            total_mensagens: 2,
+            origem: 'WhatsApp',
+            status: 'Novo',
+            interesses: ['Agendamento']
           });
         }
       } catch (e) {
