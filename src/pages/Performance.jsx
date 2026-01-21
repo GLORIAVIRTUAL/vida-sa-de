@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { 
   Loader2, Printer, Filter, TrendingUp, DollarSign, 
-  Users, Calendar, RefreshCw, Award, Bot
+  Users, Calendar, RefreshCw, Award, Bot, FileDown
 } from 'lucide-react';
 import { format, parseISO, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
