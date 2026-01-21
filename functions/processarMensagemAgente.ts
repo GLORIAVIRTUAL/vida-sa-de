@@ -82,7 +82,14 @@ Deno.serve(async (req) => {
     let conversaFinalizada = false;
     if (contatosCheck.length > 0 && contatosCheck[0].conversa_finalizada) {
       conversaFinalizada = true;
-      console.log('📝 Conversa anterior foi finalizada - iniciando nova conversa');
+      console.log('📝 Conversa anterior foi finalizada - iniciando nova conversa - LIMPANDO HISTÓRICO');
+      // Limpar histórico imediatamente ao detectar conversa finalizada
+      await base44.asServiceRole.entities.Contato.update(contatosCheck[0].id, {
+        conversa_finalizada: false,
+        historico_mensagens: [],
+        ultima_mensagem: null,
+        ultima_resposta: null
+      });
     }
     
     // Buscar histórico de conversa
