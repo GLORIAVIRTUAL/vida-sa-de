@@ -124,7 +124,11 @@ async function processarMensagemRecebida(base44, payload) {
 
     // Buscar agendamentos futuros de QUALQUER um dos pacientes encontrados com status "Agendado"
     const hoje = new Date().toISOString().split('T')[0];
-    const todosAgendamentos = await base44.asServiceRole.entities.Agendamento.list('-data_agendamento', 500);
+    
+    // Buscar agendamentos futuros diretamente (mais eficiente)
+    const todosAgendamentos = await base44.asServiceRole.entities.Agendamento.filter({
+        data_agendamento: { $gte: hoje }
+    });
     
     console.log('📊 Total de agendamentos no sistema:', todosAgendamentos.length);
     console.log('📅 Data de hoje:', hoje);
