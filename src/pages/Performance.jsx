@@ -489,55 +489,100 @@ export default function Performance() {
 
           {/* Gráficos */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            {/* Gráfico de Barras */}
+            {/* Gráfico de Barras - Agendamentos */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Users className="w-5 h-5" />
+                  <Users className="w-5 h-5 text-blue-600" />
                   Agendamentos por Usuário
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={dadosGrafico} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" />
-                    <YAxis type="category" dataKey="name" width={100} />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="agendamentos" name="Agendamentos" fill="#3b82f6" />
-                  </BarChart>
-                </ResponsiveContainer>
+                {dadosGraficoAgendamentos.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={350}>
+                    <BarChart data={dadosGraficoAgendamentos} layout="vertical" margin={{ left: 10, right: 30 }}>
+                      <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
+                      <XAxis type="number" allowDecimals={false} />
+                      <YAxis 
+                        type="category" 
+                        dataKey="name" 
+                        width={120} 
+                        tick={{ fontSize: 12 }}
+                        tickLine={false}
+                      />
+                      <Tooltip 
+                        formatter={(value, name) => [value, name === 'agendamentos' ? 'Total' : name === 'consultas' ? 'Consultas' : 'Procedimentos']}
+                        labelFormatter={(label) => {
+                          const item = dadosGraficoAgendamentos.find(d => d.name === label);
+                          return item?.nomeCompleto || label;
+                        }}
+                        contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb' }}
+                      />
+                      <Legend />
+                      <Bar dataKey="agendamentos" name="Total" fill="#3b82f6" radius={[0, 4, 4, 0]} />
+                      <Bar dataKey="consultas" name="Consultas" fill="#10b981" radius={[0, 4, 4, 0]} />
+                      <Bar dataKey="procedimentos" name="Procedimentos" fill="#f59e0b" radius={[0, 4, 4, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-[350px] flex items-center justify-center text-gray-400">
+                    Sem dados para exibir
+                  </div>
+                )}
               </CardContent>
             </Card>
 
-            {/* Gráfico de Pizza */}
+            {/* Gráfico de Barras - Valor Vendido */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <DollarSign className="w-5 h-5" />
+                  <DollarSign className="w-5 h-5 text-green-600" />
                   Valor Vendido por Usuário
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={dadosPizza}
-                      dataKey="value"
-                      nameKey="name"
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={100}
-                      label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                    >
-                      {dadosPizza.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={CORES_GRAFICO[index % CORES_GRAFICO.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(value) => formatCurrency(value)} />
-                  </PieChart>
-                </ResponsiveContainer>
+                {dadosGraficoValor.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={350}>
+                    <BarChart data={dadosGraficoValor} layout="vertical" margin={{ left: 10, right: 30 }}>
+                      <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
+                      <XAxis 
+                        type="number" 
+                        tickFormatter={(value) => `R$ ${(value / 1000).toFixed(0)}k`}
+                      />
+                      <YAxis 
+                        type="category" 
+                        dataKey="name" 
+                        width={120} 
+                        tick={{ fontSize: 12 }}
+                        tickLine={false}
+                      />
+                      <Tooltip 
+                        formatter={(value) => [formatCurrency(value), 'Valor Vendido']}
+                        labelFormatter={(label) => {
+                          const item = dadosGraficoValor.find(d => d.name === label);
+                          return item?.nomeCompleto || label;
+                        }}
+                        contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb' }}
+                      />
+                      <Bar 
+                        dataKey="valor" 
+                        name="Valor Vendido" 
+                        fill="#10b981" 
+                        radius={[0, 4, 4, 0]}
+                        label={{ 
+                          position: 'right', 
+                          formatter: (value) => formatCurrency(value),
+                          fontSize: 11,
+                          fill: '#374151'
+                        }}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-[350px] flex items-center justify-center text-gray-400">
+                    Sem dados para exibir
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
