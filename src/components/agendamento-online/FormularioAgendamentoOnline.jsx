@@ -545,7 +545,7 @@ export default function FormularioAgendamentoOnline({ onSucesso }) {
             <div className="mb-6 p-4 bg-green-50 rounded-lg border border-green-200">
               <h4 className="font-semibold text-green-800 mb-2">Resumo do Agendamento:</h4>
               <div className="text-sm text-green-700 space-y-1">
-                <p><strong>Profissional:</strong> Dr(a). {medicoSelecionado?.nome} - {medicoSelecionado?.especialidade}</p>
+                <p><strong>Profissional:</strong> Dr(a). {especialidadeSelecionada?.nome} - {especialidadeSelecionada?.especialidade}</p>
                 <p><strong>Data:</strong> {dataSelecionada && format(new Date(dataSelecionada + 'T12:00:00'), 'dd/MM/yyyy (EEEE)', { locale: ptBR })}</p>
                 <p><strong>Horário:</strong> {horarioSelecionado}</p>
               </div>
