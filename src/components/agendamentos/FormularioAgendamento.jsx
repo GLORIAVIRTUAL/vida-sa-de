@@ -2459,6 +2459,7 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                                            console.log(`🩺 ========================================`);
                                            console.log(`🩺 Alterando para especialidade: ${value}`);
                                            console.log(`🩺 Novo médico ID: ${medicoEspecialidade.id}`);
+                                           console.log(`🩺 Especialidade do médico: ${medicoEspecialidade.especialidade}`);
 
                                            // Salvar a especialidade selecionada nas observações
                                            const obsAtual = formData.observacoes || '';
@@ -2466,27 +2467,38 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                                            const novaObs = obsLimpa ? `${obsLimpa}\nEspecialidade: ${value}` : `Especialidade: ${value}`;
 
                                            // Buscar o procedimento correto para esta especialidade
-                                           const especialidadeNormValue = normalizeString(value);
+                                           // IMPORTANTE: Usar a especialidade do médico selecionado, não a string "value"
+                                           const especialidadeNormValue = normalizeString(medicoEspecialidade.especialidade);
+                                           console.log(`🔍 Buscando procedimento para especialidade normalizada: ${especialidadeNormValue}`);
 
                                            const procedimentoConsulta = procedimentos.find(p => {
                                              const nomeNorm = normalizeString(p.nome);
                                              const temConsulta = nomeNorm.includes('CONSULTA');
                                              const especialidadeExata = p.especialidade && normalizeString(p.especialidade) === especialidadeNormValue;
+                                             if (temConsulta && especialidadeExata) {
+                                               console.log(`✅ Procedimento encontrado: ${p.nome} (especialidade: ${p.especialidade})`);
+                                             }
                                              return temConsulta && especialidadeExata;
                                            });
 
                                            let novoPreco = 0;
                                            if (procedimentoConsulta) {
+                                             console.log(`🔍 Buscando preço para procedimento ID: ${procedimentoConsulta.id} e categoria ID: ${formData.categoria_preco_id}`);
                                              const preco = tabelaPrecos.find(tp => 
                                                tp.procedimento_id === procedimentoConsulta.id && 
                                                tp.categoria_id === formData.categoria_preco_id
                                              );
                                              if (preco) {
                                                novoPreco = preco.valor;
+                                               console.log(`✅ Preço encontrado: R$ ${preco.valor}`);
+                                             } else {
+                                               console.log(`❌ Preço NÃO encontrado na tabela`);
                                              }
+                                           } else {
+                                             console.log(`❌ Procedimento de consulta NÃO encontrado para especialidade: ${especialidadeNormValue}`);
                                            }
 
-                                           console.log(`💰 NOVO PREÇO: R$ ${novoPreco}`);
+                                           console.log(`💰 NOVO PREÇO FINAL: R$ ${novoPreco}`);
                                            console.log(`🩺 ========================================`);
 
                                            const desconto = parseFloat(formData.desconto_manual) || 0;
