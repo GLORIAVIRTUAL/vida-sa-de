@@ -1246,24 +1246,52 @@ Retorne JSON.`;
               }
             }
 
-            // Buscar ou criar paciente
+            // Buscar ou criar paciente - busca por telefone OU por nome + data nascimento
             let paciente = null;
-            const pacientesExistentes = await base44.asServiceRole.entities.Paciente.filter({ telefone: phoneNumber });
+            
+            // Primeiro tenta buscar por telefone
+            let pacientesExistentes = await base44.asServiceRole.entities.Paciente.filter({ telefone: phoneNumber });
+            
+            // Se não encontrou por telefone, busca por nome + data de nascimento
+            if (pacientesExistentes.length === 0 && extracao.nome_paciente && dataNascimentoISO) {
+              console.log('🔍 Buscando paciente por nome e data de nascimento...');
+              const todosPacientes = await base44.asServiceRole.entities.Paciente.list();
+              const nomeLower = extracao.nome_paciente.toLowerCase().trim();
+              
+              pacientesExistentes = todosPacientes.filter(p => {
+                const nomeMatch = p.nome && p.nome.toLowerCase().trim() === nomeLower;
+                const dataNascMatch = p.data_nascimento === dataNascimentoISO;
+                return nomeMatch && dataNascMatch;
+              });
+              
+              if (pacientesExistentes.length > 0) {
+                console.log('✅ Paciente encontrado por nome + data nascimento:', pacientesExistentes[0].nome);
+              }
+            }
             
             if (pacientesExistentes.length > 0) {
               paciente = pacientesExistentes[0];
-              await base44.asServiceRole.entities.Paciente.update(paciente.id, {
+              // Atualizar dados do paciente (incluindo telefone se não tinha)
+              const updateData = {
                 nome: extracao.nome_paciente,
                 data_nascimento: dataNascimentoISO
-              });
+              };
+              if (!paciente.telefone || paciente.telefone === '') {
+                updateData.telefone = phoneNumber;
+              }
+              await base44.asServiceRole.entities.Paciente.update(paciente.id, updateData);
+              console.log('✅ Paciente existente atualizado:', paciente.id);
             } else {
+              // Criar novo paciente
+              console.log('🆕 Criando novo paciente:', extracao.nome_paciente);
               paciente = await base44.asServiceRole.entities.Paciente.create({
                 nome: extracao.nome_paciente,
                 telefone: phoneNumber,
                 cpf: 'NÃO INFORMADO',
                 data_nascimento: dataNascimentoISO,
-                observacoes: 'Criado via WhatsApp'
+                observacoes: 'Criado via WhatsApp pela Glória'
               });
+              console.log('✅ Novo paciente criado:', paciente.id);
             }
 
             // Verificar se horário ainda está disponível (com timeout)
