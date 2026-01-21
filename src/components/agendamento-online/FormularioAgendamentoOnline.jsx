@@ -410,10 +410,19 @@ export default function FormularioAgendamentoOnline({ onSucesso }) {
               <h3 className="text-xl font-semibold">2. Escolha Data e Horário</h3>
               <Button 
                 variant="outline" 
-                onClick={() => setEtapa(1)}
+                onClick={() => {
+                  if (especialidadesMedico.length > 1) {
+                    setEspecialidadeSelecionada(null);
+                  } else {
+                    setEtapa(1);
+                    setMedicoSelecionado(null);
+                    setEspecialidadeSelecionada(null);
+                    setEspecialidadesMedico([]);
+                  }
+                }}
                 className="text-blue-600 border-blue-300 hover:bg-blue-50"
               >
-                ← Voltar aos Profissionais
+                ← {especialidadesMedico.length > 1 ? 'Voltar às Especialidades' : 'Voltar aos Profissionais'}
               </Button>
             </div>
             
