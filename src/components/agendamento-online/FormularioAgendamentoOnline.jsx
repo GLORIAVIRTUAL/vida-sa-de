@@ -421,7 +421,7 @@ export default function FormularioAgendamentoOnline({ onSucesso }) {
                       >
                         <Calendar className="w-5 h-5 mb-1" />
                         <div className="text-sm font-semibold">
-                          {format(new Date(dataDisponivel.data + 'T00:00:00'), 'dd/MM')}
+                          {dataDisponivel.data ? format(new Date(dataDisponivel.data + 'T12:00:00'), 'dd/MM') : '--/--'}
                         </div>
                         <div className="text-xs opacity-80">
                           {dataDisponivel.dia_semana_nome.substring(0, 3)}
