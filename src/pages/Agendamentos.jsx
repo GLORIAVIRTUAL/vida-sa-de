@@ -179,16 +179,24 @@ export default function Agendamentos() {
     return medicos.filter(m => normalizeString(m.especialidade) === 'ODONTOLOGIA').map(m => m.id);
   }, [medicos]);
 
+  // Identificar médicos "Dr. Ruben" (múltiplas especialidades)
+  const medicosRuben = useMemo(() => {
+    return medicos.filter(m => normalizeString(m.nome).includes('RUBEN')).map(m => m.id);
+  }, [medicos]);
+
   const agendamentosFiltrados = Array.isArray(agendamentosPorPeriodo) ? agendamentosPorPeriodo.filter((agendamento) => {
     if (!agendamento) return false;
 
-    // Lógica especial para odontologia: se filtrar por qualquer dentista, mostrar todos de odontologia
+    // Lógica especial para odontologia e Dr. Ruben: se filtrar por qualquer um do grupo, mostrar todos do grupo
     let filtroMedico = false;
     if (filtros.medico === "todos") {
       filtroMedico = true;
     } else if (medicosOdontologia.includes(filtros.medico)) {
       // Se o filtro é um dentista, mostrar agendamentos de TODOS os dentistas
       filtroMedico = medicosOdontologia.includes(agendamento.medico_id);
+    } else if (medicosRuben.includes(filtros.medico)) {
+      // Se o filtro é um "Ruben", mostrar agendamentos de TODOS os "Rubens"
+      filtroMedico = medicosRuben.includes(agendamento.medico_id);
     } else {
       filtroMedico = agendamento.medico_id === filtros.medico;
     }
