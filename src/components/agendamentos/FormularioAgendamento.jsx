@@ -682,12 +682,26 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
         return;
       }
 
-      // Para agenda unificada, verificar agendamentos de TODOS os dentistas
+      // Para agenda unificada, verificar agendamentos de TODOS os médicos do grupo
       let agendamentosExistentes;
-      if (isAgendaUnificada) {
+      if (isAgendaUnificadaOdonto) {
         const idsDentistas = medicosOdontologia.map(m => m.id);
         agendamentosExistentes = (todosAgendamentos || []).filter(a => 
           idsDentistas.includes(a.medico_id) && 
+          a.data_agendamento === data &&
+          a.status !== 'Cancelado'
+        );
+      } else if (isAgendaUnificadaRuben) {
+        const idsRuben = medicosRuben.map(m => m.id);
+        agendamentosExistentes = (todosAgendamentos || []).filter(a => 
+          idsRuben.includes(a.medico_id) && 
+          a.data_agendamento === data &&
+          a.status !== 'Cancelado'
+        );
+      } else if (isAgendaUnificadaMarco) {
+        const idsMarco = medicosMarco.map(m => m.id);
+        agendamentosExistentes = (todosAgendamentos || []).filter(a => 
+          idsMarco.includes(a.medico_id) && 
           a.data_agendamento === data &&
           a.status !== 'Cancelado'
         );
