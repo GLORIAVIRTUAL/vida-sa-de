@@ -6,7 +6,24 @@ Deno.serve(async (req) => {
     
     const { phoneNumber, messageText, senderName, pacienteId, mediaType, mediaUrl, messageId } = await req.json();
     
-    console.log('📨 Processando:', { phoneNumber, messageText, mediaType, mediaUrl });
+    console.log('📨 Processando:', { phoneNumber, messageText, mediaType, mediaUrl, messageId });
+    
+    // Verificação anti-duplicata: se já processamos este messageId, ignorar
+    if (messageId) {
+      try {
+        const contatosVerif = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
+        if (contatosVerif.length > 0) {
+          const historicoVerif = contatosVerif[0].historico_mensagens || [];
+          const jaProcessado = historicoVerif.some(m => m.messageId === messageId && m.role === 'assistant');
+          if (jaProcessado) {
+            console.log('⏭️ MessageId já processado com resposta - ignorando duplicata:', messageId);
+            return Response.json({ success: true, status: 'duplicata_ignorada', resposta: null });
+          }
+        }
+      } catch (e) {
+        console.log('⚠️ Erro verificação duplicata:', e.message);
+      }
+    }
     
     // Verificar se o contato está em atendimento humano
     const contatosCheck = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
