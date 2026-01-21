@@ -442,6 +442,7 @@ export default function FormularioAgendamentoOnline({ onSucesso }) {
                 onClick={() => {
                   if (especialidadesMedico.length > 1) {
                     setEspecialidadeSelecionada(null);
+                    setEtapa(1); // Voltar para etapa 1 onde o seletor de especialidade está
                   } else {
                     setEtapa(1);
                     setMedicoSelecionado(null);
