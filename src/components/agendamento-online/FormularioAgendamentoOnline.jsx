@@ -417,23 +417,23 @@ export default function FormularioAgendamentoOnline({ onSucesso }) {
               </Button>
             </div>
             
-            {medicoSelecionado && (
+            {especialidadeSelecionada && (
               <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
                 <div className="flex items-center gap-3">
-                  {medicoSelecionado.foto_url ? (
+                  {especialidadeSelecionada.foto_url ? (
                     <img 
-                      src={medicoSelecionado.foto_url} 
-                      alt={medicoSelecionado.nome}
+                      src={especialidadeSelecionada.foto_url} 
+                      alt={especialidadeSelecionada.nome}
                       className="w-12 h-12 rounded-full object-cover"
                     />
                   ) : (
                     <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold">
-                      {medicoSelecionado.nome.charAt(0)}
+                      {especialidadeSelecionada.nome.charAt(0)}
                     </div>
                   )}
                   <div>
-                    <h4 className="font-semibold text-gray-900">Dr(a). {medicoSelecionado.nome}</h4>
-                    <p className="text-blue-600">{medicoSelecionado.especialidade}</p>
+                    <h4 className="font-semibold text-gray-900">Dr(a). {especialidadeSelecionada.nome}</h4>
+                    <p className="text-blue-600">{especialidadeSelecionada.especialidade}</p>
                   </div>
                 </div>
               </div>
