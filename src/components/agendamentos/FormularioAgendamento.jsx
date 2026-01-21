@@ -2397,28 +2397,33 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                                    medicosRuben.length > 1 &&
                                    (formData.tipo_servico === 'Consulta' || formData.tipo_servico === 'Retorno')) {
 
-                                 // Extrair especialidade das observações
-                                 const especialidadeAtual = formData.observacoes?.match(/Especialidade:\s*(.+?)(\n|$)/)?.[1]?.trim() || '';
+                                 // Extrair especialidade das observações OU usar a especialidade atual do médico selecionado
+                                 const especialidadeObs = formData.observacoes?.match(/Especialidade:\s*(.+?)(\n|$)/)?.[1]?.trim();
+                                 const especialidadeAtual = especialidadeObs || medicoSelecionado.especialidade || '';
 
                                  return (
                                    <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
                                      <Label htmlFor="especialidade_ruben" className="text-green-800 font-medium flex items-center gap-2">
-                                       🩺 Selecione a Especialidade para este agendamento
+                                       🩺 Selecione a Especialidade para este agendamento *
                                      </Label>
                                      <Select 
                                        value={especialidadeAtual} 
                                        onValueChange={(value) => {
-                                         // Salvar a especialidade selecionada nas observações
-                                         const obsAtual = formData.observacoes || '';
-                                         const obsLimpa = obsAtual.replace(/Especialidade:.*(\n|$)/g, '').trim();
-                                         const novaObs = obsLimpa ? `${obsLimpa}\nEspecialidade: ${value}` : `Especialidade: ${value}`;
-                                         handleChange('observacoes', novaObs);
-
-                                         // Encontrar o médico correspondente à especialidade e atualizar o preço
+                                         // Encontrar o médico correspondente à especialidade
                                          const medicoEspecialidade = medicosRuben.find(m => m.especialidade === value);
                                          if (medicoEspecialidade) {
-                                           // Atualizar o medico_id para buscar o preço correto
+                                           // IMPORTANTE: Atualizar o medico_id PRIMEIRO para buscar o preço correto
                                            handleChange('medico_id', medicoEspecialidade.id);
+
+                                           // Salvar a especialidade selecionada nas observações
+                                           const obsAtual = formData.observacoes || '';
+                                           const obsLimpa = obsAtual.replace(/Especialidade:.*(\n|$)/g, '').trim();
+                                           const novaObs = obsLimpa ? `${obsLimpa}\nEspecialidade: ${value}` : `Especialidade: ${value}`;
+
+                                           // Usar setTimeout para garantir que o medico_id seja atualizado antes
+                                           setTimeout(() => {
+                                             handleChange('observacoes', novaObs);
+                                           }, 50);
                                          }
                                        }}
                                      >
