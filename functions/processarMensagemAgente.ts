@@ -957,13 +957,18 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
           };
 
           // Encontrar termos relacionados (usando texto normalizado)
-          let termosRelacionados = [especialidadeLower];
+          const especialidadeNorm = normalizarTexto(especialidadeLower);
+          let termosRelacionados = [especialidadeNorm];
           for (const [key, valores] of Object.entries(sinonimos)) {
             const valoresNorm = valores.map(v => normalizarTexto(v));
-            if (valoresNorm.some(v => especialidadeLower.includes(v) || v.includes(especialidadeLower))) {
-              termosRelacionados = [...termosRelacionados, ...valoresNorm];
+            const keyNorm = normalizarTexto(key);
+            if (valoresNorm.some(v => especialidadeNorm.includes(v) || v.includes(especialidadeNorm)) ||
+                keyNorm.includes(especialidadeNorm) || especialidadeNorm.includes(keyNorm)) {
+              termosRelacionados = [...termosRelacionados, keyNorm, ...valoresNorm];
             }
           }
+          // Remover duplicatas
+          termosRelacionados = [...new Set(termosRelacionados)];
 
           medicosParaBuscar = todosMedicos.filter(m => {
             // Verifica no campo principal 'especialidade' (NORMALIZADO)
