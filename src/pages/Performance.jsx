@@ -376,6 +376,225 @@ export default function Performance() {
     return `R$ ${(value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
   };
 
+  // Função para gerar relatório individual do usuário
+  const gerarRelatorioUsuario = (usuario) => {
+    const { osFiltradas, agFiltrados } = dadosFiltrados;
+    const mesFormatado = format(parseISO(filtros.mes + '-01'), 'MMMM yyyy', { locale: ptBR });
+    
+    // Filtrar agendamentos deste usuário
+    const agendamentosUsuario = agFiltrados.filter(ag => {
+      let agendadoPor = ag.agendado_por || ag.created_by || '';
+      
+      if (usuario.tipoOrigem === 'chatbot' && (ag.agendado_por_tipo === 'chatbot' || agendadoPor === 'Glória' || agendadoPor === 'Gloria')) {
+        return true;
+      }
+      
+      if (usuario.tipoOrigem === 'sistema' && agendadoPor.includes('service+')) {
+        return true;
+      }
+      
+      // Verificar por nome ou email
+      const usuarioEncontrado = usuarios.find(u => u.email === agendadoPor || u.id === agendadoPor);
+      const nomeNormalizado = usuarioEncontrado ? (usuarioEncontrado.display_name || usuarioEncontrado.full_name || usuarioEncontrado.email) : agendadoPor;
+      
+      return nomeNormalizado === usuario.nome;
+    });
+    
+    // Filtrar OS deste usuário
+    const osUsuario = osFiltradas.filter(os => {
+      const geradoPor = os.gerado_por || os.created_by || '';
+      const { nome } = normalizarUsuario(geradoPor);
+      return nome === usuario.nome;
+    });
+    
+    // Calcular totais por forma de pagamento
+    const totalPorFormaPagamento = {
+      'Dinheiro': 0,
+      'Cartão Débito': 0,
+      'Cartão Crédito': 0,
+      'PIX': 0,
+      'Transferência': 0,
+      'Convênio': 0,
+      'Múltiplas Formas': 0
+    };
+    
+    osUsuario.forEach(os => {
+      const forma = os.forma_pagamento || 'Não informado';
+      if (totalPorFormaPagamento[forma] !== undefined) {
+        totalPorFormaPagamento[forma] += os.valor_final || 0;
+      } else {
+        totalPorFormaPagamento[forma] = os.valor_final || 0;
+      }
+    });
+    
+    const printWindow = window.open('', '_blank');
+    
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Relatório - ${usuario.nome} - ${mesFormatado}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; font-size: 11px; }
+            h1 { color: #1e40af; font-size: 18px; margin-bottom: 5px; }
+            h2 { font-size: 14px; margin-top: 20px; color: #333; border-bottom: 2px solid #1e40af; padding-bottom: 5px; }
+            h3 { font-size: 12px; margin-top: 15px; color: #666; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 20px; }
+            th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
+            th { background-color: #f3f4f6; font-size: 10px; }
+            td { font-size: 10px; }
+            .header { text-align: center; margin-bottom: 20px; border-bottom: 3px solid #1e40af; padding-bottom: 15px; }
+            .resumo { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
+            .resumo-card { border: 1px solid #ddd; padding: 10px; border-radius: 5px; min-width: 100px; background: #f9fafb; }
+            .resumo-card strong { font-size: 9px; color: #666; display: block; margin-bottom: 3px; }
+            .resumo-card .valor { font-size: 14px; font-weight: bold; color: #1e40af; }
+            .text-right { text-align: right; }
+            .text-center { text-align: center; }
+            .total-row { font-weight: bold; background-color: #e0f2fe; }
+            .forma-pagamento { margin: 15px 0; }
+            .forma-pagamento-item { display: flex; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid #eee; }
+            .forma-pagamento-item:nth-child(odd) { background: #f9fafb; }
+            .forma-valor { font-weight: bold; color: #059669; }
+            @media print { 
+              body { margin: 10px; } 
+              .page-break { page-break-before: always; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>CENTRO VIDA SAÚDE</h1>
+            <p style="font-size: 14px; margin: 5px 0;"><strong>Relatório Individual de Performance</strong></p>
+            <p style="font-size: 12px; color: #1e40af;"><strong>${usuario.nome}</strong> ${usuario.tipoOrigem === 'chatbot' ? '🤖 (IA)' : ''}</p>
+            <p style="font-size: 11px;">Período: ${mesFormatado.charAt(0).toUpperCase() + mesFormatado.slice(1)}</p>
+            <p style="font-size: 10px; color: #666;">Gerado em: ${format(new Date(), "dd/MM/yyyy 'às' HH:mm")}</p>
+          </div>
+          
+          <h2>📊 Resumo</h2>
+          <div class="resumo">
+            <div class="resumo-card">
+              <strong>Total Agendamentos</strong>
+              <span class="valor">${usuario.totalAgendamentos}</span>
+            </div>
+            <div class="resumo-card">
+              <strong>Consultas</strong>
+              <span class="valor">${usuario.totalConsultas}</span>
+            </div>
+            <div class="resumo-card">
+              <strong>Procedimentos</strong>
+              <span class="valor">${usuario.totalProcedimentos}</span>
+            </div>
+            <div class="resumo-card">
+              <strong>Exames</strong>
+              <span class="valor">${usuario.totalExames}</span>
+            </div>
+            <div class="resumo-card">
+              <strong>Retornos</strong>
+              <span class="valor">${usuario.totalRetornos}</span>
+            </div>
+            <div class="resumo-card" style="background: #dcfce7;">
+              <strong>Valor Total Vendido</strong>
+              <span class="valor" style="color: #059669;">${formatCurrency(usuario.valorVendido)}</span>
+            </div>
+          </div>
+          
+          <h2>💰 Vendas por Forma de Pagamento</h2>
+          <div class="forma-pagamento">
+            ${Object.entries(totalPorFormaPagamento)
+              .filter(([_, valor]) => valor > 0)
+              .sort((a, b) => b[1] - a[1])
+              .map(([forma, valor]) => `
+                <div class="forma-pagamento-item">
+                  <span>${forma}</span>
+                  <span class="forma-valor">${formatCurrency(valor)}</span>
+                </div>
+              `).join('') || '<p style="color: #999; text-align: center;">Nenhuma venda registrada</p>'}
+            ${osUsuario.length > 0 ? `
+              <div class="forma-pagamento-item" style="background: #e0f2fe; font-weight: bold;">
+                <span>TOTAL</span>
+                <span class="forma-valor">${formatCurrency(usuario.valorVendido)}</span>
+              </div>
+            ` : ''}
+          </div>
+          
+          <h2>📅 Agendamentos Realizados (${agendamentosUsuario.length})</h2>
+          ${agendamentosUsuario.length > 0 ? `
+            <table>
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Horário</th>
+                  <th>Paciente</th>
+                  <th>Tipo</th>
+                  <th>Status</th>
+                  <th class="text-right">Valor</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${agendamentosUsuario
+                  .sort((a, b) => a.data_agendamento.localeCompare(b.data_agendamento) || (a.horario || '').localeCompare(b.horario || ''))
+                  .map(ag => `
+                    <tr>
+                      <td>${ag.data_agendamento ? format(parseISO(ag.data_agendamento), 'dd/MM/yyyy') : '-'}</td>
+                      <td>${ag.horario || '-'}</td>
+                      <td>${ag.paciente_nome || 'Não informado'}</td>
+                      <td>${ag.tipo_servico || '-'}</td>
+                      <td>${ag.status || '-'}</td>
+                      <td class="text-right">${formatCurrency(ag.valor_final || ag.valor_total || 0)}</td>
+                    </tr>
+                  `).join('')}
+              </tbody>
+            </table>
+          ` : '<p style="color: #999; text-align: center;">Nenhum agendamento no período</p>'}
+          
+          <h2>🧾 Ordens de Serviço / Vendas (${osUsuario.length})</h2>
+          ${osUsuario.length > 0 ? `
+            <table>
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Nº OS</th>
+                  <th>Paciente</th>
+                  <th>Tipo</th>
+                  <th>Forma Pagamento</th>
+                  <th>Status</th>
+                  <th class="text-right">Valor</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${osUsuario
+                  .sort((a, b) => (a.data_execucao || '').localeCompare(b.data_execucao || ''))
+                  .map(os => `
+                    <tr>
+                      <td>${os.data_execucao ? format(parseISO(os.data_execucao), 'dd/MM/yyyy') : '-'}</td>
+                      <td>${os.numero_os || os.id?.substring(0, 8) || '-'}</td>
+                      <td>${os.paciente_nome || 'Não informado'}</td>
+                      <td>${os.tipo_servico || '-'}</td>
+                      <td>${os.forma_pagamento || 'Não informado'}</td>
+                      <td>${os.status_pagamento || '-'}</td>
+                      <td class="text-right">${formatCurrency(os.valor_final || 0)}</td>
+                    </tr>
+                  `).join('')}
+              </tbody>
+              <tfoot>
+                <tr class="total-row">
+                  <td colspan="6"><strong>TOTAL</strong></td>
+                  <td class="text-right"><strong>${formatCurrency(usuario.valorVendido)}</strong></td>
+                </tr>
+              </tfoot>
+            </table>
+          ` : '<p style="color: #999; text-align: center;">Nenhuma OS no período</p>'}
+          
+          <div style="margin-top: 30px; text-align: center; font-size: 10px; color: #999; border-top: 1px solid #eee; padding-top: 10px;">
+            Relatório gerado automaticamente pelo Sistema Centro Vida Saúde
+          </div>
+        </body>
+      </html>
+    `);
+    
+    printWindow.document.close();
+    printWindow.print();
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[80vh] flex-col gap-4">
