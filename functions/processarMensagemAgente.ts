@@ -974,27 +974,33 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
             // Verifica no campo principal 'especialidade' (NORMALIZADO)
             const espPrincipal = normalizarTexto(m.especialidade || '');
             const matchPrincipal = termosRelacionados.some(t => {
-              // Match se contém o termo OU se a primeira palavra coincide
-              return espPrincipal.includes(t) || t.includes(espPrincipal) || 
-                     espPrincipal.split(' ')[0] === t.split(' ')[0];
+              // Match se contém o termo OU se o termo contém a especialidade OU primeira palavra coincide
+              const tNorm = normalizarTexto(t);
+              return espPrincipal.includes(tNorm) || tNorm.includes(espPrincipal) || 
+                     espPrincipal.split(' ')[0] === tNorm.split(' ')[0] ||
+                     (espPrincipal.length > 3 && tNorm.length > 3 && 
+                      (espPrincipal.startsWith(tNorm.substring(0, 4)) || tNorm.startsWith(espPrincipal.substring(0, 4))));
             });
 
             // Verifica no array 'especialidades' (NORMALIZADO)
             const matchArray = m.especialidades?.some(e => {
               const eLower = normalizarTexto(e);
               return termosRelacionados.some(t => {
-                return eLower.includes(t) || t.includes(eLower) ||
-                       eLower.split(' ')[0] === t.split(' ')[0];
+                const tNorm = normalizarTexto(t);
+                return eLower.includes(tNorm) || tNorm.includes(eLower) ||
+                       eLower.split(' ')[0] === tNorm.split(' ')[0] ||
+                       (eLower.length > 3 && tNorm.length > 3 && 
+                        (eLower.startsWith(tNorm.substring(0, 4)) || tNorm.startsWith(eLower.substring(0, 4))));
               });
             });
 
             // Verifica também no nome do médico (NORMALIZADO)
             const nomeLower = normalizarTexto(m.nome || '');
-            const matchNome = termosRelacionados.some(t => nomeLower.includes(t));
+            const matchNome = termosRelacionados.some(t => nomeLower.includes(normalizarTexto(t)));
 
             return matchPrincipal || matchArray || matchNome;
           });
-          console.log(`🔍 Buscando por ${especialidadeDetectada} (termos: ${termosRelacionados.slice(0,3).join(', ')}): encontrados ${medicosParaBuscar.length} médicos`);
+          console.log(`🔍 Buscando por ${especialidadeDetectada} (termos: ${termosRelacionados.slice(0,5).join(', ')}): encontrados ${medicosParaBuscar.length} médicos`);
           } else {
             medicosParaBuscar = todosMedicos;
           }
