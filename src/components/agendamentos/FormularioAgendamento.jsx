@@ -603,10 +603,22 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
       const dataObj = new Date(data + 'T00:00:00');
       const diaSemana = dataObj.getDay(); // 0=Domingo, 1=Segunda...
       
-      // NOVO: Para Odontologia com agenda unificada, combinar horários de TODOS os dentistas
+      // NOVO: Para Odontologia, Dr. Ruben e Dr. Marco com agenda unificada, combinar horários
       const isOdontologia = normalizeString(medicoSelecionado.especialidade) === 'ODONTOLOGIA';
       const medicosOdontologia = medicos.filter(m => normalizeString(m.especialidade) === 'ODONTOLOGIA');
-      const isAgendaUnificada = isOdontologia && medicosOdontologia.length > 1;
+      const isAgendaUnificadaOdonto = isOdontologia && medicosOdontologia.length > 1;
+      
+      // Verificar se é Dr. Ruben (múltiplas especialidades)
+      const isRuben = normalizeString(medicoSelecionado.nome).includes('RUBEN');
+      const medicosRuben = medicos.filter(m => normalizeString(m.nome).includes('RUBEN') && m.status === 'Ativo');
+      const isAgendaUnificadaRuben = isRuben && medicosRuben.length > 1;
+      
+      // Verificar se é Dr. Marco Antônio Delazeri (múltiplas especialidades)
+      const isMarco = normalizeString(medicoSelecionado.nome).includes('MARCO ANTONIO DELAZERI') || normalizeString(medicoSelecionado.nome).includes('MARCO ANTÔNIO DELAZERI');
+      const medicosMarco = medicos.filter(m => (normalizeString(m.nome).includes('MARCO ANTONIO DELAZERI') || normalizeString(m.nome).includes('MARCO ANTÔNIO DELAZERI')) && m.status === 'Ativo');
+      const isAgendaUnificadaMarco = isMarco && medicosMarco.length > 1;
+      
+      const isAgendaUnificada = isAgendaUnificadaOdonto || isAgendaUnificadaRuben || isAgendaUnificadaMarco;
       
       let horariosDoMedico = [];
       let medicosParaVerificar = [medicoSelecionado];
