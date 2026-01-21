@@ -264,7 +264,7 @@ export default function FormularioAgendamentoOnline({ onSucesso }) {
           'Authorization': `Bearer ${apiKey}`
         },
         body: JSON.stringify({
-          medico_id: medicoSelecionado.id,
+          medico_id: especialidadeSelecionada.id,
           data_agendamento: dataSelecionada,
           horario: horarioSelecionado,
           paciente_novo: {
