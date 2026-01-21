@@ -98,10 +98,10 @@ export default function Pacientes() {
     setLoading(true);
     setErro(null);
     try {
-      // Carrega os 50 primeiros para garantir que a lista não fique vazia
-      const dados = await safeApiCall(() => Paciente.list('-created_date', 50));
-      if (Array.isArray(dados)) {
-        setPacientes(dados);
+      // Usar mesma função backend para garantir consistência com dashboard
+      const response = await base44.functions.invoke('searchPatients', { termo: '', limit: 50 });
+      if (response?.data && Array.isArray(response.data)) {
+        setPacientes(response.data);
       }
     } catch (err) {
       console.error("Erro ao carregar recentes:", err);
