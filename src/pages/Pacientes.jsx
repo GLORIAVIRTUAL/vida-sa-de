@@ -57,16 +57,17 @@ export default function Pacientes() {
     }
   }, []);
 
-  // Carregar pacientes recentes ao abrir a página
+  // Carregar pacientes recentes ao abrir a página (usando mesma função backend para consistência)
   React.useEffect(() => {
     const carregarRecentes = async () => {
       setLoading(true);
       try {
-        console.log("🔄 Carregando pacientes recentes...");
-        const dados = await safeApiCall(() => Paciente.list('-created_date', 50));
-        if (Array.isArray(dados)) {
-          setPacientes(dados);
-          console.log(`✅ ${dados.length} pacientes recentes carregados`);
+        console.log("🔄 Carregando pacientes recentes via backend...");
+        // Usar mesma função backend para garantir consistência com dashboard
+        const response = await base44.functions.invoke('searchPatients', { termo: '', limit: 50 });
+        if (response?.data && Array.isArray(response.data)) {
+          setPacientes(response.data);
+          console.log(`✅ ${response.data.length} pacientes recentes carregados`);
         }
       } catch (err) {
         console.error("❌ Erro ao carregar recentes:", err);
