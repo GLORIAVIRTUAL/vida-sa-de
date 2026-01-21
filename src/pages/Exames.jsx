@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from "react";
 import { Exame } from "@/entities/all";
 import { Button } from "@/components/ui/button";
-import { Plus, Edit, Trash2 } from "lucide-react"; // Added Trash2
+import { Plus, Edit, Trash2, Search } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -19,6 +18,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
 
 import FormularioExame from "../components/exames/FormularioExame";
 import ConfirmacaoExclusao from "../components/shared/ConfirmacaoExclusao"; // New import
@@ -33,7 +33,8 @@ export default function Exames() {
   const [loading, setLoading] = useState(true);
   const [mostrarForm, setMostrarForm] = useState(false);
   const [selecionado, setSelecionado] = useState(null);
-  const [exameParaExcluir, setExameParaExcluir] = useState(null); // New state for deletion
+  const [exameParaExcluir, setExameParaExcluir] = useState(null);
+  const [busca, setBusca] = useState('');
 
   useEffect(() => {
     carregarDados();
@@ -97,7 +98,20 @@ export default function Exames() {
         </div>
 
         <Card>
-          <CardHeader><CardTitle>Lista de Exames</CardTitle></CardHeader>
+          <CardHeader>
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <CardTitle>Lista de Exames</CardTitle>
+              <div className="relative w-full md:w-80">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input
+                  placeholder="Buscar por nome..."
+                  value={busca}
+                  onChange={(e) => setBusca(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+          </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
@@ -123,7 +137,9 @@ export default function Exames() {
                     </TableRow>
                   ))
                 ) : (
-                  exames.map((item) => (
+                  exames
+                    .filter(item => item.nome?.toLowerCase().includes(busca.toLowerCase()))
+                    .map((item) => (
                     <TableRow key={item.id}>
                       <TableCell className="font-medium">{item.nome}</TableCell>
                       <TableCell>{item.tipo}</TableCell>
