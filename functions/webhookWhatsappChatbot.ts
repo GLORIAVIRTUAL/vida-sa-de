@@ -148,15 +148,24 @@ Deno.serve(async (req) => {
       if (contatos.length > 0) {
         const contato = contatos[0];
         
-        // Reativar conversa se estava finalizada - LIMPAR HISTÓRICO
+        // Reativar conversa se estava finalizada - LIMPAR HISTÓRICO COMPLETAMENTE
         if (contato.conversa_finalizada) {
-          console.log('🔄 Reativando conversa finalizada - limpando histórico');
-          // Limpar histórico para começar do zero
+          console.log('🔄 Reativando conversa finalizada - limpando histórico COMPLETO');
+          // Limpar histórico COMPLETAMENTE para começar do zero (nova conversa)
           await base44.asServiceRole.entities.Contato.update(contato.id, {
             conversa_finalizada: false,
-            historico_mensagens: [],
-            mensagens_pendentes: []
+            historico_mensagens: [], // Limpa todo o histórico
+            mensagens_pendentes: [],
+            ultima_mensagem: null,
+            ultima_resposta: null,
+            ultimo_timestamp_pendente: null
           });
+          // Recarregar contato após limpeza para garantir que está atualizado
+          const contatoLimpo = (await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber }))[0];
+          if (contatoLimpo) {
+            contato.historico_mensagens = [];
+            contato.mensagens_pendentes = [];
+          }
         }
         
         // Verificar se há mensagem pendente (não processada)
