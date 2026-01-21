@@ -236,12 +236,16 @@ Deno.serve(async (req) => {
 
                 console.log(`  ✅ Médico atende ${diasSemanaMap[diaSemana]} com recorrência válida:`, horariosDoDia);
 
-                // Buscar agendamentos existentes para este dia
-                const agendamentosExistentes = await base44.asServiceRole.entities.Agendamento.filter({
-                    medico_id: cleanMedicoId,
-                    data_agendamento: dataFormatada,
-                    status: { $ne: 'Cancelado' }
-                });
+                // Buscar agendamentos existentes para este dia (de TODOS os médicos relacionados para agenda unificada)
+                let agendamentosExistentes = [];
+                for (const idRelacionado of idsRelacionados) {
+                    const agendamentos = await base44.asServiceRole.entities.Agendamento.filter({
+                        medico_id: idRelacionado,
+                        data_agendamento: dataFormatada,
+                        status: { $ne: 'Cancelado' }
+                    });
+                    agendamentosExistentes = agendamentosExistentes.concat(agendamentos);
+                }
 
                 console.log(`  📋 Agendamentos existentes: ${agendamentosExistentes.length}`);
 
