@@ -317,6 +317,12 @@ Deno.serve(async (req) => {
         const contatoCriado = (await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber }))[0];
         const todasMensagens = contatoCriado?.mensagens_pendentes || [];
         
+        // CORREÇÃO: Verificar também se já foi processado
+        if (contatoCriado?.mensagens_pendentes?.length === 0) {
+          console.log('⏭️ Mensagens já foram processadas por outra chamada. Saindo...');
+          return Response.json({ success: true, status: 'ja_processado' });
+        }
+        
         if (contatoCriado?.ultimo_timestamp_pendente !== agora && todasMensagens.length > 1) {
           console.log('⏭️ Outra mensagem mais recente vai processar. Saindo...');
           return Response.json({ success: true, status: 'delegado' });
