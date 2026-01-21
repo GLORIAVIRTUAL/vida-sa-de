@@ -31,6 +31,12 @@ export default function Performance() {
     usuarioId: 'todos'
   });
 
+  // Data mínima para exibir dados
+  const DATA_MINIMA = '2026-01-21';
+  
+  // Usuários a serem ocultados do relatório
+  const USUARIOS_OCULTOS = ['Sistema (API)', 'Thiago'];
+
   useEffect(() => {
     carregarDados();
   }, []);
@@ -77,15 +83,17 @@ export default function Performance() {
     const ultimoDia = new Date(parseInt(mesAno[0]), parseInt(mesAno[1]), 0).getDate();
     const mesFim = filtros.mes + '-' + ultimoDia;
 
-    // Filtrar OS do mês
+    // Filtrar OS do mês (e a partir da data mínima)
     const osFiltradas = ordensServico.filter(os => {
       if (!os.data_execucao) return false;
+      if (os.data_execucao < DATA_MINIMA) return false;
       return os.data_execucao >= mesInicio && os.data_execucao <= mesFim;
     });
 
-    // Filtrar Agendamentos do mês
+    // Filtrar Agendamentos do mês (e a partir da data mínima)
     const agFiltrados = agendamentos.filter(ag => {
       if (!ag.data_agendamento) return false;
+      if (ag.data_agendamento < DATA_MINIMA) return false;
       return ag.data_agendamento >= mesInicio && ag.data_agendamento <= mesFim;
     });
 
@@ -186,8 +194,10 @@ export default function Performance() {
       porUsuario[nome].valorVendido += (os.valor_final || 0);
     });
 
-    // Converter para array e ordenar por valor vendido
-    return Object.values(porUsuario).sort((a, b) => b.valorVendido - a.valorVendido);
+    // Converter para array, filtrar usuários ocultos e ordenar por valor vendido
+    return Object.values(porUsuario)
+      .filter(u => !USUARIOS_OCULTOS.includes(u.nome))
+      .sort((a, b) => b.valorVendido - a.valorVendido);
   }, [dadosFiltrados, usuarios]);
 
   // Estatísticas gerais
