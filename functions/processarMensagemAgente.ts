@@ -929,7 +929,7 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
             'clinico geral': ['clinico geral', 'clinico', 'general', 'medico geral', 'consulta geral', 'check-up', 'checkup', 'clinica geral'],
             'nutri': ['nutricao', 'nutricionista', 'nutri', 'dieta', 'emagrecer', 'alimentacao', 'peso'],
             'fisio': ['fisioterapia', 'fisioterapeuta', 'fisio', 'rpg', 'reabilitacao', 'dor nas costas', 'alongamento', 'fisioterapia ortopedica', 'fisioterapia neurologica', 'fisioterapia respiratoria'],
-            'psicologia': ['psicologia', 'psicologo', 'psicologa', 'psico', 'terapia', 'terapeuta', 'ansiedade', 'depressao'],
+            'psicologia': ['psicologia', 'psicologo', 'psicologa', 'psico', 'terapeuta', 'ansiedade', 'depressao'],
             'geriatria': ['geriatria', 'geriatra', 'idoso', 'idosos', 'terceira idade', 'envelhecimento'],
             'ortopedia': ['ortopedia', 'ortopedista', 'orto', 'osso', 'ossos', 'fratura', 'coluna', 'joelho', 'ombro', 'articulacao', 'traumatologia', 'traumatologista', 'trauma'],
             'ecocardiograma': ['ecocardiograma', 'eco', 'ecografia', 'ultrassom cardiaco'],
