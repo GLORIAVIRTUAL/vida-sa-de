@@ -818,6 +818,16 @@ export default function Performance() {
                           : '0%'
                         }
                       </TableCell>
+                      <TableCell className="text-center">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => gerarRelatorioUsuario(usuario)}
+                          title={`Baixar relatório de ${usuario.nome}`}
+                        >
+                          <FileDown className="w-4 h-4" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
