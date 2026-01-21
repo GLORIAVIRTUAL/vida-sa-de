@@ -955,7 +955,17 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
   }, [checkSelectedHorarioAvailability]);
   
   // Lógica de cálculo de preços mais precisa e com debug melhorado
+  // IMPORTANTE: Não recalcular se o valor já foi definido manualmente (ex: seleção de especialidade do Dr. Ruben)
+  const [skipNextPriceRecalc, setSkipNextPriceRecalc] = useState(false);
+  
   useEffect(() => {
+    // Se o valor já foi setado manualmente, pular este recálculo
+    if (skipNextPriceRecalc) {
+      console.log('💰 ===== PULANDO RECÁLCULO (valor já definido manualmente) =====');
+      setSkipNextPriceRecalc(false);
+      return;
+    }
+    
     console.log('💰 ===== RECALCULANDO PREÇOS - NOVA LÓGICA DE CONSULTA =====');
     console.log('📝 Dados atuais:', {
       tipo_servico: formData.tipo_servico,
