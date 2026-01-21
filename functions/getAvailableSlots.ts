@@ -79,6 +79,15 @@ Deno.serve(async (req) => {
                 });
             }
 
+            // IMPORTANTE: Buscar TODOS os registros de médicos com o mesmo nome (para agendas unificadas)
+            const todosOsMedicos = await base44.asServiceRole.entities.Medico.filter({});
+            const medicoNomeNormalizado = medico.nome.toUpperCase().trim();
+            const medicosRelacionados = todosOsMedicos.filter(m => 
+                m.nome.toUpperCase().trim() === medicoNomeNormalizado
+            );
+            const idsRelacionados = medicosRelacionados.map(m => m.id);
+            console.log(`👥 Médicos relacionados (mesma agenda): ${idsRelacionados.length}`);
+
             // Validar formato da data
             const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
             if (!dateRegex.test(cleanData)) {
