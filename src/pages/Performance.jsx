@@ -92,6 +92,29 @@ export default function Performance() {
     return { osFiltradas, agFiltrados };
   }, [ordensServico, agendamentos, filtros.mes]);
 
+  // Função auxiliar para normalizar nome do usuário
+  const normalizarUsuario = (identificador) => {
+    if (!identificador) return { nome: 'Não identificado', tipoOrigem: 'usuario' };
+    
+    // Se foi agendado pelo chatbot (Glória)
+    if (identificador === 'Glória' || identificador === 'Gloria') {
+      return { nome: 'Glória (IA)', tipoOrigem: 'chatbot' };
+    }
+    
+    // Usuário de serviço do sistema (API/webhook)
+    if (identificador.includes('service+') && identificador.includes('@no-reply.base44.com')) {
+      return { nome: 'Sistema (API)', tipoOrigem: 'sistema' };
+    }
+    
+    // Tentar encontrar o nome do usuário pelo email
+    const usuario = usuarios.find(u => u.email === identificador || u.id === identificador);
+    if (usuario) {
+      return { nome: usuario.display_name || usuario.full_name || usuario.email, tipoOrigem: 'usuario' };
+    }
+    
+    return { nome: identificador, tipoOrigem: 'usuario' };
+  };
+
   // Calcular estatísticas por usuário
   const estatisticasPorUsuario = useMemo(() => {
     const { osFiltradas, agFiltrados } = dadosFiltrados;
@@ -128,13 +151,11 @@ export default function Performance() {
           totalProcedimentos: 0,
           totalExames: 0,
           totalRetornos: 0,
-          valorVendido: 0,
-          agendamentosIds: []
+          valorVendido: 0
         };
       }
 
       porUsuario[agendadoPor].totalAgendamentos++;
-      porUsuario[agendadoPor].agendamentosIds.push(ag.id);
 
       // Contar por tipo de serviço
       const tipo = ag.tipo_servico;
@@ -144,17 +165,25 @@ export default function Performance() {
       else if (tipo === 'Retorno') porUsuario[agendadoPor].totalRetornos++;
     });
 
-    // Associar valor das OS aos agendamentos
+    // Associar valor das OS por quem GEROU a OS (campo gerado_por)
     osFiltradas.forEach(os => {
-      if (os.agendamento_id) {
-        // Encontrar quem fez esse agendamento
-        for (const usuario of Object.values(porUsuario)) {
-          if (usuario.agendamentosIds.includes(os.agendamento_id)) {
-            usuario.valorVendido += (os.valor_final || 0);
-            break;
-          }
-        }
+      const geradoPor = os.gerado_por || os.created_by || 'Não identificado';
+      const { nome, tipoOrigem } = normalizarUsuario(geradoPor);
+      
+      if (!porUsuario[nome]) {
+        porUsuario[nome] = {
+          nome,
+          tipoOrigem,
+          totalAgendamentos: 0,
+          totalConsultas: 0,
+          totalProcedimentos: 0,
+          totalExames: 0,
+          totalRetornos: 0,
+          valorVendido: 0
+        };
       }
+      
+      porUsuario[nome].valorVendido += (os.valor_final || 0);
     });
 
     // Converter para array e ordenar por valor vendido
