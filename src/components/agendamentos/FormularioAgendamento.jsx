@@ -2412,18 +2412,31 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                                          // Encontrar o médico correspondente à especialidade
                                          const medicoEspecialidade = medicosRuben.find(m => m.especialidade === value);
                                          if (medicoEspecialidade) {
-                                           // IMPORTANTE: Atualizar o medico_id PRIMEIRO para buscar o preço correto
-                                           handleChange('medico_id', medicoEspecialidade.id);
+                                           console.log(`🩺 Alterando para especialidade: ${value}, médico ID: ${medicoEspecialidade.id}`);
 
                                            // Salvar a especialidade selecionada nas observações
                                            const obsAtual = formData.observacoes || '';
                                            const obsLimpa = obsAtual.replace(/Especialidade:.*(\n|$)/g, '').trim();
                                            const novaObs = obsLimpa ? `${obsLimpa}\nEspecialidade: ${value}` : `Especialidade: ${value}`;
 
-                                           // Usar setTimeout para garantir que o medico_id seja atualizado antes
-                                           setTimeout(() => {
-                                             handleChange('observacoes', novaObs);
-                                           }, 50);
+                                           // Calcular o preço correto IMEDIATAMENTE com o novo médico
+                                           const novoPreco = buscarPrecoConsulta(medicoEspecialidade.id, formData.categoria_preco_id);
+                                           console.log(`💰 Novo preço calculado para ${value}: R$ ${novoPreco}`);
+
+                                           // Atualizar TODOS os campos de uma vez para garantir consistência
+                                           setFormData(prev => {
+                                             const desconto = parseFloat(prev.desconto_manual) || 0;
+                                             const acrescimo = parseFloat(prev.acrescimo_manual) || 0;
+                                             const valorFinal = Math.max(0, novoPreco - desconto + acrescimo);
+
+                                             return {
+                                               ...prev,
+                                               medico_id: medicoEspecialidade.id,
+                                               observacoes: novaObs,
+                                               valor_total: novoPreco.toFixed(2).toString(),
+                                               valor_final: valorFinal.toFixed(2).toString()
+                                             };
+                                           });
                                          }
                                        }}
                                      >
