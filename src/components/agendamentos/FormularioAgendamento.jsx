@@ -2285,10 +2285,14 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                                      <Select 
                                        name="medico_id" 
                                        value={(() => {
-                                         // Para Dr. Ruben com múltiplas especialidades, mostrar sempre o primeiro ID no select principal
+                                         // Para médicos com múltiplas especialidades, mostrar sempre o primeiro ID no select principal
                                          const medicosRuben = medicos.filter(m => normalizeString(m.nome).includes('RUBEN'));
                                          if (medicosRuben.length > 1 && medicosRuben.some(m => m.id === formData.medico_id)) {
                                            return medicosRuben[0].id; // Sempre mostrar o primeiro para o select principal
+                                         }
+                                         const medicosMarco = medicos.filter(m => normalizeString(m.nome).includes('MARCO ANTONIO DELAZERI') || normalizeString(m.nome).includes('MARCO ANTÔNIO DELAZERI'));
+                                         if (medicosMarco.length > 1 && medicosMarco.some(m => m.id === formData.medico_id)) {
+                                           return medicosMarco[0].id; // Sempre mostrar o primeiro para o select principal
                                          }
                                          return formData.medico_id;
                                        })()} 
