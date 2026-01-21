@@ -2502,7 +2502,10 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                                            const acrescimo = parseFloat(formData.acrescimo_manual) || 0;
                                            const valorFinal = Math.max(0, novoPreco - desconto + acrescimo);
 
-                                           // CRÍTICO: Usar setFormData direto com todos os campos necessários
+                                           // CRÍTICO: Marcar para pular o próximo recálculo automático
+                                           setSkipNextPriceRecalc(true);
+
+                                           // Usar setFormData direto com todos os campos necessários
                                            setFormData(prev => ({
                                              ...prev,
                                              medico_id: medicoEspecialidade.id,
