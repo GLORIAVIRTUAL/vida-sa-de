@@ -784,6 +784,7 @@ export default function Performance() {
                     <TableHead className="text-center">Retornos</TableHead>
                     <TableHead className="text-right">Valor Vendido</TableHead>
                     <TableHead className="text-right">% do Total</TableHead>
+                    <TableHead className="text-center w-20">Relatório</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
