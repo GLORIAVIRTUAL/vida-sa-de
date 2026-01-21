@@ -96,11 +96,11 @@ Deno.serve(async (req) => {
     let historicoConversa = '';
     try {
       const contatos = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
-      if (contatos.length > 0 && contatos[0].historico_mensagens) {
-        // Se a conversa foi finalizada, NÃO usar o histórico antigo
-        if (conversaFinalizada) {
-          console.log('🗑️ Ignorando histórico antigo - conversa finalizada');
-          historicoConversa = '(primeira mensagem)';
+      if (contatos.length > 0) {
+        // Se a conversa foi finalizada ou histórico está vazio, tratar como primeira mensagem
+        if (conversaFinalizada || !contatos[0].historico_mensagens || contatos[0].historico_mensagens.length === 0) {
+          console.log('🗑️ Histórico vazio ou conversa finalizada - tratando como PRIMEIRA MENSAGEM');
+          historicoConversa = '';
         } else {
           const ultimas = contatos[0].historico_mensagens.slice(-10);
           historicoConversa = ultimas.map(m => `${m.role === 'user' ? 'CLIENTE' : 'ASSISTENTE'}: ${m.content}`).join('\n');
