@@ -351,28 +351,54 @@ export default function FormularioAgendamentoOnline({ onSucesso }) {
                       </div>
                     </div>
                     <Button
-                      className="mt-4 bg-blue-600 hover:bg-blue-700 text-white group-hover:bg-blue-700"
-                      onClick={() => handleSelectMedico(medico.id)}
-                      disabled={loadingDatas && medicoSelecionado?.id === medico.id}
+                    className="mt-4 bg-blue-600 hover:bg-blue-700 text-white group-hover:bg-blue-700"
+                    onClick={() => handleSelectMedico(medico.id)}
+                    disabled={loadingDatas && medicoSelecionado?.id === medico.id}
                     >
-                      {loadingDatas && medicoSelecionado?.id === medico.id ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Carregando...
-                        </>
-                      ) : (
-                        <>
-                          <Calendar className="w-4 h-4 mr-2" />
-                          Ver Horários
-                        </>
-                      )}
+                    {loadingDatas && medicoSelecionado?.id === medico.id ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Carregando...
+                      </>
+                    ) : (
+                      <>
+                        <Calendar className="w-4 h-4 mr-2" />
+                        Ver Horários
+                      </>
+                    )}
                     </Button>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+                    </Card>
+                    ))}
+                    </div>
+                    )}
+
+                    {/* Seleção de Especialidade quando médico tem múltiplas */}
+                    {medicoSelecionado && especialidadesMedico.length > 1 && !especialidadeSelecionada && (
+                    <div className="mt-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                    <h4 className="font-semibold text-yellow-800 mb-3">
+                    Dr(a). {medicoSelecionado.nome} atende em múltiplas especialidades. Escolha uma:
+                    </h4>
+                    <div className="grid md:grid-cols-2 gap-3">
+                    {especialidadesMedico.map((esp) => (
+                    <Button
+                    key={esp.id}
+                    variant="outline"
+                    className="p-4 h-auto flex flex-col items-center text-center border-yellow-300 hover:border-blue-400 hover:bg-blue-50"
+                    onClick={() => handleSelectEspecialidade(esp)}
+                    >
+                    <span className="font-semibold text-blue-700">{esp.especialidade}</span>
+                    {esp.valor_consulta > 0 && (
+                      <span className="text-green-600 text-sm mt-1">
+                        R$ {esp.valor_consulta.toFixed(2).replace('.', ',')}
+                      </span>
+                    )}
+                    </Button>
+                    ))}
+                    </div>
+                    </div>
+                    )}
+                    </div>
+                    )}
 
         {/* Divisor */}
         {etapa >= 2 && <hr className="my-6" />}
