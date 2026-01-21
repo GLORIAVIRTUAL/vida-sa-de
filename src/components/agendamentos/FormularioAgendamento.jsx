@@ -2420,7 +2420,6 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                                            console.log(`🩺 ========================================`);
                                            console.log(`🩺 Alterando para especialidade: ${value}`);
                                            console.log(`🩺 Novo médico ID: ${medicoEspecialidade.id}`);
-                                           console.log(`🩺 Categoria atual: ${formData.categoria_preco_id}`);
 
                                            // Salvar a especialidade selecionada nas observações
                                            const obsAtual = formData.observacoes || '';
@@ -2428,77 +2427,29 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                                            const novaObs = obsLimpa ? `${obsLimpa}\nEspecialidade: ${value}` : `Especialidade: ${value}`;
 
                                            // Buscar o procedimento correto para esta especialidade
-                                           // Normalizar para comparação: "Clínico Geral" -> "CLINICO GERAL"
                                            const especialidadeNormValue = normalizeString(value);
-                                           console.log(`🩺 Especialidade normalizada para busca: "${especialidadeNormValue}"`);
-
-                                           // Listar todos os procedimentos de consulta para debug
-                                           const procedimentosConsulta = procedimentos.filter(p => normalizeString(p.nome).includes('CONSULTA'));
-                                           console.log(`🩺 Procedimentos de consulta disponíveis:`, procedimentosConsulta.map(p => ({
-                                             id: p.id, 
-                                             nome: p.nome, 
-                                             especialidade: p.especialidade,
-                                             especialidadeNorm: normalizeString(p.especialidade)
-                                           })));
 
                                            const procedimentoConsulta = procedimentos.find(p => {
                                              const nomeNorm = normalizeString(p.nome);
                                              const temConsulta = nomeNorm.includes('CONSULTA');
                                              const especialidadeExata = p.especialidade && normalizeString(p.especialidade) === especialidadeNormValue;
-
-                                             if (temConsulta) {
-                                               console.log(`🔍 Comparando: "${normalizeString(p.especialidade)}" === "${especialidadeNormValue}" ? ${especialidadeExata}`);
-                                             }
-
                                              return temConsulta && especialidadeExata;
                                            });
 
                                            let novoPreco = 0;
                                            if (procedimentoConsulta) {
-                                             console.log(`🩺 Procedimento encontrado: ${procedimentoConsulta.nome} (ID: ${procedimentoConsulta.id})`);
-
-                                             // Listar preços disponíveis para esse procedimento
-                                             const precosDisponiveis = tabelaPrecos.filter(tp => tp.procedimento_id === procedimentoConsulta.id);
-                                             console.log(`🩺 Preços disponíveis para este procedimento:`, precosDisponiveis);
-                                             console.log(`🩺 Categoria atual do form: ${formData.categoria_preco_id}`);
-
-                                             // Buscar preço na tabela
                                              const preco = tabelaPrecos.find(tp => 
                                                tp.procedimento_id === procedimentoConsulta.id && 
                                                tp.categoria_id === formData.categoria_preco_id
                                              );
-
                                              if (preco) {
                                                novoPreco = preco.valor;
-                                               console.log(`💰 Preço encontrado na tabela: R$ ${novoPreco}`);
-                                             } else {
-                                               console.log(`❌ Preço NÃO encontrado na tabela para proc ${procedimentoConsulta.id} cat ${formData.categoria_preco_id}`);
-                                             }
-                                           } else {
-                                             console.log(`❌ Procedimento não encontrado para especialidade: ${value}`);
-                                             // Tentar busca alternativa pelo nome
-                                             const procAlternativo = procedimentos.find(p => {
-                                               const nomeNorm = normalizeString(p.nome);
-                                               return nomeNorm.includes('CONSULTA') && nomeNorm.includes(especialidadeNormValue);
-                                             });
-                                             if (procAlternativo) {
-                                               console.log(`🩺 Procedimento alternativo encontrado: ${procAlternativo.nome}`);
-                                               const precoAlt = tabelaPrecos.find(tp => 
-                                                 tp.procedimento_id === procAlternativo.id && 
-                                                 tp.categoria_id === formData.categoria_preco_id
-                                               );
-                                               if (precoAlt) {
-                                                 novoPreco = precoAlt.valor;
-                                                 console.log(`💰 Preço alternativo: R$ ${novoPreco}`);
-                                               }
                                              }
                                            }
 
-                                           console.log(`💰 NOVO PREÇO FINAL: R$ ${novoPreco}`);
+                                           console.log(`💰 NOVO PREÇO: R$ ${novoPreco}`);
                                            console.log(`🩺 ========================================`);
 
-                                           // Atualizar diretamente o state, sem passar pelo handleChange
-                                           // para evitar que o useEffect de recálculo sobrescreva
                                            const desconto = parseFloat(formData.desconto_manual) || 0;
                                            const acrescimo = parseFloat(formData.acrescimo_manual) || 0;
                                            const valorFinal = Math.max(0, novoPreco - desconto + acrescimo);
@@ -2506,7 +2457,7 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                                            // CRÍTICO: Marcar para pular o próximo recálculo automático
                                            setSkipNextPriceRecalc(true);
 
-                                           // Usar setFormData direto com todos os campos necessários
+                                           // Atualizar TUDO de uma vez, mantendo o medico_id do registro correto
                                            setFormData(prev => ({
                                              ...prev,
                                              medico_id: medicoEspecialidade.id,
@@ -2514,9 +2465,9 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                                              valor_total: novoPreco.toFixed(2).toString(),
                                              valor_final: valorFinal.toFixed(2).toString()
                                            }));
-                                           }
-                                           }}
-                                           >
+                                         }
+                                       }}
+                                     >
                                            <SelectTrigger id="especialidade_ruben" className="mt-2 bg-white">
                                            <SelectValue placeholder="Escolha a especialidade..." />
                                            </SelectTrigger>
