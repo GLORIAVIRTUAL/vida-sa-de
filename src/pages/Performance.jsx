@@ -216,26 +216,46 @@ export default function Performance() {
     };
   }, [estatisticasPorUsuario]);
 
-  // Dados para gráfico
-  const dadosGrafico = useMemo(() => {
+  // Função para formatar nome do usuário para exibição nos gráficos
+  const formatarNomeGrafico = (nome) => {
+    if (!nome) return '';
+    // Se for email, pegar apenas a parte antes do @
+    if (nome.includes('@')) {
+      return nome.split('@')[0];
+    }
+    // Se for nome composto, pegar os 2 primeiros nomes
+    const partes = nome.split(' ');
+    if (partes.length > 2) {
+      return partes.slice(0, 2).join(' ');
+    }
+    return nome;
+  };
+
+  // Dados para gráfico de barras - ordenar por agendamentos
+  const dadosGraficoAgendamentos = useMemo(() => {
     return estatisticasPorUsuario
       .filter(u => u.totalAgendamentos > 0)
-      .slice(0, 10)
+      .sort((a, b) => b.totalAgendamentos - a.totalAgendamentos)
+      .slice(0, 8)
       .map(u => ({
-        name: u.nome.split(' ').slice(0, 2).join(' '),
+        name: formatarNomeGrafico(u.nome),
+        nomeCompleto: u.nome,
         agendamentos: u.totalAgendamentos,
-        valor: u.valorVendido
+        consultas: u.totalConsultas,
+        procedimentos: u.totalProcedimentos
       }));
   }, [estatisticasPorUsuario]);
 
-  // Dados para gráfico de pizza
-  const dadosPizza = useMemo(() => {
+  // Dados para gráfico de barras - valor vendido
+  const dadosGraficoValor = useMemo(() => {
     return estatisticasPorUsuario
       .filter(u => u.valorVendido > 0)
+      .sort((a, b) => b.valorVendido - a.valorVendido)
       .slice(0, 8)
       .map(u => ({
-        name: u.nome.split(' ').slice(0, 2).join(' '),
-        value: u.valorVendido
+        name: formatarNomeGrafico(u.nome),
+        nomeCompleto: u.nome,
+        valor: u.valorVendido
       }));
   }, [estatisticasPorUsuario]);
 
