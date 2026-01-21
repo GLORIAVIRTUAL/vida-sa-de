@@ -334,6 +334,22 @@ export default function VisualizacaoDiaria({ agendamentos, medicos, pacientes, o
                               🦷 Odontologia
                             </p>
                           )}
+                          {/* Mostrar especialidade se for Dr. Ruben com múltiplas especialidades */}
+                          {(() => {
+                            const medico = medicos.find(m => m.id === agendamento.medico_id);
+                            if (medico && normalizeString(medico.nome).includes('RUBEN')) {
+                              // Verificar se tem especialidade nas observações
+                              const especialidadeObs = agendamento.observacoes?.match(/Especialidade:\s*(.+?)(\n|$)/)?.[1]?.trim();
+                              if (especialidadeObs) {
+                                return (
+                                  <p className="text-xs text-green-600">
+                                    🩺 {especialidadeObs}
+                                  </p>
+                                );
+                              }
+                            }
+                            return null;
+                          })()}
                         </>
                 }
                       {/* Mostrar observações, excluindo a linha do dentista */}
