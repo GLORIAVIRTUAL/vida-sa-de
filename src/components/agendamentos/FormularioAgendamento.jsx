@@ -2406,16 +2406,47 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                                          // Encontrar o médico correspondente à especialidade
                                          const medicoEspecialidade = medicosRuben.find(m => m.especialidade === value);
                                          if (medicoEspecialidade) {
-                                           console.log(`🩺 Alterando para especialidade: ${value}, médico ID: ${medicoEspecialidade.id}`);
+                                           console.log(`🩺 ========================================`);
+                                           console.log(`🩺 Alterando para especialidade: ${value}`);
+                                           console.log(`🩺 Novo médico ID: ${medicoEspecialidade.id}`);
+                                           console.log(`🩺 Categoria atual: ${formData.categoria_preco_id}`);
 
                                            // Salvar a especialidade selecionada nas observações
                                            const obsAtual = formData.observacoes || '';
                                            const obsLimpa = obsAtual.replace(/Especialidade:.*(\n|$)/g, '').trim();
                                            const novaObs = obsLimpa ? `${obsLimpa}\nEspecialidade: ${value}` : `Especialidade: ${value}`;
 
-                                           // Calcular o preço correto IMEDIATAMENTE com o novo médico
-                                           const novoPreco = buscarPrecoConsulta(medicoEspecialidade.id, formData.categoria_preco_id);
-                                           console.log(`💰 Novo preço calculado para ${value}: R$ ${novoPreco}`);
+                                           // Buscar o procedimento correto para esta especialidade
+                                           const especialidadeNormValue = normalizeString(value);
+                                           const procedimentoConsulta = procedimentos.find(p => {
+                                             const nomeNorm = normalizeString(p.nome);
+                                             const temConsulta = nomeNorm.includes('CONSULTA');
+                                             const especialidadeExata = p.especialidade && normalizeString(p.especialidade) === especialidadeNormValue;
+                                             return temConsulta && especialidadeExata;
+                                           });
+
+                                           let novoPreco = 0;
+                                           if (procedimentoConsulta) {
+                                             console.log(`🩺 Procedimento encontrado: ${procedimentoConsulta.nome} (ID: ${procedimentoConsulta.id})`);
+
+                                             // Buscar preço na tabela
+                                             const preco = tabelaPrecos.find(tp => 
+                                               tp.procedimento_id === procedimentoConsulta.id && 
+                                               tp.categoria_id === formData.categoria_preco_id
+                                             );
+
+                                             if (preco) {
+                                               novoPreco = preco.valor;
+                                               console.log(`💰 Preço encontrado na tabela: R$ ${novoPreco}`);
+                                             } else {
+                                               console.log(`❌ Preço NÃO encontrado na tabela para proc ${procedimentoConsulta.id} cat ${formData.categoria_preco_id}`);
+                                             }
+                                           } else {
+                                             console.log(`❌ Procedimento não encontrado para especialidade: ${value}`);
+                                           }
+
+                                           console.log(`💰 NOVO PREÇO FINAL: R$ ${novoPreco}`);
+                                           console.log(`🩺 ========================================`);
 
                                            // Atualizar TODOS os campos de uma vez para garantir consistência
                                            setFormData(prev => {
