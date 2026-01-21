@@ -120,6 +120,7 @@ function MainLayout({ children, currentPageName, currentUser, onUserUpdate }) {
   { name: "Venda Cartão", page: "VendaCartao", icon: CreditCard, roles: ["admin", "user"] },
   { name: "Financeiro", page: "Financeiro", icon: DollarSign, roles: ["admin"] },
   { name: "Relatórios", page: "Relatorios", icon: FileText, roles: ["admin"] },
+  { name: "Performance", page: "Performance", icon: Activity, roles: ["admin"] },
   { name: "Usuários", page: "Usuarios", icon: Users, roles: ["admin"] }];
 
 
