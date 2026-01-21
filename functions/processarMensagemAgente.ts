@@ -806,11 +806,45 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
       (jaEmFluxoAgendamento && (/médico|doutor|dr\.|especialidade|horário|data/i.test(historicoConversa) || clienteEscolhendoHorario)));
     
     if (querAgendar && !temEspecialidadeOuMedico && !jaEmFluxoAgendamento) {
-      // Cliente quer agendar mas NÃO especificou especialidade - NÃO mostrar médicos
-      console.log('📅 Cliente quer agendar mas não especificou especialidade - aguardando escolha');
-      infoDisponibilidade = `\n\n⚠️ IMPORTANTE: O cliente quer agendar mas NÃO especificou qual especialidade ou médico.
-NÃO mostre lista de médicos ainda!
-PERGUNTE ao cliente: "Para qual especialidade você gostaria de agendar? Temos várias opções como Clínico Geral, Cardiologia, Psicologia, Nutrição, entre outras. 😊"`;
+      // Cliente quer agendar mas NÃO especificou especialidade - perguntar qual
+      console.log('📅 Cliente quer agendar mas não especificou especialidade - PERGUNTAR qual especialidade');
+      
+      // Retornar resposta direta perguntando a especialidade - NÃO deixar o LLM inventar
+      const respostaPerguntaEspecialidade = 'Para qual especialidade você gostaria de agendar uma consulta? Temos Clínico Geral, Cardiologia, Psicologia, Nutrição, entre outras. 😊';
+      
+      // Salvar no histórico
+      try {
+        const contatosHist = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
+        const timestamp = new Date().toISOString();
+        
+        if (contatosHist.length > 0) {
+          const contato = contatosHist[0];
+          const historicoAtual = contato.historico_mensagens || [];
+          historicoAtual.push(
+            { role: 'user', content: messageText, timestamp, messageId },
+            { role: 'assistant', content: respostaPerguntaEspecialidade, timestamp }
+          );
+          
+          await base44.asServiceRole.entities.Contato.update(contato.id, {
+            ultima_mensagem: messageText,
+            ultima_resposta: respostaPerguntaEspecialidade,
+            historico_mensagens: historicoAtual.slice(-50),
+            ultima_interacao: timestamp,
+            total_mensagens: (contato.total_mensagens || 0) + 2,
+            conversa_finalizada: false,
+            interesses: [...(contato.interesses || []), 'Agendamento'].filter((v, i, a) => a.indexOf(v) === i)
+          });
+        }
+      } catch (e) {
+        console.log('⚠️ Erro ao salvar histórico:', e.message);
+      }
+      
+      // Retornar resposta direta - NÃO continuar para o LLM
+      return Response.json({ 
+        success: true, 
+        resposta: respostaPerguntaEspecialidade,
+        fluxo: 'aguardando_especialidade'
+      });
     }
     
     if (deveBuscarDisponibilidades) {
