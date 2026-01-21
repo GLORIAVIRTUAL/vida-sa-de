@@ -1679,13 +1679,23 @@ Confirme o recebimento e pergunte como pode ajudar.`;
       '❌ Disponibilidades ainda NÃO foram mostradas (ou foram há muito tempo). Se cliente quer agendar, MOSTRE as opções.'}
     ${dadosFaltantes.length > 0 ? `📋 DADOS QUE FALTAM: ${dadosFaltantes.join(', ')}` : ''}
 
-    ⚠️ REGRAS CRÍTICAS DE SAUDAÇÃO:
-    1. PRIMEIRA MENSAGEM DA CONVERSA (${ehPrimeiraMensagem ? 'SIM - É PRIMEIRA MENSAGEM' : 'NÃO - JÁ HÁ HISTÓRICO'}):
-       - Se for primeira mensagem (${ehPrimeiraMensagem}): SEMPRE inicie COM a saudação "${saudacaoHorario}, [NOME]! 👋 Eu sou a Glória, atendente do Centro Vida Saúde. Como posso te ajudar hoje? 😀"
-       - Se NÃO for primeira mensagem (${!ehPrimeiraMensagem}): NÃO cumprimente, NÃO diga bom-dia/boa-tarde/boa-noite. Vá DIRETO ao ponto.
-
-    2. NUNCA repita saudação no meio da conversa, mesmo que mude de assunto.
-    3. ⚠️ CRÍTICO: A saudação NUNCA deve aparecer junto com outras respostas - ela É a resposta da primeira mensagem.
+    ⚠️ REGRAS CRÍTICAS DE SAUDAÇÃO - MUITO IMPORTANTE:
+    
+    🚨 ESTADO ATUAL: ${ehPrimeiraMensagem ? '🆕 PRIMEIRA MENSAGEM - USE A SAUDAÇÃO' : '🔄 CONVERSA EM ANDAMENTO - NÃO USE SAUDAÇÃO!'}
+    
+    ${ehPrimeiraMensagem ? `
+    ✅ COMO É A PRIMEIRA MENSAGEM, você DEVE iniciar com:
+    "${saudacaoHorario}, [NOME]! 👋 Eu sou a Glória, atendente do Centro Vida Saúde. Como posso te ajudar hoje? 😀"
+    ` : `
+    ❌ ATENÇÃO: JÁ EXISTE HISTÓRICO DE CONVERSA!
+    - NÃO diga "Bom-dia", "Boa-tarde", "Boa-noite"
+    - NÃO diga "Olá", "Oi", "Como posso ajudar"
+    - NÃO se apresente novamente como Glória
+    - VÁ DIRETO AO PONTO respondendo a pergunta do cliente
+    - Se o cliente perguntou algo, RESPONDA DIRETAMENTE sem cumprimentos
+    `}
+    
+    🚫 PROIBIDO: Repetir saudação/apresentação em qualquer momento após a primeira mensagem.
 
     ⚠️ REGRA CRÍTICA DE ORÇAMENTOS - MUITO IMPORTANTE - LEIA COM ATENÇÃO:
     - ANTES de enviar um orçamento, VERIFIQUE SE JÁ EXISTE UM ORÇAMENTO NO HISTÓRICO DA CONVERSA.
