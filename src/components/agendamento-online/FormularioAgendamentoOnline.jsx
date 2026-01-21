@@ -120,14 +120,35 @@ export default function FormularioAgendamentoOnline({ onSucesso }) {
   const handleSelectMedico = (medicoId) => {
     console.log('🏥 Médico selecionado:', medicoId);
     const medico = medicos.find(m => m.id === medicoId);
-    setMedicoSelecionado(medico);
+    
+    // Verificar se há múltiplas especialidades para o mesmo médico (mesmo CRM ou nome similar)
+    const especialidadesDoMedico = medicos.filter(m => 
+      m.crm === medico.crm || 
+      m.nome.toLowerCase().trim() === medico.nome.toLowerCase().trim()
+    );
+    
+    if (especialidadesDoMedico.length > 1) {
+      // Médico com múltiplas especialidades - mostrar seleção
+      setEspecialidadesMedico(especialidadesDoMedico);
+      setMedicoSelecionado(medico);
+      setEspecialidadeSelecionada(null);
+    } else {
+      // Médico com apenas uma especialidade - selecionar direto
+      setEspecialidadesMedico([]);
+      setMedicoSelecionado(medico);
+      setEspecialidadeSelecionada(medico);
+    }
+    
     setDataSelecionada('');
     setHorarioSelecionado('');
     setDatasDisponiveis([]);
     setHorariosDisponiveis([]);
     setErro('');
-    // No need to setEtapa here, the useEffect below will trigger availability search
-    // and then set the step.
+  };
+  
+  const handleSelectEspecialidade = (especialidade) => {
+    console.log('🎯 Especialidade selecionada:', especialidade.especialidade);
+    setEspecialidadeSelecionada(especialidade);
   };
 
   const buscarDisponibilidade = useCallback(async () => {
