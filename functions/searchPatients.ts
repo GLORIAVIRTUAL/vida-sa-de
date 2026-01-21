@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 // Função para normalizar strings (remove acentos e põe em minúsculas)
 const normalize = (str) => {
@@ -23,20 +23,31 @@ Deno.serve(async (req) => {
         try { body = await req.json(); } catch (e) {}
         const { termo } = body;
 
-        // 2. Usar Service Role para pegar TODOS os pacientes (bypass RLS)
+        // 2. Usar Service Role para pegar pacientes (bypass RLS)
         const adminClient = base44.asServiceRole;
 
-        // 3. Buscar TODOS os pacientes (limite de segurança de 2000)
-        // Trazendo tudo para filtrar em memória (mais confiável para busca textual complexa)
-        const allPatients = await adminClient.entities.Paciente.list('-created_date', 2000);
-
-        if (!allPatients || allPatients.length === 0) {
-            return Response.json([]);
+        // 3. Se não tem termo, retorna os 50 mais recentes
+        if (!termo || String(termo).trim().length === 0) {
+            const recentes = await adminClient.entities.Paciente.list('-created_date', 50);
+            return Response.json(recentes || []);
         }
 
-        // 4. Se não tem termo, retorna os 50 mais recentes
-        if (!termo || String(termo).trim().length === 0) {
-             return Response.json(allPatients.slice(0, 50));
+        // 4. Buscar TODOS os pacientes em lotes para garantir cobertura total
+        let allPatients = [];
+        let skip = 0;
+        const batchSize = 500;
+        const maxBatches = 20; // Máximo 10000 pacientes
+        
+        for (let i = 0; i < maxBatches; i++) {
+            const batch = await adminClient.entities.Paciente.filter({}, '-created_date', batchSize, skip);
+            if (!batch || batch.length === 0) break;
+            allPatients = allPatients.concat(batch);
+            skip += batchSize;
+            if (batch.length < batchSize) break; // Último lote
+        }
+
+        if (allPatients.length === 0) {
+            return Response.json([]);
         }
 
         // 5. Filtragem em Memória (Robustez total)
