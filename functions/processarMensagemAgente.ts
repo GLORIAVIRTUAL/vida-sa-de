@@ -924,37 +924,36 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
           if (especialidadeDetectada) {
           const especialidadeLower = especialidadeDetectada.toLowerCase();
 
-          // Mapeamento de sinônimos para especialidades (TUDO NORMALIZADO)
+          // Mapeamento de sinônimos para especialidades (TUDO NORMALIZADO - sem acentos)
           const sinonimos = {
-            'clinico': ['clinico geral', 'clinico', 'general', 'medico geral', 'consulta geral', 'check-up', 'checkup'],
-            'nutri': ['nutricao', 'nutricionista', 'dieta', 'emagrecer', 'alimentacao', 'peso'],
-            'fisio': ['fisioterapia', 'fisioterapeuta', 'rpg', 'reabilitacao', 'dor nas costas', 'alongamento'],
-            'psico': ['psicologia', 'psicologo', 'psicologa', 'terapia', 'terapeuta', 'ansiedade', 'depressao'],
-            'geriatra': ['geriatria', 'geriatra', 'idoso', 'idosos', 'terceira idade', 'envelhecimento'],
-            'ortopedista': ['ortopedia', 'ortopedista', 'orto', 'osso', 'ossos', 'fratura', 'coluna', 'joelho', 'ombro', 'articulacao'],
-            'traumato': ['traumatologia', 'traumatologista', 'trauma', 'acidente', 'lesao'],
-            'eco': ['ecografia', 'ultrassom', 'ultrassonografia', 'ultra', 'ecografista'],
-            'psiquiatra': ['psiquiatria', 'psiquiatra', 'remedio controlado', 'medicacao psiquiatrica'],
-            'uro': ['urologia', 'urologista', 'prostata', 'rim', 'rins', 'bexiga', 'urina'],
-            'cardio': ['cardiologia', 'cardiologista', 'coracao', 'arritmia', 'pressao alta', 'hipertensao'],
+            'clinico geral': ['clinico geral', 'clinico', 'general', 'medico geral', 'consulta geral', 'check-up', 'checkup', 'clinica geral'],
+            'nutri': ['nutricao', 'nutricionista', 'nutri', 'dieta', 'emagrecer', 'alimentacao', 'peso'],
+            'fisio': ['fisioterapia', 'fisioterapeuta', 'fisio', 'rpg', 'reabilitacao', 'dor nas costas', 'alongamento', 'fisioterapia ortopedica', 'fisioterapia neurologica', 'fisioterapia respiratoria'],
+            'psicologia': ['psicologia', 'psicologo', 'psicologa', 'psico', 'terapia', 'terapeuta', 'ansiedade', 'depressao'],
+            'geriatria': ['geriatria', 'geriatra', 'idoso', 'idosos', 'terceira idade', 'envelhecimento'],
+            'ortopedia': ['ortopedia', 'ortopedista', 'orto', 'osso', 'ossos', 'fratura', 'coluna', 'joelho', 'ombro', 'articulacao', 'traumatologia', 'traumatologista', 'trauma'],
+            'ecocardiograma': ['ecocardiograma', 'eco', 'ecografia', 'ultrassom cardiaco'],
+            'psiquiatria': ['psiquiatria', 'psiquiatra', 'remedio controlado', 'medicacao psiquiatrica'],
+            'urologia': ['urologia', 'urologista', 'uro', 'prostata', 'rim', 'rins', 'bexiga', 'urina'],
+            'cardiologia': ['cardiologia', 'cardiologista', 'cardio', 'coracao', 'arritmia', 'pressao alta', 'hipertensao'],
             'dermato': ['dermatologia', 'dermatologista', 'pele', 'acne', 'manchas', 'espinhas'],
             'gineco': ['ginecologia', 'ginecologista', 'preventivo', 'papanicolau', 'utero', 'ovario', 'menstruacao'],
             'gastro': ['gastroenterologia', 'gastro', 'gastroenterologista', 'estomago', 'intestino', 'figado', 'digestao', 'azia', 'refluxo'],
-            'neuro': ['neurologia', 'neurologista', 'cerebro', 'cabeca', 'enxaqueca', 'dor de cabeca', 'convulsao'],
+            'neurologia': ['neurologia', 'neurologista', 'neuro', 'cerebro', 'cabeca', 'enxaqueca', 'dor de cabeca', 'convulsao', 'neuropediatra', 'neuropediatria'],
             'oftalmo': ['oftalmologia', 'oftalmologista', 'olho', 'olhos', 'vista', 'visao', 'oculos', 'catarata', 'glaucoma'],
-            'otorrino': ['otorrinolaringologia', 'otorrino', 'otorrinolaringologista', 'ouvido', 'nariz', 'garganta', 'sinusite', 'rinite', 'amigdala'],
+            'otorrinolaringologia': ['otorrinolaringologia', 'otorrino', 'otorrinolaringologista', 'ouvido', 'nariz', 'garganta', 'sinusite', 'rinite', 'amigdala'],
             'pedia': ['pediatria', 'pediatra', 'crianca', 'criancas', 'bebe', 'infantil'],
             'pneumo': ['pneumologia', 'pneumologista', 'pulmao', 'respiracao', 'asma', 'bronquite', 'tosse'],
             'reumato': ['reumatologia', 'reumatologista', 'reumatismo', 'artrite', 'artrose', 'lupus', 'fibromialgia'],
-            'odonto': ['odontologia', 'odontologista', 'dentista', 'dentario', 'dente', 'dentes', 'ortodontia', 'implante', 'canal', 'protese dentaria', 'limpeza dental', 'extracao', 'carie', 'dent'],
+            'odontologia': ['odontologia', 'odontologista', 'dentista', 'dentario', 'dente', 'dentes', 'ortodontia', 'implante', 'canal', 'protese dentaria', 'limpeza dental', 'extracao', 'carie', 'odonto', 'implantodontia'],
             'endo': ['endocrinologia', 'endocrinologista', 'tireoide', 'diabetes', 'hormonio', 'metabolismo'],
             'quiro': ['quiropraxia', 'quiropraxista', 'ajuste', 'coluna vertebral'],
-            'masso': ['massoterapia', 'massoterapeuta', 'massagem', 'relaxamento', 'tensao muscular'],
+            'massoterapia': ['massoterapia', 'massoterapeuta', 'massagem', 'masso', 'relaxamento', 'tensao muscular', 'massagem terapeutica', 'massagem relaxante', 'drenagem linfatica', 'pos-operatorio'],
             'opto': ['optometria', 'optometrista', 'grau', 'lente', 'lentes'],
-            'hidro': ['hidroginastica', 'hidroterapia', 'natacao', 'piscina', 'exercicio na agua'],
-            'pilates': ['pilates'],
-            'psicopeda': ['psicopedagogia', 'psicopedagoga', 'psicopedagogo', 'aprendizagem', 'dificuldade escolar'],
-            'eletro': ['eletrocardiograma', 'ecg', 'eletro']
+            'hidroginastica': ['hidroginastica', 'hidroterapia', 'hidro', 'natacao', 'piscina', 'exercicio na agua', 'aula experimental'],
+            'pilates': ['pilates', 'aparelhos', 'solo'],
+            'psicopedagogia': ['psicopedagogia', 'psicopedagoga', 'psicopedagogo', 'neuropsicopedagogia', 'aprendizagem', 'dificuldade escolar', 'psicanalise', 'hipnoterapia', 'terapia do luto', 'estimulo cognitivo'],
+            'eletrocardiograma': ['eletrocardiograma', 'ecg', 'eletro']
           };
 
           // Encontrar termos relacionados (usando texto normalizado)
