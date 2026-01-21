@@ -1459,8 +1459,10 @@ Retorne JSON.`;
     }
 
     // Determinar se é primeira mensagem da conversa atual (para saudação)
-    // Primeira mensagem = sem histórico OU conversa foi finalizada e recomeçou
-    const ehPrimeiraMensagem = conversaFinalizada || !historicoConversa || historicoConversa.trim() === '' || historicoConversa === '(primeira mensagem)';
+    // Primeira mensagem = sem histórico OU conversa foi finalizada e recomeçou OU histórico vazio
+    const ehPrimeiraMensagem = conversaFinalizada || !historicoConversa || historicoConversa.trim() === '' || historicoConversa.length < 10;
+    
+    console.log('🔍 Verificação primeira mensagem:', { conversaFinalizada, historicoVazio: !historicoConversa || historicoConversa.trim() === '', ehPrimeiraMensagem });
     
     console.log('📊 Estado da conversa:', { conversaFinalizada, ehPrimeiraMensagem, temHistorico: !!historicoConversa && historicoConversa !== '(primeira mensagem)', historicoTamanho: historicoConversa?.length || 0 });
 
