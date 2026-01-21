@@ -323,82 +323,111 @@ export default function FormularioAgendamentoOnline({ onSucesso }) {
               </div>
             ) : (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {medicos.map((medico) => (
-                  <Card 
-                    key={medico.id} 
-                    className="flex flex-col text-center p-4 transition-all hover:shadow-xl hover:border-blue-300 cursor-pointer group"
-                  >
-                    <div className="flex flex-col items-center space-y-3">
-                      {medico.foto_url ? (
-                        <img 
-                          src={medico.foto_url} 
-                          alt={medico.nome}
-                          className="w-20 h-20 rounded-full object-cover border-4 border-gray-200 group-hover:border-blue-300 transition-colors"
-                        />
-                      ) : (
-                        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-2xl font-bold">
-                          {medico.nome.charAt(0)}
-                        </div>
-                      )}
-                      <div>
-                        <h4 className="font-semibold text-lg text-gray-900">Dr(a). {medico.nome}</h4>
-                        <p className="text-blue-600 font-medium">{medico.especialidade}</p>
-                        {medico.valor_consulta > 0 && (
-                          <p className="text-green-600 font-semibold mt-1">
-                            R$ {medico.valor_consulta.toFixed(2).replace('.', ',')}
-                          </p>
+                {(() => {
+                  // Agrupar médicos por CRM ou nome para unificar múltiplas especialidades
+                  const medicosAgrupados = [];
+                  const processados = new Set();
+                  
+                  medicos.forEach(medico => {
+                    const chave = medico.crm || medico.nome.toLowerCase().trim();
+                    if (processados.has(chave)) return;
+                    
+                    const especialidadesDoMedico = medicos.filter(m => 
+                      (m.crm && m.crm === medico.crm) || 
+                      m.nome.toLowerCase().trim() === medico.nome.toLowerCase().trim()
+                    );
+                    
+                    processados.add(chave);
+                    medicosAgrupados.push({
+                      ...medico,
+                      especialidades: especialidadesDoMedico,
+                      temMultiplasEspecialidades: especialidadesDoMedico.length > 1
+                    });
+                  });
+                  
+                  return medicosAgrupados.map((medico) => (
+                    <Card 
+                      key={medico.id} 
+                      className="flex flex-col text-center p-4 transition-all hover:shadow-xl hover:border-blue-300 cursor-pointer group"
+                    >
+                      <div className="flex flex-col items-center space-y-3">
+                        {medico.foto_url ? (
+                          <img 
+                            src={medico.foto_url} 
+                            alt={medico.nome}
+                            className="w-20 h-20 rounded-full object-cover border-4 border-gray-200 group-hover:border-blue-300 transition-colors"
+                          />
+                        ) : (
+                          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-2xl font-bold">
+                            {medico.nome.charAt(0)}
+                          </div>
                         )}
+                        <div>
+                          <h4 className="font-semibold text-lg text-gray-900">Dr(a). {medico.nome}</h4>
+                          {medico.temMultiplasEspecialidades ? (
+                            <p className="text-purple-600 font-medium">(Múltiplas Especialidades)</p>
+                          ) : (
+                            <>
+                              <p className="text-blue-600 font-medium">{medico.especialidade}</p>
+                              {medico.valor_consulta > 0 && (
+                                <p className="text-green-600 font-semibold mt-1">
+                                  R$ {medico.valor_consulta.toFixed(2).replace('.', ',')}
+                                </p>
+                              )}
+                            </>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                    <Button
-                    className="mt-4 bg-blue-600 hover:bg-blue-700 text-white group-hover:bg-blue-700"
-                    onClick={() => handleSelectMedico(medico.id)}
-                    disabled={loadingDatas && medicoSelecionado?.id === medico.id}
-                    >
-                    {loadingDatas && medicoSelecionado?.id === medico.id ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Carregando...
-                      </>
-                    ) : (
-                      <>
-                        <Calendar className="w-4 h-4 mr-2" />
-                        Ver Horários
-                      </>
-                    )}
-                    </Button>
+                      <Button
+                        className="mt-4 bg-blue-600 hover:bg-blue-700 text-white group-hover:bg-blue-700"
+                        onClick={() => handleSelectMedico(medico.id)}
+                        disabled={loadingDatas && medicoSelecionado?.id === medico.id}
+                      >
+                        {loadingDatas && medicoSelecionado?.id === medico.id ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Carregando...
+                          </>
+                        ) : (
+                          <>
+                            <Calendar className="w-4 h-4 mr-2" />
+                            Ver Horários
+                          </>
+                        )}
+                      </Button>
                     </Card>
-                    ))}
-                    </div>
-                    )}
+                  ));
+                })()}
+              </div>
+            )}
 
-                    {/* Seleção de Especialidade quando médico tem múltiplas */}
-                    {medicoSelecionado && especialidadesMedico.length > 1 && !especialidadeSelecionada && (
-                    <div className="mt-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                    <h4 className="font-semibold text-yellow-800 mb-3">
-                    Dr(a). {medicoSelecionado.nome} atende em múltiplas especialidades. Escolha uma:
-                    </h4>
-                    <div className="grid md:grid-cols-2 gap-3">
-                    {especialidadesMedico.map((esp) => (
+            {/* Seleção de Especialidade quando médico tem múltiplas */}
+            {medicoSelecionado && especialidadesMedico.length > 1 && !especialidadeSelecionada && (
+              <div className="mt-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                <h4 className="font-semibold text-yellow-800 mb-3">
+                  Dr(a). {medicoSelecionado.nome} atende em múltiplas especialidades. Escolha uma:
+                </h4>
+                <div className="grid md:grid-cols-2 gap-3">
+                  {especialidadesMedico.map((esp) => (
                     <Button
-                    key={esp.id}
-                    variant="outline"
-                    className="p-4 h-auto flex flex-col items-center text-center border-yellow-300 hover:border-blue-400 hover:bg-blue-50"
-                    onClick={() => handleSelectEspecialidade(esp)}
+                      key={esp.id}
+                      variant="outline"
+                      className="p-4 h-auto flex flex-col items-center text-center border-yellow-300 hover:border-blue-400 hover:bg-blue-50"
+                      onClick={() => handleSelectEspecialidade(esp)}
                     >
-                    <span className="font-semibold text-blue-700">{esp.especialidade}</span>
-                    {esp.valor_consulta > 0 && (
-                      <span className="text-green-600 text-sm mt-1">
-                        R$ {esp.valor_consulta.toFixed(2).replace('.', ',')}
-                      </span>
-                    )}
+                      <span className="font-semibold text-blue-700">{esp.especialidade}</span>
+                      {esp.valor_consulta > 0 && (
+                        <span className="text-green-600 text-sm mt-1">
+                          R$ {esp.valor_consulta.toFixed(2).replace('.', ',')}
+                        </span>
+                      )}
                     </Button>
-                    ))}
-                    </div>
-                    </div>
-                    )}
-                    </div>
-                    )}
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Divisor */}
         {etapa >= 2 && <hr className="my-6" />}
