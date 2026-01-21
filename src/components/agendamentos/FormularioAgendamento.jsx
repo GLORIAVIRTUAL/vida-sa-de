@@ -594,7 +594,7 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
     setLoadingHorarios(true);
     try {
       const medicoSelecionado = medicos.find(m => m.id === medicoId);
-      if (!medicoSelecionado || !medicoSelecionado.horarios_atendimento) {
+      if (!medicoSelecionado) {
         setHorariosDisponiveis([]);
         setLoadingHorarios(false);
         return;
@@ -603,42 +603,81 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
       const dataObj = new Date(data + 'T00:00:00');
       const diaSemana = dataObj.getDay(); // 0=Domingo, 1=Segunda...
       
-      // Verificar se há horários com data específica para este dia
-      const horariosDataEspecifica = medicoSelecionado.horarios_atendimento.filter(h => h.data_especifica === data);
+      // NOVO: Para Odontologia com agenda unificada, combinar horários de TODOS os dentistas
+      const isOdontologia = normalizeString(medicoSelecionado.especialidade) === 'ODONTOLOGIA';
+      const medicosOdontologia = medicos.filter(m => normalizeString(m.especialidade) === 'ODONTOLOGIA');
+      const isAgendaUnificada = isOdontologia && medicosOdontologia.length > 1;
       
-      // Se houver horários com data específica, usar eles; senão, usar horários recorrentes
-      const horariosDoMedico = horariosDataEspecifica.length > 0 
-        ? horariosDataEspecifica 
-        : medicoSelecionado.horarios_atendimento.filter(h => {
-            if (h.dia_semana !== diaSemana || h.data_especifica) return false;
-            
-            // Verificar recorrência
-            const recorrencia = h.recorrencia || 'Toda Semana';
-            if (recorrencia === 'Toda Semana') return true;
-            if (recorrencia === 'Apenas uma vez') return false;
-            
-            const weekOfMonth = getWeekOfMonth(dataObj);
-            switch (recorrencia) {
-              case '1ª e 3ª Semana do Mês': return weekOfMonth === 1 || weekOfMonth === 3;
-              case '2ª e 4ª Semana do Mês': return weekOfMonth === 2 || weekOfMonth === 4;
-              case 'Apenas 1ª Semana do Mês': return weekOfMonth === 1;
-              case 'Apenas 2ª Semana do Mês': return weekOfMonth === 2;
-              case 'Apenas 3ª Semana do Mês': return weekOfMonth === 3;
-              case 'Apenas 4ª Semana do Mês': return weekOfMonth === 4;
-              default: return true;
-            }
-          });
+      let horariosDoMedico = [];
+      let medicosParaVerificar = [medicoSelecionado];
+      
+      if (isAgendaUnificada) {
+        // Para agenda unificada, combinar horários de todos os dentistas
+        console.log('🦷 Agenda unificada de Odontologia - combinando horários de', medicosOdontologia.length, 'dentistas');
+        medicosParaVerificar = medicosOdontologia;
+      }
+      
+      // Coletar todos os horários dos médicos relevantes
+      for (const medico of medicosParaVerificar) {
+        if (!medico.horarios_atendimento) continue;
+        
+        // Verificar se há horários com data específica para este dia
+        const horariosDataEspecifica = medico.horarios_atendimento.filter(h => h.data_especifica === data);
+        
+        // Se houver horários com data específica, usar eles; senão, usar horários recorrentes
+        const horariosDesteMedico = horariosDataEspecifica.length > 0 
+          ? horariosDataEspecifica 
+          : medico.horarios_atendimento.filter(h => {
+              if (h.dia_semana !== diaSemana || h.data_especifica) return false;
+              
+              // Verificar recorrência
+              const recorrencia = h.recorrencia || 'Toda Semana';
+              if (recorrencia === 'Toda Semana') return true;
+              if (recorrencia === 'Apenas uma vez') return false;
+              
+              const weekOfMonth = getWeekOfMonth(dataObj);
+              switch (recorrencia) {
+                case '1ª e 3ª Semana do Mês': return weekOfMonth === 1 || weekOfMonth === 3;
+                case '2ª e 4ª Semana do Mês': return weekOfMonth === 2 || weekOfMonth === 4;
+                case 'Apenas 1ª Semana do Mês': return weekOfMonth === 1;
+                case 'Apenas 2ª Semana do Mês': return weekOfMonth === 2;
+                case 'Apenas 3ª Semana do Mês': return weekOfMonth === 3;
+                case 'Apenas 4ª Semana do Mês': return weekOfMonth === 4;
+                default: return true;
+              }
+            });
+        
+        // Adicionar horários deste médico ao array geral
+        horariosDoMedico = [...horariosDoMedico, ...horariosDesteMedico.map(h => ({
+          ...h,
+          medico_id: medico.id,
+          tempo_consulta: medico.tempo_consulta_minutos || 30
+        }))];
+      }
       
       if (horariosDoMedico.length === 0) {
+        console.log('⚠️ Nenhum horário encontrado para este dia');
         setHorariosDisponiveis([]);
+        setLoadingHorarios(false);
         return;
       }
 
-      const agendamentosExistentes = (todosAgendamentos || []).filter(a => 
-        a.medico_id === medicoId && 
-        a.data_agendamento === data &&
-        a.status !== 'Cancelado'
-      );
+      // Para agenda unificada, verificar agendamentos de TODOS os dentistas
+      let agendamentosExistentes;
+      if (isAgendaUnificada) {
+        const idsDentistas = medicosOdontologia.map(m => m.id);
+        agendamentosExistentes = (todosAgendamentos || []).filter(a => 
+          idsDentistas.includes(a.medico_id) && 
+          a.data_agendamento === data &&
+          a.status !== 'Cancelado'
+        );
+      } else {
+        agendamentosExistentes = (todosAgendamentos || []).filter(a => 
+          a.medico_id === medicoId && 
+          a.data_agendamento === data &&
+          a.status !== 'Cancelado'
+        );
+      }
       
       const tipoAtendimento = medicoSelecionado.tipo_atendimento || "Horários Marcados";
       const horariosLivres = [];
@@ -647,32 +686,30 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
         const horariosOcupados = agendamentosExistentes.map(a => a.horario);
         
         // Se estiver editando, libera o horário atual para poder ser selecionado novamente
-        if (agendamento && agendamento.medico_id === medicoId && agendamento.data_agendamento === data) {
+        if (agendamento && agendamento.data_agendamento === data) {
           const index = horariosOcupados.indexOf(agendamento.horario);
           if (index > -1) {
             horariosOcupados.splice(index, 1);
           }
         }
         
-        const tempoConsulta = medicoSelecionado.tempo_consulta_minutos || 30;
-        for (let minutos = 0; minutos < 1440; minutos += tempoConsulta) { // 24 hours * 60 minutes
+        // Gerar horários baseados nos períodos definidos
+        for (const periodo of horariosDoMedico) {
+          const tempoConsulta = periodo.tempo_consulta || medicoSelecionado.tempo_consulta_minutos || 30;
+          const [inicioH, inicioM] = periodo.horario_inicio.split(':').map(Number);
+          const [fimH, fimM] = periodo.horario_fim.split(':').map(Number);
+          const periodoInicioMinutos = inicioH * 60 + inicioM;
+          const periodoFimMinutos = fimH * 60 + fimM;
+          
+          for (let minutos = periodoInicioMinutos; minutos + tempoConsulta <= periodoFimMinutos; minutos += tempoConsulta) {
             const horas = Math.floor(minutos / 60);
             const mins = minutos % 60;
             const horario = `${String(horas).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
             
-            // Check if this slot falls within any of the doctor's defined periods
-            const isInPeriod = horariosDoMedico.some(periodo => {
-                const [inicioH, inicioM] = periodo.horario_inicio.split(':').map(Number);
-                const [fimH, fimM] = periodo.horario_fim.split(':').map(Number);
-                const periodoInicioMinutos = inicioH * 60 + inicioM;
-                const periodoFimMinutos = fimH * 60 + fimM;
-
-                return minutos >= periodoInicioMinutos && (minutos + tempoConsulta) <= periodoFimMinutos;
-            });
-
-            if (isInPeriod && !horariosOcupados.includes(horario)) {
-                horariosLivres.push(horario);
+            if (!horariosOcupados.includes(horario) && !horariosLivres.includes(horario)) {
+              horariosLivres.push(horario);
             }
+          }
         }
       } else { // Ordem de Chegada
         const limiteVagas = medicoSelecionado.limite_ordem_chegada || 1;
