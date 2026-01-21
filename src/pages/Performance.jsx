@@ -442,57 +442,7 @@ export default function Performance() {
             </CardContent>
           </Card>
 
-          {/* Cards de Resumo */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-blue-100 text-sm">Total Agendamentos</p>
-                    <p className="text-2xl font-bold">{estatisticasGerais.totalAgendamentos}</p>
-                  </div>
-                  <Calendar className="w-10 h-10 text-blue-200" />
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-green-100 text-sm">Valor Total Vendido</p>
-                    <p className="text-2xl font-bold">{formatCurrency(estatisticasGerais.totalVendido)}</p>
-                  </div>
-                  <DollarSign className="w-10 h-10 text-green-200" />
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card className="bg-gradient-to-br from-amber-500 to-amber-600 text-white">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-amber-100 text-sm">Agendamentos Glória</p>
-                    <p className="text-2xl font-bold">{estatisticasGerais.agendamentosGloria}</p>
-                    <p className="text-amber-200 text-xs">{estatisticasGerais.percentualGloria}% do total</p>
-                  </div>
-                  <Bot className="w-10 h-10 text-amber-200" />
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-purple-100 text-sm">Valor Vendido Glória</p>
-                    <p className="text-2xl font-bold">{formatCurrency(estatisticasGerais.valorGloria)}</p>
-                  </div>
-                  <TrendingUp className="w-10 h-10 text-purple-200" />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+
 
           {/* Gráficos */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
