@@ -441,9 +441,15 @@ export default function FormularioAgendamentoOnline({ onSucesso }) {
                 variant="outline" 
                 onClick={() => {
                   if (especialidadesMedico.length > 1) {
+                    // Voltar para seleção de especialidade - manter o medicoSelecionado e especialidadesMedico
                     setEspecialidadeSelecionada(null);
+                    setDataSelecionada('');
+                    setHorarioSelecionado('');
+                    setDatasDisponiveis([]);
+                    setHorariosDisponiveis([]);
                     setEtapa(1); // Voltar para etapa 1 onde o seletor de especialidade está
                   } else {
+                    // Voltar para seleção de médico - limpar tudo
                     setEtapa(1);
                     setMedicoSelecionado(null);
                     setEspecialidadeSelecionada(null);
