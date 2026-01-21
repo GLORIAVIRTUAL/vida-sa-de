@@ -697,7 +697,7 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
       // Nutrição
       'Nutrição', 'Nutricao', 'Nutricionista', 'Nutri', 'Dieta', 'Emagrecer', 'Alimentação', 'Alimentacao', 'Peso',
       // Psicologia
-      'Psicologia', 'Psicólogo', 'Psicologo', 'Psicóloga', 'Psicologa', 'Psico', 'Terapia', 'Terapeuta', 'Ansiedade', 'Depressão', 'Depressao',
+      'Psicologia', 'Psicólogo', 'Psicologo', 'Psicóloga', 'Psicologa', 'Psico', 'Ansiedade', 'Depressão', 'Depressao',
       // Ortopedia
       'Ortopedia', 'Ortopedista', 'Orto', 'Osso', 'Ossos', 'Fratura', 'Coluna', 'Joelho', 'Ombro', 'Articulação', 'Articulacao',
       // Urologia
