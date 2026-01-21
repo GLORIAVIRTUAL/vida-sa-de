@@ -51,8 +51,13 @@ Deno.serve(async (req) => {
 
 // Processa mensagens recebidas dos pacientes (confirmações)
 async function processarMensagemRecebida(base44, payload) {
+    // IMPORTANTE: Para mensagens enviadas PELA clínica (fromMe=true), o 'phone' é o destinatário (paciente)
+    // Para mensagens RECEBIDAS (fromMe=false), o 'phone' também é o remetente (paciente)
+    // O 'connectedPhone' é sempre o número conectado ao Z-API (clínica)
     const telefone = payload.phone || payload.from;
     const mensagem = (payload.text?.message || payload.body || payload.message || '').toLowerCase().trim();
+    
+    console.log('📱 Telefone raw:', telefone, '| connectedPhone:', payload.connectedPhone, '| fromMe:', payload.fromMe);
     
     console.log('📱 Processando mensagem:', { telefone, mensagem });
 
