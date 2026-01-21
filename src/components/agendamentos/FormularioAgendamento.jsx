@@ -1079,12 +1079,6 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
   const handleChange = (field, value) => {
     console.log(`📝 Campo alterado: ${field} = ${value}`);
     
-    // CRÍTICO: Se está mudando medico_id para vazio e é Dr. Ruben, ignorar (é efeito colateral indesejado)
-    if (field === 'medico_id' && value === '') {
-      console.log('⚠️ Ignorando tentativa de limpar medico_id');
-      return;
-    }
-    
     setFormData(prev => {
       const newData = { ...prev, [field]: value };
 
