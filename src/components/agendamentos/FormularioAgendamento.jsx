@@ -156,10 +156,11 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
       return 0;
     }
 
-    console.log(`🔍 Buscando preço para médico: ${medico.nome} (${medico.especialidade})`);
+    console.log(`🔍 Buscando preço para médico: ${medico.nome} (ID: ${medicoId})`);
+    console.log(`🔍 Especialidade do médico: ${medico.especialidade}`);
     console.log(`📋 Categoria ID: ${categoriaId}`);
 
-    // Normalizar especialidade
+    // Normalizar especialidade do médico específico
     const especialidadeNorm = normalizeString(medico.especialidade);
     console.log(`🔤 Especialidade normalizada: ${especialidadeNorm}`);
 
@@ -170,11 +171,16 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
       const temConsulta = nomeNorm.includes('CONSULTA');
       const especialidadeExata = p.especialidade && normalizeString(p.especialidade) === especialidadeNorm;
       
+      if (temConsulta && especialidadeExata) {
+        console.log(`✅ Match exato encontrado: ${p.nome} (especialidade: ${p.especialidade})`);
+      }
+      
       return temConsulta && especialidadeExata;
     });
 
     // Se não encontrou por especialidade exata, tentar pelo nome
     if (!procedimentoConsulta) {
+      console.log(`⚠️ Não encontrou match exato por especialidade, tentando pelo nome...`);
       procedimentoConsulta = procedimentos.find(p => {
         const nomeNorm = normalizeString(p.nome);
         const temConsulta = nomeNorm.includes('CONSULTA');
@@ -198,7 +204,7 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
     );
 
     if (!preco) {
-      console.error(`❌ PREÇO NÃO ENCONTRADO na tabela`);
+      console.error(`❌ PREÇO NÃO ENCONTRADO na tabela para procedimento ${procedimentoConsulta.id} e categoria ${categoriaId}`);
       return 0;
     }
 
