@@ -2417,20 +2417,29 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                                return null;
                              })()}
 
-                             {/* Seletor de especialidade para Dr. Ruben (Pediatria ou Clínico Geral) */}
+                             {/* Seletor de especialidade para médicos com múltiplas especialidades (Dr. Ruben e Dr. Marco) */}
                              {(() => {
                                const medicoSelecionado = medicos.find(m => m.id === formData.medico_id);
+
                                // Encontrar médicos com nome "Ruben" que têm múltiplas especialidades
                                const medicosRuben = medicos.filter(m => 
                                  normalizeString(m.nome).includes('RUBEN') && 
                                  m.status === 'Ativo'
                                );
 
-                               // Verificar se o médico selecionado é um dos "Ruben" e se existem múltiplos cadastros
-                               if (medicoSelecionado && 
-                                   normalizeString(medicoSelecionado.nome).includes('RUBEN') && 
-                                   medicosRuben.length > 1 &&
-                                   (formData.tipo_servico === 'Consulta' || formData.tipo_servico === 'Retorno')) {
+                               // Encontrar médicos com nome "Marco Antônio Delazeri" que têm múltiplas especialidades
+                               const medicosMarco = medicos.filter(m => 
+                                 (normalizeString(m.nome).includes('MARCO ANTONIO DELAZERI') || normalizeString(m.nome).includes('MARCO ANTÔNIO DELAZERI')) && 
+                                 m.status === 'Ativo'
+                               );
+
+                               // Verificar se o médico selecionado é um dos "Ruben" ou "Marco" com múltiplos cadastros
+                               const isRuben = medicoSelecionado && normalizeString(medicoSelecionado.nome).includes('RUBEN') && medicosRuben.length > 1;
+                               const isMarco = medicoSelecionado && (normalizeString(medicoSelecionado.nome).includes('MARCO ANTONIO DELAZERI') || normalizeString(medicoSelecionado.nome).includes('MARCO ANTÔNIO DELAZERI')) && medicosMarco.length > 1;
+
+                               if ((isRuben || isMarco) && (formData.tipo_servico === 'Consulta' || formData.tipo_servico === 'Retorno')) {
+                                 const medicosMultiplos = isRuben ? medicosRuben : medicosMarco;
+                                 const nomeMedico = isRuben ? 'Dr. Ruben' : 'Dr. Marco Antônio';
 
                                  // Extrair especialidade das observações OU usar a especialidade atual do médico selecionado
                                  const especialidadeObs = formData.observacoes?.match(/Especialidade:\s*(.+?)(\n|$)/)?.[1]?.trim();
@@ -2438,14 +2447,14 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
 
                                  return (
                                    <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                                     <Label htmlFor="especialidade_ruben" className="text-green-800 font-medium flex items-center gap-2">
+                                     <Label htmlFor="especialidade_multipla" className="text-green-800 font-medium flex items-center gap-2">
                                        🩺 Selecione a Especialidade para este agendamento *
                                      </Label>
                                      <Select 
                                        value={especialidadeAtual} 
                                        onValueChange={(value) => {
                                          // Encontrar o médico correspondente à especialidade
-                                         const medicoEspecialidade = medicosRuben.find(m => m.especialidade === value);
+                                         const medicoEspecialidade = medicosMultiplos.find(m => m.especialidade === value);
                                          if (medicoEspecialidade) {
                                            console.log(`🩺 ========================================`);
                                            console.log(`🩺 Alterando para especialidade: ${value}`);
@@ -2498,19 +2507,19 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                                          }
                                        }}
                                      >
-                                           <SelectTrigger id="especialidade_ruben" className="mt-2 bg-white">
-                                           <SelectValue placeholder="Escolha a especialidade..." />
-                                           </SelectTrigger>
-                                           <SelectContent>
-                                           {medicosRuben.map(m => (
+                                       <SelectTrigger id="especialidade_multipla" className="mt-2 bg-white">
+                                         <SelectValue placeholder="Escolha a especialidade..." />
+                                       </SelectTrigger>
+                                       <SelectContent>
+                                         {medicosMultiplos.map(m => (
                                            <SelectItem key={m.id} value={m.especialidade}>
                                              {m.especialidade}
                                            </SelectItem>
-                                           ))}
-                                           </SelectContent>
-                                           </Select>
+                                         ))}
+                                       </SelectContent>
+                                     </Select>
                                      <p className="text-xs text-green-600 mt-2">
-                                       Dr. Ruben atende em múltiplas especialidades com preços diferentes. Selecione qual será este atendimento.
+                                       {nomeMedico} atende em múltiplas especialidades com preços diferentes. Selecione qual será este atendimento.
                                      </p>
                                    </div>
                                  );
