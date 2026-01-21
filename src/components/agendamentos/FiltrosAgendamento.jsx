@@ -10,10 +10,14 @@ const normalizeString = (str) => {
 };
 
 export default function FiltrosAgendamento({ filtros, onFiltrosChange, medicos }) {
-  // Agrupar médicos - odontologia vira uma única opção
+  // Agrupar médicos - odontologia e Dr. Ruben viram opções únicas
   const medicosAgrupados = useMemo(() => {
     const medicosOdontologia = medicos.filter(m => normalizeString(m.especialidade) === 'ODONTOLOGIA');
-    const outrosMedicos = medicos.filter(m => normalizeString(m.especialidade) !== 'ODONTOLOGIA');
+    const medicosRuben = medicos.filter(m => normalizeString(m.nome).includes('RUBEN'));
+    const outrosMedicos = medicos.filter(m => 
+      normalizeString(m.especialidade) !== 'ODONTOLOGIA' &&
+      !normalizeString(m.nome).includes('RUBEN')
+    );
     
     const resultado = [];
     
@@ -23,7 +27,25 @@ export default function FiltrosAgendamento({ filtros, onFiltrosChange, medicos }
         id: medicosOdontologia[0].id, // Usar o ID do primeiro para o filtro
         nome: '🦷 Odontologia',
         especialidade: 'Odontologia',
-        isAgrupado: true
+        isAgrupado: true,
+        grupoIds: medicosOdontologia.map(m => m.id)
+      });
+    }
+    
+    // Se tem múltiplos "Dr. Ruben", criar opção única
+    if (medicosRuben.length > 1) {
+      resultado.push({
+        id: medicosRuben[0].id, // Usar o ID do primeiro para o filtro
+        nome: '🩺 Dr. Ruben Hurtado',
+        especialidade: 'Múltiplas',
+        isAgrupado: true,
+        grupoIds: medicosRuben.map(m => m.id)
+      });
+    } else if (medicosRuben.length === 1) {
+      // Se só tem 1, adicionar normalmente
+      resultado.push({
+        ...medicosRuben[0],
+        isAgrupado: false
       });
     }
     
