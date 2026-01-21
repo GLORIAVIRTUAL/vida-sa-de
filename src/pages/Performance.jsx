@@ -107,6 +107,10 @@ export default function Performance() {
       if (tipoOrigem === 'chatbot' || agendadoPor === 'Glória' || agendadoPor === 'Gloria') {
         agendadoPor = 'Glória (IA)';
         tipoOrigem = 'chatbot';
+      } else if (agendadoPor.includes('service+') && agendadoPor.includes('@no-reply.base44.com')) {
+        // Usuário de serviço do sistema (API/webhook)
+        agendadoPor = 'Sistema (API)';
+        tipoOrigem = 'sistema';
       } else {
         // Tentar encontrar o nome do usuário pelo email
         const usuario = usuarios.find(u => u.email === agendadoPor || u.id === agendadoPor);
