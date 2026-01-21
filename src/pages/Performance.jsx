@@ -408,23 +408,14 @@ export default function Performance() {
     });
     
     // Calcular totais por forma de pagamento
-    const totalPorFormaPagamento = {
-      'Dinheiro': 0,
-      'Cartão Débito': 0,
-      'Cartão Crédito': 0,
-      'PIX': 0,
-      'Transferência': 0,
-      'Convênio': 0,
-      'Múltiplas Formas': 0
-    };
+    const totalPorFormaPagamento = {};
     
     osUsuario.forEach(os => {
       const forma = os.forma_pagamento || 'Não informado';
-      if (totalPorFormaPagamento[forma] !== undefined) {
-        totalPorFormaPagamento[forma] += os.valor_final || 0;
-      } else {
-        totalPorFormaPagamento[forma] = os.valor_final || 0;
+      if (!totalPorFormaPagamento[forma]) {
+        totalPorFormaPagamento[forma] = 0;
       }
+      totalPorFormaPagamento[forma] += os.valor_final || 0;
     });
     
     const printWindow = window.open('', '_blank');
