@@ -968,12 +968,19 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
           medicosParaBuscar = todosMedicos.filter(m => {
             // Verifica no campo principal 'especialidade' (NORMALIZADO)
             const espPrincipal = normalizarTexto(m.especialidade || '');
-            const matchPrincipal = termosRelacionados.some(t => espPrincipal.includes(t) || t.includes(espPrincipal.split(' ')[0]));
+            const matchPrincipal = termosRelacionados.some(t => {
+              // Match se contém o termo OU se a primeira palavra coincide
+              return espPrincipal.includes(t) || t.includes(espPrincipal) || 
+                     espPrincipal.split(' ')[0] === t.split(' ')[0];
+            });
 
             // Verifica no array 'especialidades' (NORMALIZADO)
             const matchArray = m.especialidades?.some(e => {
               const eLower = normalizarTexto(e);
-              return termosRelacionados.some(t => eLower.includes(t) || t.includes(eLower.split(' ')[0]));
+              return termosRelacionados.some(t => {
+                return eLower.includes(t) || t.includes(eLower) ||
+                       eLower.split(' ')[0] === t.split(' ')[0];
+              });
             });
 
             // Verifica também no nome do médico (NORMALIZADO)
