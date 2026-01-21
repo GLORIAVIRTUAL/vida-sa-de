@@ -2271,76 +2271,87 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                                  </Select>
                                </div>
                                {(formData.tipo_servico === 'Retorno' || formData.tipo_servico === 'Consulta' || formData.tipo_servico === 'Procedimento') && (
-                                 <div>
-                                   <Label htmlFor="medico_id">
-                                     {(() => {
-                                       // Verificar se existe algum médico de odontologia
-                                       const temOdontologia = medicos.some(m => normalizeString(m.especialidade) === 'ODONTOLOGIA');
-                                       if (temOdontologia && formData.tipo_servico !== 'Procedimento') {
-                                         return 'Especialidade *';
-                                       }
-                                       return formData.tipo_servico === 'Procedimento' ? 'Médico (Opcional)' : 'Médico *';
-                                     })()}
-                                   </Label>
-                                   <Select name="medico_id" value={formData.medico_id} onValueChange={(value) => handleChange('medico_id', value)}>
-                                     <SelectTrigger id="medico_id" className="mt-1"><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                                     <SelectContent>
-                                       {/* Agrupar médicos - mostrar especialidades únicas para Odontologia e Dr. Ruben */}
-                                               {(() => {
-                                                 const medicosOdontologia = medicos.filter(m => normalizeString(m.especialidade) === 'ODONTOLOGIA');
-                                                 const medicosRuben = medicos.filter(m => normalizeString(m.nome).includes('RUBEN'));
-                                                 const outrosMedicos = medicos.filter(m => 
-                                                   normalizeString(m.especialidade) !== 'ODONTOLOGIA' &&
-                                                   !normalizeString(m.nome).includes('RUBEN')
-                                                 );
-
-                                                 const resultado = [];
-
-                                                 // Se tem mais de 1 dentista, criar uma opção "Odontologia" genérica
-                                                 if (medicosOdontologia.length > 1) {
-                                                   resultado.push(
-                                                     <SelectItem key="odonto-unificado" value={medicosOdontologia[0].id}>
-                                                       🦷 Odontologia (Agenda Unificada)
-                                                     </SelectItem>
+                                   <div>
+                                     <Label htmlFor="medico_id">
+                                       {(() => {
+                                         // Verificar se existe algum médico de odontologia
+                                         const temOdontologia = medicos.some(m => normalizeString(m.especialidade) === 'ODONTOLOGIA');
+                                         if (temOdontologia && formData.tipo_servico !== 'Procedimento') {
+                                           return 'Especialidade *';
+                                         }
+                                         return formData.tipo_servico === 'Procedimento' ? 'Médico (Opcional)' : 'Médico *';
+                                       })()}
+                                     </Label>
+                                     <Select 
+                                       name="medico_id" 
+                                       value={(() => {
+                                         // Para Dr. Ruben com múltiplas especialidades, mostrar sempre o primeiro ID no select principal
+                                         const medicosRuben = medicos.filter(m => normalizeString(m.nome).includes('RUBEN'));
+                                         if (medicosRuben.length > 1 && medicosRuben.some(m => m.id === formData.medico_id)) {
+                                           return medicosRuben[0].id; // Sempre mostrar o primeiro para o select principal
+                                         }
+                                         return formData.medico_id;
+                                       })()} 
+                                       onValueChange={(value) => handleChange('medico_id', value)}
+                                     >
+                                       <SelectTrigger id="medico_id" className="mt-1"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                                       <SelectContent>
+                                         {/* Agrupar médicos - mostrar especialidades únicas para Odontologia e Dr. Ruben */}
+                                                 {(() => {
+                                                   const medicosOdontologia = medicos.filter(m => normalizeString(m.especialidade) === 'ODONTOLOGIA');
+                                                   const medicosRuben = medicos.filter(m => normalizeString(m.nome).includes('RUBEN'));
+                                                   const outrosMedicos = medicos.filter(m => 
+                                                     normalizeString(m.especialidade) !== 'ODONTOLOGIA' &&
+                                                     !normalizeString(m.nome).includes('RUBEN')
                                                    );
-                                                 } else {
-                                                   // Se só tem 1 dentista, mostrar normalmente
-                                                   medicosOdontologia.forEach(m => {
+
+                                                   const resultado = [];
+
+                                                   // Se tem mais de 1 dentista, criar uma opção "Odontologia" genérica
+                                                   if (medicosOdontologia.length > 1) {
+                                                     resultado.push(
+                                                       <SelectItem key="odonto-unificado" value={medicosOdontologia[0].id}>
+                                                         🦷 Odontologia (Agenda Unificada)
+                                                       </SelectItem>
+                                                     );
+                                                   } else {
+                                                     // Se só tem 1 dentista, mostrar normalmente
+                                                     medicosOdontologia.forEach(m => {
+                                                       resultado.push(
+                                                         <SelectItem key={m.id} value={m.id}>Dr(a). {m.nome} - {m.especialidade}</SelectItem>
+                                                       );
+                                                     });
+                                                   }
+
+                                                   // Se tem mais de 1 "Dr. Ruben", criar uma opção unificada
+                                                   if (medicosRuben.length > 1) {
+                                                     resultado.push(
+                                                       <SelectItem key="ruben-unificado" value={medicosRuben[0].id}>
+                                                         🩺 Dr. Ruben Hurtado (Múltiplas Especialidades)
+                                                       </SelectItem>
+                                                     );
+                                                   } else if (medicosRuben.length === 1) {
+                                                     // Se só tem 1, mostrar normalmente
+                                                     resultado.push(
+                                                       <SelectItem key={medicosRuben[0].id} value={medicosRuben[0].id}>
+                                                         Dr(a). {medicosRuben[0].nome} - {medicosRuben[0].especialidade}
+                                                       </SelectItem>
+                                                     );
+                                                   }
+
+                                                   // Outros médicos
+                                                   outrosMedicos.forEach(m => {
                                                      resultado.push(
                                                        <SelectItem key={m.id} value={m.id}>Dr(a). {m.nome} - {m.especialidade}</SelectItem>
                                                      );
                                                    });
-                                                 }
 
-                                                 // Se tem mais de 1 "Dr. Ruben", criar uma opção unificada
-                                                 if (medicosRuben.length > 1) {
-                                                   resultado.push(
-                                                     <SelectItem key="ruben-unificado" value={medicosRuben[0].id}>
-                                                       🩺 Dr. Ruben Hurtado (Múltiplas Especialidades)
-                                                     </SelectItem>
-                                                   );
-                                                 } else if (medicosRuben.length === 1) {
-                                                   // Se só tem 1, mostrar normalmente
-                                                   resultado.push(
-                                                     <SelectItem key={medicosRuben[0].id} value={medicosRuben[0].id}>
-                                                       Dr(a). {medicosRuben[0].nome} - {medicosRuben[0].especialidade}
-                                                     </SelectItem>
-                                                   );
-                                                 }
-
-                                                 // Outros médicos
-                                                 outrosMedicos.forEach(m => {
-                                                   resultado.push(
-                                                     <SelectItem key={m.id} value={m.id}>Dr(a). {m.nome} - {m.especialidade}</SelectItem>
-                                                   );
-                                                 });
-
-                                                 return resultado;
-                                               })()}
-                                     </SelectContent>
-                                   </Select>
-                                 </div>
-                               )}
+                                                   return resultado;
+                                                 })()}
+                                       </SelectContent>
+                                     </Select>
+                                   </div>
+                                 )}
                              </div>
 
                              {/* Seletor de profissional específico para Odontologia */}
