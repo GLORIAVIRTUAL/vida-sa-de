@@ -177,6 +177,16 @@ Deno.serve(async (req) => {
                 });
             }
 
+            // IMPORTANTE: Buscar TODOS os registros de médicos com o mesmo nome (para agendas unificadas)
+            // Isso permite que Dr. Ruben (Pediatria) e Dr. Ruben (Clínico Geral) compartilhem a mesma agenda
+            const todosOsMedicos = await base44.asServiceRole.entities.Medico.filter({});
+            const medicoNomeNormalizado = medico.nome.toUpperCase().trim();
+            const medicosRelacionados = todosOsMedicos.filter(m => 
+                m.nome.toUpperCase().trim() === medicoNomeNormalizado
+            );
+            const idsRelacionados = medicosRelacionados.map(m => m.id);
+            console.log(`👥 Médicos relacionados (mesma agenda): ${idsRelacionados.length} - IDs: ${idsRelacionados.join(', ')}`);
+
             const horariosAtendimento = medico.horarios_atendimento || [];
             console.log('⏰ Horários de atendimento configurados:', horariosAtendimento);
             
