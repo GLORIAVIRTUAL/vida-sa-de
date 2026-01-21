@@ -1107,7 +1107,19 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
           infoDisponibilidade += '\n⚠️ Para confirmar agendamento, preciso: nome completo e data de nascimento do paciente.';
           console.log('✅ Disponibilidades encontradas:', disponibilidadesEncontradas.length, 'médicos');
         } else {
-          infoDisponibilidade = '\n\n⚠️ Não encontrei disponibilidades no momento. Solicite que o cliente entre em contato pelo WhatsApp.';
+          console.log('⚠️ Nenhuma disponibilidade encontrada para a especialidade detectada');
+          // Listar especialidades disponíveis com horários
+          let especialidadesComHorario = [];
+          for (const m of medicosParaBuscar) {
+            if (m.horarios_atendimento && m.horarios_atendimento.length > 0) {
+              especialidadesComHorario.push(`${m.nome} (${m.especialidade})`);
+            }
+          }
+          if (especialidadesComHorario.length > 0) {
+            infoDisponibilidade = `\n\n⚠️ Não encontrei disponibilidades para a especialidade buscada. Médicos encontrados mas sem horários disponíveis: ${especialidadesComHorario.join(', ')}`;
+          } else {
+            infoDisponibilidade = '\n\n⚠️ Não encontrei disponibilidades no momento para essa especialidade. Informe ao cliente que a clínica não possui horários disponíveis no momento para essa especialidade e sugira entrar em contato pelo telefone 51 3661-5991.';
+          }
         }
       } catch (e) {
         console.error('⚠️ Erro ao buscar disponibilidades:', e.message);
