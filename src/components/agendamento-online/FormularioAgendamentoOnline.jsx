@@ -152,11 +152,11 @@ export default function FormularioAgendamentoOnline({ onSucesso }) {
   };
 
   const buscarDisponibilidade = useCallback(async () => {
-    if (!medicoSelecionado) return;
+    if (!especialidadeSelecionada) return;
     
     // Verificar cache de disponibilidade
-    const cacheKey = `disponibilidade_${medicoSelecionado.id}`;
-    const cacheTimeKey = `disponibilidade_time_${medicoSelecionado.id}`;
+    const cacheKey = `disponibilidade_${especialidadeSelecionada.id}`;
+    const cacheTimeKey = `disponibilidade_time_${especialidadeSelecionada.id}`;
     const cached = localStorage.getItem(cacheKey);
     const cachedTime = localStorage.getItem(cacheTimeKey);
     
@@ -171,7 +171,7 @@ export default function FormularioAgendamentoOnline({ onSucesso }) {
     
     setLoadingDatas(true);
     setErro('');
-    console.log('📅 Buscando disponibilidade para médico:', medicoSelecionado.nome);
+    console.log('📅 Buscando disponibilidade para médico:', especialidadeSelecionada.nome, '- Especialidade:', especialidadeSelecionada.especialidade);
     
     try {
       const response = await fetch(`/functions/getavailableslotsrange`, {
@@ -180,7 +180,7 @@ export default function FormularioAgendamentoOnline({ onSucesso }) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          medico_id: medicoSelecionado.id,
+          medico_id: especialidadeSelecionada.id,
           dias_afrente: 30
         })
       });
@@ -223,13 +223,13 @@ export default function FormularioAgendamentoOnline({ onSucesso }) {
     } finally {
       setLoadingDatas(false);
     }
-  }, [medicoSelecionado]); 
+  }, [especialidadeSelecionada]); 
 
   useEffect(() => {
-    if (medicoSelecionado) {
+    if (especialidadeSelecionada) {
       buscarDisponibilidade();
     }
-  }, [medicoSelecionado, buscarDisponibilidade]);
+  }, [especialidadeSelecionada, buscarDisponibilidade]);
   
   const handleSelectData = (data) => {
     console.log('📅 Data selecionada:', data);
