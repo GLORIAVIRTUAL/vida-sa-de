@@ -2298,56 +2298,75 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                                        <SelectContent>
                                          {/* Agrupar médicos - mostrar especialidades únicas para Odontologia e Dr. Ruben */}
                                                  {(() => {
-                                                   const medicosOdontologia = medicos.filter(m => normalizeString(m.especialidade) === 'ODONTOLOGIA');
-                                                   const medicosRuben = medicos.filter(m => normalizeString(m.nome).includes('RUBEN'));
-                                                   const outrosMedicos = medicos.filter(m => 
-                                                     normalizeString(m.especialidade) !== 'ODONTOLOGIA' &&
-                                                     !normalizeString(m.nome).includes('RUBEN')
-                                                   );
+                                                           const medicosOdontologia = medicos.filter(m => normalizeString(m.especialidade) === 'ODONTOLOGIA');
+                                                           const medicosRuben = medicos.filter(m => normalizeString(m.nome).includes('RUBEN'));
+                                                           const medicosMarco = medicos.filter(m => normalizeString(m.nome).includes('MARCO ANTONIO DELAZERI') || normalizeString(m.nome).includes('MARCO ANTÔNIO DELAZERI'));
+                                                           const outrosMedicos = medicos.filter(m => 
+                                                             normalizeString(m.especialidade) !== 'ODONTOLOGIA' &&
+                                                             !normalizeString(m.nome).includes('RUBEN') &&
+                                                             !normalizeString(m.nome).includes('MARCO ANTONIO DELAZERI') &&
+                                                             !normalizeString(m.nome).includes('MARCO ANTÔNIO DELAZERI')
+                                                           );
 
-                                                   const resultado = [];
+                                                           const resultado = [];
 
-                                                   // Se tem mais de 1 dentista, criar uma opção "Odontologia" genérica
-                                                   if (medicosOdontologia.length > 1) {
-                                                     resultado.push(
-                                                       <SelectItem key="odonto-unificado" value={medicosOdontologia[0].id}>
-                                                         🦷 Odontologia (Agenda Unificada)
-                                                       </SelectItem>
-                                                     );
-                                                   } else {
-                                                     // Se só tem 1 dentista, mostrar normalmente
-                                                     medicosOdontologia.forEach(m => {
-                                                       resultado.push(
-                                                         <SelectItem key={m.id} value={m.id}>Dr(a). {m.nome} - {m.especialidade}</SelectItem>
-                                                       );
-                                                     });
-                                                   }
+                                                           // Se tem mais de 1 dentista, criar uma opção "Odontologia" genérica
+                                                           if (medicosOdontologia.length > 1) {
+                                                             resultado.push(
+                                                               <SelectItem key="odonto-unificado" value={medicosOdontologia[0].id}>
+                                                                 🦷 Odontologia (Agenda Unificada)
+                                                               </SelectItem>
+                                                             );
+                                                           } else {
+                                                             // Se só tem 1 dentista, mostrar normalmente
+                                                             medicosOdontologia.forEach(m => {
+                                                               resultado.push(
+                                                                 <SelectItem key={m.id} value={m.id}>Dr(a). {m.nome} - {m.especialidade}</SelectItem>
+                                                               );
+                                                             });
+                                                           }
 
-                                                   // Se tem mais de 1 "Dr. Ruben", criar uma opção unificada
-                                                   if (medicosRuben.length > 1) {
-                                                     resultado.push(
-                                                       <SelectItem key="ruben-unificado" value={medicosRuben[0].id}>
-                                                         🩺 Dr. Ruben Hurtado (Múltiplas Especialidades)
-                                                       </SelectItem>
-                                                     );
-                                                   } else if (medicosRuben.length === 1) {
-                                                     // Se só tem 1, mostrar normalmente
-                                                     resultado.push(
-                                                       <SelectItem key={medicosRuben[0].id} value={medicosRuben[0].id}>
-                                                         Dr(a). {medicosRuben[0].nome} - {medicosRuben[0].especialidade}
-                                                       </SelectItem>
-                                                     );
-                                                   }
+                                                           // Se tem mais de 1 "Dr. Ruben", criar uma opção unificada
+                                                           if (medicosRuben.length > 1) {
+                                                             resultado.push(
+                                                               <SelectItem key="ruben-unificado" value={medicosRuben[0].id}>
+                                                                 🩺 Dr. Ruben Hurtado (Múltiplas Especialidades)
+                                                               </SelectItem>
+                                                             );
+                                                           } else if (medicosRuben.length === 1) {
+                                                             // Se só tem 1, mostrar normalmente
+                                                             resultado.push(
+                                                               <SelectItem key={medicosRuben[0].id} value={medicosRuben[0].id}>
+                                                                 Dr(a). {medicosRuben[0].nome} - {medicosRuben[0].especialidade}
+                                                               </SelectItem>
+                                                             );
+                                                           }
 
-                                                   // Outros médicos
-                                                   outrosMedicos.forEach(m => {
-                                                     resultado.push(
-                                                       <SelectItem key={m.id} value={m.id}>Dr(a). {m.nome} - {m.especialidade}</SelectItem>
-                                                     );
-                                                   });
+                                                           // Se tem mais de 1 "Dr. Marco Antônio Delazeri", criar uma opção unificada
+                                                           if (medicosMarco.length > 1) {
+                                                             resultado.push(
+                                                               <SelectItem key="marco-unificado" value={medicosMarco[0].id}>
+                                                                 🩺 Dr. Marco Antônio Delazeri (Múltiplas Especialidades)
+                                                               </SelectItem>
+                                                             );
+                                                           } else if (medicosMarco.length === 1) {
+                                                             // Se só tem 1, mostrar normalmente
+                                                             resultado.push(
+                                                               <SelectItem key={medicosMarco[0].id} value={medicosMarco[0].id}>
+                                                                 Dr(a). {medicosMarco[0].nome} - {medicosMarco[0].especialidade}
+                                                               </SelectItem>
+                                                             );
+                                                           }
 
-                                                   return resultado;
-                                                 })()}
+                                                           // Outros médicos
+                                                           outrosMedicos.forEach(m => {
+                                                             resultado.push(
+                                                               <SelectItem key={m.id} value={m.id}>Dr(a). {m.nome} - {m.especialidade}</SelectItem>
+                                                             );
+                                                           });
+
+                                                           return resultado;
+                                                         })()}
                                        </SelectContent>
                                      </Select>
                                    </div>
