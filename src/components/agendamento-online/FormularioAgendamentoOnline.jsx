@@ -19,6 +19,8 @@ export default function FormularioAgendamentoOnline({ onSucesso }) {
   const [apiKey, setApiKey] = useState(null);
   const [medicos, setMedicos] = useState([]);
   const [medicoSelecionado, setMedicoSelecionado] = useState(null);
+  const [especialidadesMedico, setEspecialidadesMedico] = useState([]);
+  const [especialidadeSelecionada, setEspecialidadeSelecionada] = useState(null);
   const [datasDisponiveis, setDatasDisponiveis] = useState([]);
   const [dataSelecionada, setDataSelecionada] = useState('');
   const [horariosDisponiveis, setHorariosDisponiveis] = useState([]);
