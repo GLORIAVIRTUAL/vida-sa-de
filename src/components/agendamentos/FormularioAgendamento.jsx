@@ -2486,34 +2486,34 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                                            console.log(`💰 NOVO PREÇO FINAL: R$ ${novoPreco}`);
                                            console.log(`🩺 ========================================`);
 
-                                           // Atualizar TODOS os campos de uma vez para garantir consistência
-                                           setFormData(prev => {
-                                             const desconto = parseFloat(prev.desconto_manual) || 0;
-                                             const acrescimo = parseFloat(prev.acrescimo_manual) || 0;
-                                             const valorFinal = Math.max(0, novoPreco - desconto + acrescimo);
+                                           // Atualizar diretamente o state, sem passar pelo handleChange
+                                           // para evitar que o useEffect de recálculo sobrescreva
+                                           const desconto = parseFloat(formData.desconto_manual) || 0;
+                                           const acrescimo = parseFloat(formData.acrescimo_manual) || 0;
+                                           const valorFinal = Math.max(0, novoPreco - desconto + acrescimo);
 
-                                             return {
-                                               ...prev,
-                                               medico_id: medicoEspecialidade.id,
-                                               observacoes: novaObs,
-                                               valor_total: novoPreco.toFixed(2).toString(),
-                                               valor_final: valorFinal.toFixed(2).toString()
-                                             };
-                                           });
-                                         }
-                                       }}
-                                     >
-                                       <SelectTrigger id="especialidade_ruben" className="mt-2 bg-white">
-                                         <SelectValue placeholder="Escolha a especialidade..." />
-                                       </SelectTrigger>
-                                       <SelectContent>
-                                         {medicosRuben.map(m => (
+                                           // CRÍTICO: Usar setFormData direto com todos os campos necessários
+                                           setFormData(prev => ({
+                                             ...prev,
+                                             medico_id: medicoEspecialidade.id,
+                                             observacoes: novaObs,
+                                             valor_total: novoPreco.toFixed(2).toString(),
+                                             valor_final: valorFinal.toFixed(2).toString()
+                                           }));
+                                           }
+                                           }}
+                                           >
+                                           <SelectTrigger id="especialidade_ruben" className="mt-2 bg-white">
+                                           <SelectValue placeholder="Escolha a especialidade..." />
+                                           </SelectTrigger>
+                                           <SelectContent>
+                                           {medicosRuben.map(m => (
                                            <SelectItem key={m.id} value={m.especialidade}>
                                              {m.especialidade}
                                            </SelectItem>
-                                         ))}
-                                       </SelectContent>
-                                     </Select>
+                                           ))}
+                                           </SelectContent>
+                                           </Select>
                                      <p className="text-xs text-green-600 mt-2">
                                        Dr. Ruben atende em múltiplas especialidades com preços diferentes. Selecione qual será este atendimento.
                                      </p>
