@@ -194,10 +194,17 @@ export default function Performance() {
       porUsuario[nome].valorVendido += (os.valor_final || 0);
     });
 
-    // Converter para array, filtrar usuários ocultos e ordenar por valor vendido
+    // Converter para array, filtrar usuários ocultos e ordenar por valor vendido (prioridade) e depois por agendamentos
     return Object.values(porUsuario)
       .filter(u => !USUARIOS_OCULTOS.includes(u.nome))
-      .sort((a, b) => b.valorVendido - a.valorVendido);
+      .sort((a, b) => {
+        // Primeiro critério: valor vendido (maior primeiro)
+        if (b.valorVendido !== a.valorVendido) {
+          return b.valorVendido - a.valorVendido;
+        }
+        // Segundo critério: total de agendamentos (maior primeiro)
+        return b.totalAgendamentos - a.totalAgendamentos;
+      });
   }, [dadosFiltrados, usuarios]);
 
   // Estatísticas gerais
