@@ -623,10 +623,18 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
       let horariosDoMedico = [];
       let medicosParaVerificar = [medicoSelecionado];
       
-      if (isAgendaUnificada) {
-        // Para agenda unificada, combinar horários de todos os dentistas
+      if (isAgendaUnificadaOdonto) {
+        // Para agenda unificada de Odontologia, combinar horários de todos os dentistas
         console.log('🦷 Agenda unificada de Odontologia - combinando horários de', medicosOdontologia.length, 'dentistas');
         medicosParaVerificar = medicosOdontologia;
+      } else if (isAgendaUnificadaRuben) {
+        // Para Dr. Ruben, combinar horários de todos os cadastros dele
+        console.log('🩺 Agenda unificada Dr. Ruben - combinando horários de', medicosRuben.length, 'especialidades');
+        medicosParaVerificar = medicosRuben;
+      } else if (isAgendaUnificadaMarco) {
+        // Para Dr. Marco, combinar horários de todos os cadastros dele
+        console.log('🩺 Agenda unificada Dr. Marco - combinando horários de', medicosMarco.length, 'especialidades');
+        medicosParaVerificar = medicosMarco;
       }
       
       // Coletar todos os horários dos médicos relevantes
