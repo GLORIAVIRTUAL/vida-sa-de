@@ -949,6 +949,7 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
             'endo': ['endocrinologia', 'endocrinologista', 'tireoide', 'diabetes', 'hormonio', 'metabolismo'],
             'quiro': ['quiropraxia', 'quiropraxista', 'ajuste', 'coluna vertebral'],
             'massoterapia': ['massoterapia', 'massoterapeuta', 'massagem', 'masso', 'relaxamento', 'tensao muscular', 'massagem terapeutica', 'massagem relaxante', 'drenagem linfatica', 'pos-operatorio'],
+            'masso': ['massoterapia', 'massoterapeuta', 'massagem', 'masso'],
             'opto': ['optometria', 'optometrista', 'grau', 'lente', 'lentes'],
             'hidroginastica': ['hidroginastica', 'hidroterapia', 'hidro', 'natacao', 'piscina', 'exercicio na agua', 'aula experimental'],
             'pilates': ['pilates', 'aparelhos', 'solo'],
