@@ -242,6 +242,12 @@ Deno.serve(async (req) => {
         const todasMensagens = contatoAtualizado?.mensagens_pendentes || [];
         
         // Verificar se esta chamada é a mais recente (evitar duplicatas)
+        // CORREÇÃO: Verificar também se já foi processado (mensagens_pendentes vazias = já processou)
+        if (contatoAtualizado?.mensagens_pendentes?.length === 0) {
+          console.log('⏭️ Mensagens já foram processadas por outra chamada. Saindo...');
+          return Response.json({ success: true, status: 'ja_processado' });
+        }
+        
         if (contatoAtualizado?.ultimo_timestamp_pendente !== agora && todasMensagens.length > mensagensPendentes.length) {
           console.log('⏭️ Outra mensagem mais recente vai processar. Saindo...');
           return Response.json({ success: true, status: 'delegado' });
