@@ -286,7 +286,7 @@ export default function FormularioAgendamentoOnline({ onSucesso }) {
       
       onSucesso({
         agendamento,
-        medico: medicoSelecionado,
+        medico: especialidadeSelecionada,
         paciente: {
           nome: nomePaciente,
           telefone: telefonePaciente,
