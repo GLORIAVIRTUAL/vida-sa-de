@@ -2356,6 +2356,66 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                                return null;
                              })()}
 
+                             {/* Seletor de especialidade para Dr. Ruben (Pediatria ou Clínico Geral) */}
+                             {(() => {
+                               const medicoSelecionado = medicos.find(m => m.id === formData.medico_id);
+                               // Encontrar médicos com nome "Ruben" que têm múltiplas especialidades
+                               const medicosRuben = medicos.filter(m => 
+                                 normalizeString(m.nome).includes('RUBEN') && 
+                                 m.status === 'Ativo'
+                               );
+
+                               // Verificar se o médico selecionado é um dos "Ruben" e se existem múltiplos cadastros
+                               if (medicoSelecionado && 
+                                   normalizeString(medicoSelecionado.nome).includes('RUBEN') && 
+                                   medicosRuben.length > 1 &&
+                                   (formData.tipo_servico === 'Consulta' || formData.tipo_servico === 'Retorno')) {
+
+                                 // Extrair especialidade das observações
+                                 const especialidadeAtual = formData.observacoes?.match(/Especialidade:\s*(.+?)(\n|$)/)?.[1]?.trim() || '';
+
+                                 return (
+                                   <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                                     <Label htmlFor="especialidade_ruben" className="text-green-800 font-medium flex items-center gap-2">
+                                       🩺 Selecione a Especialidade para este agendamento
+                                     </Label>
+                                     <Select 
+                                       value={especialidadeAtual} 
+                                       onValueChange={(value) => {
+                                         // Salvar a especialidade selecionada nas observações
+                                         const obsAtual = formData.observacoes || '';
+                                         const obsLimpa = obsAtual.replace(/Especialidade:.*(\n|$)/g, '').trim();
+                                         const novaObs = obsLimpa ? `${obsLimpa}\nEspecialidade: ${value}` : `Especialidade: ${value}`;
+                                         handleChange('observacoes', novaObs);
+
+                                         // Encontrar o médico correspondente à especialidade e atualizar o preço
+                                         const medicoEspecialidade = medicosRuben.find(m => m.especialidade === value);
+                                         if (medicoEspecialidade) {
+                                           // Atualizar o medico_id para buscar o preço correto
+                                           handleChange('medico_id', medicoEspecialidade.id);
+                                         }
+                                       }}
+                                     >
+                                       <SelectTrigger id="especialidade_ruben" className="mt-2 bg-white">
+                                         <SelectValue placeholder="Escolha a especialidade..." />
+                                       </SelectTrigger>
+                                       <SelectContent>
+                                         {medicosRuben.map(m => (
+                                           <SelectItem key={m.id} value={m.especialidade}>
+                                             {m.especialidade}
+                                           </SelectItem>
+                                         ))}
+                                       </SelectContent>
+                                     </Select>
+                                     <p className="text-xs text-green-600 mt-2">
+                                       Dr. Ruben atende em múltiplas especialidades com preços diferentes. Selecione qual será este atendimento.
+                                     </p>
+                                   </div>
+                                 );
+                               }
+                               return null;
+                             })()}
+
                              <div className="flex items-center space-x-6 pt-2">
                                <div className="flex items-center space-x-2">
                                  <Checkbox id="is_encaixe" checked={formData.is_encaixe} onCheckedChange={(checked) => handleChange('is_encaixe', checked)} />
