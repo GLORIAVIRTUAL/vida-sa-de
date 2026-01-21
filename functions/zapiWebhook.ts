@@ -126,19 +126,61 @@ async function processarMensagemRecebida(base44, payload) {
     const hoje = new Date().toISOString().split('T')[0];
     const todosAgendamentos = await base44.asServiceRole.entities.Agendamento.list('-data_agendamento', 500);
     
+    console.log('📊 Total de agendamentos no sistema:', todosAgendamentos.length);
+    console.log('📅 Data de hoje:', hoje);
+    console.log('🆔 IDs dos pacientes:', pacienteIds);
+    
     // Filtrar agendamentos que pertencem a qualquer um dos pacientes encontrados
-    const agendamentos = todosAgendamentos.filter(a => 
-        pacienteIds.includes(a.paciente_id) && 
-        a.status === 'Agendado' && 
-        a.data_agendamento >= hoje
-    );
+    // Também buscar pelo nome do paciente no campo paciente_nome
+    const nomesEncontrados = pacientesEncontrados.map(p => p.nome.toLowerCase());
+    
+    const agendamentos = todosAgendamentos.filter(a => {
+        // Match por paciente_id
+        const matchPorId = pacienteIds.includes(a.paciente_id);
+        
+        // Match por nome do paciente (para casos onde o ID não bate)
+        const nomeAgendamentoLower = (a.paciente_nome || '').toLowerCase();
+        const matchPorNome = nomesEncontrados.some(nome => 
+            nomeAgendamentoLower.includes(nome.split(' ')[0]) || 
+            nome.includes(nomeAgendamentoLower.split(' ')[0])
+        );
+        
+        const statusOk = a.status === 'Agendado';
+        const dataOk = a.data_agendamento >= hoje;
+        
+        if ((matchPorId || matchPorNome) && dataOk) {
+            console.log(`🔍 Agendamento candidato: ${a.id} | ${a.paciente_nome} | ${a.data_agendamento} ${a.horario} | status=${a.status} | matchId=${matchPorId} matchNome=${matchPorNome}`);
+        }
+        
+        return (matchPorId || matchPorNome) && statusOk && dataOk;
+    });
 
     if (agendamentos.length === 0) {
-        console.log('❌ Nenhum agendamento pendente para:', pacientesEncontrados.map(p => p.nome));
+        console.log('❌ Nenhum agendamento com status "Agendado" para:', pacientesEncontrados.map(p => p.nome));
+        
+        // Log de debug - mostrar agendamentos futuros sem filtro de status
+        const agendamentosSemFiltroStatus = todosAgendamentos.filter(a => {
+            const matchPorId = pacienteIds.includes(a.paciente_id);
+            const nomeAgendamentoLower = (a.paciente_nome || '').toLowerCase();
+            const matchPorNome = nomesEncontrados.some(nome => 
+                nomeAgendamentoLower.includes(nome.split(' ')[0])
+            );
+            return (matchPorId || matchPorNome) && a.data_agendamento >= hoje;
+        });
+        
+        console.log('📋 Agendamentos futuros (todos status):', agendamentosSemFiltroStatus.map(a => ({
+            id: a.id,
+            paciente: a.paciente_nome,
+            data: a.data_agendamento,
+            horario: a.horario,
+            status: a.status
+        })));
+        
         return new Response(JSON.stringify({ 
             message: "Nenhum agendamento pendente",
             pacientesEncontrados: pacientesEncontrados.map(p => ({ id: p.id, nome: p.nome })),
-            totalAgendamentosEncontrados: todosAgendamentos.length
+            totalAgendamentosEncontrados: todosAgendamentos.length,
+            agendamentosFuturos: agendamentosSemFiltroStatus.length
         }), { status: 200 });
     }
     
