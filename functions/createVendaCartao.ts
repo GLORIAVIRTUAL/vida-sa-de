@@ -159,16 +159,21 @@ Deno.serve(async (req) => {
 
         // 6. Preparar Venda
         const numeroVenda = `CMV-${Date.now()}`;
-        const dataVenda = body.data_venda || new Date().toISOString().split('T')[0];
+        // Garantir que data_venda nunca seja vazia (obrigatório pelo schema)
+        const dataVenda = (body.data_venda && body.data_venda.trim() !== '') 
+            ? body.data_venda 
+            : new Date().toISOString().split('T')[0];
         let validadeCartao = body.validade_cartao;
         
         // Calcular validade automaticamente se não fornecida (1 ano após data da venda)
-        if (!validadeCartao) {
+        if (!validadeCartao || validadeCartao.trim() === '') {
             // Usar a data da venda como base para evitar inconsistências
-            const dataBase = dataVenda ? new Date(dataVenda) : new Date();
+            const dataBase = new Date(dataVenda + 'T12:00:00');
             dataBase.setFullYear(dataBase.getFullYear() + 1);
             validadeCartao = dataBase.toISOString().split('T')[0];
         }
+        
+        console.log('[VendaCartao] Data venda:', dataVenda, '| Validade:', validadeCartao);
 
         const isPagamentoIntegrado = forma_pagamento.includes('Cartão') && bandeira_cartao;
         const statusInicial = isPagamentoIntegrado ? 'Pendente' : 'Ativo';
