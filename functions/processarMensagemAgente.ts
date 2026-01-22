@@ -1002,10 +1002,16 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
             return matchPrincipal || matchArray;
           });
           console.log(`🔍 Buscando por ${especialidadeDetectada} (termos: ${termosRelacionados.slice(0,5).join(', ')}): encontrados ${medicosParaBuscar.length} médicos`);
+
+          // Se não encontrou nenhum médico para a especialidade, NÃO usar todos os médicos
+          if (medicosParaBuscar.length === 0) {
+            console.log(`❌ Nenhum médico encontrado para especialidade: ${especialidadeDetectada}`);
+          }
           } else {
+            // Só usa todos os médicos se NÃO detectou especialidade específica
             medicosParaBuscar = todosMedicos;
           }
-        }
+          }
 
         const disponibilidadesEncontradas = [];
         const diasAfrente = 15;
