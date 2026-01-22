@@ -945,7 +945,7 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
             'pedia': ['pediatria', 'pediatra', 'crianca', 'criancas', 'bebe', 'infantil'],
             'pneumo': ['pneumologia', 'pneumologista', 'pulmao', 'respiracao', 'asma', 'bronquite', 'tosse'],
             'reumato': ['reumatologia', 'reumatologista', 'reumatismo', 'artrite', 'artrose', 'lupus', 'fibromialgia'],
-            'odontologia': ['odontologia', 'odontologista', 'dentista', 'dentario', 'dente', 'dentes', 'ortodontia', 'implante', 'canal', 'protese dentaria', 'limpeza dental', 'extracao', 'carie', 'odonto', 'implantodontia'],
+            'odontologia': ['odontologia', 'odontologista', 'dentista', 'dentario', 'dente', 'dentes', 'ortodontia', 'implante dentario', 'canal dentario', 'protese dentaria', 'limpeza dental', 'extracao dentaria', 'carie', 'odonto', 'implantodontia', 'odontopediatria', 'periodontia', 'endodontia'],
             'endo': ['endocrinologia', 'endocrinologista', 'tireoide', 'diabetes', 'hormonio', 'metabolismo'],
             'quiro': ['quiropraxia', 'quiropraxista', 'ajuste', 'coluna vertebral'],
             'massoterapia': ['massoterapia', 'massoterapeuta', 'massagem', 'masso', 'relaxamento', 'tensao muscular', 'massagem terapeutica', 'massagem relaxante', 'drenagem linfatica', 'pos-operatorio'],
