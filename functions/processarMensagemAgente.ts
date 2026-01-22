@@ -1107,23 +1107,33 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
 
         if (disponibilidadesEncontradas.length > 0) {
           infoDisponibilidade = '\n\n📅 DISPONIBILIDADES ENCONTRADAS:\n';
-          
+
           // SEMPRE mostrar TODOS os médicos da especialidade
           for (const medico of disponibilidadesEncontradas) {
             infoDisponibilidade += `\n👨‍⚕️ ${medico.medico_nome} (${medico.especialidade}):\n`;
             infoDisponibilidade += `   ID do médico: ${medico.medico_id}\n`;
-            
+
             // Mostrar mais dias e horários para cada médico
             for (const dia of medico.disponibilidades.slice(0, 3)) {
               infoDisponibilidade += `   • ${dia.data_formatada}: ${dia.horarios.slice(0, 5).join(', ')}\n`;
             }
           }
-          
+
           if (disponibilidadesEncontradas.length > 1) {
             infoDisponibilidade += '\n⚠️ Há múltiplos profissionais disponíveis. MOSTRE TODOS ao cliente e pergunte qual médico e horário ele prefere.';
           }
           infoDisponibilidade += '\n⚠️ Para confirmar agendamento, preciso: nome completo e data de nascimento do paciente.';
           console.log('✅ Disponibilidades encontradas:', disponibilidadesEncontradas.length, 'médicos');
+        } else if (medicosParaBuscar.length === 0 && especialidadeDetectada) {
+          // Nenhum médico encontrado para a especialidade buscada
+          console.log('❌ Nenhum médico cadastrado para a especialidade:', especialidadeDetectada);
+          infoDisponibilidade = `\n\n❌ ESPECIALIDADE NÃO DISPONÍVEL: "${especialidadeDetectada}"
+
+        Não temos profissionais de ${especialidadeDetectada} cadastrados no momento.
+
+        Informe ao cliente que infelizmente a clínica não oferece essa especialidade atualmente e sugira entrar em contato pelo telefone 51 3661-5991 para mais informações.
+
+        NÃO ofereça outras especialidades - apenas informe que não temos essa especialidade disponível.`;
         } else {
           console.log('⚠️ Nenhuma disponibilidade encontrada para a especialidade detectada');
           // Listar especialidades disponíveis com horários
