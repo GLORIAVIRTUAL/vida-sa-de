@@ -190,15 +190,26 @@ async function processarMensagemRecebida(base44, payload) {
     
     console.log('📅 Agendamentos encontrados:', agendamentos.length);
 
-    // Confirmar o agendamento mais próximo
-    const agendamentoMaisProximo = agendamentos.sort((a, b) => 
-        new Date(a.data_agendamento) - new Date(b.data_agendamento)
-    )[0];
+    // Ordenar agendamentos por data/horário
+    const agendamentosOrdenados = agendamentos.sort((a, b) => {
+        const dataA = new Date(`${a.data_agendamento}T${a.horario || '00:00'}`);
+        const dataB = new Date(`${b.data_agendamento}T${b.horario || '00:00'}`);
+        return dataA - dataB;
+    });
+    
+    // Verificar se há apenas um agendamento - confirmar diretamente
+    // Se há múltiplos, confirmar o mais próximo (geralmente é o que recebeu lembrete)
+    const agendamentoParaConfirmar = agendamentosOrdenados[0];
     
     // Encontrar o paciente específico deste agendamento
-    const pacienteDoAgendamento = pacientesEncontrados.find(p => p.id === agendamentoMaisProximo.paciente_id) || pacientesEncontrados[0];
+    const pacienteDoAgendamento = pacientesEncontrados.find(p => p.id === agendamentoParaConfirmar.paciente_id) || pacientesEncontrados[0];
 
-    console.log('🔄 Confirmando agendamento:', agendamentoMaisProximo.id, 'de', pacienteDoAgendamento.nome);
+    console.log('🔄 Confirmando agendamento:', agendamentoParaConfirmar.id, 'de', agendamentoParaConfirmar.paciente_nome || pacienteDoAgendamento.nome);
+    console.log('📋 Total de agendamentos elegíveis:', agendamentosOrdenados.length);
+    if (agendamentosOrdenados.length > 1) {
+        console.log('⚠️ Múltiplos agendamentos encontrados - confirmando o mais próximo');
+        agendamentosOrdenados.forEach((a, i) => console.log(`   ${i+1}. ${a.paciente_nome} - ${a.data_agendamento} ${a.horario}`));
+    }
     
     await base44.asServiceRole.entities.Agendamento.update(agendamentoMaisProximo.id, {
         status: 'Confirmado'
