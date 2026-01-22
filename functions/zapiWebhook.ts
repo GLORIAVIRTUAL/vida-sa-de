@@ -211,7 +211,10 @@ async function processarMensagemRecebida(base44, payload) {
         agendamentosOrdenados.forEach((a, i) => console.log(`   ${i+1}. ${a.paciente_nome} - ${a.data_agendamento} ${a.horario}`));
     }
     
-    await base44.asServiceRole.entities.Agendamento.update(agendamentoMaisProximo.id, {
+    // Usar nome do agendamento se disponível, senão usar do paciente
+    const nomeParaMensagem = agendamentoParaConfirmar.paciente_nome || pacienteDoAgendamento.nome;
+    
+    await base44.asServiceRole.entities.Agendamento.update(agendamentoParaConfirmar.id, {
         status: 'Confirmado'
     });
     
@@ -221,10 +224,10 @@ async function processarMensagemRecebida(base44, payload) {
     try {
         await base44.asServiceRole.entities.Notification.create({
             type: 'confirmacao_recebida',
-            message: `✅ ${pacienteDoAgendamento.nome} confirmou presença para ${agendamentoMaisProximo.data_agendamento} às ${agendamentoMaisProximo.horario} via WhatsApp`,
+            message: `✅ ${nomeParaMensagem} confirmou presença para ${agendamentoParaConfirmar.data_agendamento} às ${agendamentoParaConfirmar.horario} via WhatsApp`,
             data: { 
-                agendamentoId: agendamentoMaisProximo.id,
-                pacienteNome: pacienteDoAgendamento.nome,
+                agendamentoId: agendamentoParaConfirmar.id,
+                pacienteNome: nomeParaMensagem,
                 telefone: telefone
             }
         });
@@ -235,7 +238,7 @@ async function processarMensagemRecebida(base44, payload) {
     // Enviar mensagem de confirmação de volta
     try {
         await enviarMensagemZapi(telefone, 
-            `✅ Perfeito, ${pacienteDoAgendamento.nome.split(' ')[0]}! Sua presença está confirmada para o dia ${formatarData(agendamentoMaisProximo.data_agendamento)} às ${agendamentoMaisProximo.horario}.\n\nLembre-se de chegar com 10 minutos de antecedência. Até lá! 😊\n\n*Centro Vida Saúde*`
+            `✅ Perfeito, ${nomeParaMensagem.split(' ')[0]}! Sua presença está confirmada para o dia ${formatarData(agendamentoParaConfirmar.data_agendamento)} às ${agendamentoParaConfirmar.horario}.\n\nLembre-se de chegar com 10 minutos de antecedência. Até lá! 😊\n\n*Centro Vida Saúde*`
         );
     } catch (e) {
         // Ignora erro de envio
@@ -243,8 +246,8 @@ async function processarMensagemRecebida(base44, payload) {
 
     return new Response(JSON.stringify({ 
         message: "Confirmação processada",
-        agendamentoId: agendamentoMaisProximo.id,
-        paciente: pacienteDoAgendamento.nome
+        agendamentoId: agendamentoParaConfirmar.id,
+        paciente: nomeParaMensagem
     }), { status: 200 });
 }
 
