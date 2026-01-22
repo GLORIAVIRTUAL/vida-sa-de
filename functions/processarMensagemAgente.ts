@@ -1130,6 +1130,37 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
           }
           infoDisponibilidade += '\n⚠️ Para confirmar agendamento, preciso: nome completo e data de nascimento do paciente.';
           console.log('✅ Disponibilidades encontradas:', disponibilidadesEncontradas.length, 'médicos');
+        } else if (medicosParaBuscar.length > 0 && disponibilidadesEncontradas.length === 0) {
+          // Médicos da especialidade existem mas não têm horários nos próximos dias
+          // Verificar os dias de atendimento configurados para informar ao cliente
+          console.log('⚠️ Médicos encontrados mas sem horários disponíveis nos próximos 15 dias');
+
+          let infoMedicosEncontrados = '';
+          for (const medico of medicosParaBuscar.slice(0, 3)) {
+            const horariosAtendimento = medico.horarios_atendimento || [];
+            if (horariosAtendimento.length > 0) {
+              const diasSemanaMap = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
+              const diasAtendimento = [...new Set(horariosAtendimento.map(h => diasSemanaMap[Math.floor(h.dia_semana)]))];
+              infoMedicosEncontrados += `\n   - ${medico.nome}: atende ${diasAtendimento.join(', ')}`;
+
+              // Mostrar horário
+              const primeiroHorario = horariosAtendimento[0];
+              if (primeiroHorario) {
+                infoMedicosEncontrados += ` das ${primeiroHorario.horario_inicio} às ${primeiroHorario.horario_fim}`;
+              }
+            }
+          }
+
+          infoDisponibilidade = `\n\n⚠️ MÉDICOS ENCONTRADOS MAS SEM HORÁRIOS DISPONÍVEIS:
+
+        Encontramos profissionais de ${especialidadeDetectada}, mas todos os horários estão ocupados nos próximos 15 dias.
+        ${infoMedicosEncontrados}
+
+        IMPORTANTE: Informe ao cliente quais são os dias de atendimento do(s) médico(s) e sugira:
+        1. Entrar em contato pelo telefone 51 3661-5991 para verificar disponibilidade
+        2. Ou aguardar abertura de novos horários
+
+        NÃO invente horários - apenas informe que os horários estão ocupados no momento.`;
         } else if (medicosParaBuscar.length === 0 && especialidadeDetectada) {
           // Nenhum médico encontrado para a especialidade buscada
           console.log('❌ Nenhum médico cadastrado para a especialidade:', especialidadeDetectada);
