@@ -13,22 +13,22 @@ Deno.serve(async (req) => {
         }
         console.log('[VendaCartao] Authenticated user:', user.email);
 
-        // 2. Verificar Segredos
+        // 2. Verificar Segredos da EvoluServices (opcional - só para pagamento integrado com maquininha)
         let API_URL = Deno.env.get("EVOLUSERVICES_API_URL");
         const API_TOKEN = Deno.env.get("EVOLUSERVICES_TOKEN");
         const MERCHANT_ID = Deno.env.get("EVOLUSERVICES_MERCHANT_ID");
-
-        if (!API_URL || !API_TOKEN || !MERCHANT_ID) {
-            console.error('[VendaCartao] Missing Payment Secrets');
-            return Response.json({ 
-                error: 'Configuração de pagamento incompleta. Verifique os segredos da EvoluServices.' 
-            }, { status: 500 });
+        
+        const evoluServicesConfigurado = API_URL && API_TOKEN && MERCHANT_ID;
+        
+        if (evoluServicesConfigurado) {
+            // Sanitizar URL
+            API_URL = API_URL.trim();
+            if (API_URL.endsWith('/')) API_URL = API_URL.slice(0, -1);
+            if (API_URL.endsWith('/remote/transaction')) API_URL = API_URL.replace('/remote/transaction', '');
+            console.log('[VendaCartao] EvoluServices configurado');
+        } else {
+            console.log('[VendaCartao] EvoluServices NÃO configurado - vendas serão registradas sem integração de maquininha');
         }
-
-        // Sanitizar URL
-        API_URL = API_URL.trim();
-        if (API_URL.endsWith('/')) API_URL = API_URL.slice(0, -1);
-        if (API_URL.endsWith('/remote/transaction')) API_URL = API_URL.replace('/remote/transaction', '');
 
         // 3. Parse Body
         let body;
