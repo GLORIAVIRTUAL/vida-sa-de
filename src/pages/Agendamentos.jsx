@@ -132,27 +132,36 @@ export default function Agendamentos() {
 
   // Subscription para atualizar automaticamente quando agendamentos mudam
   useEffect(() => {
+    console.log('🔌 Configurando subscription de agendamentos...');
+    
     const unsubscribe = base44.entities.Agendamento.subscribe((event) => {
-      console.log('🔔 Agendamento atualizado via subscription:', event.type, event.id);
+      console.log('🔔 Agendamento atualizado via subscription:', event.type, event.id, event.data?.status);
       
-      if (event.type === 'update') {
+      // Limpar cache imediatamente
+      clearCache('agendamentos');
+      
+      if (event.type === 'update' && event.data) {
         // Atualizar o agendamento específico no estado
-        setAgendamentos(prev => prev.map(ag => 
-          ag.id === event.id ? { ...ag, ...event.data } : ag
-        ));
-      } else if (event.type === 'create') {
+        setAgendamentos(prev => {
+          const updated = prev.map(ag => 
+            ag.id === event.id ? { ...ag, ...event.data } : ag
+          );
+          console.log('✅ Estado atualizado para agendamento:', event.id, '-> status:', event.data.status);
+          return updated;
+        });
+      } else if (event.type === 'create' && event.data) {
         // Adicionar novo agendamento
         setAgendamentos(prev => [event.data, ...prev]);
       } else if (event.type === 'delete') {
         // Remover agendamento
         setAgendamentos(prev => prev.filter(ag => ag.id !== event.id));
       }
-      
-      // Limpar cache para garantir sincronização
-      clearCache('agendamentos');
     });
 
-    return () => unsubscribe();
+    return () => {
+      console.log('🔌 Removendo subscription de agendamentos');
+      unsubscribe();
+    };
   }, []);
 
   const getAgendamentosPorPeriodo = () => {
