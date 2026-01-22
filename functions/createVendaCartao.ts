@@ -175,7 +175,9 @@ Deno.serve(async (req) => {
         
         console.log('[VendaCartao] Data venda:', dataVenda, '| Validade:', validadeCartao);
 
-        const isPagamentoIntegrado = forma_pagamento.includes('Cartão') && bandeira_cartao;
+        // Só usa integração de maquininha se EvoluServices estiver configurado E for cartão com bandeira
+        const isPagamentoIntegrado = evoluServicesConfigurado && forma_pagamento.includes('Cartão') && bandeira_cartao;
+        // Se não tem integração, já marca como Ativo direto
         const statusInicial = isPagamentoIntegrado ? 'Pendente' : 'Ativo';
 
         console.log(`[VendaCartao] Creating Sale Record (Status: ${statusInicial})`);
