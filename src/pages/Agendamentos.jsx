@@ -130,6 +130,31 @@ export default function Agendamentos() {
     carregarDados();
   }, [carregarDados]);
 
+  // Subscription para atualizar automaticamente quando agendamentos mudam
+  useEffect(() => {
+    const unsubscribe = base44.entities.Agendamento.subscribe((event) => {
+      console.log('🔔 Agendamento atualizado via subscription:', event.type, event.id);
+      
+      if (event.type === 'update') {
+        // Atualizar o agendamento específico no estado
+        setAgendamentos(prev => prev.map(ag => 
+          ag.id === event.id ? { ...ag, ...event.data } : ag
+        ));
+      } else if (event.type === 'create') {
+        // Adicionar novo agendamento
+        setAgendamentos(prev => [event.data, ...prev]);
+      } else if (event.type === 'delete') {
+        // Remover agendamento
+        setAgendamentos(prev => prev.filter(ag => ag.id !== event.id));
+      }
+      
+      // Limpar cache para garantir sincronização
+      clearCache('agendamentos');
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   const getAgendamentosPorPeriodo = () => {
     const dataBase = diaSelecionado;
     let dataInicio, dataFim;
