@@ -974,13 +974,16 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
           medicosParaBuscar = todosMedicos.filter(m => {
             // Verifica no campo principal 'especialidade' (NORMALIZADO)
             const espPrincipal = normalizarTexto(m.especialidade || '');
+
+            // Match EXATO ou muito próximo - evitar falsos positivos
             const matchPrincipal = termosRelacionados.some(t => {
-              // Match se contém o termo OU se o termo contém a especialidade OU primeira palavra coincide
               const tNorm = normalizarTexto(t);
-              return espPrincipal.includes(tNorm) || tNorm.includes(espPrincipal) || 
-                     espPrincipal.split(' ')[0] === tNorm.split(' ')[0] ||
-                     (espPrincipal.length > 3 && tNorm.length > 3 && 
-                      (espPrincipal.startsWith(tNorm.substring(0, 4)) || tNorm.startsWith(espPrincipal.substring(0, 4))));
+              // Match exato ou contém o termo completo (mínimo 5 chars para evitar "odonto" matchando "clínico")
+              if (tNorm.length >= 5) {
+                return espPrincipal.includes(tNorm) || tNorm.includes(espPrincipal);
+              }
+              // Para termos curtos, exigir match exato
+              return espPrincipal === tNorm;
             });
 
             // Verifica no array 'especialidades' (NORMALIZADO)
@@ -988,18 +991,15 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
               const eLower = normalizarTexto(e);
               return termosRelacionados.some(t => {
                 const tNorm = normalizarTexto(t);
-                return eLower.includes(tNorm) || tNorm.includes(eLower) ||
-                       eLower.split(' ')[0] === tNorm.split(' ')[0] ||
-                       (eLower.length > 3 && tNorm.length > 3 && 
-                        (eLower.startsWith(tNorm.substring(0, 4)) || tNorm.startsWith(eLower.substring(0, 4))));
+                if (tNorm.length >= 5) {
+                  return eLower.includes(tNorm) || tNorm.includes(eLower);
+                }
+                return eLower === tNorm;
               });
             });
 
-            // Verifica também no nome do médico (NORMALIZADO)
-            const nomeLower = normalizarTexto(m.nome || '');
-            const matchNome = termosRelacionados.some(t => nomeLower.includes(normalizarTexto(t)));
-
-            return matchPrincipal || matchArray || matchNome;
+            // NÃO verificar no nome do médico - isso causa falsos positivos
+            return matchPrincipal || matchArray;
           });
           console.log(`🔍 Buscando por ${especialidadeDetectada} (termos: ${termosRelacionados.slice(0,5).join(', ')}): encontrados ${medicosParaBuscar.length} médicos`);
           } else {
