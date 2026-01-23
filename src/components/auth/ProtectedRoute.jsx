@@ -3,6 +3,9 @@ import { User } from '@/entities/User';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertCircle } from "lucide-react";
 
+// Emails com permissões especiais de admin (podem acessar páginas de admin mesmo sem role admin)
+const ADMIN_EMAILS = ['cristianogoldani@yahoo.com.br'];
+
 /**
  * Componente para proteger rotas com base no papel do usuário.
  * @param {{
@@ -36,8 +39,11 @@ export default function ProtectedRoute({ children, requiredRole, fallbackMessage
 
   const userRole = user?.app_role || user?.role;
   const rolesPermitidos = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
+  
+  // Verificar se o email do usuário tem permissão especial
+  const temPermissaoEspecial = user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase());
 
-  if (!user || !rolesPermitidos.includes(userRole)) {
+  if (!user || (!rolesPermitidos.includes(userRole) && !temPermissaoEspecial)) {
     return (
       <div className="p-6 flex items-center justify-center min-h-[60vh]">
         <Card className="w-full max-w-lg text-center shadow-lg bg-red-50 border-red-200">
