@@ -2185,6 +2185,34 @@ INSTRUÇÕES GERAIS:
       console.error('⚠️ Erro ao salvar histórico:', e.message);
     }
     
+    // Se tem arquivo para enviar, adicionar ao histórico como mensagem separada
+    if (arquivoParaEnviar && arquivoParaEnviar.url) {
+      try {
+        const contatos = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
+        if (contatos.length > 0) {
+          const contato = contatos[0];
+          const historicoAtual = contato.historico_mensagens || [];
+          const timestamp = new Date().toISOString();
+          
+          // Adicionar mensagem do arquivo enviado
+          historicoAtual.push({
+            role: 'assistant',
+            content: `📄 ${arquivoParaEnviar.nome}: ${arquivoParaEnviar.url}`,
+            timestamp,
+            mediaType: 'document',
+            mediaUrl: arquivoParaEnviar.url
+          });
+          
+          await base44.asServiceRole.entities.Contato.update(contato.id, {
+            historico_mensagens: historicoAtual.slice(-50)
+          });
+          console.log('✅ Arquivo adicionado ao histórico:', arquivoParaEnviar.nome);
+        }
+      } catch (e) {
+        console.error('⚠️ Erro ao salvar arquivo no histórico:', e.message);
+      }
+    }
+
     return Response.json({ 
       success: true, 
       resposta: llmResponse,
