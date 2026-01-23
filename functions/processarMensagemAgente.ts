@@ -635,15 +635,19 @@ IMPORTANTE: Confirme que encontrou o resultado e informe que está enviando o ar
             
             console.log('✅ Resultado encontrado! Arquivo para enviar:', JSON.stringify(arquivoParaEnviar));
           } else {
-            infoResultadoExame = `\n\n❌ RESULTADO NÃO ENCONTRADO
+            infoResultadoExame = `\n\n⏳ RESULTADO AINDA NÃO DISPONÍVEL
 CPF informado: ${cpfCliente}
 
-Não encontramos resultados de exames para este CPF no sistema.
+O resultado do exame ainda não está pronto no sistema.
 
-Peça para o cliente:
-1. Verificar se o CPF está correto
-2. Informar se o exame foi realizado recentemente
-3. Entrar em contato com a clínica pelo telefone para mais informações`;
+RESPONDA AO CLIENTE de forma gentil:
+- Informe que o resultado ainda não está disponível
+- Diga que assim que ficar pronto, ele poderá solicitar novamente
+- Sugira que entre em contato novamente em alguns dias
+- Se preferir, pode ligar na clínica (51) 3661-5991 para mais informações
+
+Exemplo de resposta:
+"Verifiquei aqui e seu resultado ainda não está disponível no sistema. 📋 Assim que ficar pronto, você pode me chamar novamente que envio para você! Se preferir, pode também ligar na clínica: (51) 3661-5991. 😊"`;
           }
         } catch (e) {
           console.error('⚠️ Erro ao buscar resultado:', e.message);
