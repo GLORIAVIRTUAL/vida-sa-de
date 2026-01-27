@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, DollarSign, FileText, Calculator, Users } from "lucide-react";
@@ -32,16 +31,18 @@ export default function DashboardFinanceiro({ lancamentos = [], ordensServico = 
       .filter(l => l.tipo === "Entrada")
       .reduce((sum, l) => sum + l.valor, 0).toFixed(2));
 
+    // Exclui lançamentos automáticos de "Repasse Médico" - apenas lançamentos manuais
     const despesaMesAtual = parseFloat(lancamentosMesAtual
-      .filter(l => l.tipo === "Saída")
+      .filter(l => l.tipo === "Saída" && l.categoria !== "Repasse Médico")
       .reduce((sum, l) => sum + l.valor, 0).toFixed(2));
 
     const receitaMesAnterior = parseFloat(lancamentosMesAnterior
       .filter(l => l.tipo === "Entrada")
       .reduce((sum, l) => sum + l.valor, 0).toFixed(2));
 
+    // Exclui lançamentos automáticos de "Repasse Médico" - apenas lançamentos manuais
     const despesaMesAnterior = parseFloat(lancamentosMesAnterior
-      .filter(l => l.tipo === "Saída")
+      .filter(l => l.tipo === "Saída" && l.categoria !== "Repasse Médico")
       .reduce((sum, l) => sum + l.valor, 0).toFixed(2));
 
     const lucroMesAtual = parseFloat((receitaMesAtual - despesaMesAtual).toFixed(2));
