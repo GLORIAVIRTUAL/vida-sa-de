@@ -13,19 +13,14 @@ export default function DashboardFinanceiro({ lancamentos = [], ordensServico = 
   const fimMesAnterior = endOfMonth(subMonths(hoje, 1));
 
   const calcularEstatisticas = () => {
-    // Filtra apenas lançamentos MANUAIS (created_by NÃO é service)
-    const lancamentosManuais = lancamentos.filter(l => 
-      !l.created_by?.includes('service')
-    );
-
-    // Mês atual
-    const lancamentosMesAtual = lancamentosManuais.filter(l => {
+    // Mês atual - filtra apenas lançamentos do mês
+    const lancamentosMesAtual = lancamentos.filter(l => {
       const dataLanc = new Date(l.data_lancamento + 'T00:00:00');
       return dataLanc >= inicioMesAtual && dataLanc <= fimMesAtual;
     });
 
     // Mês anterior
-    const lancamentosMesAnterior = lancamentosManuais.filter(l => {
+    const lancamentosMesAnterior = lancamentos.filter(l => {
       const dataLanc = new Date(l.data_lancamento + 'T00:00:00');
       return dataLanc >= inicioMesAnterior && dataLanc <= fimMesAnterior;
     });
@@ -34,18 +29,19 @@ export default function DashboardFinanceiro({ lancamentos = [], ordensServico = 
       .filter(l => l.tipo === "Entrada")
       .reduce((sum, l) => sum + l.valor, 0).toFixed(2));
 
-    // Despesas apenas dos lançamentos manuais
+    // Despesas: EXCLUI a categoria "Repasse Médico" completamente
+    // pois os repasses são calculados automaticamente a partir das OS
     const despesaMesAtual = parseFloat(lancamentosMesAtual
-      .filter(l => l.tipo === "Saída")
+      .filter(l => l.tipo === "Saída" && l.categoria !== "Repasse Médico")
       .reduce((sum, l) => sum + l.valor, 0).toFixed(2));
 
     const receitaMesAnterior = parseFloat(lancamentosMesAnterior
       .filter(l => l.tipo === "Entrada")
       .reduce((sum, l) => sum + l.valor, 0).toFixed(2));
 
-    // Despesas apenas dos lançamentos manuais
+    // Despesas: EXCLUI a categoria "Repasse Médico" completamente
     const despesaMesAnterior = parseFloat(lancamentosMesAnterior
-      .filter(l => l.tipo === "Saída")
+      .filter(l => l.tipo === "Saída" && l.categoria !== "Repasse Médico")
       .reduce((sum, l) => sum + l.valor, 0).toFixed(2));
 
     const lucroMesAtual = parseFloat((receitaMesAtual - despesaMesAtual).toFixed(2));
