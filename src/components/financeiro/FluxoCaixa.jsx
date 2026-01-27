@@ -122,9 +122,14 @@ export default function FluxoCaixa({ lancamentos, ordensServico, pacientes, onUp
   };
 
   // Filtrar lançamentos pelo período e forma de pagamento
+  // Data de criação do app (após duplicação) - ignora lançamentos importados
+  const dataInicioApp = new Date('2026-01-20T13:40:00');
+  
   const lancamentosFiltrados = useMemo(() => {
     return lancamentos.filter(l => {
       if (!l.data_lancamento) return false;
+      // Ignora lançamentos criados antes da duplicação do app
+      if (l.created_date && new Date(l.created_date) < dataInicioApp) return false;
       const dentroData = l.data_lancamento >= dataInicio && l.data_lancamento <= dataFim;
       const formaMatch = formaPagamentoFiltro === "todas" || l.forma_pagamento === formaPagamentoFiltro;
       return dentroData && formaMatch;
