@@ -13,14 +13,22 @@ export default function DashboardFinanceiro({ lancamentos = [], ordensServico = 
   const fimMesAnterior = endOfMonth(subMonths(hoje, 1));
 
   const calcularEstatisticas = () => {
+    // Usuários válidos deste app (exclui lançamentos duplicados de apps anteriores)
+    const usuariosValidos = ["cristianogoldani@yahoo.com.br", "centrovidasaude@gmail.com"];
+    
+    // Filtra lançamentos apenas dos usuários válidos deste app
+    const lancamentosValidos = lancamentos.filter(l => 
+      usuariosValidos.includes(l.created_by)
+    );
+
     // Mês atual - filtra apenas lançamentos do mês
-    const lancamentosMesAtual = lancamentos.filter(l => {
+    const lancamentosMesAtual = lancamentosValidos.filter(l => {
       const dataLanc = new Date(l.data_lancamento + 'T00:00:00');
       return dataLanc >= inicioMesAtual && dataLanc <= fimMesAtual;
     });
 
     // Mês anterior
-    const lancamentosMesAnterior = lancamentos.filter(l => {
+    const lancamentosMesAnterior = lancamentosValidos.filter(l => {
       const dataLanc = new Date(l.data_lancamento + 'T00:00:00');
       return dataLanc >= inicioMesAnterior && dataLanc <= fimMesAnterior;
     });
