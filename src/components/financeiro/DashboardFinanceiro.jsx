@@ -27,22 +27,23 @@ export default function DashboardFinanceiro({ lancamentos = [], ordensServico = 
 
     const receitaMesAtual = parseFloat(lancamentosMesAtual
       .filter(l => l.tipo === "Entrada")
-      .reduce((sum, l) => sum + l.valor, 0).toFixed(2));
+      .reduce((sum, l) => sum + (l.valor || 0), 0).toFixed(2));
 
-    // Despesas: EXCLUI a categoria "Repasse Médico" completamente
-    // pois os repasses são calculados automaticamente a partir das OS
+    // Despesas: EXCLUI "Repasse Médico" e "Repasse Laboratório" 
+    // para mostrar apenas despesas operacionais reais
+    const categoriasExcluidas = ["Repasse Médico", "Repasse Laboratório"];
     const despesaMesAtual = parseFloat(lancamentosMesAtual
-      .filter(l => l.tipo === "Saída" && l.categoria !== "Repasse Médico")
-      .reduce((sum, l) => sum + l.valor, 0).toFixed(2));
+      .filter(l => l.tipo === "Saída" && !categoriasExcluidas.includes(l.categoria))
+      .reduce((sum, l) => sum + (l.valor || 0), 0).toFixed(2));
 
     const receitaMesAnterior = parseFloat(lancamentosMesAnterior
       .filter(l => l.tipo === "Entrada")
-      .reduce((sum, l) => sum + l.valor, 0).toFixed(2));
+      .reduce((sum, l) => sum + (l.valor || 0), 0).toFixed(2));
 
-    // Despesas: EXCLUI a categoria "Repasse Médico" completamente
+    // Despesas: EXCLUI "Repasse Médico" e "Repasse Laboratório"
     const despesaMesAnterior = parseFloat(lancamentosMesAnterior
-      .filter(l => l.tipo === "Saída" && l.categoria !== "Repasse Médico")
-      .reduce((sum, l) => sum + l.valor, 0).toFixed(2));
+      .filter(l => l.tipo === "Saída" && !categoriasExcluidas.includes(l.categoria))
+      .reduce((sum, l) => sum + (l.valor || 0), 0).toFixed(2));
 
     const lucroMesAtual = parseFloat((receitaMesAtual - despesaMesAtual).toFixed(2));
     const lucroMesAnterior = parseFloat((receitaMesAnterior - despesaMesAnterior).toFixed(2));
