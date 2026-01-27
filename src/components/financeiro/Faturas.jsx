@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -125,6 +124,7 @@ export default function Faturas({ ordensServico, pacientes, medicos, procediment
 
       const paciente = pacientes.find(p => p.id === os.paciente_id);
       const medico = medicos.find(m => m.id === os.medico_id);
+      const nomePaciente = paciente?.nome || os.paciente_nome || "Paciente não encontrado";
 
       // Determinar nome do serviço
       let nomeServico = os.tipo_servico;
@@ -143,7 +143,7 @@ export default function Faturas({ ordensServico, pacientes, medicos, procediment
 
       faturasPorCategoria[categoria.id].itens.push({
         data: os.data_execucao,
-        paciente_nome: paciente?.nome || "Paciente não encontrado",
+        paciente_nome: nomePaciente,
         medico_nome: medico?.nome || "N/A",
         servico: nomeServico,
         valor: os.valor_final || 0,
