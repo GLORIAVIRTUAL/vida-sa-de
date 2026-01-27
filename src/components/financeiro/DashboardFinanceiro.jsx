@@ -13,16 +13,19 @@ export default function DashboardFinanceiro({ lancamentos = [], ordensServico = 
   const fimMesAnterior = endOfMonth(subMonths(hoje, 1));
 
   const calcularEstatisticas = () => {
+    // Filtra apenas lançamentos MANUAIS (created_by NÃO é service)
+    const lancamentosManuais = lancamentos.filter(l => 
+      !l.created_by?.includes('service')
+    );
+
     // Mês atual
-    const lancamentosMesAtual = lancamentos.filter(l => {
-      // CORRIGIDO: Adicionado 'T00:00:00' para forçar o fuso horário local na comparação
+    const lancamentosMesAtual = lancamentosManuais.filter(l => {
       const dataLanc = new Date(l.data_lancamento + 'T00:00:00');
       return dataLanc >= inicioMesAtual && dataLanc <= fimMesAtual;
     });
 
     // Mês anterior
-    const lancamentosMesAnterior = lancamentos.filter(l => {
-      // CORRIGIDO: Adicionado 'T00:00:00' para forçar o fuso horário local na comparação
+    const lancamentosMesAnterior = lancamentosManuais.filter(l => {
       const dataLanc = new Date(l.data_lancamento + 'T00:00:00');
       return dataLanc >= inicioMesAnterior && dataLanc <= fimMesAnterior;
     });
@@ -31,18 +34,18 @@ export default function DashboardFinanceiro({ lancamentos = [], ordensServico = 
       .filter(l => l.tipo === "Entrada")
       .reduce((sum, l) => sum + l.valor, 0).toFixed(2));
 
-    // Exclui apenas repasses automáticos (que têm ordem_servico_id) - mantém repasses manuais
+    // Despesas apenas dos lançamentos manuais
     const despesaMesAtual = parseFloat(lancamentosMesAtual
-      .filter(l => l.tipo === "Saída" && !(l.categoria === "Repasse Médico" && l.ordem_servico_id))
+      .filter(l => l.tipo === "Saída")
       .reduce((sum, l) => sum + l.valor, 0).toFixed(2));
 
     const receitaMesAnterior = parseFloat(lancamentosMesAnterior
       .filter(l => l.tipo === "Entrada")
       .reduce((sum, l) => sum + l.valor, 0).toFixed(2));
 
-    // Exclui apenas repasses automáticos (que têm ordem_servico_id) - mantém repasses manuais
+    // Despesas apenas dos lançamentos manuais
     const despesaMesAnterior = parseFloat(lancamentosMesAnterior
-      .filter(l => l.tipo === "Saída" && !(l.categoria === "Repasse Médico" && l.ordem_servico_id))
+      .filter(l => l.tipo === "Saída")
       .reduce((sum, l) => sum + l.valor, 0).toFixed(2));
 
     const lucroMesAtual = parseFloat((receitaMesAtual - despesaMesAtual).toFixed(2));
