@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -273,9 +272,10 @@ export default function RepasseMedicos({ ordensServico, medicos, pacientes, onRe
             <tbody>
               ${grupoMedico.ordens.map(os => {
                 const paciente = pacientes.find(p => p.id === os.paciente_id);
+                const nomePaciente = paciente?.nome || os.paciente_nome || 'N/A';
                 return `
                   <tr>
-                    <td>${paciente?.nome || 'N/A'}</td>
+                    <td>${nomePaciente}</td>
                     <td>${os.tipo_servico}</td>
                     <td>R$ ${os.valor_final.toFixed(2)}</td>
                     <td><strong>R$ ${os.valor_repasse_medico.toFixed(2)}</strong></td>
@@ -433,9 +433,10 @@ export default function RepasseMedicos({ ordensServico, medicos, pacientes, onRe
                         <TableBody>
                           {grupo.ordens.map(os => {
                             const paciente = pacientes.find(p => p.id === os.paciente_id);
+                            const nomePaciente = paciente?.nome || os.paciente_nome || 'N/A';
                             return (
                               <TableRow key={os.id}>
-                                <TableCell>{paciente?.nome || 'N/A'}</TableCell>
+                                <TableCell>{nomePaciente}</TableCell>
                                 <TableCell>{os.tipo_servico}</TableCell>
                                 <TableCell>R$ {os.valor_final.toFixed(2)}</TableCell>
                                 <TableCell className="font-bold text-green-600">
