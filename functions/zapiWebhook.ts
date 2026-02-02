@@ -49,8 +49,40 @@ Deno.serve(async (req) => {
     }
 });
 
+// Cache simples para evitar processamento duplicado (em memória por instância)
+const processedMessages = new Map();
+const CACHE_TTL_MS = 60000; // 1 minuto
+
+function isMessageProcessed(messageId) {
+    const now = Date.now();
+    // Limpar entradas antigas
+    for (const [key, timestamp] of processedMessages.entries()) {
+        if (now - timestamp > CACHE_TTL_MS) {
+            processedMessages.delete(key);
+        }
+    }
+    return processedMessages.has(messageId);
+}
+
+function markMessageProcessed(messageId) {
+    processedMessages.set(messageId, Date.now());
+}
+
 // Processa mensagens recebidas dos pacientes (confirmações)
 async function processarMensagemRecebida(base44, payload) {
+    const messageId = payload.messageId || payload.id;
+    
+    // ANTI-DUPLICATA: Verificar se esta mensagem já foi processada
+    if (messageId && isMessageProcessed(messageId)) {
+        console.log('⏭️ Mensagem já processada (cache). Ignorando duplicata:', messageId);
+        return new Response(JSON.stringify({ message: "Duplicata ignorada" }), { status: 200 });
+    }
+    
+    // Marcar como processada IMEDIATAMENTE
+    if (messageId) {
+        markMessageProcessed(messageId);
+    }
+    
     // IMPORTANTE: Para mensagens enviadas PELA clínica (fromMe=true), o 'phone' é o destinatário (paciente)
     // Para mensagens RECEBIDAS (fromMe=false), o 'phone' também é o remetente (paciente)
     // O 'connectedPhone' é sempre o número conectado ao Z-API (clínica)
@@ -59,7 +91,7 @@ async function processarMensagemRecebida(base44, payload) {
     
     console.log('📱 Telefone raw:', telefone, '| connectedPhone:', payload.connectedPhone, '| fromMe:', payload.fromMe);
     
-    console.log('📱 Processando mensagem:', { telefone, mensagem });
+    console.log('📱 Processando mensagem:', { telefone, mensagem, messageId });
 
     // Palavras-chave para confirmação
     const palavrasConfirmacao = ['sim', 'confirmo', 'confirmar', 'confirmado', 'ok', 'vou', 'estarei', 'irei', 's', '1', 'yes'];
