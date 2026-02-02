@@ -15,10 +15,12 @@ Deno.serve(async (req) => {
         // Verificar se é uma mensagem RECEBIDA (do paciente) - múltiplos formatos
         // NOTA: Também aceita fromMe=true para casos de teste onde o mesmo número envia confirmação
         const temMensagemTexto = payload.text?.message || payload.body || payload.message;
+        const temMidia = payload.image || payload.document || payload.audio || payload.video || payload.sticker;
+        const temConteudo = temMensagemTexto || temMidia;
         const isReceivedMessage = 
-            (payload.isGroup === false && payload.fromMe === false && temMensagemTexto) ||
+            (payload.isGroup === false && payload.fromMe === false && temConteudo) ||
             (payload.event === 'message' && payload.fromMe === false) ||
-            (payload.phone && temMensagemTexto && !payload.fromMe);
+            (payload.phone && temConteudo && !payload.fromMe);
         
         // Verificar se é uma confirmação (SIM) - aceita mesmo de fromMe=true para testes
         const mensagemTexto = (temMensagemTexto || '').toLowerCase().trim();
