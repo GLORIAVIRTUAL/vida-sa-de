@@ -570,7 +570,8 @@ Deno.serve(async (req) => {
     }
 
     // Verificar se cliente quer resultado de exame
-    const querResultado = /resultado|exame pronto|pegar|buscar resultado|retirar|laudo|meu exame|meus exames/i.test(messageText);
+    const querResultado = /resultado|exame pronto|pegar|buscar resultado|retirar|laudo|meu exame|meus exames|localizar|pegar resultado|resultado do exame/i.test(messageText) ||
+                          /resultado|exame pronto|localizar/i.test(historicoConversa || '');
     let infoResultadoExame = '';
     let arquivoParaEnviar = null;
     
@@ -629,9 +630,14 @@ Exame: ${resultadoMaisRecente.descricao || 'Resultado de exame'}
 Data: ${resultadoMaisRecente.data_exame || 'N/A'}
 Arquivo: ${resultadoMaisRecente.nome_arquivo}
 
-📎 O ARQUIVO SERÁ ENVIADO AUTOMATICAMENTE JUNTO COM ESTA MENSAGEM.
+📎 O ARQUIVO PDF SERÁ ENVIADO AUTOMATICAMENTE JUNTO COM ESTA MENSAGEM.
 
-IMPORTANTE: Confirme que encontrou o resultado e informe que está enviando o arquivo PDF agora mesmo.`;
+IMPORTANTE: Confirme ao cliente:
+1. Que encontrou o resultado do exame dele
+2. Que o arquivo PDF está sendo enviado AGORA MESMO pelo WhatsApp
+3. Diga: "Estou enviando o arquivo PDF agora mesmo! 📄"
+
+NÃO diga para buscar na clínica - o arquivo já está sendo enviado!`;
             
             console.log('✅ Resultado encontrado! Arquivo para enviar:', JSON.stringify(arquivoParaEnviar));
           } else {
