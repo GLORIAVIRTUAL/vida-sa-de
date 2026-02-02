@@ -102,13 +102,35 @@ async function processarMensagemRecebida(base44, payload) {
     if (!ehConfirmacao) {
         console.log('🤖 Mensagem não é confirmação - encaminhando para chatbot IA...');
         
+        // Determinar o texto da mensagem baseado no tipo de mídia
+        let textoMensagem = mensagem;
+        if (!textoMensagem && payload.document) {
+            textoMensagem = `[Documento: ${payload.document.fileName || 'arquivo'}]`;
+        } else if (!textoMensagem && payload.image) {
+            textoMensagem = payload.image.caption || '[Imagem recebida]';
+        } else if (!textoMensagem && payload.audio) {
+            textoMensagem = '[Áudio recebido]';
+        } else if (!textoMensagem && payload.video) {
+            textoMensagem = payload.video.caption || '[Vídeo recebido]';
+        } else if (!textoMensagem && payload.sticker) {
+            textoMensagem = '[Sticker recebido]';
+        }
+        
+        console.log('📎 Mídia detectada:', {
+            temDocumento: !!payload.document,
+            temImagem: !!payload.image,
+            temAudio: !!payload.audio,
+            temVideo: !!payload.video,
+            textoMensagem
+        });
+        
         // Encaminhar para o chatbot IA
         try {
             const resultadoChatbot = await base44.asServiceRole.functions.invoke('webhookWhatsappChatbot', {
                 phone: telefone,
                 fromMe: false,
                 isGroup: false,
-                text: { message: mensagem },
+                text: { message: textoMensagem },
                 senderName: payload.senderName || payload.chatName || 'Usuário',
                 messageId: payload.messageId || payload.id,
                 // Passar mídia se houver
