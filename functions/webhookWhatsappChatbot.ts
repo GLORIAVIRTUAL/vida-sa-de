@@ -336,13 +336,19 @@ Deno.serve(async (req) => {
           return Response.json({ success: true, status: 'ja_processado' });
         }
         
-        const mensagemCompleta = todasMensagens.map(m => m.texto).join('\n');
         // Pegar a última mídia se houver para novo contato
         const ultimaMidiaNovoContato = [...todasMensagens].reverse().find(m => m.mediaUrl);
         if (ultimaMidiaNovoContato) {
           mediaUrl = ultimaMidiaNovoContato.mediaUrl;
           mediaType = ultimaMidiaNovoContato.mediaType;
           console.log(`📎 Novo contato - usando mídia: ${mediaType} - ${mediaUrl}`);
+        }
+        
+        // Se houver apenas mídia sem texto, usar a descrição da mídia como texto
+        let mensagemCompleta = todasMensagens.map(m => m.texto).join('\n');
+        if (!mensagemCompleta.trim() && ultimaMidiaNovoContato) {
+          console.log('📄 Novo contato - apenas mídia sem texto - usando descrição');
+          mensagemCompleta = ultimaMidiaNovoContato.texto;
         }
         console.log(`📝 Processando ${todasMensagens.length} mensagens acumuladas (novo contato)`);
         
