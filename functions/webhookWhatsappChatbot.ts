@@ -57,78 +57,59 @@ Deno.serve(async (req) => {
       console.log('⚠️ Erro ao verificar duplicata:', e.message);
     }
     
-    // Processar diferentes tipos de mídia
+    // Processar diferentes tipos de mídia - FORMATO Z-API
     let messageText = '';
     let mediaUrl = null;
     let mediaType = 'text';
-    let mediaId = null;
     
-    if (message.text?.body) {
-      messageText = message.text.body;
+    // Texto simples
+    if (body.text?.message) {
+      messageText = body.text.message;
       mediaType = 'text';
-    } else if (message.image) {
+    } else if (body.body) {
+      messageText = body.body;
+      mediaType = 'text';
+    } else if (body.message && typeof body.message === 'string') {
+      messageText = body.message;
+      mediaType = 'text';
+    }
+    // Imagem
+    else if (body.image) {
       mediaType = 'image';
-      mediaId = message.image.id;
-      messageText = message.image.caption || '[Imagem recebida]';
-    } else if (message.document) {
+      messageText = body.image.caption || '[Imagem recebida]';
+      mediaUrl = body.image.imageUrl || body.image.url;
+    }
+    // Documento
+    else if (body.document) {
       mediaType = 'document';
-      mediaId = message.document.id;
-      messageText = `[Documento: ${message.document.filename || 'arquivo'}]`;
-    } else if (message.audio) {
+      messageText = `[Documento: ${body.document.fileName || 'arquivo'}]`;
+      mediaUrl = body.document.documentUrl || body.document.url;
+    }
+    // Áudio
+    else if (body.audio) {
       mediaType = 'audio';
-      mediaId = message.audio.id;
       messageText = '[Áudio recebido]';
-    } else if (message.video) {
+      mediaUrl = body.audio.audioUrl || body.audio.url;
+    }
+    // Vídeo
+    else if (body.video) {
       mediaType = 'video';
-      mediaId = message.video.id;
-      messageText = message.video.caption || '[Vídeo recebido]';
-    } else if (message.sticker) {
+      messageText = body.video.caption || '[Vídeo recebido]';
+      mediaUrl = body.video.videoUrl || body.video.url;
+    }
+    // Sticker
+    else if (body.sticker) {
       mediaType = 'sticker';
       messageText = '[Sticker/Figurinha recebida]';
-    } else if (message.location) {
+      mediaUrl = body.sticker.stickerUrl || body.sticker.url;
+    }
+    // Localização
+    else if (body.location) {
       mediaType = 'location';
-      messageText = `[Localização: ${message.location.latitude}, ${message.location.longitude}]`;
-    }
-    
-    // Baixar mídia se houver mediaId
-    if (mediaId) {
-      try {
-        const accessToken = Deno.env.get('META_ACCESS_TOKEN');
-        
-        // Obter URL da mídia
-        const mediaInfoResponse = await fetch(`https://graph.facebook.com/v18.0/${mediaId}`, {
-          headers: { 'Authorization': `Bearer ${accessToken}` }
-        });
-        const mediaInfo = await mediaInfoResponse.json();
-        
-        if (mediaInfo.url) {
-          // Baixar o arquivo
-          const mediaDownload = await fetch(mediaInfo.url, {
-            headers: { 'Authorization': `Bearer ${accessToken}` }
-          });
-          
-          if (mediaDownload.ok) {
-            const mediaBlob = await mediaDownload.blob();
-            const fileName = `whatsapp_${mediaType}_${Date.now()}.${mediaInfo.mime_type?.split('/')[1] || 'bin'}`;
-            const file = new File([mediaBlob], fileName, { type: mediaInfo.mime_type });
-            
-            // Upload para o Base44
-            const uploadResult = await base44.asServiceRole.integrations.Core.UploadFile({ file });
-            mediaUrl = uploadResult.file_url;
-            console.log('📁 Mídia salva:', mediaUrl);
-          }
-        }
-      } catch (mediaError) {
-        console.error('⚠️ Erro ao processar mídia:', mediaError.message);
-      }
+      messageText = `[Localização: ${body.location.latitude}, ${body.location.longitude}]`;
     }
 
-    if (!phoneNumber) {
-      console.log('⚠️ Mensagem inválida');
-      return Response.json({ success: true });
-    }
-
-    console.log('💬 Mensagem:', { phoneNumber, senderName, messageText, mediaType, mediaUrl });
+    console.log('💬 Mensagem Z-API:', { phoneNumber, senderName, messageText, mediaType, mediaUrl });
 
     // Sistema de acumulação de mensagens (debounce de 5 segundos)
     // Armazena a mensagem e aguarda para ver se o cliente envia mais
