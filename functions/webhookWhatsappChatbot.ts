@@ -375,9 +375,13 @@ Deno.serve(async (req) => {
       return Response.json({ success: true, status: 'duplicata_ignorada' });
     }
     
-    if (resultado.data?.resposta) {
+    const respostaIA = resultado.data?.resposta;
+    console.log('📝 Resposta da IA recebida:', respostaIA ? respostaIA.substring(0, 100) + '...' : 'NULL');
+    
+    if (respostaIA) {
       try {
-        await enviarWhatsApp(phoneNumber, resultado.data.resposta);
+        console.log('📤 Enviando resposta via Z-API para:', phoneNumber);
+        await enviarWhatsApp(phoneNumber, respostaIA);
         console.log('✅ WhatsApp texto enviado com sucesso');
       } catch (whatsappError) {
         console.error('❌ ERRO ao enviar WhatsApp:', whatsappError.message, whatsappError);
@@ -395,12 +399,13 @@ Deno.serve(async (req) => {
           console.error('❌ Erro ao enviar documento:', docError.message);
         }
       }
+      
+      return Response.json({ success: true, resposta: respostaIA });
     } else {
       // Não enviar mensagem de fallback - só logar
       console.log('⚠️ Sem resposta da IA:', JSON.stringify(resultado.data));
+      return Response.json({ success: true, status: 'sem_resposta' });
     }
-
-    return Response.json({ success: true });
 
   } catch (error) {
     console.error('❌ Erro:', error);
