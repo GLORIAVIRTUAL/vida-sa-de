@@ -23,7 +23,7 @@ Deno.serve(async (req) => {
     // Extrair dados do formato Z-API
     const phoneNumber = body.phone || body.from;
     const messageId = body.messageId || body.id;
-    const senderName = body.senderName || body.pushName || 'Usuário';
+    const senderName = body.senderName || body.pushName || body.chatName || 'Usuário';
     
     // Verificar se tem mensagem válida
     const temMensagem = body.text?.message || body.body || body.message || 
