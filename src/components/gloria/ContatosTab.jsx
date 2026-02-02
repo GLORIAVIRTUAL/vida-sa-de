@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Search, Users, Phone, Calendar, FileText, RefreshCw, Loader2, Filter, UserPlus, MessageCircle, FolderOpen, Download, Image, File } from "lucide-react";
+import { Search, Users, Phone, Calendar, FileText, RefreshCw, Loader2, Filter, UserPlus, MessageCircle, FolderOpen, Download, Image, File, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -41,6 +41,8 @@ export default function ContatosTab({ onIniciarConversa }) {
   const [modalArquivosAberto, setModalArquivosAberto] = useState(false);
   const [contatoArquivos, setContatoArquivos] = useState(null);
   const [arquivosContato, setArquivosContato] = useState([]);
+  const [confirmandoLimpeza, setConfirmandoLimpeza] = useState(null);
+  const [limpando, setLimpando] = useState(false);
 
   const carregarContatos = async () => {
     setLoading(true);
@@ -132,6 +134,26 @@ export default function ContatosTab({ onIniciarConversa }) {
     const arquivos = extrairArquivosDoContato(contato);
     setArquivosContato(arquivos);
     setModalArquivosAberto(true);
+  };
+
+  const limparHistorico = async (contato) => {
+    setLimpando(true);
+    try {
+      await base44.entities.Contato.update(contato.id, {
+        historico_mensagens: [],
+        ultima_mensagem: null,
+        ultima_resposta: null,
+        mensagens_pendentes: [],
+        total_mensagens: 0
+      });
+      setConfirmandoLimpeza(null);
+      carregarContatos();
+    } catch (error) {
+      console.error('Erro ao limpar histórico:', error);
+      alert('Erro ao limpar histórico');
+    } finally {
+      setLimpando(false);
+    }
   };
 
   const getMotivoBadge = (interesses) => {
@@ -379,6 +401,15 @@ export default function ContatosTab({ onIniciarConversa }) {
                           >
                             <FolderOpen className="w-4 h-4" />
                           </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-red-600 hover:text-red-800 hover:bg-red-50"
+                            onClick={() => setConfirmandoLimpeza(contato)}
+                            title="Limpar histórico de conversa"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -449,6 +480,41 @@ export default function ContatosTab({ onIniciarConversa }) {
           <DialogFooter>
             <Button variant="outline" onClick={() => setModalArquivosAberto(false)}>
               Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Confirmar Limpeza de Histórico */}
+      <Dialog open={!!confirmandoLimpeza} onOpenChange={() => setConfirmandoLimpeza(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Trash2 className="w-5 h-5" />
+              Limpar Histórico de Conversa
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <p className="text-gray-700">
+              Tem certeza que deseja apagar todo o histórico de conversa de <strong>{confirmandoLimpeza?.nome || 'este contato'}</strong>?
+            </p>
+            <p className="text-sm text-gray-500 mt-2">
+              Esta ação não pode ser desfeita. A IA começará uma nova conversa do zero.
+            </p>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmandoLimpeza(null)} disabled={limpando}>
+              Cancelar
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={() => limparHistorico(confirmandoLimpeza)} 
+              disabled={limpando}
+            >
+              {limpando ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Trash2 className="w-4 h-4 mr-2" />}
+              Limpar Histórico
             </Button>
           </DialogFooter>
         </DialogContent>
