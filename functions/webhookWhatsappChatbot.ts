@@ -123,24 +123,27 @@ Deno.serve(async (req) => {
         const contato = contatos[0];
         
         // Reativar conversa se estava finalizada - LIMPAR HISTÓRICO COMPLETAMENTE
-        if (contato.conversa_finalizada) {
-          console.log('🔄 Reativando conversa finalizada - limpando histórico COMPLETO');
-          // Limpar histórico COMPLETAMENTE para começar do zero (nova conversa)
-          await base44.asServiceRole.entities.Contato.update(contato.id, {
-            conversa_finalizada: false,
-            historico_mensagens: [], // Limpa todo o histórico
-            mensagens_pendentes: [],
-            ultima_mensagem: null,
-            ultima_resposta: null,
-            ultimo_timestamp_pendente: null
-          });
-          // Recarregar contato após limpeza para garantir que está atualizado
-          const contatoLimpo = (await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber }))[0];
-          if (contatoLimpo) {
-            contato.historico_mensagens = [];
-            contato.mensagens_pendentes = [];
-          }
-        }
+         if (contato.conversa_finalizada) {
+           console.log('🔄 Reativando conversa finalizada - limpando histórico COMPLETO');
+           // Limpar histórico COMPLETAMENTE para começar do zero (nova conversa)
+           const updateResult = await base44.asServiceRole.entities.Contato.update(contato.id, {
+             conversa_finalizada: false,
+             historico_mensagens: [], // Limpa todo o histórico
+             mensagens_pendentes: [],
+             ultima_mensagem: null,
+             ultima_resposta: null,
+             ultimo_timestamp_pendente: null,
+             atendimento_humano: false // Reativa a IA se estavam em atendimento humano
+           });
+           console.log('✅ Conversa reativada:', updateResult);
+           // Recarregar contato após limpeza para garantir que está atualizado
+           const contatoLimpo = (await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber }))[0];
+           if (contatoLimpo) {
+             contato.historico_mensagens = contatoLimpo.historico_mensagens || [];
+             contato.mensagens_pendentes = contatoLimpo.mensagens_pendentes || [];
+             contato.conversa_finalizada = false;
+           }
+         }
         
         // Verificar se há mensagem pendente (não processada)
         const mensagensPendentes = contato.mensagens_pendentes || [];
@@ -198,9 +201,12 @@ Deno.serve(async (req) => {
         await base44.asServiceRole.entities.Contato.update(contato.id, updateData);
         
         // Se está em atendimento humano, não processar pela IA - apenas salvar e sair
-        if (contato.atendimento_humano) {
+        // MAS: se a conversa foi finalizada, reativar a IA mesmo que estivesse em atendimento humano
+        if (contato.atendimento_humano && !contato.conversa_finalizada) {
           console.log('👤 Contato em atendimento humano - mensagem salva, não processando IA');
           return Response.json({ success: true, status: 'atendimento_humano' });
+        } else if (contato.atendimento_humano && contato.conversa_finalizada) {
+          console.log('🔄 Conversa finalizada - reativando IA mesmo em atendimento humano');
         }
         
         // Se já havia mensagens pendentes, verificar se passou tempo suficiente
