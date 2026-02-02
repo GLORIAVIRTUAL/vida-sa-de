@@ -1780,39 +1780,45 @@ Retorne JSON.`;
     let instrucoesMidia = '';
     if (mediaType === 'image') {
       instrucoesMidia = `\n\n📷 MÍDIA RECEBIDA: O cliente enviou uma IMAGEM.
-      
-ANALISE A IMAGEM cuidadosamente:
-- Se for uma REQUISIÇÃO/PEDIDO MÉDICO: identifique os procedimentos/exames solicitados e FAÇA O ORÇAMENTO
-- Se for um RESULTADO DE EXAME: descreva o que você observa
-- Se for uma FOTO de algo relacionado à saúde: descreva o que vê
 
-RESPOSTA PARA REQUISIÇÃO/PEDIDO:
-1. Confirme que recebeu e analisou a imagem
-2. Monte o ORÇAMENTO conforme formato das regras acima
-3. SEMPRE inclua o VALOR TOTAL no final
-4. Pergunte se deseja agendar`;
+    🚨 AÇÃO IMEDIATA - ANALISE A IMAGEM AGORA:
+
+    Se for uma REQUISIÇÃO/PEDIDO MÉDICO de exames:
+    1. ✅ Identifique TODOS os exames solicitados na requisição
+    2. ✅ Monte o orçamento IMEDIATAMENTE usando a lista de exames acima
+    3. ✅ NÃO peça nome, CPF ou qualquer dado pessoal
+    4. ✅ Mostre o orçamento completo com valor total
+    5. ✅ Pergunte se deseja agendar
+
+    Se for um RESULTADO DE EXAME: descreva o que observa
+    Se for uma FOTO de algo relacionado à saúde: descreva e oriente
+
+    ⚠️ NUNCA peça dados pessoais para dar orçamento!`;
     } else if (mediaType === 'document') {
-      instrucoesMidia = `\n\n📄 MÍDIA RECEBIDA: O cliente enviou um DOCUMENTO (PDF ou arquivo).
-      
-ANALISE O DOCUMENTO:
-- Se for uma REQUISIÇÃO/PEDIDO MÉDICO: identifique os procedimentos/exames e FAÇA O ORÇAMENTO
-- Se for um LAUDO/RESULTADO: descreva as informações relevantes
+      instrucoesMidia = `\n\n📄 MÍDIA RECEBIDA: O cliente enviou um DOCUMENTO (PDF).
 
-RESPOSTA PARA REQUISIÇÃO/PEDIDO:
-1. Confirme que recebeu e analisou o documento
-2. Monte o ORÇAMENTO conforme formato das regras acima
-3. SEMPRE inclua o VALOR TOTAL no final
-4. Pergunte se deseja agendar`;
+    🚨 AÇÃO IMEDIATA - ANALISE O DOCUMENTO AGORA:
+
+    Se for uma REQUISIÇÃO/PEDIDO MÉDICO de exames:
+    1. ✅ Identifique TODOS os exames solicitados na requisição
+    2. ✅ Monte o orçamento IMEDIATAMENTE usando a lista de exames acima
+    3. ✅ NÃO peça nome, CPF ou qualquer dado pessoal
+    4. ✅ Mostre o orçamento completo com valor total
+    5. ✅ Pergunte se deseja agendar
+
+    Se for um LAUDO/RESULTADO: descreva as informações relevantes
+
+    ⚠️ NUNCA peça dados pessoais para dar orçamento!`;
     } else if (mediaType === 'audio') {
       instrucoesMidia = `\n\n🎤 MÍDIA RECEBIDA: O cliente enviou um ÁUDIO.
-      
-O áudio foi transcrito (se possível). Responda naturalmente ao conteúdo.
-Se não conseguir entender, peça gentilmente para o cliente escrever a mensagem.`;
+
+    O áudio foi transcrito (se possível). Responda naturalmente ao conteúdo.
+    Se não conseguir entender, peça gentilmente para o cliente escrever a mensagem.`;
     } else if (mediaType === 'video') {
       instrucoesMidia = `\n\n🎥 MÍDIA RECEBIDA: O cliente enviou um VÍDEO.
-      
-Analise o conteúdo do vídeo se relevante para o atendimento.
-Confirme o recebimento e pergunte como pode ajudar.`;
+
+    Analise o conteúdo do vídeo se relevante para o atendimento.
+    Confirme o recebimento e pergunte como pode ajudar.`;
     }
     
     // Preparar histórico para o prompt - se conversa foi finalizada, limpar histórico mas mencionar que há histórico anterior
