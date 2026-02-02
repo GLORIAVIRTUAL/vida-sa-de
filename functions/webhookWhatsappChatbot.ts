@@ -360,15 +360,22 @@ Deno.serve(async (req) => {
 
     // Chamar função intermediária com autenticação correta
     console.log('📞 Chamando função processarMensagemAgente...');
-    const resultado = await base44.asServiceRole.functions.invoke('processarMensagemAgente', {
-      phoneNumber,
-      messageText: textoParaProcessar,
-      senderName,
-      pacienteId,
-      mediaType,
-      mediaUrl,
-      messageId
-    });
+    let resultado;
+    try {
+      resultado = await base44.asServiceRole.functions.invoke('processarMensagemAgente', {
+        phoneNumber,
+        messageText: textoParaProcessar,
+        senderName,
+        pacienteId,
+        mediaType,
+        mediaUrl,
+        messageId
+      });
+      console.log('✅ processarMensagemAgente retornou:', JSON.stringify(resultado.data).substring(0, 200));
+    } catch (invokeError) {
+      console.error('❌ Erro ao chamar processarMensagemAgente:', invokeError.message);
+      return Response.json({ success: false, error: invokeError.message }, { status: 500 });
+    }
 
     if (resultado.data?.duplicata || resultado.data?.status === 'duplicata_ignorada') {
       console.log('⏭️ Resposta duplicada detectada - não enviando');
@@ -379,12 +386,13 @@ Deno.serve(async (req) => {
     console.log('📝 Resposta da IA recebida:', respostaIA ? respostaIA.substring(0, 100) + '...' : 'NULL');
     
     if (respostaIA) {
+      console.log('📤 Enviando resposta via Z-API para:', phoneNumber);
       try {
-        console.log('📤 Enviando resposta via Z-API para:', phoneNumber);
         await enviarWhatsApp(phoneNumber, respostaIA);
         console.log('✅ WhatsApp texto enviado com sucesso');
       } catch (whatsappError) {
-        console.error('❌ ERRO ao enviar WhatsApp:', whatsappError.message, whatsappError);
+        console.error('❌ ERRO ao enviar WhatsApp:', whatsappError.message);
+        // Não lançar erro - apenas logar e continuar
       }
       
       // Se houver arquivo para enviar (resultado de exame)
