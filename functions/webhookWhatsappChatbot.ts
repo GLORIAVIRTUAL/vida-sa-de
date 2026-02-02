@@ -1,45 +1,38 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 Deno.serve(async (req) => {
-  // Verificação do webhook (GET)
+  // Verificação do webhook (GET) - mantido para compatibilidade
   if (req.method === 'GET') {
-    const url = new URL(req.url);
-    const mode = url.searchParams.get('hub.mode');
-    const token = url.searchParams.get('hub.verify_token');
-    const challenge = url.searchParams.get('hub.challenge');
-
-    const verifyToken = Deno.env.get('META_VERIFY_TOKEN');
-
-    if (mode === 'subscribe' && token === verifyToken) {
-      console.log('✅ Webhook verificado');
-      return new Response(challenge, { status: 200 });
-    }
-
-    return new Response('Forbidden', { status: 403 });
+    return new Response('OK', { status: 200 });
   }
 
-  // Processamento de mensagens (POST)
+  // Processamento de mensagens (POST) - Agora via Z-API
   const base44 = createClientFromRequest(req);
   
   try {
     const body = await req.json();
-    console.log('📨 Webhook recebido:', JSON.stringify(body, null, 2));
+    console.log('📨 Z-API Webhook Chatbot recebido:', JSON.stringify(body, null, 2));
 
-    const entry = body.entry?.[0];
-    const changes = entry?.changes?.[0];
-    const value = changes?.value;
-    const messages = value?.messages;
-
-    // Ignorar se não for mensagem
-    if (!messages || messages.length === 0) {
-      console.log('ℹ️ Sem mensagens para processar');
+    // === FORMATO Z-API ===
+    // Ignorar mensagens enviadas pelo próprio bot (fromMe=true) ou de grupos
+    if (body.fromMe === true || body.isGroup === true) {
+      console.log('ℹ️ Mensagem própria ou de grupo - ignorando');
       return Response.json({ success: true });
     }
 
-    const message = messages[0];
-    const messageId = message.id;
-    const phoneNumber = message.from;
-    const senderName = value?.contacts?.[0]?.profile?.name || 'Usuário';
+    // Extrair dados do formato Z-API
+    const phoneNumber = body.phone || body.from;
+    const messageId = body.messageId || body.id;
+    const senderName = body.senderName || body.pushName || 'Usuário';
+    
+    // Verificar se tem mensagem válida
+    const temMensagem = body.text?.message || body.body || body.message || 
+                        body.image || body.document || body.audio || body.video || body.sticker;
+    
+    if (!phoneNumber || !temMensagem) {
+      console.log('ℹ️ Sem mensagem válida para processar');
+      return Response.json({ success: true });
+    }
     
     // Verificar se esta mensagem já foi processada (evitar duplicatas)
     try {
