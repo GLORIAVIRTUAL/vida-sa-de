@@ -1687,10 +1687,10 @@ Retorne JSON.`;
     // Carregar lista de procedimentos e exames para qualquer mensagem sobre orçamento/preço ou mídia
     // SEMPRE carregar quando mencionar preço, valor, exame específico, quanto custa, etc.
     const querOrcamento = /or[çc]amento|pre[çc]o|valor|quanto|custa|faz|realiza|exame|procedimento|requisição|pedido|hemograma|glicose|colesterol|triglice|vitamina|urina|fezes|sangue|tireoide|tsh|t4|psa|creatinina|ureia|tgo|tgp|ácido|acido/i.test(messageText);
-    
+
     if (mediaType === 'image' || mediaType === 'document' || querOrcamento) {
       console.log('📋 Carregando lista de procedimentos e exames para orçamento...');
-      
+
       try {
         // Carregamento paralelo com timeout
         const [procedimentos, exames, tabelaPrecos] = await Promise.all([
@@ -1716,10 +1716,10 @@ Retorne JSON.`;
             return [];
           })
         ]);
-        
+
         if (procedimentos.length > 0 || exames.length > 0) {
           infoProcedimentosExames = `\n\n📋 BASE DE DADOS - PROCEDIMENTOS E EXAMES COM PREÇOS:\n`;
-          
+
           if (procedimentos.length > 0) {
             infoProcedimentosExames += '\n🏥 PROCEDIMENTOS DISPONÍVEIS:\n';
             for (const proc of procedimentos) {
@@ -1728,7 +1728,7 @@ Retorne JSON.`;
               infoProcedimentosExames += `• ${proc.nome}${proc.especialidade ? ` (${proc.especialidade})` : ''} - R$ ${valorNum.toFixed(2)}\n`;
             }
           }
-          
+
           if (exames.length > 0) {
             infoProcedimentosExames += '\n🔬 EXAMES DISPONÍVEIS:\n';
             for (const exame of exames) {
@@ -1736,27 +1736,40 @@ Retorne JSON.`;
               infoProcedimentosExames += `• ${exame.nome}${exame.tipo ? ` (${exame.tipo})` : ''} - R$ ${valorNum.toFixed(2)}\n`;
             }
           }
-          
-          infoProcedimentosExames += `\n⚠️ REGRAS OBRIGATÓRIAS:
-1. NUNCA INVENTE PREÇOS! Use APENAS os valores listados acima.
-2. Se o cliente perguntar sobre um exame específico, PROCURE NA LISTA ACIMA o valor exato.
-3. Se o exame NÃO estiver na lista, informe que não realizamos esse exame.
-4. Para orçamentos de requisições médicas, use o formato:
 
-📋 *ORÇAMENTO*
-━━━━━━━━━━━━━━━━━━━━
-✅ Itens que realizamos:
-• [Nome do item] - R$ XX,XX (valor da lista)
+          infoProcedimentosExames += `\n⚠️ REGRAS OBRIGATÓRIAS PARA ORÇAMENTO:
 
-❌ Itens que NÃO realizamos:
-• [Nome do item]
+    🚨 IMPORTANTE: NÃO PEÇA NOME, CPF OU DADOS PESSOAIS PARA DAR ORÇAMENTO!
+    Quando o cliente enviar uma requisição (imagem ou PDF), você DEVE:
+    1. Analisar a imagem/documento imediatamente
+    2. Identificar os exames/procedimentos solicitados
+    3. Montar o orçamento DIRETO, sem pedir nenhum dado pessoal
 
-━━━━━━━━━━━━━━━━━━━━
-💰 *VALOR TOTAL: R$ XX,XX*
-━━━━━━━━━━━━━━━━━━━━
+    📋 FORMATO DO ORÇAMENTO:
 
-5. SEMPRE inclua o VALOR TOTAL somando todos os itens
-6. Pergunte se deseja agendar`;
+    📋 *ORÇAMENTO*
+    ━━━━━━━━━━━━━━━━━━━━
+    ✅ *Exames que realizamos:*
+    • [Nome do exame] - R$ XX,XX
+
+    ❌ *Exames que NÃO realizamos:*
+    • [Nome do exame]
+
+    ━━━━━━━━━━━━━━━━━━━━
+    💰 *VALOR TOTAL: R$ XX,XX*
+    ━━━━━━━━━━━━━━━━━━━━
+
+    📍 *Endereço:* Tristão Monteiro, 580 – Zona Nova, Tramandaí/RS
+    📞 *Telefone:* (51) 3661-5991
+
+    Gostaria de agendar a coleta? 😊
+
+    ⚠️ REGRAS:
+    1. NUNCA INVENTE PREÇOS! Use APENAS os valores da lista acima.
+    2. Se o exame NÃO estiver na lista, coloque em "NÃO realizamos".
+    3. SEMPRE calcule e mostre o VALOR TOTAL.
+    4. Ao final, pergunte se deseja agendar.
+    5. NÃO peça nome/CPF para orçamento - só peça se for AGENDAR.`;
         }
       } catch (e) {
         console.error('⚠️ Erro ao buscar procedimentos/exames:', e.message);
