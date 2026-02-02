@@ -216,6 +216,17 @@ Deno.serve(async (req) => {
           }
         }
         
+        // Marcar que ESTA chamada vai processar (usando lock otimista)
+        const meuLockId = `${messageId}_${Date.now()}`;
+        
+        try {
+          await base44.asServiceRole.entities.Contato.update(contato.id, {
+            ultimo_timestamp_pendente: meuLockId
+          });
+        } catch (e) {
+          console.log('⚠️ Erro ao obter lock:', e.message);
+        }
+        
         // Aguardar 5 segundos para ver se chegam mais mensagens
         console.log(`⏳ Aguardando ${DEBOUNCE_SECONDS}s para acumular mensagens...`);
         await new Promise(resolve => setTimeout(resolve, DEBOUNCE_SECONDS * 1000));
@@ -224,16 +235,16 @@ Deno.serve(async (req) => {
         const contatoAtualizado = (await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber }))[0];
         const todasMensagens = contatoAtualizado?.mensagens_pendentes || [];
         
-        // Verificar se esta chamada é a mais recente (evitar duplicatas)
-        // CORREÇÃO: Verificar também se já foi processado (mensagens_pendentes vazias = já processou)
+        // LOCK: Verificar se ESTA chamada tem o lock para processar
+        if (contatoAtualizado?.ultimo_timestamp_pendente !== meuLockId) {
+          console.log('⏭️ Outra chamada obteve o lock. Saindo...');
+          return Response.json({ success: true, status: 'delegado' });
+        }
+        
+        // Verificar se já foi processado (mensagens_pendentes vazias = já processou)
         if (contatoAtualizado?.mensagens_pendentes?.length === 0) {
           console.log('⏭️ Mensagens já foram processadas por outra chamada. Saindo...');
           return Response.json({ success: true, status: 'ja_processado' });
-        }
-        
-        if (contatoAtualizado?.ultimo_timestamp_pendente !== agora && todasMensagens.length > mensagensPendentes.length) {
-          console.log('⏭️ Outra mensagem mais recente vai processar. Saindo...');
-          return Response.json({ success: true, status: 'delegado' });
         }
         
         // Juntar todas as mensagens pendentes em uma só - MANTER ÚLTIMA MÍDIA
@@ -283,13 +294,15 @@ Deno.serve(async (req) => {
         
       } else {
         // Novo contato - criar com mensagem pendente (com mídia se houver) e aguardar
+        const meuLockIdNovo = `${messageId}_${Date.now()}`;
+        
         await base44.asServiceRole.entities.Contato.create({
           nome: senderName,
           telefone: phoneNumber,
           origem: 'WhatsApp',
           status: 'Novo',
           mensagens_pendentes: [{ texto: messageText, timestamp: agora, mediaType: mediaType, mediaUrl: mediaUrl, messageId: messageId }],
-          ultimo_timestamp_pendente: agora
+          ultimo_timestamp_pendente: meuLockIdNovo
         });
         
         // Aguardar debounce
@@ -300,15 +313,16 @@ Deno.serve(async (req) => {
         const contatoCriado = (await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber }))[0];
         const todasMensagens = contatoCriado?.mensagens_pendentes || [];
         
-        // CORREÇÃO: Verificar também se já foi processado
+        // LOCK: Verificar se ESTA chamada tem o lock
+        if (contatoCriado?.ultimo_timestamp_pendente !== meuLockIdNovo) {
+          console.log('⏭️ Outra chamada obteve o lock (novo contato). Saindo...');
+          return Response.json({ success: true, status: 'delegado' });
+        }
+        
+        // Verificar se já foi processado
         if (contatoCriado?.mensagens_pendentes?.length === 0) {
           console.log('⏭️ Mensagens já foram processadas por outra chamada. Saindo...');
           return Response.json({ success: true, status: 'ja_processado' });
-        }
-        
-        if (contatoCriado?.ultimo_timestamp_pendente !== agora && todasMensagens.length > 1) {
-          console.log('⏭️ Outra mensagem mais recente vai processar. Saindo...');
-          return Response.json({ success: true, status: 'delegado' });
         }
         
         const mensagemCompleta = todasMensagens.map(m => m.texto).join('\n');
