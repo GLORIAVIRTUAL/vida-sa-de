@@ -612,26 +612,6 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
                   </div>
                   <div className="flex items-center gap-2">
                     <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={buscarTemplates}
-                      disabled={carregandoTemplates}
-                      className="text-blue-600 hover:bg-blue-50"
-                    >
-                      {carregandoTemplates ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Zap className="w-3 h-3 mr-1" />}
-                      Início Meta
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={enviarConvite}
-                      disabled={enviandoConvite}
-                      className="text-purple-600 hover:bg-purple-50"
-                    >
-                      {enviandoConvite ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Send className="w-3 h-3 mr-1" />}
-                      Convidar
-                    </Button>
-                    <Button 
                       variant={modoHumano ? "default" : "outline"} 
                       size="sm"
                       onClick={toggleAtendimentoHumano}
