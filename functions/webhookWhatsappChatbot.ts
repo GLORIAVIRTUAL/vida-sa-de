@@ -111,9 +111,9 @@ Deno.serve(async (req) => {
 
     console.log('💬 Mensagem Z-API:', { phoneNumber, senderName, messageText, mediaType, mediaUrl });
 
-    // Sistema de acumulação de mensagens (debounce de 5 segundos)
+    // Sistema de acumulação de mensagens (debounce de 2 segundos)
     // Armazena a mensagem e aguarda para ver se o cliente envia mais
-    const DEBOUNCE_SECONDS = 5;
+    const DEBOUNCE_SECONDS = 2;
     const agora = new Date().toISOString();
     
     try {
@@ -227,7 +227,7 @@ Deno.serve(async (req) => {
           console.log('⚠️ Erro ao obter lock:', e.message);
         }
         
-        // Aguardar 5 segundos para ver se chegam mais mensagens
+        // Aguardar para ver se chegam mais mensagens
         console.log(`⏳ Aguardando ${DEBOUNCE_SECONDS}s para acumular mensagens...`);
         await new Promise(resolve => setTimeout(resolve, DEBOUNCE_SECONDS * 1000));
         
