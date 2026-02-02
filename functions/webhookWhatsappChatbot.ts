@@ -422,10 +422,13 @@ async function enviarWhatsApp(phoneNumber, mensagem) {
   const token = Deno.env.get('ZAPI_TOKEN');
   const clientToken = Deno.env.get('ZAPI_CLIENT_TOKEN');
 
+  console.log('🔑 Configuração Z-API:');
+  console.log('   - instanceId:', instanceId ? instanceId.substring(0, 10) + '...' : '❌ MISSING');
+  console.log('   - token:', token ? token.substring(0, 10) + '...' : '❌ MISSING');
+  console.log('   - clientToken:', clientToken ? clientToken.substring(0, 10) + '...' : '❌ MISSING');
+
   if (!instanceId || !token) {
     console.error('❌ ERRO CRÍTICO: Z-API não configurado!');
-    console.error('   - instanceId:', instanceId ? '✅ SET' : '❌ MISSING');
-    console.error('   - token:', token ? '✅ SET' : '❌ MISSING');
     throw new Error('Z-API não configurado');
   }
 
@@ -446,6 +449,7 @@ async function enviarWhatsApp(phoneNumber, mensagem) {
   if (clientToken) {
     headers['Client-Token'] = clientToken;
   }
+  console.log('📋 Headers:', JSON.stringify(headers));
 
   const response = await fetch(url, {
     method: 'POST',
