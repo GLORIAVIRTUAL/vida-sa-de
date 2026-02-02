@@ -408,38 +408,43 @@ Deno.serve(async (req) => {
   }
 });
 
+// Enviar mensagem via Z-API
 async function enviarWhatsApp(phoneNumber, mensagem) {
-  console.log('📤 Iniciando envio WhatsApp para:', phoneNumber);
+  console.log('📤 Iniciando envio WhatsApp via Z-API para:', phoneNumber);
   console.log('💬 Mensagem:', mensagem.substring(0, 100));
   
-  const phoneNumberId = Deno.env.get('META_PHONE_NUMBER_ID');
-  const accessToken = Deno.env.get('META_ACCESS_TOKEN');
+  const instanceId = Deno.env.get('ZAPI_INSTANCE_ID');
+  const token = Deno.env.get('ZAPI_TOKEN');
+  const clientToken = Deno.env.get('ZAPI_CLIENT_TOKEN');
 
-  if (!phoneNumberId || !accessToken) {
-    console.error('❌ ERRO CRÍTICO: WhatsApp não configurado!');
-    console.error('   - phoneNumberId:', phoneNumberId ? '✅ SET' : '❌ MISSING');
-    console.error('   - accessToken:', accessToken ? '✅ SET' : '❌ MISSING');
-    throw new Error('WhatsApp não configurado');
+  if (!instanceId || !token) {
+    console.error('❌ ERRO CRÍTICO: Z-API não configurado!');
+    console.error('   - instanceId:', instanceId ? '✅ SET' : '❌ MISSING');
+    console.error('   - token:', token ? '✅ SET' : '❌ MISSING');
+    throw new Error('Z-API não configurado');
   }
 
-  const url = `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`;
+  const telefoneFormatado = phoneNumber.replace(/\D/g, '');
+  const url = `https://api.z-api.io/instances/${instanceId}/token/${token}/send-text`;
   console.log('🔗 URL:', url);
 
   const requestBody = {
-    messaging_product: 'whatsapp',
-    to: phoneNumber,
-    type: 'text',
-    text: { body: mensagem }
+    phone: telefoneFormatado,
+    message: mensagem
   };
 
   console.log('📋 Request body:', JSON.stringify(requestBody));
 
+  const headers = {
+    'Content-Type': 'application/json'
+  };
+  if (clientToken) {
+    headers['Client-Token'] = clientToken;
+  }
+
   const response = await fetch(url, {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
+    headers,
     body: JSON.stringify(requestBody)
   });
 
@@ -449,46 +454,49 @@ async function enviarWhatsApp(phoneNumber, mensagem) {
   console.log('📊 Response body:', JSON.stringify(result));
 
   if (!response.ok) {
-    console.error('❌ Erro WhatsApp API:', result);
-    throw new Error(`Erro WhatsApp: ${JSON.stringify(result)}`);
+    console.error('❌ Erro Z-API:', result);
+    throw new Error(`Erro Z-API: ${JSON.stringify(result)}`);
   } else {
-    console.log('✅ WhatsApp enviado com sucesso!');
+    console.log('✅ WhatsApp Z-API enviado com sucesso!');
   }
 }
 
+// Enviar documento via Z-API
 async function enviarWhatsAppDocumento(phoneNumber, documentUrl, fileName) {
-  const phoneNumberId = Deno.env.get('META_PHONE_NUMBER_ID');
-  const accessToken = Deno.env.get('META_ACCESS_TOKEN');
+  const instanceId = Deno.env.get('ZAPI_INSTANCE_ID');
+  const token = Deno.env.get('ZAPI_TOKEN');
+  const clientToken = Deno.env.get('ZAPI_CLIENT_TOKEN');
 
-  if (!phoneNumberId || !accessToken) {
-    console.warn('⚠️ WhatsApp não configurado');
+  if (!instanceId || !token) {
+    console.warn('⚠️ Z-API não configurado');
     return;
   }
 
-  const url = `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`;
+  const telefoneFormatado = phoneNumber.replace(/\D/g, '');
+  const url = `https://api.z-api.io/instances/${instanceId}/token/${token}/send-document/${documentUrl.includes('.pdf') ? 'pdf' : 'doc'}`;
+
+  const headers = {
+    'Content-Type': 'application/json'
+  };
+  if (clientToken) {
+    headers['Client-Token'] = clientToken;
+  }
 
   const response = await fetch(url, {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
+    headers,
     body: JSON.stringify({
-      messaging_product: 'whatsapp',
-      to: phoneNumber,
-      type: 'document',
-      document: {
-        link: documentUrl,
-        filename: fileName || 'Resultado_Exame.pdf'
-      }
+      phone: telefoneFormatado,
+      document: documentUrl,
+      fileName: fileName || 'Resultado_Exame.pdf'
     })
   });
 
   const result = await response.json();
 
   if (!response.ok) {
-    console.error('❌ Erro envio documento WhatsApp:', result);
+    console.error('❌ Erro envio documento Z-API:', result);
   } else {
-    console.log('✅ Documento WhatsApp enviado:', result);
+    console.log('✅ Documento Z-API enviado:', result);
   }
 }
