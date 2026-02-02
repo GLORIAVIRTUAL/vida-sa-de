@@ -66,8 +66,31 @@ async function processarMensagemRecebida(base44, payload) {
     const ehConfirmacao = palavrasConfirmacao.some(p => mensagem === p || mensagem.startsWith(p + ' '));
 
     if (!ehConfirmacao) {
-        console.log('ℹ️ Mensagem não é confirmação:', mensagem);
-        return new Response(JSON.stringify({ message: "Mensagem não é confirmação" }), { status: 200 });
+        console.log('🤖 Mensagem não é confirmação - encaminhando para chatbot IA...');
+        
+        // Encaminhar para o chatbot IA
+        try {
+            const resultadoChatbot = await base44.asServiceRole.functions.invoke('webhookWhatsappChatbot', {
+                phone: telefone,
+                fromMe: false,
+                isGroup: false,
+                text: { message: mensagem },
+                senderName: payload.senderName || payload.chatName || 'Usuário',
+                messageId: payload.messageId || payload.id,
+                // Passar mídia se houver
+                image: payload.image,
+                document: payload.document,
+                audio: payload.audio,
+                video: payload.video,
+                sticker: payload.sticker,
+                location: payload.location
+            });
+            console.log('✅ Chatbot processou:', resultadoChatbot.data);
+            return new Response(JSON.stringify({ message: "Encaminhado para chatbot", result: resultadoChatbot.data }), { status: 200 });
+        } catch (chatbotError) {
+            console.error('❌ Erro ao encaminhar para chatbot:', chatbotError.message);
+            return new Response(JSON.stringify({ message: "Erro ao processar chatbot", error: chatbotError.message }), { status: 200 });
+        }
     }
     
     console.log('✅ Confirmação detectada!');
