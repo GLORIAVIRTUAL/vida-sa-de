@@ -21,116 +21,47 @@ Deno.serve(async (req) => {
 
     console.log('📤 Enviando mensagem humana para:', phoneNumber, 'texto:', messageText, 'tipo:', messageType || 'text');
 
-    // Enviar mensagem via WhatsApp (Z-API é o principal)
+    // Enviar mensagem via Z-API
     const instanceId = Deno.env.get("ZAPI_INSTANCE_ID");
     const zapiToken = Deno.env.get("ZAPI_TOKEN");
     const zapiClientToken = Deno.env.get("ZAPI_CLIENT_TOKEN");
 
-    let mensagemEnviada = false;
-
-    // Tentar enviar via Z-API (prioridade)
-    if (instanceId && zapiToken) {
-      console.log('📤 Tentando enviar via Z-API...');
-      let numero = phoneNumber.replace(/\D/g, '');
-      
-      const mensagemComNome = `*${user.full_name || 'Recepção'}:* ${messageText || ''}`;
-
-      try {
-        const url = `https://api.z-api.io/instances/${instanceId}/token/${zapiToken}/send-text`;
-        const headers = {
-          'Content-Type': 'application/json'
-        };
-        if (zapiClientToken) {
-          headers['Client-Token'] = zapiClientToken;
-        }
-
-        const response = await fetch(url, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({
-            phone: numero,
-            message: mensagemComNome
-          })
-        });
-
-        const result = await response.json();
-        console.log('✅ Z-API response:', result);
-        
-        if (response.ok) {
-          mensagemEnviada = true;
-          console.log('✅ Mensagem enviada via Z-API com sucesso');
-        } else {
-          console.warn('⚠️ Z-API retornou erro:', result);
-        }
-      } catch (zapiError) {
-        console.error('⚠️ Erro Z-API:', zapiError.message);
-      }
+    if (!instanceId || !zapiToken) {
+      return Response.json({ error: 'Z-API não configurado' }, { status: 400 });
     }
 
-    // Fallback: enviar via Meta se Z-API falhar
-    if (!mensagemEnviada) {
-      const phoneId = Deno.env.get("META_PHONE_NUMBER_ID");
-      const accessToken = Deno.env.get("META_ACCESS_TOKEN");
+    let numero = phoneNumber.replace(/\D/g, '');
+    const mensagemComNome = `*${user.full_name || 'Recepção'}:* ${messageText || ''}`;
 
-      if (phoneId && accessToken) {
-        console.log('📤 Fallback: Tentando enviar via Meta WhatsApp...');
-        let numero = phoneNumber.replace(/\D/g, '');
-        if (!numero.startsWith('55')) numero = '55' + numero;
+    const url = `https://api.z-api.io/instances/${instanceId}/token/${zapiToken}/send-text`;
+    const headers = {
+      'Content-Type': 'application/json'
+    };
+    if (zapiClientToken) {
+      headers['Client-Token'] = zapiClientToken;
+    }
 
-        let messageBody;
-        
-        if (messageType === 'image' && mediaUrl) {
-          messageBody = {
-            messaging_product: 'whatsapp',
-            to: numero,
-            type: 'image',
-            image: { link: mediaUrl }
-          };
-        } else if (messageType === 'document' && mediaUrl) {
-          messageBody = {
-            messaging_product: 'whatsapp',
-            to: numero,
-            type: 'document',
-            document: { 
-              link: mediaUrl,
-              filename: fileName || 'arquivo'
-            }
-          };
-        } else if (messageText) {
-          const mensagemComNome = `*${user.full_name || 'Recepção'}:* ${messageText}`;
-          messageBody = {
-            messaging_product: 'whatsapp',
-            to: numero,
-            type: 'text',
-            text: { body: mensagemComNome }
-          };
-        } else {
-          return Response.json({ error: 'Nenhum conteúdo para enviar' }, { status: 400 });
-        }
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          phone: numero,
+          message: mensagemComNome
+        })
+      });
 
-        try {
-          const response = await fetch(`https://graph.facebook.com/v18.0/${phoneId}/messages`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${accessToken}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(messageBody)
-          });
-
-          const result = await response.json();
-          console.log('📱 Meta response:', result);
-          
-          if (response.ok) {
-            mensagemEnviada = true;
-            console.log('✅ Mensagem enviada via Meta com sucesso');
-          } else {
-            console.error('❌ Erro Meta:', result);
-          }
-        } catch (metaError) {
-          console.error('❌ Erro ao enviar Meta:', metaError.message);
-        }
+      const result = await response.json();
+      console.log('📤 Z-API response:', result);
+      
+      if (!response.ok) {
+        console.error('❌ Erro Z-API:', result);
+        return Response.json({ error: 'Erro ao enviar via Z-API', details: result }, { status: 400 });
       }
+      console.log('✅ Mensagem enviada via Z-API com sucesso');
+    } catch (error) {
+      console.error('❌ Erro ao enviar Z-API:', error.message);
+      return Response.json({ error: error.message }, { status: 500 });
     }
 
     // Atualizar histórico do contato
