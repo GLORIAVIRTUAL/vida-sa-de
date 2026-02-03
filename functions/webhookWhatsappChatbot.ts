@@ -335,12 +335,26 @@ Deno.serve(async (req) => {
       }
     } catch (e) {
       console.log('⚠️ Erro no debounce:', e.message);
-      var mensagemFinal = messageText; // Fallback para mensagem original
+      // Em caso de erro, NÃO processar IA - apenas logar
+      console.log('👤 Erro no processamento - não enviando para IA');
+      return Response.json({ success: true, status: 'erro_debounce' });
+    }
+
+    // VERIFICAÇÃO FINAL: Se chegou aqui, verificar novamente se está em modo humano
+    // (pode ter sido alterado durante o debounce)
+    try {
+      const contatoFinal = (await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber }))[0];
+      if (contatoFinal && contatoFinal.atendimento_humano !== false) {
+        console.log('👤 Verificação final: contato em modo HUMANO - não processando IA');
+        return Response.json({ success: true, status: 'atendimento_humano' });
+      }
+    } catch (e) {
+      console.log('⚠️ Erro na verificação final:', e.message);
     }
 
     // Usar mensagemFinal em vez de messageText daqui em diante
     const textoParaProcessar = typeof mensagemFinal !== 'undefined' ? mensagemFinal : messageText;
-    console.log('📨 Texto final para processar:', textoParaProcessar.substring(0, 100));
+    console.log('📨 Texto final para processar (modo IA ativo):', textoParaProcessar.substring(0, 100));
 
     // Buscar ou criar paciente
     let pacienteId = null;
