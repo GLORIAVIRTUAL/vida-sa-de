@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
-  Image, Paperclip, Mic, Smile, MessageSquare, X, Loader2, StopCircle
+  Image as ImageIcon, Paperclip, Mic, Smile, MessageSquare, X, Loader2, StopCircle
 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import {
@@ -211,7 +211,7 @@ export default function ChatToolbar({
           disabled={disabled || uploading}
           title="Enviar imagem"
         >
-          <Image className="w-4 h-4 text-gray-500" />
+          <ImageIcon className="w-4 h-4 text-gray-500" />
         </Button>
 
         {/* Upload de arquivo */}
