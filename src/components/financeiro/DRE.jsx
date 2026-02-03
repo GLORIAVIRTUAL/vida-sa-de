@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -11,12 +10,14 @@ export default function DRE({ lancamentos, loading }) {
 
   const processarDRE = () => {
     const [ano, mes] = mesAno.split('-');
-    const dataInicio = startOfMonth(new Date(parseInt(ano), parseInt(mes) - 1));
-    const dataFim = endOfMonth(new Date(parseInt(ano), parseInt(mes) - 1));
+    // Formato YYYY-MM para comparação de strings (mais confiável que Date)
+    const mesAnoFiltro = `${ano}-${mes.padStart(2, '0')}`;
 
     const lancamentosPeriodo = lancamentos.filter(l => {
-      const dataLanc = new Date(l.data_lancamento);
-      return dataLanc >= dataInicio && dataLanc <= dataFim;
+      if (!l.data_lancamento) return false;
+      // Comparar apenas pelo ano-mês da data_lancamento (formato YYYY-MM-DD)
+      const dataLancAnoMes = l.data_lancamento.substring(0, 7);
+      return dataLancAnoMes === mesAnoFiltro;
     });
 
     // Receitas
