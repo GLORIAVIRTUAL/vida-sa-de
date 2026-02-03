@@ -31,9 +31,8 @@ Deno.serve(async (req) => {
     }
 
     let numero = phoneNumber.replace(/\D/g, '');
-    const mensagemComNome = `*${user.full_name || 'Recepção'}:* ${messageText || ''}`;
+    const nomeRemetente = user.full_name || 'Recepção';
 
-    const url = `https://api.z-api.io/instances/${instanceId}/token/${zapiToken}/send-text`;
     const headers = {
       'Content-Type': 'application/json'
     };
@@ -42,13 +41,50 @@ Deno.serve(async (req) => {
     }
 
     try {
+      let url;
+      let body;
+
+      // Escolher endpoint e body baseado no tipo de mídia
+      if (messageType === 'image' && mediaUrl) {
+        url = `https://api.z-api.io/instances/${instanceId}/token/${zapiToken}/send-image`;
+        body = {
+          phone: numero,
+          image: mediaUrl,
+          caption: `*${nomeRemetente}:* ${messageText || ''}`
+        };
+        console.log('📷 Enviando IMAGEM via Z-API');
+      } else if (messageType === 'document' && mediaUrl) {
+        url = `https://api.z-api.io/instances/${instanceId}/token/${zapiToken}/send-document/pdf`;
+        body = {
+          phone: numero,
+          document: mediaUrl,
+          fileName: fileName || 'documento.pdf'
+        };
+        console.log('📄 Enviando DOCUMENTO via Z-API');
+      } else if (messageType === 'audio' && mediaUrl) {
+        url = `https://api.z-api.io/instances/${instanceId}/token/${zapiToken}/send-audio`;
+        body = {
+          phone: numero,
+          audio: mediaUrl
+        };
+        console.log('🎤 Enviando ÁUDIO via Z-API');
+      } else {
+        // Texto simples
+        url = `https://api.z-api.io/instances/${instanceId}/token/${zapiToken}/send-text`;
+        body = {
+          phone: numero,
+          message: `*${nomeRemetente}:* ${messageText || ''}`
+        };
+        console.log('💬 Enviando TEXTO via Z-API');
+      }
+
+      console.log('📤 URL:', url);
+      console.log('📤 Body:', JSON.stringify(body));
+
       const response = await fetch(url, {
         method: 'POST',
         headers,
-        body: JSON.stringify({
-          phone: numero,
-          message: mensagemComNome
-        })
+        body: JSON.stringify(body)
       });
 
       const result = await response.json();
