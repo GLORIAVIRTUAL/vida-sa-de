@@ -126,6 +126,7 @@ Deno.serve(async (req) => {
          if (contato.conversa_finalizada) {
            console.log('🔄 Reativando conversa finalizada - limpando histórico COMPLETO');
            // Limpar histórico COMPLETAMENTE para começar do zero (nova conversa)
+           // MANTÉM atendimento_humano = true (humano decide quando ativar IA)
            const updateResult = await base44.asServiceRole.entities.Contato.update(contato.id, {
              conversa_finalizada: false,
              historico_mensagens: [], // Limpa todo o histórico
@@ -133,16 +134,19 @@ Deno.serve(async (req) => {
              ultima_mensagem: null,
              ultima_resposta: null,
              ultimo_timestamp_pendente: null,
-             atendimento_humano: false // Reativa a IA se estavam em atendimento humano
+             atendimento_humano: true // Volta para atendimento HUMANO
            });
-           console.log('✅ Conversa reativada:', updateResult);
+           console.log('✅ Conversa reativada em modo HUMANO:', updateResult);
            // Recarregar contato após limpeza para garantir que está atualizado
            const contatoLimpo = (await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber }))[0];
            if (contatoLimpo) {
              contato.historico_mensagens = contatoLimpo.historico_mensagens || [];
              contato.mensagens_pendentes = contatoLimpo.mensagens_pendentes || [];
              contato.conversa_finalizada = false;
+             contato.atendimento_humano = true;
            }
+           // Sair aqui pois está em modo humano
+           return Response.json({ success: true, status: 'atendimento_humano' });
          }
         
         // Verificar se há mensagem pendente (não processada)
@@ -201,12 +205,9 @@ Deno.serve(async (req) => {
         await base44.asServiceRole.entities.Contato.update(contato.id, updateData);
         
         // Se está em atendimento humano, não processar pela IA - apenas salvar e sair
-        // MAS: se a conversa foi finalizada, reativar a IA mesmo que estivesse em atendimento humano
-        if (contato.atendimento_humano && !contato.conversa_finalizada) {
+        if (contato.atendimento_humano) {
           console.log('👤 Contato em atendimento humano - mensagem salva, não processando IA');
           return Response.json({ success: true, status: 'atendimento_humano' });
-        } else if (contato.atendimento_humano && contato.conversa_finalizada) {
-          console.log('🔄 Conversa finalizada - reativando IA mesmo em atendimento humano');
         }
         
         // Se já havia mensagens pendentes, verificar se passou tempo suficiente
@@ -312,6 +313,7 @@ Deno.serve(async (req) => {
           telefone: phoneNumber,
           origem: 'WhatsApp',
           status: 'Novo',
+          atendimento_humano: true, // Novo contato começa em atendimento HUMANO
           mensagens_pendentes: [{ texto: messageText, timestamp: agora, mediaType: mediaType, mediaUrl: mediaUrl, messageId: messageId }],
           ultimo_timestamp_pendente: meuLockIdNovo
         });
