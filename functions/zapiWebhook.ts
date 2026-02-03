@@ -163,16 +163,20 @@ async function processarMensagemRecebida(base44, payload) {
                     messageId: msgId
                 });
                 
+                // PADRÃO: Se atendimento_humano não está definido, assume HUMANO (true)
+                const estaEmModoHumano = contato.atendimento_humano !== false;
+                
                 await base44.asServiceRole.entities.Contato.update(contato.id, {
                     historico_mensagens: historicoAtual.slice(-50),
                     ultima_interacao: agora,
                     nome: contato.nome || senderName,
-                    conversa_finalizada: false
+                    conversa_finalizada: false,
+                    atendimento_humano: estaEmModoHumano // Garantir que está definido
                 });
                 
-                // Se está em atendimento humano, NÃO encaminhar para IA
-                if (contato.atendimento_humano) {
-                    console.log('👤 Contato em atendimento HUMANO - mensagem salva, NÃO processando IA');
+                // PADRÃO É HUMANO - só vai para IA se atendimento_humano === false
+                if (estaEmModoHumano) {
+                    console.log('👤 Contato em atendimento HUMANO (padrão) - mensagem salva, NÃO processando IA');
                     return new Response(JSON.stringify({ message: "Atendimento humano", status: "salvo" }), { status: 200 });
                 }
             } else {
