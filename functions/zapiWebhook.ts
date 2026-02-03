@@ -100,7 +100,7 @@ async function processarMensagemRecebida(base44, payload) {
     const ehConfirmacao = palavrasConfirmacao.some(p => mensagem === p || mensagem.startsWith(p + ' '));
 
     if (!ehConfirmacao) {
-        console.log('🤖 Mensagem não é confirmação - encaminhando para chatbot IA...');
+        console.log('🤖 Mensagem não é confirmação - verificando modo de atendimento...');
         
         // Determinar o texto da mensagem baseado no tipo de mídia
         let textoMensagem = mensagem;
@@ -124,15 +124,95 @@ async function processarMensagemRecebida(base44, payload) {
             textoMensagem
         });
         
-        // Encaminhar para o chatbot IA
+        // Verificar se o contato existe e está em modo humano
+        const agora = new Date().toISOString();
+        const senderName = payload.senderName || payload.chatName || 'Usuário';
+        const msgId = payload.messageId || payload.id;
+        
+        // Extrair mídia URL
+        let mediaUrl = null;
+        let mediaType = 'text';
+        if (payload.image) {
+            mediaType = 'image';
+            mediaUrl = payload.image.imageUrl || payload.image.url;
+        } else if (payload.document) {
+            mediaType = 'document';
+            mediaUrl = payload.document.documentUrl || payload.document.url;
+        } else if (payload.audio) {
+            mediaType = 'audio';
+            mediaUrl = payload.audio.audioUrl || payload.audio.url;
+        } else if (payload.video) {
+            mediaType = 'video';
+            mediaUrl = payload.video.videoUrl || payload.video.url;
+        }
+        
+        try {
+            const contatos = await base44.asServiceRole.entities.Contato.filter({ telefone: telefone });
+            
+            if (contatos.length > 0) {
+                const contato = contatos[0];
+                
+                // Salvar mensagem no histórico sempre
+                const historicoAtual = contato.historico_mensagens || [];
+                historicoAtual.push({
+                    role: 'user',
+                    content: mediaUrl ? `${textoMensagem}\n${mediaUrl}` : textoMensagem,
+                    timestamp: agora,
+                    mediaType: mediaType,
+                    mediaUrl: mediaUrl,
+                    messageId: msgId
+                });
+                
+                await base44.asServiceRole.entities.Contato.update(contato.id, {
+                    historico_mensagens: historicoAtual.slice(-50),
+                    ultima_interacao: agora,
+                    nome: contato.nome || senderName,
+                    conversa_finalizada: false
+                });
+                
+                // Se está em atendimento humano, NÃO encaminhar para IA
+                if (contato.atendimento_humano) {
+                    console.log('👤 Contato em atendimento HUMANO - mensagem salva, NÃO processando IA');
+                    return new Response(JSON.stringify({ message: "Atendimento humano", status: "salvo" }), { status: 200 });
+                }
+            } else {
+                // Novo contato - criar em modo HUMANO
+                const historicoInicial = [{
+                    role: 'user',
+                    content: mediaUrl ? `${textoMensagem}\n${mediaUrl}` : textoMensagem,
+                    timestamp: agora,
+                    mediaType: mediaType,
+                    mediaUrl: mediaUrl,
+                    messageId: msgId
+                }];
+                
+                await base44.asServiceRole.entities.Contato.create({
+                    nome: senderName,
+                    telefone: telefone,
+                    origem: 'WhatsApp',
+                    status: 'Novo',
+                    atendimento_humano: true, // SEMPRE começa em modo HUMANO
+                    historico_mensagens: historicoInicial,
+                    ultima_interacao: agora
+                });
+                
+                console.log('👤 Novo contato criado em modo HUMANO - NÃO processando IA');
+                return new Response(JSON.stringify({ message: "Novo contato em modo humano", status: "salvo" }), { status: 200 });
+            }
+        } catch (contatoError) {
+            console.error('⚠️ Erro ao verificar/criar contato:', contatoError.message);
+        }
+        
+        // Se chegou aqui, o contato existe e NÃO está em modo humano - encaminhar para IA
+        console.log('🤖 Contato em modo IA - encaminhando para chatbot...');
         try {
             const resultadoChatbot = await base44.asServiceRole.functions.invoke('webhookWhatsappChatbot', {
                 phone: telefone,
                 fromMe: false,
                 isGroup: false,
                 text: { message: textoMensagem },
-                senderName: payload.senderName || payload.chatName || 'Usuário',
-                messageId: payload.messageId || payload.id,
+                senderName: senderName,
+                messageId: msgId,
                 // Passar mídia se houver
                 image: payload.image,
                 document: payload.document,
