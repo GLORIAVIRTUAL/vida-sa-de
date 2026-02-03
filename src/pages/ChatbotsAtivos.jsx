@@ -419,10 +419,12 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
       await base44.entities.Contato.update(contatoSelecionado.id, {
         status: 'Cliente',
         conversa_finalizada: true,
-        atendimento_humano: false
+        atendimento_humano: false,
+        atendente_atual: null,
+        atendente_id: null
       });
 
-      setContatoSelecionado({...contatoSelecionado, conversa_finalizada: true, status: 'Cliente', atendimento_humano: false});
+      setContatoSelecionado({...contatoSelecionado, conversa_finalizada: true, status: 'Cliente', atendimento_humano: false, atendente_atual: null});
       await buscarContatos();
     } catch (error) {
       console.error('Erro ao finalizar:', error);
@@ -434,10 +436,17 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
     if (!contatoSelecionado) return;
     const novoModo = !modoHumano;
     try {
+      // Buscar usuário atual
+      const currentUser = await base44.auth.me();
+      
       await base44.entities.Contato.update(contatoSelecionado.id, {
-        atendimento_humano: novoModo
+        atendimento_humano: novoModo,
+        // Se ativando modo humano, salvar quem está atendendo
+        atendente_atual: novoModo ? (currentUser?.full_name || currentUser?.email || 'Atendente') : null,
+        atendente_id: novoModo ? currentUser?.id : null
       });
       setModoHumano(novoModo);
+      await buscarContatos(); // Atualizar lista para mostrar atendente
     } catch (error) {
       alert('Erro: ' + error.message);
     }
@@ -584,7 +593,12 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
                          {numMensagens > 0 && (
                            <Badge className="bg-blue-100 text-blue-700 text-[9px] px-1 py-0">{numMensagens}</Badge>
                          )}
-                         {contato.atendimento_humano && (
+                         {contato.atendimento_humano && contato.atendente_atual && (
+                           <Badge className="bg-green-100 text-green-700 text-[9px] px-1 py-0" title={`Atendido por ${contato.atendente_atual}`}>
+                             👤 {contato.atendente_atual.split(' ')[0]}
+                           </Badge>
+                         )}
+                         {contato.atendimento_humano && !contato.atendente_atual && (
                            <Badge className="bg-green-100 text-green-700 text-[9px] px-1 py-0">👤</Badge>
                          )}
                          {contato.conversa_finalizada && (
