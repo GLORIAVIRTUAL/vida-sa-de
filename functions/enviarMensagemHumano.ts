@@ -62,12 +62,14 @@ Deno.serve(async (req) => {
         };
         console.log('📄 Enviando DOCUMENTO via Z-API');
       } else if (messageType === 'audio' && mediaUrl) {
+        // Z-API usa send-audio para áudios normais ou send-ptv para mensagens de voz
         url = `https://api.z-api.io/instances/${instanceId}/token/${zapiToken}/send-audio`;
         body = {
           phone: numero,
-          audio: mediaUrl
+          audio: mediaUrl,
+          waveform: true // Mostra como mensagem de voz
         };
-        console.log('🎤 Enviando ÁUDIO via Z-API');
+        console.log('🎤 Enviando ÁUDIO via Z-API:', mediaUrl);
       } else {
         // Texto simples
         url = `https://api.z-api.io/instances/${instanceId}/token/${zapiToken}/send-text`;
