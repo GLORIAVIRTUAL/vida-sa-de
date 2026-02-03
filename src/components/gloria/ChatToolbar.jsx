@@ -138,17 +138,33 @@ export default function ChatToolbar({
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
+      
+      // Tentar usar formato compatível com WhatsApp (ogg/opus ou mp3)
+      let mimeType = 'audio/webm;codecs=opus';
+      if (MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')) {
+        mimeType = 'audio/ogg;codecs=opus';
+      } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+        mimeType = 'audio/mp4';
+      }
+      
+      console.log('🎤 Gravando com mimeType:', mimeType);
+      
+      const recorder = new MediaRecorder(stream, { mimeType });
       const chunks = [];
 
       recorder.ondataavailable = (e) => chunks.push(e.data);
       recorder.onstop = async () => {
-        const audioBlob = new Blob(chunks, { type: 'audio/webm' });
-        const audioFile = new File([audioBlob], 'audio.webm', { type: 'audio/webm' });
+        // Usar extensão .ogg que é melhor suportada pelo WhatsApp
+        const audioBlob = new Blob(chunks, { type: mimeType });
+        const extension = mimeType.includes('ogg') ? 'ogg' : mimeType.includes('mp4') ? 'm4a' : 'webm';
+        const audioFile = new File([audioBlob], `audio.${extension}`, { type: mimeType });
+        
+        console.log('🎤 Áudio gravado:', audioFile.size, 'bytes, tipo:', mimeType);
         
         setUploading(true);
         try {
           const { file_url } = await base44.integrations.Core.UploadFile({ file: audioFile });
+          console.log('🎤 Áudio uploaded:', file_url);
           
           // A função enviarMensagemHumano já registra no histórico, não precisa chamar onSendMessage
           await base44.functions.invoke('enviarMensagemHumano', {
