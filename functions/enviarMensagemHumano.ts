@@ -125,7 +125,7 @@ Deno.serve(async (req) => {
         
         historicoAtual.push({
           role: 'assistant',
-          content: `[👤 ${user.full_name || 'Recepção'}]: ${conteudoMensagem}`,
+          content: `[👤 ${user.display_name || user.full_name || 'Recepção'}]: ${conteudoMensagem}`,
           timestamp,
           humano: true,
           mediaType: messageType || 'text',
