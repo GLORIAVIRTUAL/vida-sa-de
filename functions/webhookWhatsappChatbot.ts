@@ -305,8 +305,15 @@ Deno.serve(async (req) => {
         var mensagemFinal = mensagemCompleta;
         
       } else {
-        // Novo contato - criar com mensagem pendente (com mídia se houver) e aguardar
-        const meuLockIdNovo = `${messageId}_${Date.now()}`;
+        // Novo contato - criar com histórico já salvo e em modo HUMANO
+        const historicoInicial = [{
+          role: 'user',
+          content: mediaUrl ? `${messageText}\n${mediaUrl}` : messageText,
+          timestamp: agora,
+          mediaType: mediaType,
+          mediaUrl: mediaUrl,
+          messageId: messageId
+        }];
         
         await base44.asServiceRole.entities.Contato.create({
           nome: senderName,
@@ -314,52 +321,13 @@ Deno.serve(async (req) => {
           origem: 'WhatsApp',
           status: 'Novo',
           atendimento_humano: true, // Novo contato começa em atendimento HUMANO
-          mensagens_pendentes: [{ texto: messageText, timestamp: agora, mediaType: mediaType, mediaUrl: mediaUrl, messageId: messageId }],
-          ultimo_timestamp_pendente: meuLockIdNovo
-        });
-        
-        // Aguardar debounce
-        console.log(`⏳ Novo contato. Aguardando ${DEBOUNCE_SECONDS}s...`);
-        await new Promise(resolve => setTimeout(resolve, DEBOUNCE_SECONDS * 1000));
-        
-        // Recarregar
-        const contatoCriado = (await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber }))[0];
-        const todasMensagens = contatoCriado?.mensagens_pendentes || [];
-        
-        // LOCK: Verificar se ESTA chamada tem o lock
-        if (contatoCriado?.ultimo_timestamp_pendente !== meuLockIdNovo) {
-          console.log('⏭️ Outra chamada obteve o lock (novo contato). Saindo...');
-          return Response.json({ success: true, status: 'delegado' });
-        }
-        
-        // Verificar se já foi processado
-        if (contatoCriado?.mensagens_pendentes?.length === 0) {
-          console.log('⏭️ Mensagens já foram processadas por outra chamada. Saindo...');
-          return Response.json({ success: true, status: 'ja_processado' });
-        }
-        
-        // Pegar a última mídia se houver para novo contato
-        const ultimaMidiaNovoContato = [...todasMensagens].reverse().find(m => m.mediaUrl);
-        if (ultimaMidiaNovoContato) {
-          mediaUrl = ultimaMidiaNovoContato.mediaUrl;
-          mediaType = ultimaMidiaNovoContato.mediaType;
-          console.log(`📎 Novo contato - usando mídia: ${mediaType} - ${mediaUrl}`);
-        }
-        
-        // Se houver apenas mídia sem texto, usar a descrição da mídia como texto
-        let mensagemCompleta = todasMensagens.map(m => m.texto).join('\n');
-        if (!mensagemCompleta.trim() && ultimaMidiaNovoContato) {
-          console.log('📄 Novo contato - apenas mídia sem texto - usando descrição');
-          mensagemCompleta = ultimaMidiaNovoContato.texto;
-        }
-        console.log(`📝 Processando ${todasMensagens.length} mensagens acumuladas (novo contato)`);
-        
-        await base44.asServiceRole.entities.Contato.update(contatoCriado.id, {
+          historico_mensagens: historicoInicial,
           mensagens_pendentes: [],
-          ultimo_timestamp_pendente: null
+          ultima_interacao: agora
         });
         
-        var mensagemFinal = mensagemCompleta;
+        console.log('👤 Novo contato criado em modo HUMANO - não processando IA');
+        return Response.json({ success: true, status: 'atendimento_humano' });
       }
     } catch (e) {
       console.log('⚠️ Erro no debounce:', e.message);
