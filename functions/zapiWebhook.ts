@@ -196,6 +196,8 @@ async function processarMensagemRecebida(base44, payload) {
                     origem: 'WhatsApp',
                     status: 'Novo',
                     atendimento_humano: true, // SEMPRE começa em modo HUMANO
+                    atendente_atual: null,
+                    atendente_id: null,
                     historico_mensagens: historicoInicial,
                     ultima_interacao: agora
                 });

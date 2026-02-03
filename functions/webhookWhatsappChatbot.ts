@@ -134,7 +134,9 @@ Deno.serve(async (req) => {
              ultima_mensagem: null,
              ultima_resposta: null,
              ultimo_timestamp_pendente: null,
-             atendimento_humano: true // Volta para atendimento HUMANO
+             atendimento_humano: true, // Volta para atendimento HUMANO
+             atendente_atual: null,
+             atendente_id: null
            });
            console.log('✅ Conversa reativada em modo HUMANO:', updateResult);
            // Recarregar contato após limpeza para garantir que está atualizado
@@ -314,18 +316,20 @@ Deno.serve(async (req) => {
           mediaUrl: mediaUrl,
           messageId: messageId
         }];
-        
+
         await base44.asServiceRole.entities.Contato.create({
           nome: senderName,
           telefone: phoneNumber,
           origem: 'WhatsApp',
           status: 'Novo',
           atendimento_humano: true, // Novo contato começa em atendimento HUMANO
+          atendente_atual: null,
+          atendente_id: null,
           historico_mensagens: historicoInicial,
           mensagens_pendentes: [],
           ultima_interacao: agora
         });
-        
+
         console.log('👤 Novo contato criado em modo HUMANO - não processando IA');
         return Response.json({ success: true, status: 'atendimento_humano' });
       }
