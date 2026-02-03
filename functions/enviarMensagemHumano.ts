@@ -131,11 +131,14 @@ Deno.serve(async (req) => {
           mediaUrl: mediaUrl || null
         });
 
+        // Atualizar contato - incluindo quem está atendendo (ao enviar mensagem)
         await base44.asServiceRole.entities.Contato.update(contatoId, {
           historico_mensagens: historicoAtual.slice(-50),
           ultima_resposta: conteudoMensagem,
           ultima_interacao: timestamp,
-          total_mensagens: (contato.total_mensagens || 0) + 1
+          total_mensagens: (contato.total_mensagens || 0) + 1,
+          atendente_atual: user.full_name || user.email || 'Atendente',
+          atendente_id: user.id
         });
       }
     }

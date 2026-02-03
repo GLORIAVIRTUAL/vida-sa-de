@@ -436,17 +436,13 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
     if (!contatoSelecionado) return;
     const novoModo = !modoHumano;
     try {
-      // Buscar usuário atual
-      const currentUser = await base44.auth.me();
-      
       await base44.entities.Contato.update(contatoSelecionado.id, {
         atendimento_humano: novoModo,
-        // Se ativando modo humano, salvar quem está atendendo
-        atendente_atual: novoModo ? (currentUser?.full_name || currentUser?.email || 'Atendente') : null,
-        atendente_id: novoModo ? currentUser?.id : null
+        // Limpar atendente se desativando modo humano
+        ...(novoModo ? {} : { atendente_atual: null, atendente_id: null })
       });
       setModoHumano(novoModo);
-      await buscarContatos(); // Atualizar lista para mostrar atendente
+      await buscarContatos();
     } catch (error) {
       alert('Erro: ' + error.message);
     }
