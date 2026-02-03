@@ -31,7 +31,8 @@ Deno.serve(async (req) => {
     }
 
     let numero = phoneNumber.replace(/\D/g, '');
-    const nomeRemetente = user.full_name || 'Recepção';
+    // Usar display_name se existir, senão full_name
+    const nomeRemetente = user.display_name || user.full_name || 'Recepção';
 
     const headers = {
       'Content-Type': 'application/json'
@@ -132,12 +133,14 @@ Deno.serve(async (req) => {
         });
 
         // Atualizar contato - incluindo quem está atendendo (ao enviar mensagem)
+        // Usar display_name se existir, senão full_name
+        const nomeAtendente = user.display_name || user.full_name || user.email || 'Atendente';
         await base44.asServiceRole.entities.Contato.update(contatoId, {
           historico_mensagens: historicoAtual.slice(-50),
           ultima_resposta: conteudoMensagem,
           ultima_interacao: timestamp,
           total_mensagens: (contato.total_mensagens || 0) + 1,
-          atendente_atual: user.full_name || user.email || 'Atendente',
+          atendente_atual: nomeAtendente,
           atendente_id: user.id
         });
       }
