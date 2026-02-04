@@ -469,7 +469,8 @@ export default function Agendamentos() {
                 <tr>
                   <td>${format(new Date(ag.data_agendamento + 'T00:00:00'), 'dd/MM/yyyy')}</td>
                   <td><strong>${ag.horario}</strong></td>
-                  <td>${cpfPaciente ? cpfPaciente + ' - ' : ''}${nomePaciente}${convenioPaciente ? '<br/><small style="color:#666;">Conv: ' + convenioPaciente + '</small>' : ''}</td>
+                  <td>${cpfPaciente ? cpfPaciente + ' - ' : ''}${nomePaciente}</td>
+                  <td>${convenioPaciente}</td>
                   <td>${telefonePaciente}</td>
                   <td>${categoria?.nome || ''}</td>
                   <td>${ag.observacoes || ''}</td>
