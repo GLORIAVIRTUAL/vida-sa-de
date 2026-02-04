@@ -458,13 +458,18 @@ export default function Agendamentos() {
       const paciente = pacientes.find((p) => p.id === ag.paciente_id);
       const medico = medicos.find((m) => m.id === ag.medico_id);
       const categoria = categorias.find((c) => c.id === ag.categoria_preco_id);
+      
+      // Usar nome do paciente encontrado OU o nome salvo no agendamento
+      const nomePaciente = paciente?.nome || ag.paciente_nome || 'N/A';
+      const cpfPaciente = paciente?.cpf || '';
+      const telefonePaciente = paciente?.telefone || '';
 
       return `
                 <tr>
                   <td>${format(new Date(ag.data_agendamento + 'T00:00:00'), 'dd/MM/yyyy')}</td>
                   <td><strong>${ag.horario}</strong></td>
-                  <td>${paciente?.cpf || ''} - ${paciente?.nome || 'N/A'}</td>
-                  <td>${paciente?.telefone || ''}</td>
+                  <td>${cpfPaciente ? cpfPaciente + ' - ' : ''}${nomePaciente}</td>
+                  <td>${telefonePaciente}</td>
                   <td>${categoria?.nome || ''}</td>
                   <td>${ag.observacoes || ''}</td>
                   <td>${ag.created_by?.split('@')[0]?.toUpperCase() || ''}</td>
