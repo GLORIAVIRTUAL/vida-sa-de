@@ -441,8 +441,9 @@ export default function Agendamentos() {
               <th style="width: 70px;">Data</th>
               <th style="width: 40px;">Hora</th>
               <th>Descrição</th>
+              <th style="width: 80px;">Conv. Paciente</th>
               <th style="width: 90px;">Celular</th>
-              <th style="width: 100px;">Convênio</th>
+              <th style="width: 100px;">Categoria</th>
               <th style="width: 80px;">Observação</th>
               <th style="width: 70px;">Atendente</th>
             </tr>
