@@ -290,6 +290,9 @@ export default function FormularioOS({
 
       let percentual = 0;
       let repasseFixo = 0;
+      
+      // Verificar tipo de repasse do médico (valor_fixo ou percentual)
+      const tipoRepasse = medico.tipo_repasse || 'percentual';
 
       // Lógica diferenciada para Procedimentos vs Consultas
       if (agendamento.tipo_servico === 'Procedimento' && procedimento) {
@@ -297,24 +300,34 @@ export default function FormularioOS({
         if (procedimento.valor_repasse_medico > 0) {
           repasseFixo = procedimento.valor_repasse_medico;
         } 
-        // 2. Fallback: Configuração do Médico para Procedimentos (Percentual)
-        else {
+        // 2. Fallback: Configuração do Médico para Procedimentos
+        else if (tipoRepasse === 'valor_fixo') {
+          repasseFixo = isParticular
+            ? (medico.valor_repasse_fixo_procedimento || medico.valor_repasse_fixo || 0)
+            : (medico.valor_repasse_fixo_procedimento_convenio || medico.valor_repasse_fixo_convenio || 0);
+        } else {
           percentual = isParticular
             ? (medico.percentual_repasse_procedimento || medico.percentual_repasse || 0)
             : (medico.percentual_repasse_procedimento_convenio || medico.percentual_repasse_convenio || 0);
         }
       } else {
-        // Lógica para Consultas (padrão)
-        percentual = isParticular
-          ? (medico.percentual_repasse || 0)
-          : (medico.percentual_repasse_convenio || medico.percentual_repasse || 0);
+        // Lógica para Consultas
+        if (tipoRepasse === 'valor_fixo') {
+          // Médico configurado com valor fixo
+          repasseFixo = isParticular
+            ? (medico.valor_repasse_fixo || 0)
+            : (medico.valor_repasse_fixo_convenio || 0);
+        } else {
+          // Médico configurado com percentual
+          percentual = isParticular
+            ? (medico.percentual_repasse || 0)
+            : (medico.percentual_repasse_convenio || medico.percentual_repasse || 0);
+        }
       }
 
       if (repasseFixo > 0) {
-        // Se for valor fixo, usamos diretamente (assumindo que já é o valor acordado)
-        // Mas mantemos a lógica de imposto se necessário, ou assumimos que o fixo é o valor BRUTO base
-        const bruto = repasseFixo;
-        repasseMedico = isentoImposto ? bruto : bruto * 0.90;
+        // Se for valor fixo, usar diretamente
+        repasseMedico = repasseFixo;
       } else if (percentual > 0) {
         const bruto = valorTotal * (percentual / 100);
         // NÃO aplicar imposto de 10% para Particular e Cartão Mais Vida
