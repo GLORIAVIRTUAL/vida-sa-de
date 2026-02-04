@@ -391,7 +391,7 @@ export default function FormularioVendaCartao({ venda, onClose, onSave }) { // N
         }
 
         // Atualizar a venda
-        await safeApiCall(() => VendaCartao.update(venda.id, {
+        const dadosAtualizados = {
           tipo_plano: formData.tipo_plano,
           titular: formData.titular,
           dependentes: formData.dependentes,
@@ -406,7 +406,11 @@ export default function FormularioVendaCartao({ venda, onClose, onSave }) { // N
           validade_cartao: formData.validade_cartao,
           status: novoStatus,
           observacoes: formData.observacoes
-        }));
+        };
+        
+        console.log('📦 Dados para atualização:', dadosAtualizados);
+        
+        await safeApiCall(() => VendaCartao.update(venda.id, dadosAtualizados));
 
         console.log('✅ Venda atualizada com sucesso!');
 
