@@ -307,7 +307,9 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
         return 0;
       });
       setContatos(ordenados);
-      if (ordenados.length > 0 && !contatoSelecionado && !contatoInicial) {
+      // Só seleciona automaticamente se ainda não há nenhum contato selecionado
+      // E se o usuário não está em modo humano (evita trocar durante atendimento)
+      if (ordenados.length > 0 && !contatoSelecionado && !contatoInicial && !modoHumano) {
         setContatoSelecionado(ordenados[0]);
       }
     } catch (error) {
