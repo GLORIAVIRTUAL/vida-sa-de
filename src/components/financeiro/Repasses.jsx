@@ -45,6 +45,9 @@ export default function Repasses() {
   }, [carregarDados]);
 
   const ordensFiltradas = ordens.filter(os => {
+    // Excluir canceladas primeiro
+    if (os.status_pagamento === "Cancelado") return false;
+    
     const mesOS = format(new Date(os.data_execucao), "yyyy-MM");
     const filtroMes = filtros.mes === "todos" || mesOS === filtros.mes;
     const filtroMedico = filtros.medico === "todos" || os.medico_id === filtros.medico;
