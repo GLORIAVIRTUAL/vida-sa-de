@@ -463,12 +463,13 @@ export default function Agendamentos() {
       const nomePaciente = paciente?.nome || ag.paciente_nome || 'N/A';
       const cpfPaciente = paciente?.cpf || '';
       const telefonePaciente = paciente?.telefone || '';
+      const convenioPaciente = paciente?.convenio || '';
 
       return `
                 <tr>
                   <td>${format(new Date(ag.data_agendamento + 'T00:00:00'), 'dd/MM/yyyy')}</td>
                   <td><strong>${ag.horario}</strong></td>
-                  <td>${cpfPaciente ? cpfPaciente + ' - ' : ''}${nomePaciente}</td>
+                  <td>${cpfPaciente ? cpfPaciente + ' - ' : ''}${nomePaciente}${convenioPaciente ? '<br/><small style="color:#666;">Conv: ' + convenioPaciente + '</small>' : ''}</td>
                   <td>${telefonePaciente}</td>
                   <td>${categoria?.nome || ''}</td>
                   <td>${ag.observacoes || ''}</td>
