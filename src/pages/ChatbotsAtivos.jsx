@@ -359,16 +359,9 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
     }
   }, [contatoInicial]);
 
-  useEffect(() => {
-    if (contatoSelecionado && contatos.length > 0) {
-      const atualizado = contatos.find(c => c.id === contatoSelecionado.id);
-      if (atualizado && atualizado.id === contatoSelecionado.id) {
-        // Apenas atualizar o contato atual, não trocar
-        setContatoSelecionado(atualizado);
-        setModoHumano(atualizado.atendimento_humano || false);
-      }
-    }
-  }, [contatos, contatoSelecionado?.id]);
+  // Removido: useEffect que atualizava contato ao mudar lista de contatos
+  // Agora a atualização é feita apenas pelo atualizarContatoSelecionado (a cada 2s)
+  // Isso evita trocar de conversa quando a lista é reordenada
 
   useEffect(() => {
     if (contatoSelecionado) {
