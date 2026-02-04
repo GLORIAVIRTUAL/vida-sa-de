@@ -24,6 +24,7 @@ export default function RepasseMedicos({ ordensServico, medicos, pacientes, onRe
     const ordensDoDia = ordensServico.filter(os =>
       os.data_execucao === filtroData &&
       os.status_pagamento === "Pago" &&
+      os.status_pagamento !== "Cancelado" &&
       os.valor_repasse_medico > 0 &&
       !os.repasse_realizado
     );
