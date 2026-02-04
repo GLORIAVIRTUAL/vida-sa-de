@@ -648,7 +648,13 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
                 {modoHumano && (
                   <div className="mt-2 p-2 bg-green-100 rounded-lg text-xs text-green-800 flex items-center gap-2">
                     <User className="w-4 h-4" />
-                    <span><strong>Atendimento humano ativo</strong> - A IA está pausada. Clique em "Assumir" novamente para reativar a Glória.</span>
+                    <span>
+                      <strong>Atendimento humano ativo</strong>
+                      {contatoSelecionado?.atendente_atual && (
+                        <span className="ml-1">por <strong>{contatoSelecionado.atendente_atual}</strong></span>
+                      )}
+                      {' '}- A IA está pausada. Clique em "Assumir" novamente para reativar a Glória.
+                    </span>
                   </div>
                 )}
               </CardHeader>
