@@ -178,6 +178,9 @@ export default function Relatorios() {
   // Dados filtrados
   const dadosFiltrados = useMemo(() => {
     return ordensServico.filter(os => {
+      // Excluir canceladas (a menos que o filtro específico seja "Cancelado")
+      if (os.status_pagamento === "Cancelado" && filtros.statusPagamento !== "Cancelado") return false;
+      
       // Filtro de data
       if (filtros.dataInicio && os.data_execucao < filtros.dataInicio) return false;
       if (filtros.dataFim && os.data_execucao > filtros.dataFim) return false;
