@@ -451,7 +451,7 @@ export default function Agendamentos() {
           <tbody>
             ${agendamentosParaImpressao.length === 0 ? `
               <tr>
-                <td colspan="7" style="text-align: center; padding: 20px;">
+                <td colspan="8" style="text-align: center; padding: 20px;">
                   Nenhum agendamento
                 </td>
               </tr>
