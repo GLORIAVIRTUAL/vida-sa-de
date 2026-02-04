@@ -32,7 +32,16 @@ const SENHA_CANCELAMENTO = "123123";
 const formatDateSafe = (dateString) => {
   if (!dateString) return "N/A";
   try {
-    const date = new Date(dateString);
+    // Corrigir problema de timezone: datas no formato 'YYYY-MM-DD' são interpretadas como UTC
+    // Adicionamos 'T12:00:00' para garantir que seja tratado corretamente no fuso local
+    let date;
+    if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      // Formato ISO sem hora - tratar como data local
+      const [year, month, day] = dateString.split('-');
+      date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    } else {
+      date = new Date(dateString);
+    }
     if (isNaN(date.getTime())) return "Data Inválida";
     return format(date, 'dd/MM/yyyy');
   } catch (e) {
