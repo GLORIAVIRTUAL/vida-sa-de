@@ -186,7 +186,11 @@ export default function FormularioVendaCartao({ venda, onClose, onSave }) { // N
         return;
     }
 
-    setFormData(prev => ({ ...prev, [field]: value }));
+    // Para campos de data e outros campos simples
+    setFormData(prev => {
+      console.log(`📝 Atualizando campo ${field}:`, value);
+      return { ...prev, [field]: value };
+    });
   };
 
   const handleTitularChange = (field, value) => {
