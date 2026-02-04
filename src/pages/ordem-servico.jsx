@@ -140,15 +140,16 @@ export default function OrdemDeServico() {
       setLoading(true);
       console.log('🔄 Carregando dados da página OS...');
 
-      // Carregar dados em etapas para evitar rate limit
-      // Etapa 1: Dados essenciais
-      const [medicosData, categoriasData] = await Promise.all([
-      Medico.list("nome", 500),
-      CategoriaPreco.list()]
-      );
-
+      // Etapa 1: Dados essenciais (2 chamadas)
+      const medicosData = await Medico.list("nome", 500);
       setMedicos(medicosData || []);
+      
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      
+      const categoriasData = await CategoriaPreco.list();
       setCategorias(categoriasData || []);
+
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
       // Etapa 2: Ordens de Serviço
       let ordensData = [];
@@ -169,21 +170,27 @@ export default function OrdemDeServico() {
 
       setOrdens(ordensData || []);
 
-      // Etapa 3: Dados secundários (com pequeno delay para evitar rate limit)
-      await new Promise((resolve) => setTimeout(resolve, 300));
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
-      const [pacientesData, procedimentosData, examesData] = await Promise.all([
-      Paciente.list("nome", 1000),
-      Procedimento.list("-created_date", 500),
-      Exame.list("-created_date", 500)]
-      );
-
+      // Etapa 3: Pacientes
+      const pacientesData = await Paciente.list("nome", 1000);
       setPacientes(pacientesData || []);
+
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // Etapa 4: Procedimentos
+      const procedimentosData = await Procedimento.list("-created_date", 500);
       setProcedimentos(procedimentosData || []);
+
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // Etapa 5: Exames
+      const examesData = await Exame.list("-created_date", 500);
       setExames(examesData || []);
 
-      // Etapa 4: Agendamentos (opcional, carregar sob demanda)
-      await new Promise((resolve) => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // Etapa 6: Agendamentos
       const agendamentosData = await Agendamento.list("-data_agendamento", 500);
       setAgendamentos(agendamentosData || []);
 
