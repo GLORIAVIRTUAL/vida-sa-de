@@ -88,7 +88,11 @@ export default function FormularioOS({
 
   // Buscar usuário atual para salvar quem gerou a OS
   useEffect(() => {
-    User.me().then(user => setCurrentUser(user)).catch(() => {});
+    // Delay pequeno para evitar chamadas simultâneas com outros componentes
+    const timer = setTimeout(() => {
+      User.me().then(user => setCurrentUser(user)).catch(() => {});
+    }, 100);
+    return () => clearTimeout(timer);
   }, []);
 
   // DEBUG: Log inicial
