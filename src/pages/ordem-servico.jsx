@@ -190,33 +190,36 @@ export default function OrdemDeServico() {
       setLoading(true);
       console.log(modoRapido ? '⚡ Carregamento rápido (apenas essenciais)' : '🔄 Carregamento completo');
 
+      // Delay para evitar rate limit (aumentado)
       const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-      // Etapa 1: SEMPRE carregar Médicos e Categorias (essenciais)
-      const [medicosData, categoriasData] = await Promise.all([
-        Medico.list("nome", 500),
-        CategoriaPreco.list()
-      ]);
+      // Etapa 1: SEMPRE carregar Médicos e Categorias (essenciais) - sequencial
+      const medicosData = await Medico.list("nome", 500);
       setMedicos(medicosData || []);
+      await delay(200); // Delay entre chamadas
+      
+      const categoriasData = await CategoriaPreco.list();
       setCategorias(categoriasData || []);
+      await delay(200);
       
       // Se for modo rápido (vindo de um agendamento específico), carregar só o mínimo
       if (modoRapido) {
         console.log('⚡ Modo rápido: carregando apenas procedimentos e exames');
-        await delay(800);
-        const [procedimentosData, examesData] = await Promise.all([
-          Procedimento.list("-created_date", 100),
-          Exame.list("-created_date", 100)
-        ]);
+        
+        const procedimentosData = await Procedimento.list("-created_date", 100);
         setProcedimentos(procedimentosData || []);
+        await delay(200);
+        
+        const examesData = await Exame.list("-created_date", 100);
         setExames(examesData || []);
+        
         // Não carregar ordens antigas no modo rápido
         setOrdens([]);
         setPacientes([]);
         setAgendamentos([]);
       } else {
-        // Modo completo: carregar tudo
-        await delay(1500);
+        // Modo completo: carregar tudo sequencialmente
+        await delay(300);
 
         // Etapa 2: Ordens de Serviço
         let ordensData = [];
@@ -231,28 +234,29 @@ export default function OrdemDeServico() {
           }
         } catch (err) {
           console.warn("⚠️ Falha na função backend, usando fallback SDK:", err);
-          await delay(1500);
+          await delay(300);
           ordensData = await OrdemServico.list("-data_execucao", 200);
           console.log('✅ OS carregadas via fallback:', ordensData?.length);
         }
         setOrdens(ordensData || []);
-        await delay(1500);
+        await delay(300);
 
         // Etapa 3: Pacientes
         const pacientesData = await Paciente.list("nome", 500);
         setPacientes(pacientesData || []);
-        await delay(1500);
+        await delay(300);
 
-        // Etapa 4: Procedimentos e Exames
-        const [procedimentosData, examesData] = await Promise.all([
-          Procedimento.list("-created_date", 200),
-          Exame.list("-created_date", 200)
-        ]);
+        // Etapa 4: Procedimentos
+        const procedimentosData = await Procedimento.list("-created_date", 200);
         setProcedimentos(procedimentosData || []);
+        await delay(300);
+        
+        // Etapa 5: Exames
+        const examesData = await Exame.list("-created_date", 200);
         setExames(examesData || []);
-        await delay(1500);
+        await delay(300);
 
-        // Etapa 5: Agendamentos
+        // Etapa 6: Agendamentos
         const agendamentosData = await Agendamento.list("-data_agendamento", 200);
         setAgendamentos(agendamentosData || []);
       }
@@ -285,10 +289,12 @@ export default function OrdemDeServico() {
         setMostrarForm(false);
         setOsSelecionada(null);
         setAgendamentoParaOS(null);
-        await carregarDados();
         navigate(createPageUrl('Agendamentos'));
         return;
       }
+
+      // Adicionar OS à lista imediatamente (otimista)
+      setOrdens(prev => [novaOS, ...prev]);
 
       if (novaOS.status_pagamento === 'Pago' && agendamentoParaOS) {
         // Tenta pegar nome da OS (snapshot histórico) ou da lista
@@ -328,8 +334,8 @@ export default function OrdemDeServico() {
       setMostrarForm(false);
       setOsSelecionada(null);
       setAgendamentoParaOS(null);
-      await carregarDados();
-
+      
+      // Navegar imediatamente sem esperar recarregar
       navigate(createPageUrl('Agendamentos'));
     } catch (error) {
       console.error("Erro ao processar OS salva:", error);

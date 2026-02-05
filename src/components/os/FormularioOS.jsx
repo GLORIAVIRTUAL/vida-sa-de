@@ -516,17 +516,19 @@ export default function FormularioOS({
       if (transaction) {
          toast({
             title: "Enviado para Maquininha 💳",
-            description: "Aguarde o processamento no terminal.",
+            description: "Aguarde o processamento no terminal. A página será atualizada automaticamente.",
             className: "bg-blue-50 border-blue-200",
-            duration: 6000
+            duration: 4000
          });
       } else {
          toast({
             title: "Sucesso!",
-            description: "Ordem de Serviço criada!"
+            description: "Ordem de Serviço criada com sucesso!",
+            duration: 3000
          });
       }
 
+      // Chamar onSalvar imediatamente para atualização otimista
       onSalvar(novaOS);
     } catch (error) {
       console.error('❌ Erro ao criar OS:', error);
