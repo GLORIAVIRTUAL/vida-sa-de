@@ -39,16 +39,27 @@ Deno.serve(async (req) => {
         const randomStr = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
         const numero_os = `${dateStr}-${randomStr}`;
 
-        // Construir dados da OS de forma segura
+        // Construir dados da OS de forma segura - garantir tipos corretos
         const dadosOS = { 
             ...body, 
             paciente_nome: nomePaciente,
             numero_os: numero_os,
-            // Garantir que valor_final seja número
-            valor_final: typeof valor_final === 'number' ? valor_final : parseFloat(valor_final) || 0
+            // Garantir que valores numéricos sejam números
+            valor_final: Number(valor_final) || 0,
+            valor_total: Number(body.valor_total) || 0,
+            desconto: Number(body.desconto) || 0,
+            juros: Number(body.juros) || 0,
+            valor_repasse_medico: Number(body.valor_repasse_medico) || 0,
+            valor_repasse_laboratorio: Number(body.valor_repasse_laboratorio) || 0,
+            valor_clinica: Number(body.valor_clinica) || 0,
+            parcelas: Number(body.parcelas) || 1
         };
         
-        console.log('💾 Dados da OS a criar:', JSON.stringify(dadosOS, null, 2));
+        console.log('💾 Criando OS com valores:', {
+            numero_os: dadosOS.numero_os,
+            valor_final: dadosOS.valor_final,
+            valor_total: dadosOS.valor_total
+        });
         
         const novaOS = await base44.asServiceRole.entities.OrdemServico.create(dadosOS);
         console.log('✅ OS criada com ID:', novaOS.id);
