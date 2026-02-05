@@ -99,7 +99,17 @@ export default function ListaAgendamentos({
   const handleAbrirPaciente = async (pacienteId) => {
     if (!pacienteId) return;
     
-    const paciente = pacientes.find((p) => p.id === pacienteId);
+    let paciente = pacientes.find((p) => p.id === pacienteId);
+    
+    // Se não encontrou na lista, buscar direto da API
+    if (!paciente) {
+      try {
+        const { Paciente } = await import('@/entities/all');
+        paciente = await Paciente.get(pacienteId);
+      } catch (error) {
+        console.error('Erro ao buscar paciente:', error);
+      }
+    }
     
     if (paciente) {
       setPacienteParaEditar(paciente);

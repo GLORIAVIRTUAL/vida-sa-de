@@ -44,15 +44,36 @@ export default function AgendamentosHoje({ agendamentos = [], medicos = [], paci
   const handleEditarPaciente = async (agendamento) => {
     let paciente = null;
     
-    // Busca rápida por ID
+    // Busca rápida por ID na lista carregada
     if (agendamento.paciente_id) {
       paciente = pacientes.find(p => p.id === agendamento.paciente_id);
     }
     
-    // Busca rápida por nome (normalizada)
+    // Busca rápida por nome (normalizada) na lista carregada
     if (!paciente && agendamento.paciente_nome) {
       const nomeNormalizado = agendamento.paciente_nome.toLowerCase().trim();
       paciente = pacientes.find(p => p.nome.toLowerCase().trim() === nomeNormalizado);
+    }
+    
+    // Se não encontrou na lista, buscar na API
+    if (!paciente) {
+      try {
+        if (agendamento.paciente_id) {
+          const { Paciente } = await import('@/entities/all');
+          paciente = await Paciente.get(agendamento.paciente_id);
+        } else if (agendamento.paciente_nome) {
+          const { base44 } = await import('@/api/base44Client');
+          const response = await base44.functions.invoke('searchPatients', { 
+            termo: agendamento.paciente_nome, 
+            limit: 1 
+          });
+          if (response?.data && response.data.length > 0) {
+            paciente = response.data[0];
+          }
+        }
+      } catch (error) {
+        console.error('Erro ao buscar paciente:', error);
+      }
     }
     
     if (paciente) {
