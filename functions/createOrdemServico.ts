@@ -37,12 +37,19 @@ Deno.serve(async (req) => {
         const randomStr = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
         const numero_os = `${dateStr}-${randomStr}`;
 
+        // Construir dados da OS de forma segura
         const dadosOS = { 
             ...body, 
             paciente_nome: nomePaciente,
-            numero_os: numero_os
+            numero_os: numero_os,
+            // Garantir que valor_final seja número
+            valor_final: typeof valor_final === 'number' ? valor_final : parseFloat(valor_final) || 0
         };
+        
+        console.log('💾 Dados da OS a criar:', JSON.stringify(dadosOS, null, 2));
+        
         const novaOS = await base44.asServiceRole.entities.OrdemServico.create(dadosOS);
+        console.log('✅ OS criada com ID:', novaOS.id);
 
         // Verificar se há integração de pagamento configurada
         let API_URL = Deno.env.get("EVOLUSERVICES_API_URL");
