@@ -33,8 +33,26 @@ export default function AgendamentosHoje({ agendamentos = [], medicos = [], paci
     return medico ? `Dr(a). ${medico.nome}` : "Médico não encontrado";
   };
   
-  const handleEditarPaciente = (agendamento) => {
-    const paciente = pacientes.find(p => p.id === agendamento.paciente_id);
+  const handleEditarPaciente = async (agendamento) => {
+    if (!agendamento.paciente_id) {
+      console.log('Agendamento sem paciente_id:', agendamento);
+      return;
+    }
+    
+    // Tentar buscar na lista carregada primeiro
+    let paciente = pacientes.find(p => p.id === agendamento.paciente_id);
+    
+    // Se não encontrou, buscar direto da API
+    if (!paciente) {
+      try {
+        const { Paciente } = await import('@/entities/all');
+        paciente = await Paciente.get(agendamento.paciente_id);
+      } catch (error) {
+        console.error('Erro ao buscar paciente:', error);
+        return;
+      }
+    }
+    
     if (paciente) {
       setPacienteEditando(paciente);
     }
