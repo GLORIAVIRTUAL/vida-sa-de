@@ -75,29 +75,11 @@ export default function Dashboard() {
       // Delay para evitar rate limit
       await new Promise(r => setTimeout(r, 300));
 
-      // 1b. Carregar Pacientes COMPLETO (necessário para encontrar todos os agendados)
-      // Carregar TODOS os pacientes para garantir que os agendados sejam encontrados
-      const pacientesData = await safeApiCall(async () => {
-        const allPacientes = [];
-        let skip = 0;
-        const limit = 500;
-        let hasMore = true;
-        
-        while (hasMore) {
-          const batch = await Paciente.list(null, limit, skip);
-          if (batch && batch.length > 0) {
-            allPacientes.push(...batch);
-            skip += limit;
-            hasMore = batch.length === limit;
-          } else {
-            hasMore = false;
-          }
-        }
-        return allPacientes;
-      }, []);
+      // 1b. Carregar Pacientes recentes (lista local para busca rápida)
+      // Fallback para pacientes não encontrados é feito via searchPatients nos componentes
+      const pacientesData = await safeApiCall(() => Paciente.list(), []);
       const pacientesArray = Array.isArray(pacientesData) ? pacientesData : [];
       setPacientes(pacientesArray);
-      console.log(`✅ ${pacientesArray.length} pacientes carregados`);
 
       // Delay para evitar rate limit
       await new Promise(r => setTimeout(r, 300));

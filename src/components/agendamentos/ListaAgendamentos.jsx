@@ -21,6 +21,7 @@ import { ptBR } from "date-fns/locale";
 import EnviarNotificacao from './EnviarNotificacao';
 import FormularioPaciente from '../pacientes/FormularioPaciente';
 import { useToast } from "@/components/ui/use-toast";
+import { base44 } from "@/api/base44Client";
 
 const statusColors = {
   "Agendado": "bg-blue-100 text-blue-800",
@@ -96,18 +97,31 @@ export default function ListaAgendamentos({
     setMedicoSelecionado(null);
   };
 
-  const handleAbrirPaciente = async (pacienteId) => {
-    if (!pacienteId) return;
+  const handleAbrirPaciente = async (pacienteId, agendamento) => {
+    let paciente = null;
     
-    let paciente = pacientes.find((p) => p.id === pacienteId);
+    // 1. Busca local por ID
+    if (pacienteId) {
+      paciente = pacientes.find((p) => p.id === pacienteId);
+    }
     
-    // Se não encontrou na lista, buscar direto da API
-    if (!paciente) {
+    // 2. Busca local por nome
+    const nomeBusca = agendamento?.paciente_nome;
+    if (!paciente && nomeBusca) {
+      const nomeNorm = nomeBusca.toLowerCase().trim();
+      paciente = pacientes.find((p) => p.nome?.toLowerCase().trim() === nomeNorm);
+    }
+    
+    // 3. Fallback: buscar via backend searchPatients
+    if (!paciente && nomeBusca) {
       try {
-        const { Paciente } = await import('@/entities/all');
-        paciente = await Paciente.get(pacienteId);
+        const response = await base44.functions.invoke('searchPatients', { termo: nomeBusca });
+        const resultados = response?.data;
+        if (Array.isArray(resultados) && resultados.length > 0) {
+          paciente = pacienteId ? (resultados.find(p => p.id === pacienteId) || resultados[0]) : resultados[0];
+        }
       } catch (error) {
-        console.error('Erro ao buscar paciente:', error);
+        console.error('Erro ao buscar paciente via API:', error);
       }
     }
     
@@ -117,7 +131,7 @@ export default function ListaAgendamentos({
     } else {
       toast({
         title: "Paciente não encontrado",
-        description: "Os dados do paciente não estão disponíveis.",
+        description: "Não foi possível localizar o cadastro deste paciente.",
         variant: "destructive"
       });
     }
@@ -209,7 +223,7 @@ export default function ListaAgendamentos({
                           <p className="flex items-center gap-2 text-sm">
                             <User className="w-4 h-4 text-gray-400" />
                             <button
-                              onClick={() => handleAbrirPaciente(agendamento.paciente_id)}
+                              onClick={() => handleAbrirPaciente(agendamento.paciente_id, agendamento)}
                               className="text-cyan-600 font-medium hover:text-blue-800 hover:underline cursor-pointer transition-colors"
                               title="Clique para editar o cadastro do paciente"
                             >
@@ -241,7 +255,7 @@ export default function ListaAgendamentos({
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleAbrirPaciente(agendamento.paciente_id)}
+                        onClick={() => handleAbrirPaciente(agendamento.paciente_id, agendamento)}
                         className="text-blue-600 hover:bg-blue-50"
                       >
                         <UserCog className="w-3 h-3 mr-1" />
