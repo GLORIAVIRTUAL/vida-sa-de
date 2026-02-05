@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button"; 
-import { Clock, User, Calendar, Edit } from "lucide-react"; 
+import { Clock, User, Calendar, Edit, CalendarPlus } from "lucide-react"; 
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { Agendamento } from "@/entities/all";
 import FormularioPaciente from "../pacientes/FormularioPaciente";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
 
 const statusColors = {
   "Agendado": "bg-blue-100 text-blue-800 border-blue-200",
@@ -115,15 +117,37 @@ export default function AgendamentosHoje({ agendamentos = [], medicos = [], paci
                           {agendamento.paciente_nome || getNomePaciente(agendamento.paciente_id)}
                         </span>
                       </p>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleEditarPaciente(agendamento)}
-                        className="h-7 w-7 p-0 text-gray-500 hover:text-blue-600"
-                        title="Editar cadastro do paciente"
-                      >
-                        <Edit className="w-3.5 h-3.5" />
-                      </Button>
+                      <div className="flex gap-1">
+                        <Link 
+                          to={createPageUrl('Agendamentos')}
+                          state={{
+                            dadosIniciais: {
+                              paciente_id: agendamento.paciente_id,
+                              paciente_nome: agendamento.paciente_nome || getNomePaciente(agendamento.paciente_id),
+                              telefone: pacientes.find(p => p.id === agendamento.paciente_id)?.telefone
+                            }
+                          }}
+                        >
+                          <Button
+                            size="sm"
+                            variant="default"
+                            className="h-7 px-2 bg-blue-600 hover:bg-blue-700 text-white"
+                            title="Novo agendamento para este paciente"
+                          >
+                            <CalendarPlus className="w-3.5 h-3.5 mr-1" />
+                            Agendar
+                          </Button>
+                        </Link>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleEditarPaciente(agendamento)}
+                          className="h-7 w-7 p-0 text-gray-500 hover:text-blue-600"
+                          title="Editar cadastro do paciente"
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
                     </div>
                     <p className="text-sm text-gray-600 ml-6">
                       {getNomeMedico(agendamento.medico_id)} • {agendamento.tipo_servico}

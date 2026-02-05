@@ -126,6 +126,14 @@ export default function Agendamentos() {
     }
   }, [setAgendamentos, setMedicos, setPacientes, setProcedimentos, setExames, setCategorias, setTabelaPrecos, setLoading]);
 
+  // Verificar se há dados iniciais vindos da navegação (do Dashboard)
+  useEffect(() => {
+    if (location.state?.dadosIniciais) {
+      setDadosIniciaisAgendamento(location.state.dadosIniciais);
+      setVerFormulario(true);
+    }
+  }, [location.state]);
+
   useEffect(() => {
     carregarDados();
   }, [carregarDados]);
