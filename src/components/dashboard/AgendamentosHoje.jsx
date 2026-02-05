@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button"; 
-import { Clock, User, Calendar } from "lucide-react"; 
+import { Clock, User, Calendar, Edit } from "lucide-react"; 
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { Agendamento } from "@/entities/all";
+import FormularioPaciente from "../pacientes/FormularioPaciente";
 
 const statusColors = {
   "Agendado": "bg-blue-100 text-blue-800 border-blue-200",
@@ -17,7 +18,9 @@ const statusColors = {
   "Não Compareceu": "bg-gray-100 text-gray-800 border-gray-200"
 };
 
-export default function AgendamentosHoje({ agendamentos = [], medicos = [], pacientes = [], loading }) {
+export default function AgendamentosHoje({ agendamentos = [], medicos = [], pacientes = [], loading, onUpdate }) {
+  const [pacienteEditando, setPacienteEditando] = useState(null);
+  
   const getNomePaciente = (pacienteId) => {
     const paciente = pacientes.find(p => p.id === pacienteId);
     return paciente ? paciente.nome : "Paciente não encontrado";
@@ -26,6 +29,20 @@ export default function AgendamentosHoje({ agendamentos = [], medicos = [], paci
   const getNomeMedico = (medicoId) => {
     const medico = medicos.find(m => m.id === medicoId);
     return medico ? `Dr(a). ${medico.nome}` : "Médico não encontrado";
+  };
+  
+  const handleEditarPaciente = (agendamento) => {
+    const paciente = pacientes.find(p => p.id === agendamento.paciente_id);
+    if (paciente) {
+      setPacienteEditando(paciente);
+    }
+  };
+  
+  const handleSalvarPaciente = () => {
+    setPacienteEditando(null);
+    if (onUpdate) {
+      onUpdate();
+    }
   };
 
   // atualizarStatus function removed as per new requirements
@@ -81,10 +98,26 @@ export default function AgendamentosHoje({ agendamentos = [], medicos = [], paci
                     </Badge>
                   </div>
                   <div className="space-y-1">
-                    <p className="flex items-center gap-2 text-sm">
-                      <User className="w-4 h-4 text-gray-400" />
-                      <span className="font-medium">{agendamento.paciente_nome || getNomePaciente(agendamento.paciente_id)}</span>
-                    </p>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="flex items-center gap-2 text-sm flex-1">
+                        <User className="w-4 h-4 text-gray-400" />
+                        <span 
+                          className="font-medium text-blue-600 hover:text-blue-800 cursor-pointer hover:underline"
+                          onClick={() => handleEditarPaciente(agendamento)}
+                        >
+                          {agendamento.paciente_nome || getNomePaciente(agendamento.paciente_id)}
+                        </span>
+                      </p>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleEditarPaciente(agendamento)}
+                        className="h-7 w-7 p-0 text-gray-500 hover:text-blue-600"
+                        title="Editar cadastro do paciente"
+                      >
+                        <Edit className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
                     <p className="text-sm text-gray-600 ml-6">
                       {getNomeMedico(agendamento.medico_id)} • {agendamento.tipo_servico}
                     </p>
@@ -145,6 +178,16 @@ export default function AgendamentosHoje({ agendamentos = [], medicos = [], paci
           </div>
         )}
       </CardContent>
+      
+      {/* Modal de edição de paciente */}
+      {pacienteEditando && (
+        <FormularioPaciente
+          paciente={pacienteEditando}
+          open={!!pacienteEditando}
+          onClose={() => setPacienteEditando(null)}
+          onSalvar={handleSalvarPaciente}
+        />
+      )}
     </Card>
   );
 }
