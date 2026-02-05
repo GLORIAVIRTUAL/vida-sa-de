@@ -23,9 +23,17 @@ const statusColors = {
 export default function AgendamentosHoje({ agendamentos = [], medicos = [], pacientes = [], loading, onUpdate }) {
   const [pacienteEditando, setPacienteEditando] = useState(null);
   
-  const getNomePaciente = (pacienteId) => {
-    const paciente = pacientes.find(p => p.id === pacienteId);
-    return paciente ? paciente.nome : "Paciente não encontrado";
+  const getNomePaciente = (agendamento) => {
+    // Priorizar paciente_nome se existir
+    if (agendamento.paciente_nome) {
+      return agendamento.paciente_nome;
+    }
+    // Buscar na lista de pacientes
+    if (agendamento.paciente_id) {
+      const paciente = pacientes.find(p => p.id === agendamento.paciente_id);
+      if (paciente) return paciente.nome;
+    }
+    return "Paciente não encontrado";
   };
 
   const getNomeMedico = (medicoId) => {
@@ -126,7 +134,7 @@ export default function AgendamentosHoje({ agendamentos = [], medicos = [], paci
                           className="font-medium text-blue-600 hover:text-blue-800 cursor-pointer hover:underline"
                           onClick={() => handleEditarPaciente(agendamento)}
                         >
-                          {agendamento.paciente_nome || getNomePaciente(agendamento.paciente_id)}
+                          {getNomePaciente(agendamento)}
                         </span>
                       </p>
                       <div className="flex gap-1">
@@ -135,7 +143,7 @@ export default function AgendamentosHoje({ agendamentos = [], medicos = [], paci
                           state={{
                             dadosIniciais: {
                               paciente_id: agendamento.paciente_id,
-                              paciente_nome: agendamento.paciente_nome || getNomePaciente(agendamento.paciente_id),
+                              paciente_nome: getNomePaciente(agendamento),
                               telefone: pacientes.find(p => p.id === agendamento.paciente_id)?.telefone
                             }
                           }}
