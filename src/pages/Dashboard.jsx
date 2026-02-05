@@ -72,10 +72,16 @@ export default function Dashboard() {
       const medicosArray = Array.isArray(medicosData) ? medicosData : [];
       setMedicos(medicosArray);
 
+      // Delay para evitar rate limit
+      await new Promise(r => setTimeout(r, 300));
+
       // 1b. Carregar Pacientes (necessário para exibir nomes no componente AgendamentosHoje)
       const pacientesData = await safeApiCall(() => Paciente.list(), []);
       const pacientesArray = Array.isArray(pacientesData) ? pacientesData : [];
       setPacientes(pacientesArray);
+
+      // Delay para evitar rate limit
+      await new Promise(r => setTimeout(r, 300));
 
       // 2. Carregar Agendamentos da Semana (Filtro no Backend)
       // Usando filtro por data para trazer apenas o necessário
@@ -97,19 +103,21 @@ export default function Dashboard() {
       // 3. Liberar o loading da UI principal
       setLoading(false);
 
-      // 4. Carregar contagem total de pacientes em segundo plano
-      getDashboardStats().
-      then((statsResponse) => {
-        const totalPacientesReal = statsResponse?.data?.totalPacientes || 0;
-        setTotalPacientesCount(totalPacientesReal);
-      }).
-      catch((err) => {
-        console.error("Erro ao carregar stats de pacientes:", err);
-        setTotalPacientesCount(0);
-      }).
-      finally(() => {
-        setLoadingPacientes(false);
-      });
+      // 4. Carregar contagem total de pacientes em segundo plano (com delay)
+      setTimeout(() => {
+        getDashboardStats().
+        then((statsResponse) => {
+          const totalPacientesReal = statsResponse?.data?.totalPacientes || 0;
+          setTotalPacientesCount(totalPacientesReal);
+        }).
+        catch((err) => {
+          console.error("Erro ao carregar stats de pacientes:", err);
+          setTotalPacientesCount(0);
+        }).
+        finally(() => {
+          setLoadingPacientes(false);
+        });
+      }, 500);
 
     } catch (error) {
       console.error("Erro ao carregar dados do dashboard:", error);
