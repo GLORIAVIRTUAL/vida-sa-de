@@ -126,11 +126,11 @@ export default function Dashboard() {
     }
   }, []);
 
-  // Debounce para evitar múltiplas chamadas em sequência
+  // Debounce para evitar múltiplas chamadas em sequência (aumentado para 5 segundos)
   const debouncedCarregarDados = useCallback(
     debounce(() => {
       carregarDados();
-    }, 2000),
+    }, 5000),
     [carregarDados]
   );
 
