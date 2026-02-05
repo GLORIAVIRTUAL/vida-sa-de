@@ -305,6 +305,22 @@ export default function Relatorios() {
     const totalEmAberto = osEmAberto.reduce((acc, os) => acc + (os.valor_repasse_medico || 0), 0);
     const totalRealizados = osRealizados.reduce((acc, os) => acc + (os.valor_repasse_medico || 0), 0);
     
+    // Montar filtros aplicados
+    const filtrosAplicados = [];
+    if (filtros.medicoId !== 'todos') {
+      const med = medicos.find(m => m.id === filtros.medicoId);
+      if (med) filtrosAplicados.push(`Profissional: ${med.nome}`);
+    }
+    if (filtros.categoriaNome !== 'todos') {
+      filtrosAplicados.push(`Categoria: ${filtros.categoriaNome}`);
+    }
+    if (filtros.formaPagamento !== 'todos') {
+      filtrosAplicados.push(`Pagamento: ${filtros.formaPagamento}`);
+    }
+    if (filtros.statusPagamento !== 'todos') {
+      filtrosAplicados.push(`Status: ${filtros.statusPagamento}`);
+    }
+    
     printWindow.document.write(`
       <html>
         <head>
@@ -319,6 +335,7 @@ export default function Relatorios() {
             th { background-color: #f3f4f6; font-size: 11px; font-weight: bold; }
             td { font-size: 11px; }
             .header { text-align: center; margin-bottom: 20px; }
+            .filtros { background: #f9fafb; padding: 10px; border-radius: 5px; margin-bottom: 15px; font-size: 11px; }
             .stats { display: flex; gap: 15px; margin: 20px 0; }
             .stat-card { border: 1px solid #ddd; padding: 10px; border-radius: 5px; flex: 1; text-align: center; }
             .stat-card strong { font-size: 10px; color: #666; display: block; }
@@ -336,6 +353,12 @@ export default function Relatorios() {
             <p>Período: ${format(parseISO(filtros.dataInicio), 'dd/MM/yyyy')} a ${format(parseISO(filtros.dataFim), 'dd/MM/yyyy')}</p>
             <p style="font-size: 10px; color: #666;">Gerado em: ${format(new Date(), "dd/MM/yyyy 'às' HH:mm")}</p>
           </div>
+          
+          ${filtrosAplicados.length > 0 ? `
+            <div class="filtros">
+              <strong>Filtros aplicados:</strong> ${filtrosAplicados.join(' | ')}
+            </div>
+          ` : ''}
           
           <div class="stats">
             <div class="stat-card">
