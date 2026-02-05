@@ -483,7 +483,25 @@ export default function FormularioOS({
       console.log('📦 Valor da categoria_preco_id:', osData.categoria_preco_id);
 
       // MUDANÇA: Usar backend function para integrar com pagamento
-      const response = await base44.functions.invoke('createOrdemServico', osData);
+      console.log('🚀 Enviando requisição para criar OS...');
+      
+      let response;
+      try {
+        // Adicionar timeout de 30 segundos
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
+        
+        response = await base44.functions.invoke('createOrdemServico', osData);
+        clearTimeout(timeoutId);
+      } catch (fetchError) {
+        console.error('❌ Erro na chamada da função:', fetchError);
+        if (fetchError.name === 'AbortError') {
+          throw new Error('Timeout: A requisição demorou muito. Tente novamente.');
+        }
+        throw fetchError;
+      }
+      
+      console.log('📥 Resposta recebida:', response?.data);
       
       if (!response.data || !response.data.success) {
         throw new Error(response.data?.error || 'Erro ao processar OS no servidor');
