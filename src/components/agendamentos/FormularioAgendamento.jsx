@@ -126,6 +126,9 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
   // NOVO: Estado para busca de procedimentos
   const [buscaProcedimento, setBuscaProcedimento] = useState('');
 
+  // Estado para busca de exames
+  const [buscaExame, setBuscaExame] = useState('');
+
   // NOVO: Estados para múltiplas formas de pagamento
   const [pagamento1, setPagamento1] = useState({ forma: '', valor: '' });
   const [pagamento2, setPagamento2] = useState({ forma: '', valor: '' });
@@ -388,6 +391,20 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
       p.especialidade?.toLowerCase().includes(termo)
     );
   }, [procedimentos, buscaProcedimento]);
+
+  // Filtrar exames baseado na busca
+  const examesFiltrados = useMemo(() => {
+    if (!buscaExame || buscaExame.trim() === '') {
+      return exames;
+    }
+    
+    const termo = buscaExame.toLowerCase().trim();
+    return exames.filter(e => 
+      e.nome?.toLowerCase().includes(termo) || 
+      e.codigo?.toLowerCase().includes(termo) ||
+      e.tipo?.toLowerCase().includes(termo)
+    );
+  }, [exames, buscaExame]);
 
   // Modificadores para o calendário
   const modifiers = useMemo(() => ({
@@ -2693,13 +2710,27 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                              <h3 className="text-base font-semibold text-gray-800 border-b pb-2">Exames</h3>
                              <div className="p-4 border rounded-lg bg-gray-50 space-y-4">
                                <div>
+                                 <Label htmlFor="busca_exame">Buscar Exame</Label>
+                                 <Input 
+                                   id="busca_exame" 
+                                   placeholder="Digite o nome do exame..." 
+                                   value={buscaExame} 
+                                   onChange={(e) => setBuscaExame(e.target.value)} 
+                                   className="mt-1" 
+                                 />
+                               </div>
+                               <div>
                                  <Label>Adicionar Exame</Label>
                                  <Select onValueChange={adicionarExame} value="">
                                    <SelectTrigger><SelectValue placeholder="Selecione um exame para adicionar..." /></SelectTrigger>
                                    <SelectContent>
-                                     {exames.filter(e => !formData.exames_ids.includes(e.id)).map(e => (
-                                       <SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>
-                                     ))}
+                                     {examesFiltrados.filter(e => !formData.exames_ids.includes(e.id)).length === 0 ? (
+                                       <SelectItem value="none" disabled>Nenhum exame encontrado</SelectItem>
+                                     ) : (
+                                       examesFiltrados.filter(e => !formData.exames_ids.includes(e.id)).map(e => (
+                                         <SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>
+                                       ))
+                                     )}
                                    </SelectContent>
                                  </Select>
                                </div>
