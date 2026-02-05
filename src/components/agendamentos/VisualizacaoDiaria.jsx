@@ -10,6 +10,7 @@ import { Agendamento } from "@/entities/all";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { safeApiCall } from "@/components/shared/apiThrottle";
+import { base44 } from "@/api/base44Client";
 import EnviarNotificacao from './EnviarNotificacao';
 import ConfirmacaoExclusao from '../shared/ConfirmacaoExclusao';
 import { useToast } from "@/components/ui/use-toast";
@@ -94,35 +95,35 @@ export default function VisualizacaoDiaria({ agendamentos, medicos, pacientes, o
   const handleAbrirPaciente = async (pacienteId, agendamento) => {
     let paciente = null;
     
-    // Busca rápida por ID na lista carregada
+    // 1. Busca local por ID
     if (pacienteId) {
       paciente = pacientes.find((p) => p.id === pacienteId);
     }
     
-    // Busca rápida por nome (normalizada) na lista carregada
+    // 2. Busca local por nome
     if (!paciente && agendamento?.paciente_nome) {
       const nomeNormalizado = agendamento.paciente_nome.toLowerCase().trim();
-      paciente = pacientes.find((p) => p.nome.toLowerCase().trim() === nomeNormalizado);
+      paciente = pacientes.find((p) => p.nome?.toLowerCase().trim() === nomeNormalizado);
     }
     
-    // Se não encontrou na lista, buscar na API
+    // 3. Fallback: buscar via backend (busca TODOS os pacientes do banco)
     if (!paciente) {
-      try {
-        if (pacienteId) {
-          const { Paciente } = await import('@/entities/all');
-          paciente = await Paciente.get(pacienteId);
-        } else if (agendamento?.paciente_nome) {
-          const { base44 } = await import('@/api/base44Client');
-          const response = await base44.functions.invoke('searchPatients', { 
-            termo: agendamento.paciente_nome, 
-            limit: 1 
-          });
-          if (response?.data && response.data.length > 0) {
-            paciente = response.data[0];
+      const nomeBusca = agendamento?.paciente_nome;
+      if (nomeBusca) {
+        try {
+          const response = await base44.functions.invoke('searchPatients', { termo: nomeBusca });
+          const resultados = response?.data;
+          if (Array.isArray(resultados) && resultados.length > 0) {
+            // Se temos paciente_id, tentar match exato por ID nos resultados
+            if (pacienteId) {
+              paciente = resultados.find(p => p.id === pacienteId) || resultados[0];
+            } else {
+              paciente = resultados[0];
+            }
           }
+        } catch (error) {
+          console.error('Erro ao buscar paciente via API:', error);
         }
-      } catch (error) {
-        console.error('Erro ao buscar paciente:', error);
       }
     }
     
@@ -132,7 +133,7 @@ export default function VisualizacaoDiaria({ agendamentos, medicos, pacientes, o
     } else {
       toast({
         title: "Paciente não encontrado",
-        description: "Os dados do paciente não estão disponíveis.",
+        description: "Não foi possível localizar o cadastro deste paciente.",
         variant: "destructive"
       });
     }

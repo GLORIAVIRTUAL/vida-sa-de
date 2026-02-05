@@ -6,6 +6,7 @@ import { Clock, User, Calendar, Edit, CalendarPlus } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { Agendamento } from "@/entities/all";
+import { base44 } from "@/api/base44Client";
 import FormularioPaciente from "../pacientes/FormularioPaciente";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -44,35 +45,34 @@ export default function AgendamentosHoje({ agendamentos = [], medicos = [], paci
   const handleEditarPaciente = async (agendamento) => {
     let paciente = null;
     
-    // Busca rápida por ID na lista carregada
+    // 1. Busca local por ID
     if (agendamento.paciente_id) {
       paciente = pacientes.find(p => p.id === agendamento.paciente_id);
     }
     
-    // Busca rápida por nome (normalizada) na lista carregada
+    // 2. Busca local por nome
     if (!paciente && agendamento.paciente_nome) {
       const nomeNormalizado = agendamento.paciente_nome.toLowerCase().trim();
-      paciente = pacientes.find(p => p.nome.toLowerCase().trim() === nomeNormalizado);
+      paciente = pacientes.find(p => p.nome?.toLowerCase().trim() === nomeNormalizado);
     }
     
-    // Se não encontrou na lista, buscar na API
+    // 3. Fallback: buscar via backend (busca TODOS os pacientes do banco)
     if (!paciente) {
-      try {
-        if (agendamento.paciente_id) {
-          const { Paciente } = await import('@/entities/all');
-          paciente = await Paciente.get(agendamento.paciente_id);
-        } else if (agendamento.paciente_nome) {
-          const { base44 } = await import('@/api/base44Client');
-          const response = await base44.functions.invoke('searchPatients', { 
-            termo: agendamento.paciente_nome, 
-            limit: 1 
-          });
-          if (response?.data && response.data.length > 0) {
-            paciente = response.data[0];
+      const nomeBusca = agendamento.paciente_nome;
+      if (nomeBusca) {
+        try {
+          const response = await base44.functions.invoke('searchPatients', { termo: nomeBusca });
+          const resultados = response?.data;
+          if (Array.isArray(resultados) && resultados.length > 0) {
+            if (agendamento.paciente_id) {
+              paciente = resultados.find(p => p.id === agendamento.paciente_id) || resultados[0];
+            } else {
+              paciente = resultados[0];
+            }
           }
+        } catch (error) {
+          console.error('Erro ao buscar paciente via API:', error);
         }
-      } catch (error) {
-        console.error('Erro ao buscar paciente:', error);
       }
     }
     
