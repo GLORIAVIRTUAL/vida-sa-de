@@ -53,6 +53,7 @@ export default function OrdemDeServico() {
   const [mostrarForm, setMostrarForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [corrigindo, setCorrigindo] = useState(false);
+  const carregandoRef = useRef(false);
 
   // Filtros
   const [dataInicio, setDataInicio] = useState(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
