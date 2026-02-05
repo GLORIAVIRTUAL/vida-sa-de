@@ -118,17 +118,29 @@ export default function Dashboard() {
     }
   }, []);
 
+  // Debounce para evitar múltiplas chamadas em sequência
+  const debouncedCarregarDados = useCallback(
+    debounce(() => {
+      carregarDados();
+    }, 2000),
+    [carregarDados]
+  );
+
   useEffect(() => {
     carregarDados();
     
     // Subscription para atualizar em tempo real quando agendamentos mudam
+    // Usando debounce para evitar rate limit
     const unsubscribe = Agendamento.subscribe((event) => {
       console.log('📡 Dashboard: Agendamento atualizado em tempo real:', event.type);
-      carregarDados();
+      debouncedCarregarDados();
     });
     
-    return () => unsubscribe();
-  }, [carregarDados]);
+    return () => {
+      unsubscribe();
+      debouncedCarregarDados.cancel();
+    };
+  }, [carregarDados, debouncedCarregarDados]);
 
   const estatisticas = {
     totalPacientes: totalPacientesCount,
