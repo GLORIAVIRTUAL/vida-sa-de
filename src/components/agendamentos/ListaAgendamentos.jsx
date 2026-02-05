@@ -13,11 +13,14 @@ import {
   Phone,
   CheckCircle,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  UserCog
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import EnviarNotificacao from './EnviarNotificacao';
+import FormularioPaciente from '../pacientes/FormularioPaciente';
+import { useToast } from "@/components/ui/use-toast";
 
 const statusColors = {
   "Agendado": "bg-blue-100 text-blue-800",
@@ -55,6 +58,9 @@ export default function ListaAgendamentos({
   const [agendamentoSelecionado, setAgendamentoSelecionado] = useState(null);
   const [pacienteSelecionado, setPacienteSelecionado] = useState(null);
   const [medicoSelecionado, setMedicoSelecionado] = useState(null);
+  const [formularioPacienteAberto, setFormularioPacienteAberto] = useState(false);
+  const [pacienteParaEditar, setPacienteParaEditar] = useState(null);
+  const { toast } = useToast();
 
   const getNome = (obj, type) => {
     if (type === "medico") {
@@ -88,6 +94,61 @@ export default function ListaAgendamentos({
     setAgendamentoSelecionado(null);
     setPacienteSelecionado(null);
     setMedicoSelecionado(null);
+  };
+
+  const handleAbrirPaciente = async (pacienteId) => {
+    if (!pacienteId) {
+      console.log('Sem paciente_id para abrir');
+      return;
+    }
+    
+    // Tentar buscar na lista carregada primeiro
+    let paciente = pacientes.find((p) => p.id === pacienteId);
+    
+    // Se não encontrou, buscar direto da API
+    if (!paciente) {
+      try {
+        const { Paciente } = await import('@/entities/all');
+        paciente = await Paciente.get(pacienteId);
+        console.log('Paciente carregado da API:', paciente);
+      } catch (error) {
+        console.error('Erro ao buscar paciente:', error);
+        toast({
+          title: "Erro ao abrir paciente",
+          description: "Não foi possível encontrar os dados do paciente.",
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+    
+    if (paciente) {
+      setPacienteParaEditar(paciente);
+      setFormularioPacienteAberto(true);
+    }
+  };
+
+  const handleSalvarPaciente = async (data) => {
+    try {
+      const { Paciente } = await import('@/entities/all');
+      await Paciente.update(pacienteParaEditar.id, data);
+
+      toast({
+        title: "Paciente atualizado!",
+        description: "Os dados do paciente foram salvos com sucesso."
+      });
+
+      setFormularioPacienteAberto(false);
+      setPacienteParaEditar(null);
+    } catch (error) {
+      console.error("Erro ao salvar paciente:", error);
+      toast({
+        title: "Erro ao salvar",
+        description: error.message || "Não foi possível salvar os dados do paciente.",
+        variant: "destructive"
+      });
+      throw error;
+    }
   };
 
   return (
@@ -152,9 +213,13 @@ export default function ListaAgendamentos({
                         <div className="space-y-1 ml-7">
                           <p className="flex items-center gap-2 text-sm">
                             <User className="w-4 h-4 text-gray-400" />
-                            <span className="font-medium">
+                            <button
+                              onClick={() => handleAbrirPaciente(agendamento.paciente_id)}
+                              className="text-cyan-600 font-medium hover:text-blue-800 hover:underline cursor-pointer transition-colors"
+                              title="Clique para editar o cadastro do paciente"
+                            >
                               {getNome(agendamento, "paciente")}
-                            </span>
+                            </button>
                           </p>
                           <p className="text-sm text-gray-600">
                             {getNome(agendamento, "medico")} • {agendamento.tipo_servico}
@@ -178,6 +243,15 @@ export default function ListaAgendamentos({
                     </div>
                     
                     <div className="flex flex-wrap gap-2 mt-3">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleAbrirPaciente(agendamento.paciente_id)}
+                        className="text-blue-600 hover:bg-blue-50"
+                      >
+                        <UserCog className="w-3 h-3 mr-1" />
+                        Editar Paciente
+                      </Button>
                       <Button
                         variant="outline"
                         size="sm"
@@ -220,6 +294,17 @@ export default function ListaAgendamentos({
         aberto={notificacaoAberta}
         onFechar={handleFecharNotificacao}
       />
+
+      {formularioPacienteAberto && pacienteParaEditar && (
+        <FormularioPaciente
+          paciente={pacienteParaEditar}
+          onSalvar={handleSalvarPaciente}
+          onCancelar={() => {
+            setFormularioPacienteAberto(false);
+            setPacienteParaEditar(null);
+          }}
+        />
+      )}
     </>
   );
 }
