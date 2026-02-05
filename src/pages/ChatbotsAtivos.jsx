@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   MessageCircle, Loader2, Send, RefreshCw, User, Phone, Calendar,
   TrendingUp, Clock, CheckCircle, XCircle, Activity, Users, Settings, Bot,
-  Image, Paperclip, Mic, Smile, Zap, Volume2, VolumeX
+  Image, Paperclip, Mic, Smile, Zap, Volume2, VolumeX, CalendarPlus
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -613,6 +613,25 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
                     <p className="text-xs text-gray-500">{contatoSelecionado.telefone}</p>
                   </div>
                   <div className="flex items-center gap-2">
+                    <Link 
+                      to={createPageUrl('Agendamentos')}
+                      state={{
+                        dadosIniciais: {
+                          paciente_id: contatoSelecionado.paciente_id,
+                          paciente_nome: contatoSelecionado.nome,
+                          telefone: contatoSelecionado.telefone
+                        }
+                      }}
+                    >
+                      <Button 
+                        variant="default"
+                        size="sm"
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                      >
+                        <CalendarPlus className="w-3 h-3 mr-1" />
+                        Agendar
+                      </Button>
+                    </Link>
                     <Button 
                       variant={modoHumano ? "default" : "outline"} 
                       size="sm"
