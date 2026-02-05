@@ -361,63 +361,68 @@ export default function Agendamentos() {
           * { margin: 0; padding: 0; box-sizing: border-box; }
           body { 
             font-family: Arial, sans-serif; 
-            padding: 15px;
-            font-size: 10px;
-            line-height: 1.3;
+            padding: 8px;
+            font-size: 9px;
+            line-height: 1.1;
           }
           .header {
-            margin-bottom: 10px;
-            padding-bottom: 5px;
+            margin-bottom: 6px;
+            padding-bottom: 3px;
             border-bottom: 1px solid #000;
           }
           .header h1 { 
-            font-size: 14px;
+            font-size: 12px;
             font-weight: bold;
-            margin-bottom: 2px;
+            margin-bottom: 1px;
           }
           .header .subtitle {
-            font-size: 11px;
-            margin-bottom: 3px;
+            font-size: 10px;
+            margin-bottom: 1px;
           }
           .info-line {
-            font-size: 10px;
-            margin: 2px 0;
+            font-size: 9px;
+            margin: 1px 0;
           }
           .profissional {
             font-weight: bold;
-            margin: 8px 0 5px 0;
-            font-size: 11px;
+            margin: 4px 0 3px 0;
+            font-size: 10px;
             background: #f5f5f5;
-            padding: 4px;
+            padding: 2px 3px;
           }
           table { 
             width: 100%; 
             border-collapse: collapse; 
-            margin-top: 3px;
-            font-size: 9px;
+            margin-top: 2px;
+            font-size: 8px;
           }
           th, td { 
             border: 1px solid #ccc;
-            padding: 3px 4px;
+            padding: 2px 3px;
             text-align: left;
+            line-height: 1.1;
           }
           th { 
             background-color: #e0e0e0;
             font-weight: bold;
-            font-size: 9px;
+            font-size: 8px;
+            padding: 2px 3px;
           }
           td {
             vertical-align: top;
           }
           .footer {
-            margin-top: 10px;
-            font-size: 8px;
+            margin-top: 6px;
+            font-size: 7px;
             text-align: right;
             color: #666;
           }
           @media print {
-            body { padding: 10px; }
-            @page { margin: 10mm; }
+            body { padding: 5px; }
+            @page { 
+              margin: 8mm;
+              size: A4;
+            }
           }
         </style>
       </head>
