@@ -343,9 +343,9 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
     return () => clearInterval(interval);
   }, []);
 
-  // Selecionar contato inicial quando vier da aba de contatos
+  // Selecionar contato inicial quando vier da aba de contatos (apenas uma vez)
   useEffect(() => {
-    if (contatoInicial) {
+    if (contatoInicial && !contatoSelecionado) {
       // Buscar o contato na lista pelo telefone ou usar o que veio direto
       const contatoExistente = contatos.find(c => c.telefone === contatoInicial.telefone);
       if (contatoExistente) {
@@ -356,7 +356,7 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
       }
       onContatoSelecionado && onContatoSelecionado();
     }
-  }, [contatoInicial]);
+  }, [contatoInicial]); // Removido 'contatos' das dependências
 
   // Removido: useEffect que atualizava contato ao mudar lista de contatos
   // Agora a atualização é feita apenas pelo atualizarContatoSelecionado (a cada 2s)
