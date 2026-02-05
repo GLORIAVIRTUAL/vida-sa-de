@@ -87,8 +87,13 @@ export default function OrdemDeServico() {
   };
 
   useEffect(() => {
-    carregarDados();
-  }, []);
+    // Se vier com agendamento_id na URL, carregar em modo rápido
+    if (agendamentoId) {
+      carregarDados(true);
+    } else {
+      carregarDados(false);
+    }
+  }, [agendamentoId]);
 
   const handleAbrirFormOS = useCallback(async (agendamento) => {
     console.log('═══════════════════════════════════════');
