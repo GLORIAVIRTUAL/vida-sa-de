@@ -151,19 +151,19 @@ export default function OrdemDeServico() {
 
       const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-      // Etapa 1: Médicos e Categorias (essenciais)
+      // Etapa 1: Médicos e Categorias (essenciais) - com delay maior
       const [medicosData, categoriasData] = await Promise.all([
         Medico.list("nome", 500),
         CategoriaPreco.list()
       ]);
       setMedicos(medicosData || []);
       setCategorias(categoriasData || []);
-      await delay(1000);
+      await delay(1500);
 
-      // Etapa 2: Ordens de Serviço
+      // Etapa 2: Ordens de Serviço (usar backend function para evitar rate limit)
       let ordensData = [];
       try {
-        console.log('🔄 Tentando carregar OS via função backend...');
+        console.log('🔄 Carregando OS via função backend...');
         const res = await base44.functions.invoke('listOrdensServico', {});
         if (res?.data?.ordens) {
           ordensData = res.data.ordens;
@@ -173,35 +173,36 @@ export default function OrdemDeServico() {
         }
       } catch (err) {
         console.warn("⚠️ Falha na função backend, usando fallback SDK:", err);
-        await delay(1000);
-        ordensData = await OrdemServico.list("-data_execucao", 500);
+        await delay(1500);
+        ordensData = await OrdemServico.list("-data_execucao", 200);
         console.log('✅ OS carregadas via fallback:', ordensData?.length);
       }
       setOrdens(ordensData || []);
-      await delay(1000);
+      await delay(1500);
 
-      // Etapa 3: Pacientes e Procedimentos
-      const [pacientesData, procedimentosData] = await Promise.all([
-        Paciente.list("nome", 1000),
-        Procedimento.list("-created_date", 500)
-      ]);
+      // Etapa 3: Pacientes (necessário para nomes)
+      const pacientesData = await Paciente.list("nome", 500);
       setPacientes(pacientesData || []);
-      setProcedimentos(procedimentosData || []);
-      await delay(1000);
+      await delay(1500);
 
-      // Etapa 4: Exames e Agendamentos
-      const [examesData, agendamentosData] = await Promise.all([
-        Exame.list("-created_date", 500),
-        Agendamento.list("-data_agendamento", 500)
+      // Etapa 4: Procedimentos e Exames
+      const [procedimentosData, examesData] = await Promise.all([
+        Procedimento.list("-created_date", 200),
+        Exame.list("-created_date", 200)
       ]);
+      setProcedimentos(procedimentosData || []);
       setExames(examesData || []);
+      await delay(1500);
+
+      // Etapa 5: Agendamentos (por último)
+      const agendamentosData = await Agendamento.list("-data_agendamento", 200);
       setAgendamentos(agendamentosData || []);
 
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
       toast({
         title: "Erro ao Carregar",
-        description: "Tente recarregar a página. " + error.message,
+        description: "Tente recarregar a página. Rate limit exceeded",
         variant: "destructive"
       });
     } finally {
