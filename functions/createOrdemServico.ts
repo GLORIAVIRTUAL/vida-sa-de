@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
 
         const dadosOS = { 
             ...body, 
-            paciente_nome: paciente.nome,
+            paciente_nome: nomePaciente,
             numero_os: numero_os
         };
         const novaOS = await base44.asServiceRole.entities.OrdemServico.create(dadosOS);
