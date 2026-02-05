@@ -13,7 +13,7 @@ import { Card, CardContent } from "@/components/ui/card"; // Import Card and Car
 import { Label } from "@/components/ui/label"; // Import Label
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Import Select components
 import { Badge } from "@/components/ui/badge"; // Import Badge
-
+import { useLocation } from "react-router-dom";
 
 import ProtectedRoute from "../components/auth/ProtectedRoute";
 import VisualizacaoDiaria from "../components/agendamentos/VisualizacaoDiaria";
@@ -24,6 +24,7 @@ import FiltrosAgendamento from "../components/agendamentos/FiltrosAgendamento";
 import { cachedApiCall, clearCache } from "@/components/shared/apiThrottle";
 
 export default function Agendamentos() {
+  const location = useLocation();
   const [agendamentos, setAgendamentos] = useState([]);
   const [medicos, setMedicos] = useState([]);
   const [pacientes, setPacientes] = useState([]);
@@ -36,6 +37,7 @@ export default function Agendamentos() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isReservaOpen, setIsReservaOpen] = useState(false);
   const [selectedAgendamento, setSelectedAgendamento] = useState(null);
+  const [dadosIniciaisAgendamento, setDadosIniciaisAgendamento] = useState(null);
   const [visualizacao, setVisualizacao] = useState("lista");
   const [filtros, setFiltros] = useState({
     periodo: "dia",
@@ -130,7 +132,7 @@ export default function Agendamentos() {
   useEffect(() => {
     if (location.state?.dadosIniciais) {
       setDadosIniciaisAgendamento(location.state.dadosIniciais);
-      setVerFormulario(true);
+      setIsFormOpen(true);
     }
   }, [location.state]);
 
@@ -283,12 +285,14 @@ export default function Agendamentos() {
 
   const handleOpenForm = (agendamento = null) => {
     setSelectedAgendamento(agendamento);
+    setDadosIniciaisAgendamento(null);
     setIsFormOpen(true);
   };
 
   const handleCloseForm = () => {
     setIsFormOpen(false);
     setSelectedAgendamento(null);
+    setDadosIniciaisAgendamento(null);
   };
 
   const handleEditarAgendamento = (agendamento) => {
@@ -707,6 +711,7 @@ export default function Agendamentos() {
           {isFormOpen &&
           <FormularioAgendamento
             agendamento={selectedAgendamento}
+            dadosIniciais={dadosIniciaisAgendamento}
             todosAgendamentos={agendamentos}
             medicos={Array.isArray(medicos) ? medicos : []}
             pacientes={Array.isArray(pacientes) ? pacientes : []}
