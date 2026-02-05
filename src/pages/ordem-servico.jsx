@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Agendamento, Paciente, Medico, Lancamento, Procedimento, Exame, CategoriaPreco } from "@/entities/all";
 import { OrdemServico } from "@/entities/OrdemServico";
