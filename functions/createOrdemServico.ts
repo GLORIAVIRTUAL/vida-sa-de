@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 Deno.serve(async (req) => {
     try {
@@ -11,6 +11,8 @@ Deno.serve(async (req) => {
         }
 
         const body = await req.json();
+        console.log('📥 Dados recebidos para criar OS:', JSON.stringify(body, null, 2));
+        
         const {
             paciente_id,
             paciente_nome, // Nome já vem do frontend
@@ -21,20 +23,10 @@ Deno.serve(async (req) => {
         } = body;
 
         // Usar nome que veio do frontend para evitar chamada extra
-        let nomePaciente = paciente_nome;
-        
-        // Só buscar paciente se não veio o nome
-        if (!nomePaciente && paciente_id) {
-            try {
-                const paciente = await base44.asServiceRole.entities.Paciente.get(paciente_id);
-                nomePaciente = paciente?.nome || 'Paciente';
-            } catch (e) {
-                console.warn('Não foi possível buscar paciente:', e.message);
-                nomePaciente = 'Paciente';
-            }
-        }
+        let nomePaciente = paciente_nome || 'Paciente';
         
         console.log('👤 Nome do paciente:', nomePaciente);
+        console.log('💰 Valor final:', valor_final);
 
         // 4. Criar Ordem de Serviço (Inicialmente Pendente)
         console.log('💾 Criando OS...');
