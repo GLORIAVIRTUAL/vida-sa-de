@@ -75,9 +75,9 @@ export default function Dashboard() {
       // Delay para evitar rate limit
       await new Promise(r => setTimeout(r, 300));
 
-      // 1b. Carregar Pacientes recentes (lista local para busca rápida)
-      // Fallback para pacientes não encontrados é feito via searchPatients nos componentes
-      const pacientesData = await safeApiCall(() => Paciente.list(), []);
+      // 1b. Carregar pacientes que estão nos agendamentos da semana (busca direcionada)
+      // Primeiro carrega lista rápida, depois completa com pacientes dos agendamentos
+      const pacientesData = await safeApiCall(() => Paciente.list('-updated_date', 200), []);
       const pacientesArray = Array.isArray(pacientesData) ? pacientesData : [];
       setPacientes(pacientesArray);
 
