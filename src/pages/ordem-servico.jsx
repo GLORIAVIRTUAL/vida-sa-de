@@ -380,10 +380,12 @@ export default function OrdemDeServico() {
 
       // Filtro de busca por texto
       if (searchTerm) {
-        const termoBusca = searchTerm.toLowerCase();
-        const nomePaciente = getNome(os.paciente_id, 'paciente').toLowerCase();
-        const nomeMedico = getNome(os.medico_id, 'medico').toLowerCase();
-        return nomePaciente.includes(termoBusca) || nomeMedico.includes(termoBusca);
+        const termoBusca = searchTerm.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+        const nomePacienteOS = (os.paciente_nome || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+        const nomePacienteLista = getNome(os.paciente_id, 'paciente').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+        const nomeMedico = getNome(os.medico_id, 'medico').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+        const numeroOS = (os.numero_os || '').toLowerCase();
+        return nomePacienteOS.includes(termoBusca) || nomePacienteLista.includes(termoBusca) || nomeMedico.includes(termoBusca) || numeroOS.includes(termoBusca);
       }
 
       return true;
