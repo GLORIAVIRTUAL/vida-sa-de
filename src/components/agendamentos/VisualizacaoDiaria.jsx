@@ -376,12 +376,18 @@ export default function VisualizacaoDiaria({ agendamentos, medicos, pacientes, o
                       
                       {!agendamento.is_reserva && agendamento.status === "Agendado" &&
                 <>
-                          <Link to={createPageUrl('ordem-servico')} state={{ agendamento }}>
-                            <Button size="sm" variant="outline" className="text-green-600 hover:bg-green-50">
-                              <DollarSign className="w-3 h-3 mr-1" />
-                              Check-in / Pagar
-                            </Button>
-                          </Link>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="text-green-600 hover:bg-green-50"
+                            onClick={() => {
+                              console.log('🚀 Navegando para OS com agendamento:', agendamento);
+                              window.location.href = createPageUrl('ordem-servico') + `?agendamento_id=${agendamento.id}`;
+                            }}
+                          >
+                            <DollarSign className="w-3 h-3 mr-1" />
+                            Check-in / Pagar
+                          </Button>
                           <Button
                     size="sm"
                     variant="outline"
