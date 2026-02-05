@@ -97,34 +97,19 @@ export default function ListaAgendamentos({
   };
 
   const handleAbrirPaciente = async (pacienteId) => {
-    if (!pacienteId) {
-      console.log('Sem paciente_id para abrir');
-      return;
-    }
+    if (!pacienteId) return;
     
-    // Tentar buscar na lista carregada primeiro
-    let paciente = pacientes.find((p) => p.id === pacienteId);
-    
-    // Se não encontrou, buscar direto da API
-    if (!paciente) {
-      try {
-        const { Paciente } = await import('@/entities/all');
-        paciente = await Paciente.get(pacienteId);
-        console.log('Paciente carregado da API:', paciente);
-      } catch (error) {
-        console.error('Erro ao buscar paciente:', error);
-        toast({
-          title: "Erro ao abrir paciente",
-          description: "Não foi possível encontrar os dados do paciente.",
-          variant: "destructive"
-        });
-        return;
-      }
-    }
+    const paciente = pacientes.find((p) => p.id === pacienteId);
     
     if (paciente) {
       setPacienteParaEditar(paciente);
       setFormularioPacienteAberto(true);
+    } else {
+      toast({
+        title: "Paciente não encontrado",
+        description: "Os dados do paciente não estão disponíveis.",
+        variant: "destructive"
+      });
     }
   };
 

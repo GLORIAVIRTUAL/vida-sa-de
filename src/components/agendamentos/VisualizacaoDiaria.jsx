@@ -92,60 +92,26 @@ export default function VisualizacaoDiaria({ agendamentos, medicos, pacientes, o
   };
 
   const handleAbrirPaciente = async (pacienteId, agendamento) => {
-    console.log('Tentando abrir paciente:', pacienteId, agendamento);
-    
     let paciente = null;
     
-    // Tentar buscar por ID primeiro
+    // Busca rápida por ID
     if (pacienteId) {
       paciente = pacientes.find((p) => p.id === pacienteId);
-      
-      // Se não encontrou na lista, buscar direto da API
-      if (!paciente) {
-        try {
-          const { Paciente } = await import('@/entities/all');
-          paciente = await Paciente.get(pacienteId);
-        } catch (error) {
-          console.error('Erro ao buscar paciente por ID:', error);
-        }
-      }
     }
     
-    // Se não tem ID ou não achou por ID, tentar buscar por nome
+    // Busca rápida por nome (normalizada)
     if (!paciente && agendamento?.paciente_nome) {
-      const nomePaciente = agendamento.paciente_nome;
-      console.log('Buscando paciente por nome:', nomePaciente);
-      
-      paciente = pacientes.find((p) => 
-        p.nome.toLowerCase() === nomePaciente.toLowerCase()
-      );
-      
-      // Se não encontrou na lista, buscar na API
-      if (!paciente) {
-        try {
-          const { base44 } = await import('@/api/base44Client');
-          const response = await base44.functions.invoke('searchPatients', { 
-            termo: nomePaciente, 
-            limit: 1 
-          });
-          if (response?.data && response.data.length > 0) {
-            paciente = response.data[0];
-          }
-        } catch (error) {
-          console.error('Erro ao buscar paciente por nome:', error);
-        }
-      }
+      const nomeNormalizado = agendamento.paciente_nome.toLowerCase().trim();
+      paciente = pacientes.find((p) => p.nome.toLowerCase().trim() === nomeNormalizado);
     }
     
     if (paciente) {
-      console.log('Paciente encontrado:', paciente);
       setPacienteParaEditar(paciente);
       setFormularioPacienteAberto(true);
     } else {
-      console.log('Paciente não encontrado');
       toast({
-        title: "Erro ao abrir paciente",
-        description: "Não foi possível encontrar os dados do paciente.",
+        title: "Paciente não encontrado",
+        description: "Os dados do paciente não estão disponíveis.",
         variant: "destructive"
       });
     }

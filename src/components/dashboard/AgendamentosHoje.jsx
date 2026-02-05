@@ -34,54 +34,21 @@ export default function AgendamentosHoje({ agendamentos = [], medicos = [], paci
   };
   
   const handleEditarPaciente = async (agendamento) => {
-    console.log('Tentando abrir paciente do agendamento:', agendamento);
-    
     let paciente = null;
     
-    // Tentar buscar por ID primeiro
+    // Busca rápida por ID
     if (agendamento.paciente_id) {
       paciente = pacientes.find(p => p.id === agendamento.paciente_id);
-      
-      // Se não encontrou na lista, buscar direto da API
-      if (!paciente) {
-        try {
-          const { Paciente } = await import('@/entities/all');
-          paciente = await Paciente.get(agendamento.paciente_id);
-        } catch (error) {
-          console.error('Erro ao buscar paciente por ID:', error);
-        }
-      }
     }
     
-    // Se não tem ID ou não achou por ID, tentar buscar por nome
+    // Busca rápida por nome (normalizada)
     if (!paciente && agendamento.paciente_nome) {
-      console.log('Buscando paciente por nome:', agendamento.paciente_nome);
-      paciente = pacientes.find(p => 
-        p.nome.toLowerCase() === agendamento.paciente_nome.toLowerCase()
-      );
-      
-      // Se não encontrou na lista, buscar na API
-      if (!paciente) {
-        try {
-          const { base44 } = await import('@/api/base44Client');
-          const response = await base44.functions.invoke('searchPatients', { 
-            termo: agendamento.paciente_nome, 
-            limit: 1 
-          });
-          if (response?.data && response.data.length > 0) {
-            paciente = response.data[0];
-          }
-        } catch (error) {
-          console.error('Erro ao buscar paciente por nome:', error);
-        }
-      }
+      const nomeNormalizado = agendamento.paciente_nome.toLowerCase().trim();
+      paciente = pacientes.find(p => p.nome.toLowerCase().trim() === nomeNormalizado);
     }
     
     if (paciente) {
-      console.log('Paciente encontrado:', paciente);
       setPacienteEditando(paciente);
-    } else {
-      console.log('Paciente não encontrado');
     }
   };
   
