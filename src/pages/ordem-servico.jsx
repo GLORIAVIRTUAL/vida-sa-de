@@ -137,23 +137,30 @@ export default function OrdemDeServico() {
   }, [agendamentoInicial, categorias, handleAbrirFormOS]);
 
   const carregarDados = async () => {
+    // Evitar chamadas simultâneas
+    if (carregandoRef.current) {
+      console.log('⏳ Carregamento já em andamento, ignorando...');
+      return;
+    }
+    
+    carregandoRef.current = true;
+    
     try {
       setLoading(true);
       console.log('🔄 Carregando dados da página OS...');
 
       const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-      // Etapa 1: Médicos
-      const medicosData = await Medico.list("nome", 500);
+      // Etapa 1: Médicos e Categorias (essenciais)
+      const [medicosData, categoriasData] = await Promise.all([
+        Medico.list("nome", 500),
+        CategoriaPreco.list()
+      ]);
       setMedicos(medicosData || []);
-      await delay(800);
-      
-      // Etapa 2: Categorias
-      const categoriasData = await CategoriaPreco.list();
       setCategorias(categoriasData || []);
-      await delay(800);
+      await delay(1000);
 
-      // Etapa 3: Ordens de Serviço
+      // Etapa 2: Ordens de Serviço
       let ordensData = [];
       try {
         console.log('🔄 Tentando carregar OS via função backend...');
@@ -166,30 +173,28 @@ export default function OrdemDeServico() {
         }
       } catch (err) {
         console.warn("⚠️ Falha na função backend, usando fallback SDK:", err);
-        await delay(500);
+        await delay(1000);
         ordensData = await OrdemServico.list("-data_execucao", 500);
         console.log('✅ OS carregadas via fallback:', ordensData?.length);
       }
       setOrdens(ordensData || []);
-      await delay(800);
+      await delay(1000);
 
-      // Etapa 4: Pacientes
-      const pacientesData = await Paciente.list("nome", 1000);
+      // Etapa 3: Pacientes e Procedimentos
+      const [pacientesData, procedimentosData] = await Promise.all([
+        Paciente.list("nome", 1000),
+        Procedimento.list("-created_date", 500)
+      ]);
       setPacientes(pacientesData || []);
-      await delay(800);
-
-      // Etapa 5: Procedimentos
-      const procedimentosData = await Procedimento.list("-created_date", 500);
       setProcedimentos(procedimentosData || []);
-      await delay(800);
+      await delay(1000);
 
-      // Etapa 6: Exames
-      const examesData = await Exame.list("-created_date", 500);
+      // Etapa 4: Exames e Agendamentos
+      const [examesData, agendamentosData] = await Promise.all([
+        Exame.list("-created_date", 500),
+        Agendamento.list("-data_agendamento", 500)
+      ]);
       setExames(examesData || []);
-      await delay(800);
-
-      // Etapa 7: Agendamentos
-      const agendamentosData = await Agendamento.list("-data_agendamento", 500);
       setAgendamentos(agendamentosData || []);
 
     } catch (error) {
@@ -201,6 +206,7 @@ export default function OrdemDeServico() {
       });
     } finally {
       setLoading(false);
+      carregandoRef.current = false;
     }
   };
 
