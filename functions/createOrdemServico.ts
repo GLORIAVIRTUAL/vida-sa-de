@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
                     installments: parcelas || 1,
                     paymentBrand: bandeira_cartao,
                     callbackUrl: callbackUrl,
-                    clientName: paciente.nome
+                    clientName: nomePaciente
                 }
             };
 
