@@ -113,12 +113,21 @@ export default function ListaAgendamentos({
     }
     
     // 3. Fallback: buscar via backend searchPatients
-    if (!paciente && nomeBusca) {
+    if (!paciente) {
       try {
-        const response = await base44.functions.invoke('searchPatients', { termo: nomeBusca });
-        const resultados = response?.data;
-        if (Array.isArray(resultados) && resultados.length > 0) {
-          paciente = pacienteId ? (resultados.find(p => p.id === pacienteId) || resultados[0]) : resultados[0];
+        if (pacienteId) {
+          const response = await base44.functions.invoke('searchPatients', { paciente_id: pacienteId });
+          const resultados = response?.data;
+          if (Array.isArray(resultados) && resultados.length > 0) {
+            paciente = resultados[0];
+          }
+        }
+        if (!paciente && nomeBusca) {
+          const response = await base44.functions.invoke('searchPatients', { termo: nomeBusca });
+          const resultados = response?.data;
+          if (Array.isArray(resultados) && resultados.length > 0) {
+            paciente = resultados[0];
+          }
         }
       } catch (error) {
         console.error('Erro ao buscar paciente via API:', error);

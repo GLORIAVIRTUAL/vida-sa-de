@@ -58,21 +58,23 @@ export default function AgendamentosHoje({ agendamentos = [], medicos = [], paci
     
     // 3. Fallback: buscar via backend (busca TODOS os pacientes do banco)
     if (!paciente) {
-      const nomeBusca = agendamento.paciente_nome;
-      if (nomeBusca) {
-        try {
-          const response = await base44.functions.invoke('searchPatients', { termo: nomeBusca });
+      try {
+        if (agendamento.paciente_id) {
+          const response = await base44.functions.invoke('searchPatients', { paciente_id: agendamento.paciente_id });
           const resultados = response?.data;
           if (Array.isArray(resultados) && resultados.length > 0) {
-            if (agendamento.paciente_id) {
-              paciente = resultados.find(p => p.id === agendamento.paciente_id) || resultados[0];
-            } else {
-              paciente = resultados[0];
-            }
+            paciente = resultados[0];
           }
-        } catch (error) {
-          console.error('Erro ao buscar paciente via API:', error);
         }
+        if (!paciente && agendamento.paciente_nome) {
+          const response = await base44.functions.invoke('searchPatients', { termo: agendamento.paciente_nome });
+          const resultados = response?.data;
+          if (Array.isArray(resultados) && resultados.length > 0) {
+            paciente = resultados[0];
+          }
+        }
+      } catch (error) {
+        console.error('Erro ao buscar paciente via API:', error);
       }
     }
     
