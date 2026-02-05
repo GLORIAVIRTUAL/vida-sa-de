@@ -38,10 +38,17 @@ export default function AgendamentosHoje({ agendamentos = [], medicos = [], paci
     }
   };
   
-  const handleSalvarPaciente = () => {
-    setPacienteEditando(null);
-    if (onUpdate) {
-      onUpdate();
+  const handleSalvarPaciente = async (dadosPaciente) => {
+    try {
+      const { Paciente } = await import('@/entities/all');
+      await Paciente.update(pacienteEditando.id, dadosPaciente);
+      setPacienteEditando(null);
+      if (onUpdate) {
+        onUpdate();
+      }
+    } catch (error) {
+      console.error('Erro ao salvar paciente:', error);
+      throw error;
     }
   };
 
@@ -183,9 +190,8 @@ export default function AgendamentosHoje({ agendamentos = [], medicos = [], paci
       {pacienteEditando && (
         <FormularioPaciente
           paciente={pacienteEditando}
-          open={!!pacienteEditando}
-          onClose={() => setPacienteEditando(null)}
           onSalvar={handleSalvarPaciente}
+          onCancelar={() => setPacienteEditando(null)}
         />
       )}
     </Card>
