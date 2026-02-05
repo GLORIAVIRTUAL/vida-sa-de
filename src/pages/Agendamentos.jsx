@@ -474,6 +474,22 @@ export default function Agendamentos() {
       const telefonePaciente = paciente?.telefone || '';
       const convenioPaciente = paciente?.convenio || '';
 
+      // Limpar observações removendo info duplicada
+      let obsLimpa = ag.observacoes || '';
+      if (obsLimpa) {
+        // Remover linhas que mencionam convênio, categoria, cartão (já aparecem em outras colunas)
+        obsLimpa = obsLimpa
+          .split('\n')
+          .filter(linha => {
+            const linhaUpper = linha.toUpperCase();
+            return !linhaUpper.includes('CONVÊNIO:') && 
+                   !linhaUpper.includes('CATEGORIA') && 
+                   !linhaUpper.includes('CARTÃO');
+          })
+          .join(' | ') // Juntar em uma linha com separador
+          .trim();
+      }
+
       return `
                 <tr>
                   <td>${format(new Date(ag.data_agendamento + 'T00:00:00'), 'dd/MM/yyyy')}</td>
@@ -482,7 +498,7 @@ export default function Agendamentos() {
                   <td>${convenioPaciente}</td>
                   <td>${telefonePaciente}</td>
                   <td>${categoria?.nome || ''}</td>
-                  <td>${ag.observacoes || ''}</td>
+                  <td>${obsLimpa}</td>
                   <td>${ag.created_by?.split('@')[0]?.toUpperCase() || ''}</td>
                 </tr>
               `;
