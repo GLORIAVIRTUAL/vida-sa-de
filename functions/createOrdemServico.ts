@@ -11,7 +11,9 @@ Deno.serve(async (req) => {
         }
 
         const body = await req.json();
-        console.log('📥 Dados recebidos para criar OS:', JSON.stringify(body, null, 2));
+        console.log('📥 Dados recebidos para criar OS');
+        console.log('📥 valor_final:', body.valor_final, 'tipo:', typeof body.valor_final);
+        console.log('📥 valor_total:', body.valor_total, 'tipo:', typeof body.valor_total);
         
         const {
             paciente_id,
