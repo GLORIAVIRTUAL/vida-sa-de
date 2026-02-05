@@ -297,6 +297,126 @@ export default function Relatorios() {
       .slice(0, 10);
   }, [estatisticas]);
 
+  const handlePrintRepasses = () => {
+    const printWindow = window.open('', '_blank');
+    
+    const osEmAberto = dadosFiltrados.filter(os => !os.repasse_realizado && os.valor_repasse_medico > 0);
+    const osRealizados = dadosFiltrados.filter(os => os.repasse_realizado);
+    const totalEmAberto = osEmAberto.reduce((acc, os) => acc + (os.valor_repasse_medico || 0), 0);
+    const totalRealizados = osRealizados.reduce((acc, os) => acc + (os.valor_repasse_medico || 0), 0);
+    
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Relatório de Repasses - Glória Clínica</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; font-size: 12px; }
+            h1 { color: #1e40af; font-size: 18px; margin-bottom: 5px; }
+            h2 { font-size: 14px; margin-top: 0; color: #666; }
+            h3 { font-size: 13px; margin-top: 20px; border-bottom: 2px solid #ddd; padding-bottom: 5px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
+            th { background-color: #f3f4f6; font-size: 11px; font-weight: bold; }
+            td { font-size: 11px; }
+            .header { text-align: center; margin-bottom: 20px; }
+            .stats { display: flex; gap: 15px; margin: 20px 0; }
+            .stat-card { border: 1px solid #ddd; padding: 10px; border-radius: 5px; flex: 1; text-align: center; }
+            .stat-card strong { font-size: 10px; color: #666; display: block; }
+            .stat-card .valor { font-size: 16px; font-weight: bold; }
+            .total { font-weight: bold; background-color: #f0f9ff; }
+            .text-right { text-align: right; }
+            .em-aberto { background-color: #fff7ed; }
+            .realizados { background-color: #f0fdf4; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>GLÓRIA CLÍNICA</h1>
+            <h2>Relatório de Repasses</h2>
+            <p>Período: ${format(parseISO(filtros.dataInicio), 'dd/MM/yyyy')} a ${format(parseISO(filtros.dataFim), 'dd/MM/yyyy')}</p>
+            <p style="font-size: 10px; color: #666;">Gerado em: ${format(new Date(), "dd/MM/yyyy 'às' HH:mm")}</p>
+          </div>
+          
+          <div class="stats">
+            <div class="stat-card">
+              <strong>Total de Repasses</strong>
+              <span class="valor" style="color: #7c3aed;">R$ ${estatisticas.totalRepasse.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+            </div>
+            <div class="stat-card">
+              <strong>Em Aberto</strong>
+              <span class="valor" style="color: #ea580c;">R$ ${totalEmAberto.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+            </div>
+            <div class="stat-card">
+              <strong>Realizados</strong>
+              <span class="valor" style="color: #16a34a;">R$ ${totalRealizados.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+            </div>
+          </div>
+          
+          <h3>Repasses em Aberto (${osEmAberto.length})</h3>
+          <table class="em-aberto">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Paciente</th>
+                <th>Médico</th>
+                <th>Categoria</th>
+                <th class="text-right">Valor Total</th>
+                <th class="text-right">Repasse</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${osEmAberto.map(os => `
+                <tr>
+                  <td>${os.data_execucao ? format(parseISO(os.data_execucao), 'dd/MM/yy') : '-'}</td>
+                  <td>${os.paciente_nome || '-'}</td>
+                  <td>${obterNomeMedico(os).split(' ').slice(0, 2).join(' ')}</td>
+                  <td>${obterNomeCategoria(os)}</td>
+                  <td class="text-right">R$ ${(os.valor_final || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                  <td class="text-right"><strong>R$ ${(os.valor_repasse_medico || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong></td>
+                </tr>
+              `).join('')}
+              <tr class="total">
+                <td colspan="5" class="text-right"><strong>TOTAL EM ABERTO</strong></td>
+                <td class="text-right"><strong>R$ ${totalEmAberto.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong></td>
+              </tr>
+            </tbody>
+          </table>
+          
+          <h3>Repasses Realizados (${osRealizados.length})</h3>
+          <table class="realizados">
+            <thead>
+              <tr>
+                <th>Data Exec.</th>
+                <th>Data Repasse</th>
+                <th>Paciente</th>
+                <th>Médico</th>
+                <th class="text-right">Repasse</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${osRealizados.map(os => `
+                <tr>
+                  <td>${os.data_execucao ? format(parseISO(os.data_execucao), 'dd/MM/yy') : '-'}</td>
+                  <td>${os.data_repasse ? format(parseISO(os.data_repasse), 'dd/MM/yy') : '-'}</td>
+                  <td>${os.paciente_nome || '-'}</td>
+                  <td>${obterNomeMedico(os).split(' ').slice(0, 2).join(' ')}</td>
+                  <td class="text-right"><strong>R$ ${(os.valor_repasse_medico || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong></td>
+                </tr>
+              `).join('')}
+              <tr class="total">
+                <td colspan="4" class="text-right"><strong>TOTAL REALIZADO</strong></td>
+                <td class="text-right"><strong>R$ ${totalRealizados.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </body>
+      </html>
+    `);
+    
+    printWindow.document.close();
+    printWindow.print();
+  };
+
   const handlePrint = () => {
     const printWindow = window.open('', '_blank');
     
@@ -1064,6 +1184,14 @@ export default function Relatorios() {
             {/* Tab Repasses */}
             <TabsContent value="repasses">
               <div className="space-y-4">
+                {/* Botão Imprimir Repasses */}
+                <div className="flex justify-end">
+                  <Button onClick={handlePrintRepasses} className="bg-purple-600 hover:bg-purple-700">
+                    <Printer className="w-4 h-4 mr-2" />
+                    Imprimir Repasses
+                  </Button>
+                </div>
+                
                 {/* Resumo de Repasses */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white">
