@@ -138,9 +138,14 @@ export default function Dashboard() {
     carregarDados();
     
     // Subscription para atualizar em tempo real quando agendamentos mudam
-    // Usando debounce para evitar rate limit
+    // Usando debounce para evitar rate limit - só atualizar em criações/deleções
     const unsubscribe = Agendamento.subscribe((event) => {
-      console.log('📡 Dashboard: Agendamento atualizado em tempo real:', event.type);
+      // Ignorar updates de status para evitar loops com check-in/pagar
+      if (event.type === 'update') {
+        console.log('📡 Dashboard: Agendamento atualizado (ignorando para evitar rate limit)');
+        return;
+      }
+      console.log('📡 Dashboard: Agendamento', event.type, '- agendando recarga');
       debouncedCarregarDados();
     });
     
