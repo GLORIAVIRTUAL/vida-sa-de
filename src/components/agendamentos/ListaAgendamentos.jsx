@@ -97,37 +97,31 @@ export default function ListaAgendamentos({
     setMedicoSelecionado(null);
   };
 
+  const normStr = (s) => s ? String(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : '';
+
   const handleAbrirPaciente = async (pacienteId, agendamento) => {
     let paciente = null;
     
-    // 1. Busca local por ID
+    // 1. Busca local por ID (instantânea)
     if (pacienteId) {
       paciente = pacientes.find((p) => p.id === pacienteId);
     }
     
-    // 2. Busca local por nome
+    // 2. Busca local por nome normalizado (instantânea)
     const nomeBusca = agendamento?.paciente_nome;
     if (!paciente && nomeBusca) {
-      const nomeNorm = nomeBusca.toLowerCase().trim();
-      paciente = pacientes.find((p) => p.nome?.toLowerCase().trim() === nomeNorm);
+      const nomeNorm = normStr(nomeBusca);
+      paciente = pacientes.find((p) => normStr(p.nome) === nomeNorm);
     }
     
-    // 3. Fallback: buscar via backend searchPatients
-    if (!paciente) {
+    // 3. Fallback: buscar via backend por nome (rápido)
+    if (!paciente && nomeBusca) {
       try {
-        if (pacienteId) {
-          const response = await base44.functions.invoke('searchPatients', { paciente_id: pacienteId });
-          const resultados = response?.data;
-          if (Array.isArray(resultados) && resultados.length > 0) {
-            paciente = resultados[0];
-          }
-        }
-        if (!paciente && nomeBusca) {
-          const response = await base44.functions.invoke('searchPatients', { termo: nomeBusca });
-          const resultados = response?.data;
-          if (Array.isArray(resultados) && resultados.length > 0) {
-            paciente = resultados[0];
-          }
+        const response = await base44.functions.invoke('searchPatients', { termo: nomeBusca });
+        const resultados = response?.data;
+        if (Array.isArray(resultados) && resultados.length > 0) {
+          const nomeNorm = normStr(nomeBusca);
+          paciente = resultados.find(p => normStr(p.nome) === nomeNorm) || resultados[0];
         }
       } catch (error) {
         console.error('Erro ao buscar paciente via API:', error);

@@ -92,38 +92,30 @@ export default function VisualizacaoDiaria({ agendamentos, medicos, pacientes, o
     }
   };
 
+  const normStr = (s) => s ? String(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : '';
+
   const handleAbrirPaciente = async (pacienteId, agendamento) => {
     let paciente = null;
     
-    // 1. Busca local por ID
+    // 1. Busca local por ID (instantânea)
     if (pacienteId) {
       paciente = pacientes.find((p) => p.id === pacienteId);
     }
     
-    // 2. Busca local por nome
+    // 2. Busca local por nome normalizado (instantânea, ignora acentos)
     if (!paciente && agendamento?.paciente_nome) {
-      const nomeNormalizado = agendamento.paciente_nome.toLowerCase().trim();
-      paciente = pacientes.find((p) => p.nome?.toLowerCase().trim() === nomeNormalizado);
+      const nomeNorm = normStr(agendamento.paciente_nome);
+      paciente = pacientes.find((p) => normStr(p.nome) === nomeNorm);
     }
     
-    // 3. Fallback: buscar via backend (busca TODOS os pacientes do banco)
-    if (!paciente) {
+    // 3. Fallback: buscar via backend por NOME apenas (rápido)
+    if (!paciente && agendamento?.paciente_nome) {
       try {
-        // Primeiro tentar por ID (mais confiável)
-        if (pacienteId) {
-          const response = await base44.functions.invoke('searchPatients', { paciente_id: pacienteId });
-          const resultados = response?.data;
-          if (Array.isArray(resultados) && resultados.length > 0) {
-            paciente = resultados[0];
-          }
-        }
-        // Se não encontrou por ID, tentar por nome
-        if (!paciente && agendamento?.paciente_nome) {
-          const response = await base44.functions.invoke('searchPatients', { termo: agendamento.paciente_nome });
-          const resultados = response?.data;
-          if (Array.isArray(resultados) && resultados.length > 0) {
-            paciente = resultados[0];
-          }
+        const response = await base44.functions.invoke('searchPatients', { termo: agendamento.paciente_nome });
+        const resultados = response?.data;
+        if (Array.isArray(resultados) && resultados.length > 0) {
+          const nomeNorm = normStr(agendamento.paciente_nome);
+          paciente = resultados.find(p => normStr(p.nome) === nomeNorm) || resultados[0];
         }
       } catch (error) {
         console.error('Erro ao buscar paciente via API:', error);
