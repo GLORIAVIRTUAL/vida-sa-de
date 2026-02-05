@@ -133,6 +133,39 @@ export default function OrdemDeServico() {
     setMostrarForm(true);
   }, [categorias, toast, pacientes]);
 
+  // Carregar agendamento via ID se vier na URL
+  useEffect(() => {
+    const carregarAgendamentoPorId = async () => {
+      if (agendamentoId && !agendamentoInicial && categorias.length > 0) {
+        console.log('🔄 Carregando agendamento via ID da URL:', agendamentoId);
+        try {
+          const agendamentos = await Agendamento.filter({ id: agendamentoId });
+          if (agendamentos && agendamentos.length > 0) {
+            const agendamento = agendamentos[0];
+            console.log('✅ Agendamento encontrado:', agendamento);
+            handleAbrirFormOS(agendamento);
+          } else {
+            console.error('❌ Agendamento não encontrado');
+            toast({
+              title: "Erro",
+              description: "Agendamento não encontrado",
+              variant: "destructive"
+            });
+          }
+        } catch (error) {
+          console.error('❌ Erro ao carregar agendamento:', error);
+          toast({
+            title: "Erro",
+            description: "Erro ao carregar agendamento: " + error.message,
+            variant: "destructive"
+          });
+        }
+      }
+    };
+
+    carregarAgendamentoPorId();
+  }, [agendamentoId, agendamentoInicial, categorias, handleAbrirFormOS, toast]);
+
   useEffect(() => {
     if (agendamentoInicial && categorias.length > 0) {
       handleAbrirFormOS(agendamentoInicial);
