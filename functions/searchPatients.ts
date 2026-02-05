@@ -26,30 +26,23 @@ Deno.serve(async (req) => {
         // 2. Usar Service Role para pegar pacientes (bypass RLS)
         const adminClient = base44.asServiceRole;
 
-        // 2b. Se tem paciente_id, buscar diretamente por ID (mais confiável)
+        // 2b. Se tem paciente_id, buscar diretamente
         if (paciente_id) {
-            try {
-                const resultados = await adminClient.entities.Paciente.filter({ id: paciente_id });
-                if (resultados && resultados.length > 0) {
-                    return Response.json(resultados);
-                }
-            } catch (e) {
-                console.log('Filter by ID failed, trying full scan...');
-            }
-            
-            // Fallback: buscar todos e filtrar por ID
-            let allPatients = [];
+            // Escanear em lotes até encontrar o paciente por ID
             let skip = 0;
             const batchSize = 500;
-            for (let i = 0; i < 40; i++) {
+            for (let i = 0; i < 100; i++) {
                 const batch = await adminClient.entities.Paciente.filter({}, '-created_date', batchSize, skip);
                 if (!batch || batch.length === 0) break;
                 const found = batch.find(p => p.id === paciente_id);
-                if (found) return Response.json([found]);
-                allPatients = allPatients.concat(batch);
+                if (found) {
+                    console.log(`✅ Paciente encontrado por ID no lote ${i + 1}`);
+                    return Response.json([found]);
+                }
                 skip += batchSize;
                 if (batch.length < batchSize) break;
             }
+            console.log(`❌ Paciente com ID ${paciente_id} não encontrado`);
             return Response.json([]);
         }
 
@@ -59,42 +52,38 @@ Deno.serve(async (req) => {
             return Response.json(recentes || []);
         }
 
-        // 4. Buscar TODOS os pacientes em lotes para garantir cobertura total
-        let allPatients = [];
+        // 4. Busca por nome: escanear TODOS os pacientes em lotes, parando cedo se possível
+        const searchTerms = normalize(termo).split(/\s+/).filter(t => t.length > 0);
+        const filtered = [];
         let skip = 0;
         const batchSize = 500;
-        const maxBatches = 40; // Máximo 20000 pacientes
+        const maxResults = 100;
+        let totalScanned = 0;
         
-        for (let i = 0; i < maxBatches; i++) {
+        for (let i = 0; i < 100; i++) { // Max 50000 pacientes
             const batch = await adminClient.entities.Paciente.filter({}, '-created_date', batchSize, skip);
             if (!batch || batch.length === 0) break;
-            allPatients = allPatients.concat(batch);
+            
+            totalScanned += batch.length;
+            
+            for (const paciente of batch) {
+                const searchableText = normalize(
+                    `${paciente.nome} ${paciente.cpf} ${paciente.telefone} ${paciente.email} ${paciente.convenio}`
+                );
+                if (searchTerms.every(term => searchableText.includes(term))) {
+                    filtered.push(paciente);
+                }
+            }
+            
             skip += batchSize;
             if (batch.length < batchSize) break; // Último lote
+            
+            // Se já encontrou resultados suficientes E já escaneou bastante, podemos parar
+            if (filtered.length >= maxResults) break;
         }
 
-        if (allPatients.length === 0) {
-            return Response.json([]);
-        }
-
-        // 5. Filtragem em Memória (Robustez total)
-        const searchTerms = normalize(termo).split(/\s+/).filter(t => t.length > 0);
-        
-        const filtered = allPatients.filter(paciente => {
-            // Monta uma string única com todos os dados pesquisáveis do paciente
-            const searchableText = normalize(
-                `${paciente.nome} ${paciente.cpf} ${paciente.telefone} ${paciente.email} ${paciente.convenio}`
-            );
-
-            // Verifica se TODOS os termos digitados existem nos dados do paciente
-            // Ex: "Antonio Thiago" -> "antonio" deve existir E "thiago" deve existir
-            return searchTerms.every(term => searchableText.includes(term));
-        });
-
-        console.log(`🔍 Busca: "${termo}" | Total Banco: ${allPatients.length} | Encontrados: ${filtered.length}`);
-
-        // Retorna os top 100 resultados
-        return Response.json(filtered.slice(0, 100));
+        console.log(`🔍 Busca: "${termo}" | Total Escaneado: ${totalScanned} | Encontrados: ${filtered.length}`);
+        return Response.json(filtered.slice(0, maxResults));
 
     } catch (error) {
         console.error('❌ Erro na busca:', error);
