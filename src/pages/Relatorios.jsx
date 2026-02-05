@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { 
   Loader2, FileText, Printer, Download, Filter, TrendingUp, DollarSign, 
   Users, CreditCard, Building2, BarChart3, PieChart as PieChartIcon,
-  Calendar, RefreshCw
+  Calendar, RefreshCw, AlertCircle, CheckCircle
 } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -646,6 +646,10 @@ export default function Relatorios() {
                 <FileText className="w-4 h-4" />
                 Relatório por Médico
               </TabsTrigger>
+              <TabsTrigger value="repasses" className="flex items-center gap-2">
+                <DollarSign className="w-4 h-4" />
+                Repasses
+              </TabsTrigger>
               </TabsList>
 
             {/* Tab Gráficos */}
@@ -1054,6 +1058,184 @@ export default function Relatorios() {
                       </Card>
                     );
                   })}
+              </div>
+            </TabsContent>
+
+            {/* Tab Repasses */}
+            <TabsContent value="repasses">
+              <div className="space-y-4">
+                {/* Resumo de Repasses */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white">
+                    <CardContent className="p-6">
+                      <p className="text-purple-100 text-sm">Total de Repasses</p>
+                      <p className="text-3xl font-bold">{formatCurrency(estatisticas.totalRepasse)}</p>
+                    </CardContent>
+                  </Card>
+                  <Card className="bg-gradient-to-br from-yellow-500 to-orange-500 text-white">
+                    <CardContent className="p-6">
+                      <p className="text-orange-100 text-sm">Em Aberto</p>
+                      <p className="text-3xl font-bold">
+                        {formatCurrency(
+                          dadosFiltrados
+                            .filter(os => !os.repasse_realizado && os.valor_repasse_medico > 0)
+                            .reduce((acc, os) => acc + (os.valor_repasse_medico || 0), 0)
+                        )}
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white">
+                    <CardContent className="p-6">
+                      <p className="text-green-100 text-sm">Realizados</p>
+                      <p className="text-3xl font-bold">
+                        {formatCurrency(
+                          dadosFiltrados
+                            .filter(os => os.repasse_realizado)
+                            .reduce((acc, os) => acc + (os.valor_repasse_medico || 0), 0)
+                        )}
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Tabela de Repasses por Médico */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Repasses por Profissional</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Profissional</TableHead>
+                          <TableHead className="text-center">Atendimentos</TableHead>
+                          <TableHead className="text-right">Total Faturado</TableHead>
+                          <TableHead className="text-right">Repasse Total</TableHead>
+                          <TableHead className="text-right">Em Aberto</TableHead>
+                          <TableHead className="text-right">Realizados</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {Object.entries(estatisticas.porMedico)
+                          .sort((a, b) => b[1].repasse - a[1].repasse)
+                          .map(([nomeMedico, dados]) => {
+                            const osMedico = dadosFiltrados.filter(os => obterNomeMedico(os) === nomeMedico);
+                            const emAberto = osMedico
+                              .filter(os => !os.repasse_realizado)
+                              .reduce((acc, os) => acc + (os.valor_repasse_medico || 0), 0);
+                            const realizados = osMedico
+                              .filter(os => os.repasse_realizado)
+                              .reduce((acc, os) => acc + (os.valor_repasse_medico || 0), 0);
+                            
+                            return (
+                              <TableRow key={nomeMedico}>
+                                <TableCell className="font-medium">{nomeMedico}</TableCell>
+                                <TableCell className="text-center">{dados.quantidade}</TableCell>
+                                <TableCell className="text-right">{formatCurrency(dados.valor)}</TableCell>
+                                <TableCell className="text-right font-bold text-purple-600">{formatCurrency(dados.repasse)}</TableCell>
+                                <TableCell className="text-right text-orange-600">{formatCurrency(emAberto)}</TableCell>
+                                <TableCell className="text-right text-green-600">{formatCurrency(realizados)}</TableCell>
+                              </TableRow>
+                            );
+                          })}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+
+                {/* Lista Detalhada de Repasses Em Aberto */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <AlertCircle className="w-5 h-5 text-orange-500" />
+                      Repasses em Aberto - {dadosFiltrados.filter(os => !os.repasse_realizado && os.valor_repasse_medico > 0).length} pendentes
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="max-h-[400px] overflow-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Data</TableHead>
+                            <TableHead>Paciente</TableHead>
+                            <TableHead>Médico</TableHead>
+                            <TableHead>Categoria</TableHead>
+                            <TableHead className="text-right">Valor Total</TableHead>
+                            <TableHead className="text-right">Repasse</TableHead>
+                            <TableHead>Status Pag.</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {dadosFiltrados
+                            .filter(os => !os.repasse_realizado && os.valor_repasse_medico > 0)
+                            .sort((a, b) => (b.data_execucao || '').localeCompare(a.data_execucao || ''))
+                            .slice(0, 100)
+                            .map(os => (
+                              <TableRow key={os.id}>
+                                <TableCell>{os.data_execucao ? format(parseISO(os.data_execucao), 'dd/MM/yy') : '-'}</TableCell>
+                                <TableCell className="font-medium">{os.paciente_nome || '-'}</TableCell>
+                                <TableCell>{obterNomeMedico(os).split(' ').slice(0, 2).join(' ')}</TableCell>
+                                <TableCell><Badge variant="outline" className="text-xs">{obterNomeCategoria(os)}</Badge></TableCell>
+                                <TableCell className="text-right">{formatCurrency(os.valor_final)}</TableCell>
+                                <TableCell className="text-right font-bold text-orange-600">{formatCurrency(os.valor_repasse_medico)}</TableCell>
+                                <TableCell>
+                                  <Badge className={os.status_pagamento === 'Pago' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}>
+                                    {os.status_pagamento || 'Pendente'}
+                                  </Badge>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Lista de Repasses Realizados */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <CheckCircle className="w-5 h-5 text-green-500" />
+                      Repasses Realizados - {dadosFiltrados.filter(os => os.repasse_realizado).length} pagos
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="max-h-[400px] overflow-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Data Exec.</TableHead>
+                            <TableHead>Data Repasse</TableHead>
+                            <TableHead>Paciente</TableHead>
+                            <TableHead>Médico</TableHead>
+                            <TableHead>Categoria</TableHead>
+                            <TableHead className="text-right">Valor Total</TableHead>
+                            <TableHead className="text-right">Repasse</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {dadosFiltrados
+                            .filter(os => os.repasse_realizado)
+                            .sort((a, b) => (b.data_repasse || b.data_execucao || '').localeCompare(a.data_repasse || a.data_execucao || ''))
+                            .slice(0, 100)
+                            .map(os => (
+                              <TableRow key={os.id}>
+                                <TableCell>{os.data_execucao ? format(parseISO(os.data_execucao), 'dd/MM/yy') : '-'}</TableCell>
+                                <TableCell className="text-green-600 font-medium">
+                                  {os.data_repasse ? format(parseISO(os.data_repasse), 'dd/MM/yy') : '-'}
+                                </TableCell>
+                                <TableCell className="font-medium">{os.paciente_nome || '-'}</TableCell>
+                                <TableCell>{obterNomeMedico(os).split(' ').slice(0, 2).join(' ')}</TableCell>
+                                <TableCell><Badge variant="outline" className="text-xs">{obterNomeCategoria(os)}</Badge></TableCell>
+                                <TableCell className="text-right">{formatCurrency(os.valor_final)}</TableCell>
+                                <TableCell className="text-right font-bold text-green-600">{formatCurrency(os.valor_repasse_medico)}</TableCell>
+                              </TableRow>
+                            ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             </TabsContent>
           </Tabs>
