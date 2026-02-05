@@ -13,19 +13,28 @@ Deno.serve(async (req) => {
         const body = await req.json();
         const {
             paciente_id,
+            paciente_nome, // Nome já vem do frontend
             valor_final,
             forma_pagamento,
             bandeira_cartao,
             parcelas
         } = body;
 
-        // 3. Buscar Paciente para dados
-        const paciente = await base44.asServiceRole.entities.Paciente.get(paciente_id);
-        if (!paciente) {
-            return Response.json({ error: 'Paciente não encontrado' }, { status: 404 });
+        // Usar nome que veio do frontend para evitar chamada extra
+        let nomePaciente = paciente_nome;
+        
+        // Só buscar paciente se não veio o nome
+        if (!nomePaciente && paciente_id) {
+            try {
+                const paciente = await base44.asServiceRole.entities.Paciente.get(paciente_id);
+                nomePaciente = paciente?.nome || 'Paciente';
+            } catch (e) {
+                console.warn('Não foi possível buscar paciente:', e.message);
+                nomePaciente = 'Paciente';
+            }
         }
         
-        console.log('👤 Paciente encontrado:', paciente.nome);
+        console.log('👤 Nome do paciente:', nomePaciente);
 
         // 4. Criar Ordem de Serviço (Inicialmente Pendente)
         console.log('💾 Criando OS...');
