@@ -34,27 +34,54 @@ export default function AgendamentosHoje({ agendamentos = [], medicos = [], paci
   };
   
   const handleEditarPaciente = async (agendamento) => {
-    if (!agendamento.paciente_id) {
-      console.log('Agendamento sem paciente_id:', agendamento);
-      return;
+    console.log('Tentando abrir paciente do agendamento:', agendamento);
+    
+    let paciente = null;
+    
+    // Tentar buscar por ID primeiro
+    if (agendamento.paciente_id) {
+      paciente = pacientes.find(p => p.id === agendamento.paciente_id);
+      
+      // Se não encontrou na lista, buscar direto da API
+      if (!paciente) {
+        try {
+          const { Paciente } = await import('@/entities/all');
+          paciente = await Paciente.get(agendamento.paciente_id);
+        } catch (error) {
+          console.error('Erro ao buscar paciente por ID:', error);
+        }
+      }
     }
     
-    // Tentar buscar na lista carregada primeiro
-    let paciente = pacientes.find(p => p.id === agendamento.paciente_id);
-    
-    // Se não encontrou, buscar direto da API
-    if (!paciente) {
-      try {
-        const { Paciente } = await import('@/entities/all');
-        paciente = await Paciente.get(agendamento.paciente_id);
-      } catch (error) {
-        console.error('Erro ao buscar paciente:', error);
-        return;
+    // Se não tem ID ou não achou por ID, tentar buscar por nome
+    if (!paciente && agendamento.paciente_nome) {
+      console.log('Buscando paciente por nome:', agendamento.paciente_nome);
+      paciente = pacientes.find(p => 
+        p.nome.toLowerCase() === agendamento.paciente_nome.toLowerCase()
+      );
+      
+      // Se não encontrou na lista, buscar na API
+      if (!paciente) {
+        try {
+          const { base44 } = await import('@/api/base44Client');
+          const response = await base44.functions.invoke('searchPatients', { 
+            termo: agendamento.paciente_nome, 
+            limit: 1 
+          });
+          if (response?.data && response.data.length > 0) {
+            paciente = response.data[0];
+          }
+        } catch (error) {
+          console.error('Erro ao buscar paciente por nome:', error);
+        }
       }
     }
     
     if (paciente) {
+      console.log('Paciente encontrado:', paciente);
       setPacienteEditando(paciente);
+    } else {
+      console.log('Paciente não encontrado');
     }
   };
   

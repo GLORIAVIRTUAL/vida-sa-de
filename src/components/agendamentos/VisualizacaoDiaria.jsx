@@ -91,35 +91,63 @@ export default function VisualizacaoDiaria({ agendamentos, medicos, pacientes, o
     }
   };
 
-  const handleAbrirPaciente = async (pacienteId) => {
-    if (!pacienteId) {
-      console.log('Sem paciente_id para abrir');
-      return;
+  const handleAbrirPaciente = async (pacienteId, agendamento) => {
+    console.log('Tentando abrir paciente:', pacienteId, agendamento);
+    
+    let paciente = null;
+    
+    // Tentar buscar por ID primeiro
+    if (pacienteId) {
+      paciente = pacientes.find((p) => p.id === pacienteId);
+      
+      // Se não encontrou na lista, buscar direto da API
+      if (!paciente) {
+        try {
+          const { Paciente } = await import('@/entities/all');
+          paciente = await Paciente.get(pacienteId);
+        } catch (error) {
+          console.error('Erro ao buscar paciente por ID:', error);
+        }
+      }
     }
     
-    // Tentar buscar na lista carregada primeiro
-    let paciente = pacientes.find((p) => p.id === pacienteId);
-    
-    // Se não encontrou, buscar direto da API
-    if (!paciente) {
-      try {
-        const { Paciente } = await import('@/entities/all');
-        paciente = await Paciente.get(pacienteId);
-        console.log('Paciente carregado da API:', paciente);
-      } catch (error) {
-        console.error('Erro ao buscar paciente:', error);
-        toast({
-          title: "Erro ao abrir paciente",
-          description: "Não foi possível encontrar os dados do paciente.",
-          variant: "destructive"
-        });
-        return;
+    // Se não tem ID ou não achou por ID, tentar buscar por nome
+    if (!paciente && agendamento?.paciente_nome) {
+      const nomePaciente = agendamento.paciente_nome;
+      console.log('Buscando paciente por nome:', nomePaciente);
+      
+      paciente = pacientes.find((p) => 
+        p.nome.toLowerCase() === nomePaciente.toLowerCase()
+      );
+      
+      // Se não encontrou na lista, buscar na API
+      if (!paciente) {
+        try {
+          const { base44 } = await import('@/api/base44Client');
+          const response = await base44.functions.invoke('searchPatients', { 
+            termo: nomePaciente, 
+            limit: 1 
+          });
+          if (response?.data && response.data.length > 0) {
+            paciente = response.data[0];
+          }
+        } catch (error) {
+          console.error('Erro ao buscar paciente por nome:', error);
+        }
       }
     }
     
     if (paciente) {
+      console.log('Paciente encontrado:', paciente);
       setPacienteParaEditar(paciente);
       setFormularioPacienteAberto(true);
+    } else {
+      console.log('Paciente não encontrado');
+      toast({
+        title: "Erro ao abrir paciente",
+        description: "Não foi possível encontrar os dados do paciente.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -275,7 +303,7 @@ export default function VisualizacaoDiaria({ agendamentos, medicos, pacientes, o
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleAbrirPaciente(agendamento.paciente_id)}
+                    onClick={() => handleAbrirPaciente(agendamento.paciente_id, agendamento)}
                     title="Editar cadastro do paciente"
                     className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
 
@@ -327,7 +355,7 @@ export default function VisualizacaoDiaria({ agendamentos, medicos, pacientes, o
                           <p className="flex items-center gap-2 text-sm">
                             <User className="w-4 h-4 text-gray-400" />
                             <button
-                      onClick={() => handleAbrirPaciente(agendamento.paciente_id)} className="text-cyan-600 font-medium hover:text-blue-800 hover:underline cursor-pointer transition-colors"
+                      onClick={() => handleAbrirPaciente(agendamento.paciente_id, agendamento)} className="text-cyan-600 font-medium hover:text-blue-800 hover:underline cursor-pointer transition-colors"
 
                       title="Clique para editar o cadastro do paciente">
 
