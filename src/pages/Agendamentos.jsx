@@ -446,14 +446,14 @@ export default function Agendamentos() {
         <table>
           <thead>
             <tr>
-              <th style="width: 70px;">Data</th>
-              <th style="width: 40px;">Hora</th>
+              <th style="width: 55px;">Data</th>
+              <th style="width: 35px;">Hora</th>
               <th>Descrição</th>
-              <th style="width: 80px;">Conv. Paciente</th>
-              <th style="width: 90px;">Celular</th>
-              <th style="width: 100px;">Categoria</th>
-              <th style="width: 80px;">Observação</th>
-              <th style="width: 70px;">Atendente</th>
+              <th style="width: 65px;">Conv. Paciente</th>
+              <th style="width: 70px;">Celular</th>
+              <th style="width: 80px;">Categoria</th>
+              <th style="width: 70px;">Observação</th>
+              <th style="width: 55px;">Atendente</th>
             </tr>
           </thead>
           <tbody>
