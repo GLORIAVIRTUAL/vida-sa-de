@@ -21,10 +21,37 @@ Deno.serve(async (req) => {
 
         let body = {};
         try { body = await req.json(); } catch (e) {}
-        const { termo } = body;
+        const { termo, paciente_id } = body;
 
         // 2. Usar Service Role para pegar pacientes (bypass RLS)
         const adminClient = base44.asServiceRole;
+
+        // 2b. Se tem paciente_id, buscar diretamente por ID (mais confiável)
+        if (paciente_id) {
+            try {
+                const resultados = await adminClient.entities.Paciente.filter({ id: paciente_id });
+                if (resultados && resultados.length > 0) {
+                    return Response.json(resultados);
+                }
+            } catch (e) {
+                console.log('Filter by ID failed, trying full scan...');
+            }
+            
+            // Fallback: buscar todos e filtrar por ID
+            let allPatients = [];
+            let skip = 0;
+            const batchSize = 500;
+            for (let i = 0; i < 40; i++) {
+                const batch = await adminClient.entities.Paciente.filter({}, '-created_date', batchSize, skip);
+                if (!batch || batch.length === 0) break;
+                const found = batch.find(p => p.id === paciente_id);
+                if (found) return Response.json([found]);
+                allPatients = allPatients.concat(batch);
+                skip += batchSize;
+                if (batch.length < batchSize) break;
+            }
+            return Response.json([]);
+        }
 
         // 3. Se não tem termo, retorna os 50 mais recentes
         if (!termo || String(termo).trim().length === 0) {
@@ -36,7 +63,7 @@ Deno.serve(async (req) => {
         let allPatients = [];
         let skip = 0;
         const batchSize = 500;
-        const maxBatches = 20; // Máximo 10000 pacientes
+        const maxBatches = 40; // Máximo 20000 pacientes
         
         for (let i = 0; i < maxBatches; i++) {
             const batch = await adminClient.entities.Paciente.filter({}, '-created_date', batchSize, skip);
