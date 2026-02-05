@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Agendamento, Medico, Paciente } from "@/entities/all";
 import { format, startOfWeek, endOfWeek, getDayOfYear } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Sparkles, Heart } from "lucide-react";
 import { safeApiCall } from "@/components/shared/apiThrottle";
 import { getDashboardStats } from "@/functions/getDashboardStats";
+import { debounce } from "lodash";
 
 import AgendamentosHoje from "../components/dashboard/AgendamentosHoje";
 import AgendamentosSemana from "../components/dashboard/AgendamentosSemana";
