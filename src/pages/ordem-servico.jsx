@@ -140,18 +140,19 @@ export default function OrdemDeServico() {
       setLoading(true);
       console.log('🔄 Carregando dados da página OS...');
 
-      // Etapa 1: Dados essenciais (2 chamadas)
+      const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+      // Etapa 1: Médicos
       const medicosData = await Medico.list("nome", 500);
       setMedicos(medicosData || []);
+      await delay(800);
       
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      
+      // Etapa 2: Categorias
       const categoriasData = await CategoriaPreco.list();
       setCategorias(categoriasData || []);
+      await delay(800);
 
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      // Etapa 2: Ordens de Serviço
+      // Etapa 3: Ordens de Serviço
       let ordensData = [];
       try {
         console.log('🔄 Tentando carregar OS via função backend...');
@@ -164,33 +165,29 @@ export default function OrdemDeServico() {
         }
       } catch (err) {
         console.warn("⚠️ Falha na função backend, usando fallback SDK:", err);
+        await delay(500);
         ordensData = await OrdemServico.list("-data_execucao", 500);
         console.log('✅ OS carregadas via fallback:', ordensData?.length);
       }
-
       setOrdens(ordensData || []);
+      await delay(800);
 
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      // Etapa 3: Pacientes
+      // Etapa 4: Pacientes
       const pacientesData = await Paciente.list("nome", 1000);
       setPacientes(pacientesData || []);
+      await delay(800);
 
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      // Etapa 4: Procedimentos
+      // Etapa 5: Procedimentos
       const procedimentosData = await Procedimento.list("-created_date", 500);
       setProcedimentos(procedimentosData || []);
+      await delay(800);
 
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      // Etapa 5: Exames
+      // Etapa 6: Exames
       const examesData = await Exame.list("-created_date", 500);
       setExames(examesData || []);
+      await delay(800);
 
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      // Etapa 6: Agendamentos
+      // Etapa 7: Agendamentos
       const agendamentosData = await Agendamento.list("-data_agendamento", 500);
       setAgendamentos(agendamentosData || []);
 
