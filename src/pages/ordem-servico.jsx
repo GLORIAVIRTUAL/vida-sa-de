@@ -37,6 +37,9 @@ export default function OrdemDeServico() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Buscar agendamento via URL params ou state
+  const urlParams = new URLSearchParams(window.location.search);
+  const agendamentoId = urlParams.get('agendamento_id');
   const agendamentoInicial = location.state?.agendamento;
 
   const [ordens, setOrdens] = useState([]);
