@@ -699,47 +699,17 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
                       variant="default"
                       size="sm"
                       className="bg-blue-600 hover:bg-blue-700 text-white"
-                      onClick={async () => {
-                        try {
-                          // Buscar paciente pelo telefone
-                          let pacienteId = contatoSelecionado.paciente_id;
-                          if (!pacienteId && contatoSelecionado.telefone) {
-                            const response = await base44.functions.invoke('searchPatients', { termo: contatoSelecionado.telefone, limit: 5 });
-                            const resultados = Array.isArray(response?.data) ? response.data : [];
-                            if (resultados.length > 0) {
-                              pacienteId = resultados[0].id;
-                            } else {
-                              // Criar paciente automaticamente
-                              const { Paciente } = await import('@/entities/all');
-                              const novoPaciente = await Paciente.create({
-                                nome: contatoSelecionado.nome || 'Cliente WhatsApp',
-                                telefone: contatoSelecionado.telefone,
-                                cpf: 'NÃO INFORMADO',
-                                observacoes: 'Criado automaticamente via chat'
-                              });
-                              pacienteId = novoPaciente.id;
+                      onClick={() => {
+                        // Navegar imediatamente - a busca/criação do paciente será feita na página de Agendamentos
+                        navigate(createPageUrl('Agendamentos'), {
+                          state: {
+                            dadosIniciais: {
+                              paciente_id: contatoSelecionado.paciente_id || null,
+                              paciente_nome: contatoSelecionado.nome,
+                              telefone: contatoSelecionado.telefone
                             }
                           }
-                          navigate(createPageUrl('Agendamentos'), {
-                            state: {
-                              dadosIniciais: {
-                                paciente_id: pacienteId,
-                                paciente_nome: contatoSelecionado.nome,
-                                telefone: contatoSelecionado.telefone
-                              }
-                            }
-                          });
-                        } catch (error) {
-                          console.error('Erro ao preparar agendamento:', error);
-                          navigate(createPageUrl('Agendamentos'), {
-                            state: {
-                              dadosIniciais: {
-                                paciente_nome: contatoSelecionado.nome,
-                                telefone: contatoSelecionado.telefone
-                              }
-                            }
-                          });
-                        }
+                        });
                       }}
                     >
                       <CalendarPlus className="w-3 h-3 mr-1" />
