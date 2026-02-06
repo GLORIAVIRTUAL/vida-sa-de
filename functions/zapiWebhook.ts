@@ -147,7 +147,73 @@ async function processarMensagemRecebida(base44, payload) {
         }
         
         try {
-            const contatos = await base44.asServiceRole.entities.Contato.filter({ telefone: telefone });
+            // Normalizar telefone para busca - buscar com e sem código de país
+            const telNormalizado = telefone.replace(/\D/g, '');
+            const variantes = [telefone, telNormalizado];
+            if (telNormalizado.startsWith('55') && telNormalizado.length >= 12) {
+                variantes.push(telNormalizado.slice(2)); // sem código país
+            }
+            if (!telNormalizado.startsWith('55') && telNormalizado.length >= 10) {
+                variantes.push('55' + telNormalizado); // com código país
+            }
+            
+            let contatos = [];
+            for (const variante of variantes) {
+                if (contatos.length > 0) break;
+                contatos = await base44.asServiceRole.entities.Contato.filter({ telefone: variante });
+            }
+            
+            // Se encontrou múltiplos contatos para o mesmo número, unificar
+            if (contatos.length <= 1) {
+                // Tentar busca mais ampla se não encontrou
+                if (contatos.length === 0) {
+                    const todosContatos = await base44.asServiceRole.entities.Contato.list('-created_date', 500);
+                    const ultimos8 = telNormalizado.slice(-8);
+                    contatos = todosContatos.filter(c => {
+                        const tel = (c.telefone || '').replace(/\D/g, '');
+                        return tel.slice(-8) === ultimos8;
+                    });
+                }
+            }
+            
+            // Unificar contatos duplicados - manter o mais antigo, mesclar histórico
+            if (contatos.length > 1) {
+                console.log(`⚠️ ${contatos.length} contatos encontrados para ${telefone} - unificando...`);
+                contatos.sort((a, b) => new Date(a.created_date) - new Date(b.created_date));
+                const principal = contatos[0];
+                let historicoUnificado = [...(principal.historico_mensagens || [])];
+                
+                for (let i = 1; i < contatos.length; i++) {
+                    const duplicado = contatos[i];
+                    const histDup = duplicado.historico_mensagens || [];
+                    // Mesclar mensagens que não existem no principal
+                    for (const msg of histDup) {
+                        const jaExiste = historicoUnificado.some(m => 
+                            m.timestamp === msg.timestamp && m.content === msg.content
+                        );
+                        if (!jaExiste) historicoUnificado.push(msg);
+                    }
+                    // Deletar contato duplicado
+                    try {
+                        await base44.asServiceRole.entities.Contato.delete(duplicado.id);
+                        console.log(`🗑️ Contato duplicado removido: ${duplicado.id} (${duplicado.nome})`);
+                    } catch (e) {
+                        console.error('Erro ao deletar duplicado:', e.message);
+                    }
+                }
+                
+                // Ordenar histórico por timestamp
+                historicoUnificado.sort((a, b) => new Date(a.timestamp || 0) - new Date(b.timestamp || 0));
+                
+                // Atualizar principal com histórico unificado
+                await base44.asServiceRole.entities.Contato.update(principal.id, {
+                    historico_mensagens: historicoUnificado.slice(-100),
+                    telefone: telefone // Garantir que o telefone está no formato mais recente
+                });
+                
+                contatos = [principal];
+                console.log(`✅ Contatos unificados no principal: ${principal.id}`);
+            }
             
             if (contatos.length > 0) {
                 const contato = contatos[0];
