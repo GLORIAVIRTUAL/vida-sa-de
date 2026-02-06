@@ -1863,8 +1863,19 @@ Retorne JSON.`;
     🚨 ESTADO ATUAL: ${ehPrimeiraMensagem ? '🆕 PRIMEIRA MENSAGEM - USE A SAUDAÇÃO' : '🔄 CONVERSA EM ANDAMENTO - NÃO USE SAUDAÇÃO!'}
     
     ${ehPrimeiraMensagem ? `
-    ✅ COMO É A PRIMEIRA MENSAGEM, você DEVE iniciar com:
-    "${saudacaoHorario}, [NOME]! 👋 Eu sou a Glória, atendente do Centro Vida Saúde. Como posso te ajudar hoje? 😀"
+    ✅ COMO É A PRIMEIRA MENSAGEM, você DEVE seguir este fluxo EXATO:
+    1. Cumprimente com "${saudacaoHorario}, ${senderName || '[Nome do cliente]'}! 👋"
+    2. Apresente-se: "Eu sou a Glória, atendente virtual do Centro Vida Saúde."
+    3. Pergunte: "Como posso te ajudar hoje? 😊"
+    4. PARE AQUI. NÃO ofereça opções, NÃO pergunte sobre especialidades, NÃO mostre médicos.
+    5. AGUARDE o cliente responder o que ele deseja ANTES de fazer qualquer coisa.
+    
+    🚫 NÃO faça na primeira mensagem:
+    - NÃO pergunte "Para qual especialidade?"
+    - NÃO liste médicos ou horários
+    - NÃO ofereça serviços proativamente
+    - NÃO dê orçamentos
+    - APENAS cumprimente e pergunte como pode ajudar
     ` : `
     ❌ ATENÇÃO: JÁ EXISTE HISTÓRICO DE CONVERSA!
     - NÃO diga "Bom-dia", "Boa-tarde", "Boa-noite"
