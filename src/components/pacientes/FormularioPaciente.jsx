@@ -66,20 +66,22 @@ export default function FormularioPaciente({ paciente, dadosIniciais, onSalvar, 
 
   const [formData, setFormData] = useState(getInitialFormData);
   const [loading, setLoading] = useState(false);
-  const [categorias, setCategorias] = useState([]);
+  const [categorias, setCategorias] = useState(() => {
+    // Tentar usar cache do sessionStorage para abertura instantânea
+    try {
+      const cached = sessionStorage.getItem('categorias_preco_cache');
+      if (cached) return JSON.parse(cached);
+    } catch (e) {}
+    return [];
+  });
 
-  // Carregar categorias de preço
+  // Carregar categorias de preço em segundo plano (formulário já aparece imediatamente)
   useEffect(() => {
-    const carregarCategorias = async () => {
-      try {
-        const categoriasData = await CategoriaPreco.list();
-        setCategorias(Array.isArray(categoriasData) ? categoriasData : []);
-      } catch (error) {
-        console.error('Erro ao carregar categorias:', error);
-        setCategorias([]);
-      }
-    };
-    carregarCategorias();
+    CategoriaPreco.list().then(data => {
+      const cats = Array.isArray(data) ? data : [];
+      setCategorias(cats);
+      try { sessionStorage.setItem('categorias_preco_cache', JSON.stringify(cats)); } catch (e) {}
+    }).catch(() => {});
   }, []);
 
   // Atualizar formData se paciente ou dadosIniciais mudarem após montagem
