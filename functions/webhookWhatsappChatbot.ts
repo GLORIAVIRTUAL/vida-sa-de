@@ -250,9 +250,9 @@ Deno.serve(async (req) => {
       return Response.json({ success: true, status: 'erro_processamento' });
     }
 
-    // Usar mensagemFinal em vez de messageText daqui em diante
-    const textoParaProcessar = typeof mensagemFinal !== 'undefined' ? mensagemFinal : messageText;
-    console.log('📨 Texto final para processar (modo IA ativo):', textoParaProcessar.substring(0, 100));
+    // Usar mensagemFinal
+    const textoParaProcessar = typeof mensagemFinal !== 'undefined' && mensagemFinal ? mensagemFinal : messageText;
+    console.log('📨 Texto final para processar:', textoParaProcessar?.substring(0, 100));
 
     // Buscar ou criar paciente
     let pacienteId = null;
