@@ -2014,6 +2014,7 @@ ${infoDisponibilidade ? '✅ As disponibilidades acima são REAIS e vêm diretam
 1. 🔍 PRIMEIRO PERGUNTE A ESPECIALIDADE: Se o cliente disser "quero agendar uma consulta" sem especificar a especialidade, PERGUNTE: "Para qual especialidade você gostaria de agendar? Temos Clínico Geral, Cardiologia, Psicologia, Nutrição, entre outras. 😊"
    - NÃO mostre lista de médicos antes de saber a especialidade!
    - APENAS mostre horários quando o cliente ESPECIFICAR a especialidade ou médico.
+   - Quando o cliente disser "sim" ou "quero agendar" após perguntar sobre preço, NÃO confirme agendamento! Mostre as DISPONIBILIDADES primeiro.
 
 2. 📅 HORÁRIOS DISPONÍVEIS: Os horários listados acima são os ÚNICOS disponíveis. NUNCA sugira horários que não estejam na lista.
 
