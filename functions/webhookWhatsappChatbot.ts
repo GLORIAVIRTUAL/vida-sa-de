@@ -131,19 +131,25 @@ Deno.serve(async (req) => {
         const historicoMensagens = contato.historico_mensagens || [];
         const mensagensPendentes = contato.mensagens_pendentes || [];
         
-        const jaProcessadaHistorico = messageId && historicoMensagens.some(m => m.messageId === messageId);
         const jaProcessadaPendente = messageId && mensagensPendentes.some(m => m.messageId === messageId);
         
-        const agora10sAtras = new Date(Date.now() - 10000).toISOString();
-        const jaProcessadaConteudo = historicoMensagens.some(m => 
-          m.role === 'user' && 
-          m.content === (messageText || '') && 
-          m.timestamp > agora10sAtras
-        );
+        // Verificar apenas por messageId no histórico (não por conteúdo, pois mensagens iguais são comuns)
+        const jaProcessadaHistorico = messageId && historicoMensagens.some(m => m.messageId === messageId);
         
-        if (jaProcessadaHistorico || jaProcessadaPendente || jaProcessadaConteudo) {
-          console.log('⏭️ Mensagem já processada. Ignorando duplicata:', messageId);
+        if (jaProcessadaPendente) {
+          console.log('⏭️ Mensagem já está nas pendentes. Ignorando duplicata:', messageId);
           return Response.json({ success: true, status: 'duplicata_ignorada' });
+        }
+        
+        // Se está no histórico E já tem uma resposta do assistant depois dela, é duplicata real
+        if (jaProcessadaHistorico) {
+          const idxMsg = historicoMensagens.findIndex(m => m.messageId === messageId);
+          const temRespostaDepois = historicoMensagens.slice(idxMsg + 1).some(m => m.role === 'assistant');
+          if (temRespostaDepois) {
+            console.log('⏭️ Mensagem já processada com resposta. Ignorando duplicata:', messageId);
+            return Response.json({ success: true, status: 'duplicata_ignorada' });
+          }
+          console.log('ℹ️ Mensagem no histórico mas sem resposta ainda - permitindo reprocessamento');
         }
       }
     } catch (e) {
