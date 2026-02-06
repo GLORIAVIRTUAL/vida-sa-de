@@ -949,9 +949,11 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
             console.log(`❌ Nenhum médico encontrado para especialidade: ${especialidadeDetectada}`);
           }
           } else {
-            // Só usa todos os médicos se NÃO detectou especialidade específica
-            medicosParaBuscar = todosMedicos;
-          }
+              // NÃO usar todos os médicos sem especialidade - a IA deve perguntar primeiro
+              // Isso evita que o sistema busque aleatoriamente quando o cliente não especificou
+              console.log('ℹ️ Nenhuma especialidade detectada - NÃO buscando disponibilidades. IA deve perguntar ao cliente.');
+              medicosParaBuscar = [];
+            }
           }
 
         const disponibilidadesEncontradas = [];
