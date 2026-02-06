@@ -782,10 +782,10 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
       const horariosLivres = [];
       
       if (tipoAtendimento === "Horários Marcados") {
-        const horariosOcupados = agendamentosExistentes.map(a => a.horario);
+        const horariosOcupados = formData.is_encaixe ? [] : agendamentosExistentes.map(a => a.horario);
         
         // Se estiver editando, libera o horário atual para poder ser selecionado novamente
-        if (agendamento && agendamento.data_agendamento === data) {
+        if (!formData.is_encaixe && agendamento && agendamento.data_agendamento === data) {
           const index = horariosOcupados.indexOf(agendamento.horario);
           if (index > -1) {
             horariosOcupados.splice(index, 1);
