@@ -235,19 +235,17 @@ Deno.serve(async (req) => {
           updateData.ultima_interacao = agora;
           console.log('💾 Mídia salva diretamente no histórico:', mediaUrl);
         } else if (!mediaUrl && messageText) {
-          // Também salvar mensagens de texto normais quando em modo humano
-          if (contato.atendimento_humano) {
-            const historicoAtual = contato.historico_mensagens || [];
-            historicoAtual.push({
-              role: 'user',
-              content: messageText,
-              timestamp: agora,
-              messageId: messageId
-            });
-            updateData.historico_mensagens = historicoAtual.slice(-50);
-            updateData.ultima_interacao = agora;
-            console.log('💾 Mensagem salva no histórico (modo humano)');
-          }
+          // Salvar mensagens de texto normais no histórico (modo humano E modo IA)
+          const historicoAtual = contato.historico_mensagens || [];
+          historicoAtual.push({
+            role: 'user',
+            content: messageText,
+            timestamp: agora,
+            messageId: messageId
+          });
+          updateData.historico_mensagens = historicoAtual.slice(-50);
+          updateData.ultima_interacao = agora;
+          console.log('💾 Mensagem salva no histórico (modo:', contato.atendimento_humano ? 'humano' : 'IA', ')');
         }
         
         await base44.asServiceRole.entities.Contato.update(contato.id, updateData);
