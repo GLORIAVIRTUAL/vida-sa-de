@@ -242,15 +242,10 @@ async function processarMensagemRecebida(base44, payload) {
                     console.log('👤 Contato em atendimento HUMANO (padrão) - mensagem salva, NÃO processando IA');
                     return new Response(JSON.stringify({ message: "Atendimento humano", status: "salvo" }), { status: 200 });
                 } else {
-                    // Modo IA: NÃO salvar histórico aqui - o webhookWhatsappChatbot cuida disso
-                    if (!contato.nome && senderName) {
-                        await base44.asServiceRole.entities.Contato.update(contato.id, {
-                            nome: senderName
-                        });
-                    }
+                    // Modo IA: NÃO salvar nada aqui - o webhookWhatsappChatbot cuida de TUDO
+                    // Apenas encaminhar o payload original
                     console.log('🤖 Contato em modo IA - encaminhando para webhookWhatsappChatbot...');
                     
-                    // Encaminhar o payload original para o webhookWhatsappChatbot
                     try {
                         const resultado = await base44.asServiceRole.functions.invoke('webhookWhatsappChatbot', payload);
                         console.log('✅ webhookWhatsappChatbot retornou:', JSON.stringify(resultado.data).substring(0, 200));
