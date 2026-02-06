@@ -680,9 +680,18 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
 
     // Verificar se cliente quer agendar - buscar disponibilidades
     let infoDisponibilidade = '';
-    // Verificar se quer agendar na mensagem atual OU se já está em fluxo de agendamento no histórico
-    const querAgendarMensagem = /agendar|marcar|consulta|atend|hor[áa]rio|dispon[íi]vel|vaga/i.test(messageText);
-    const jaEmFluxoAgendamento = historicoConversa && /agendar|marcar|consulta|vamos agendar|seguir com o agendamento/i.test(historicoConversa);
+
+    // REGRA ANTI-LOOP: Se o cliente está RECUSANDO agendar, NÃO entrar em fluxo de agendamento
+    const clienteRecusandoAgendar = /n[aã]o\s*(quero|preciso|desejo|vou|queria)?\s*(agendar|marcar|consulta)|n[aã]o\s*[,.]?\s*(obrigad|valeu|brigad)|deixa\s*(pra\s*l[aá]|quieto)|agora\s*n[aã]o|depois|sem\s*agendar/i.test(messageText);
+
+    // Verificar se quer agendar na mensagem ATUAL (não no histórico - evita loop)
+    const querAgendarMensagem = !clienteRecusandoAgendar && /agendar|marcar|consulta|atend|hor[áa]rio|dispon[íi]vel|vaga/i.test(messageText);
+
+    // Fluxo de agendamento no histórico: APENAS se a ÚLTIMA mensagem do USUÁRIO (não do assistente) mencionava agendamento
+    // E o cliente NÃO está recusando agora
+    const ultimasMensagensUsuario = (historicoConversa || '').split('\n').filter(l => l.startsWith('CLIENTE:'));
+    const ultimaMsgUsuario = ultimasMensagensUsuario.length > 0 ? ultimasMensagensUsuario[ultimasMensagensUsuario.length - 1] : '';
+    const jaEmFluxoAgendamento = !clienteRecusandoAgendar && ultimaMsgUsuario && /agendar|marcar|consulta|vamos agendar|seguir com o agendamento/i.test(ultimaMsgUsuario);
     const querAgendar = querAgendarMensagem || jaEmFluxoAgendamento;
     
     // Se cliente está em fluxo de VERIFICAÇÃO, NÃO entrar em fluxo de AGENDAMENTO
