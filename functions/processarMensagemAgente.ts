@@ -1681,6 +1681,13 @@ Retorne JSON.`;
     
     console.log('🔍 Verificação primeira mensagem:', { conversaFinalizada, historicoVazio, ehPrimeiraMensagem, historicoTamanho: historicoConversa?.length || 0 });
 
+    // Se é primeira mensagem, NÃO buscar disponibilidades - apenas cumprimentar e aguardar
+    if (ehPrimeiraMensagem) {
+      console.log('👋 Primeira mensagem - apenas saudação, sem buscar disponibilidades');
+      infoDisponibilidade = '';
+      infoProcedimentosExames = '';
+    }
+
     // Buscar procedimentos e exames disponíveis para orçamento
     let infoProcedimentosExames = '';
     
