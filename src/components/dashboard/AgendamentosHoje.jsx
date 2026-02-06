@@ -47,51 +47,47 @@ export default function AgendamentosHoje({ agendamentos = [], medicos = [], paci
   const handleEditarPaciente = async (agendamento) => {
     let paciente = null;
     
-    // 1. Busca local por ID (instantânea)
+    // 1. Busca local por ID
     if (agendamento.paciente_id) {
       paciente = pacientes.find(p => p.id === agendamento.paciente_id);
     }
     
-    // 2. Busca local por nome normalizado (instantânea)
+    // 2. Busca local por nome normalizado
     if (!paciente && agendamento.paciente_nome) {
       const nomeNorm = normStr(agendamento.paciente_nome);
       paciente = pacientes.find(p => normStr(p.nome) === nomeNorm);
+      if (!paciente) {
+        const primeiroNome = nomeNorm.split(' ')[0];
+        if (primeiroNome.length >= 3) {
+          paciente = pacientes.find(p => normStr(p.nome).startsWith(primeiroNome));
+        }
+      }
     }
     
-    // 3. Se encontrou localmente, abrir imediatamente
     if (paciente) {
       setPacienteEditando(paciente);
       return;
     }
     
-    // 4. Buscar no banco por ID usando filter (mais confiável)
-    if (agendamento.paciente_id) {
+    // 3. Fallback: buscar via backend
+    const termoBusca = agendamento.paciente_nome || '';
+    if (termoBusca || agendamento.paciente_id) {
       try {
-        const resultados = await Paciente.filter({ id: agendamento.paciente_id });
-        if (resultados && resultados.length > 0) {
-          setPacienteEditando(resultados[0]);
-          return;
-        }
-      } catch (err) {
-        console.error('Erro ao buscar paciente por ID:', err);
-      }
-    }
-    
-    // 5. Fallback: buscar via backend que varre TODOS os pacientes
-    if (agendamento.paciente_nome) {
-      try {
-        const response = await base44.functions.invoke('searchPatients', { termo: agendamento.paciente_nome, limit: 5 });
+        const response = await base44.functions.invoke('searchPatients', { 
+          termo: termoBusca, 
+          paciente_id: agendamento.paciente_id,
+          limit: 10 
+        });
         const resultados = response?.data;
         if (Array.isArray(resultados) && resultados.length > 0) {
-          const nomeNorm = normStr(agendamento.paciente_nome);
-          paciente = resultados.find(p => normStr(p.nome) === nomeNorm) || resultados[0];
+          paciente = resultados.find(p => normStr(p.nome) === normStr(termoBusca)) || resultados[0];
           if (paciente) {
             setPacienteEditando(paciente);
             return;
           }
         }
       } catch (err) {
-        console.error('Erro ao buscar paciente por nome:', err);
+        console.error('Erro ao buscar paciente:', err);
       }
     }
   };
