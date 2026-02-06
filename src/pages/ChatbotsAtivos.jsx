@@ -1036,8 +1036,8 @@ function PipelineTab() {
       </div>
 
       <DragDropContext onDragEnd={onDragEnd}>
-        <div className="overflow-x-auto pb-4">
-          <div className="flex gap-2" style={{ minWidth: `${motivosColunas.length * 180}px` }}>
+        <div className="overflow-x-auto pb-4" style={{ maxWidth: '100%' }}>
+          <div className="inline-flex gap-2" style={{ minWidth: 'max-content' }}>
             {motivosColunas.map((motivo) => {
               const Icon = motivo.icon;
               return (
