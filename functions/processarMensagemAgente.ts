@@ -829,7 +829,12 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
     // NUNCA buscar quando o cliente apenas diz "quero agendar" sem especificar especialidade
     const temEspecialidadeOuMedico = especialidadeDetectada || medicoEspecificoDetectado;
     const clienteEscolhendoHorario = /hoje|\d{1,2}[h:]?\s*(?:horas?)?|\d{1,2}:\d{2}|amanhã|segunda|terça|quarta|quinta|sexta|sábado/i.test(messageText);
+    // Buscar disponibilidades quando:
+    // 1. Quer agendar E tem especialidade/médico detectado
+    // 2. Cliente confirmou que quer agendar ("sim") após ver preço E tem especialidade no histórico
+    // 3. Está em fluxo e escolhendo horário com médico já identificado
     const deveBuscarDisponibilidades = querAgendar && (temEspecialidadeOuMedico || 
+      (clienteConfirmouAgendar && historicoTemEspecialidade) ||
       (jaEmFluxoAgendamento && temEspecialidadeOuMedico) ||
       (jaEmFluxoAgendamento && clienteEscolhendoHorario && /Dr\.|👨‍⚕️|médico.*horário/i.test(historicoConversa)));
 
