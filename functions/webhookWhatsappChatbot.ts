@@ -378,7 +378,7 @@ Deno.serve(async (req) => {
         var mensagemFinal = mensagemCompleta;
         
       } else {
-        // Novo contato - criar com histórico já salvo e em modo HUMANO
+        // Novo contato - criar com histórico e em modo IA para atendimento automático
         const historicoInicial = [{
           role: 'user',
           content: mediaUrl ? `${messageText}\n${mediaUrl}` : messageText,
@@ -388,12 +388,12 @@ Deno.serve(async (req) => {
           messageId: messageId
         }];
 
-        await base44.asServiceRole.entities.Contato.create({
+        const novoContato = await base44.asServiceRole.entities.Contato.create({
           nome: senderName,
           telefone: phoneNumber,
           origem: 'WhatsApp',
           status: 'Novo',
-          atendimento_humano: true, // Novo contato começa em atendimento HUMANO
+          atendimento_humano: false, // Novo contato começa com IA atendendo
           atendente_atual: null,
           atendente_id: null,
           historico_mensagens: historicoInicial,
@@ -401,8 +401,9 @@ Deno.serve(async (req) => {
           ultima_interacao: agora
         });
 
-        console.log('👤 Novo contato criado em modo HUMANO - não processando IA');
-        return Response.json({ success: true, status: 'atendimento_humano' });
+        console.log('🤖 Novo contato criado em modo IA - processando pela IA');
+        // NÃO sair aqui - continuar para processar pela IA
+        var mensagemFinal = messageText;
       }
     } catch (e) {
       console.log('⚠️ Erro no debounce:', e.message);
