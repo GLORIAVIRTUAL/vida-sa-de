@@ -280,22 +280,11 @@ Deno.serve(async (req) => {
           }
         }
         
-        // Marcar que ESTA chamada vai processar (usando lock otimista)
-        const meuLockId = `${messageId}_${Date.now()}`;
-        
-        try {
-          await base44.asServiceRole.entities.Contato.update(contato.id, {
-            ultimo_timestamp_pendente: meuLockId
-          });
-        } catch (e) {
-          console.log('⚠️ Erro ao obter lock:', e.message);
-        }
-        
-        // Aguardar para ver se chegam mais mensagens
+        // Aguardar para ver se chegam mais mensagens (debounce)
         console.log(`⏳ Aguardando ${DEBOUNCE_SECONDS}s para acumular mensagens...`);
         await new Promise(resolve => setTimeout(resolve, DEBOUNCE_SECONDS * 1000));
         
-        // Recarregar contato para pegar todas as mensagens acumuladas (com normalização)
+        // Recarregar contato para pegar todas as mensagens acumuladas
         let contatoAtualizado = null;
         for (const v of variantesDebounce) {
           const results = await base44.asServiceRole.entities.Contato.filter({ telefone: v });
@@ -306,19 +295,35 @@ Deno.serve(async (req) => {
           const u8Reload = telNormDebounce.slice(-8);
           contatoAtualizado = todosReload.find(c => (c.telefone || '').replace(/\D/g, '').slice(-8) === u8Reload);
         }
-        const todasMensagens = contatoAtualizado?.mensagens_pendentes || [];
         
-        // LOCK: Verificar se ESTA chamada tem o lock para processar
-        if (contatoAtualizado?.ultimo_timestamp_pendente !== meuLockId) {
-          console.log('⏭️ Outra chamada obteve o lock. Saindo...');
-          return Response.json({ success: true, status: 'delegado' });
-        }
-        
-        // Verificar se já foi processado (mensagens_pendentes vazias = já processou)
-        if (contatoAtualizado?.mensagens_pendentes?.length === 0) {
+        // Verificar se já foi processado (mensagens_pendentes vazias = outra chamada já processou)
+        if (!contatoAtualizado || !contatoAtualizado.mensagens_pendentes || contatoAtualizado.mensagens_pendentes.length === 0) {
           console.log('⏭️ Mensagens já foram processadas por outra chamada. Saindo...');
           return Response.json({ success: true, status: 'ja_processado' });
         }
+        
+        // LOCK ATÔMICO: Tentar obter o lock limpando as pendentes
+        // Apenas a PRIMEIRA chamada que conseguir limpar as pendentes vai processar
+        const todasMensagens = [...contatoAtualizado.mensagens_pendentes];
+        
+        try {
+          await base44.asServiceRole.entities.Contato.update(contatoAtualizado.id, {
+            mensagens_pendentes: [],
+            ultimo_timestamp_pendente: null
+          });
+        } catch (e) {
+          console.log('⚠️ Erro ao obter lock - outra chamada provavelmente processou:', e.message);
+          return Response.json({ success: true, status: 'delegado' });
+        }
+        
+        // Verificar se NOSSA mensagem está entre as pendentes (senão outra chamada limpou antes)
+        const nossaMsgEstaPresente = todasMensagens.some(m => m.messageId === messageId);
+        if (!nossaMsgEstaPresente) {
+          console.log('⏭️ Nossa mensagem não está nas pendentes - outra chamada já processou. Saindo...');
+          return Response.json({ success: true, status: 'ja_processado' });
+        }
+        
+        console.log(`🔒 Lock obtido! Processando ${todasMensagens.length} mensagens acumuladas`)
         
         // Juntar todas as mensagens pendentes em uma só - MANTER ÚLTIMA MÍDIA
         const ultimaMidia = [...todasMensagens].reverse().find(m => m.mediaUrl);
