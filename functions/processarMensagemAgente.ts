@@ -1681,11 +1681,45 @@ Retorne JSON.`;
     
     console.log('🔍 Verificação primeira mensagem:', { conversaFinalizada, historicoVazio, ehPrimeiraMensagem, historicoTamanho: historicoConversa?.length || 0 });
 
-    // Se é primeira mensagem, NÃO buscar disponibilidades - apenas cumprimentar e aguardar
+    // Se é primeira mensagem, NÃO chamar LLM - retornar saudação fixa e sair
     if (ehPrimeiraMensagem) {
-      console.log('👋 Primeira mensagem - apenas saudação, sem buscar disponibilidades');
-      infoDisponibilidade = '';
-      infoProcedimentosExames = '';
+      console.log('👋 Primeira mensagem - retornando saudação fixa SEM chamar LLM');
+      
+      const nomeCliente = (senderName || '').split(' ')[0] || 'cliente';
+      const saudacaoFixa = `${saudacaoHorario}, ${nomeCliente}! 👋 Eu sou a Glória, atendente virtual do Centro Vida Saúde. Como posso te ajudar hoje? 😊`;
+      
+      // Salvar no histórico
+      try {
+        const contatos = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
+        const timestamp = new Date().toISOString();
+        
+        if (contatos.length > 0) {
+          const contato = contatos[0];
+          const historicoAtual = contato.historico_mensagens || [];
+          historicoAtual.push(
+            { role: 'user', content: messageText, timestamp, messageId },
+            { role: 'assistant', content: saudacaoFixa, timestamp }
+          );
+          
+          await base44.asServiceRole.entities.Contato.update(contato.id, {
+            ultima_mensagem: messageText,
+            ultima_resposta: saudacaoFixa,
+            historico_mensagens: historicoAtual.slice(-50),
+            ultima_interacao: timestamp,
+            total_mensagens: 2,
+            conversa_finalizada: false
+          });
+        }
+      } catch (e) {
+        console.error('⚠️ Erro ao salvar saudação:', e.message);
+      }
+      
+      return Response.json({ 
+        success: true, 
+        resposta: saudacaoFixa,
+        conversationId: null,
+        primeira_mensagem: true
+      });
     }
 
     // Buscar procedimentos e exames disponíveis para orçamento
