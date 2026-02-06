@@ -1041,7 +1041,7 @@ function PipelineTab() {
             {motivosColunas.map((motivo) => {
               const Icon = motivo.icon;
               return (
-                <div key={motivo.id} className="flex flex-col" style={{ minWidth: '170px', flex: '1 1 0' }}>
+                <div key={motivo.id} className="flex flex-col flex-shrink-0" style={{ width: '200px' }}>
                   <div className={`${motivo.cor} text-white p-2 rounded-t-lg flex items-center gap-1`}>
                     <Icon className="w-3 h-3" />
                     <span className="text-[10px] font-semibold truncate">{motivo.nome}</span>
