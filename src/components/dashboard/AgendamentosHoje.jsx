@@ -44,7 +44,7 @@ export default function AgendamentosHoje({ agendamentos = [], medicos = [], paci
   
   const normStr = (s) => s ? String(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : '';
 
-  const handleEditarPaciente = async (agendamento) => {
+  const handleEditarPaciente = (agendamento) => {
     let paciente = null;
     
     // 1. Busca local por ID (instantânea)
@@ -58,22 +58,32 @@ export default function AgendamentosHoje({ agendamentos = [], medicos = [], paci
       paciente = pacientes.find(p => normStr(p.nome) === nomeNorm);
     }
     
-    // 3. Fallback: buscar via backend por nome (rápido)
-    if (!paciente && agendamento.paciente_nome) {
-      try {
-        const response = await base44.functions.invoke('searchPatients', { termo: agendamento.paciente_nome });
+    // 3. Se encontrou localmente, abrir imediatamente
+    if (paciente) {
+      setPacienteEditando(paciente);
+      return;
+    }
+    
+    // 4. Se tem paciente_id mas não está na lista local, buscar por ID direto (rápido)
+    if (agendamento.paciente_id) {
+      import('@/entities/all').then(({ Paciente }) => {
+        Paciente.get(agendamento.paciente_id).then(p => {
+          if (p) setPacienteEditando(p);
+        }).catch(err => console.error('Erro ao buscar paciente:', err));
+      });
+      return;
+    }
+    
+    // 5. Último fallback: buscar via backend por nome
+    if (agendamento.paciente_nome) {
+      base44.functions.invoke('searchPatients', { termo: agendamento.paciente_nome, limit: 5 }).then(response => {
         const resultados = response?.data;
         if (Array.isArray(resultados) && resultados.length > 0) {
           const nomeNorm = normStr(agendamento.paciente_nome);
-          paciente = resultados.find(p => normStr(p.nome) === nomeNorm) || resultados[0];
+          const found = resultados.find(p => normStr(p.nome) === nomeNorm) || resultados[0];
+          setPacienteEditando(found);
         }
-      } catch (error) {
-        console.error('Erro ao buscar paciente via API:', error);
-      }
-    }
-    
-    if (paciente) {
-      setPacienteEditando(paciente);
+      }).catch(err => console.error('Erro ao buscar paciente via API:', err));
     }
   };
   
