@@ -250,6 +250,9 @@ Deno.serve(async (req) => {
 
         var mensagemFinal = mensagemCompleta;
         
+        } // fecha else da mensagem nas pendentes
+        } // fecha else do pendentesAtuais.length > 0
+        
       } else {
         // Novo contato - criar em modo IA
         await base44.asServiceRole.entities.Contato.create({
