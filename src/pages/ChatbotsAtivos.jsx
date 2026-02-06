@@ -593,11 +593,11 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
                            <Badge className="bg-blue-100 text-blue-700 text-[9px] px-1 py-0">{numMensagens}</Badge>
                          )}
                          {/* Ícones de status do atendimento */}
-                         {contato.atendimento_humano && contato.atendente_atual ? (
+                         {contato.atendimento_humano && !contato.conversa_finalizada && contato.atendente_atual ? (
                            <Badge className="bg-green-100 text-green-700 text-[9px] px-1 py-0" title={`Atendido por ${contato.atendente_atual}`}>
                              👤 {contato.atendente_atual.split(' ')[0]}
                            </Badge>
-                         ) : contato.atendimento_humano && !contato.atendente_atual ? (
+                         ) : contato.atendimento_humano && !contato.conversa_finalizada && !contato.atendente_atual ? (
                            <Badge className="bg-green-100 text-green-700 text-[9px] px-1 py-0">👤</Badge>
                          ) : (() => {
                            // Verificar se tem resposta do assistente
