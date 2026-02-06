@@ -475,6 +475,31 @@ Deno.serve(async (req) => {
     console.log('📝 Resposta da IA recebida:', respostaIA ? respostaIA.substring(0, 100) + '...' : 'NULL');
     
     if (respostaIA) {
+      // Anti-duplicata: verificar se a última resposta do assistente no histórico é idêntica
+      try {
+        const telCheck = phoneNumber.replace(/\D/g, '');
+        const varCheck = [phoneNumber, telCheck];
+        if (telCheck.startsWith('55') && telCheck.length >= 12) varCheck.push(telCheck.slice(2));
+        if (!telCheck.startsWith('55') && telCheck.length >= 10) varCheck.push('55' + telCheck);
+        
+        let contatoCheck = null;
+        for (const v of varCheck) {
+          const res = await base44.asServiceRole.entities.Contato.filter({ telefone: v });
+          if (res.length > 0) { contatoCheck = res[0]; break; }
+        }
+        
+        if (contatoCheck) {
+          const hist = contatoCheck.historico_mensagens || [];
+          const ultimasRespostas = hist.filter(m => m.role === 'assistant').slice(-1);
+          if (ultimasRespostas.length > 0 && ultimasRespostas[0].content === respostaIA) {
+            console.log('⏭️ Resposta IDÊNTICA à última enviada - NÃO enviando duplicata');
+            return Response.json({ success: true, status: 'duplicata_resposta' });
+          }
+        }
+      } catch (e) {
+        console.log('⚠️ Erro na verificação anti-duplicata de resposta:', e.message);
+      }
+      
       console.log('📤 Enviando resposta via Z-API para:', phoneNumber);
       try {
         await enviarWhatsApp(phoneNumber, respostaIA);
