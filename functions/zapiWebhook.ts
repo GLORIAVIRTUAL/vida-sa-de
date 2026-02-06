@@ -218,22 +218,20 @@ async function processarMensagemRecebida(base44, payload) {
             if (contatos.length > 0) {
                 const contato = contatos[0];
                 
-                // Salvar mensagem no histórico sempre
-                const historicoAtual = contato.historico_mensagens || [];
-                historicoAtual.push({
-                    role: 'user',
-                    content: mediaUrl ? `${textoMensagem}\n${mediaUrl}` : textoMensagem,
-                    timestamp: agora,
-                    mediaType: mediaType,
-                    mediaUrl: mediaUrl,
-                    messageId: msgId
-                });
-                
                 // PADRÃO: Se atendimento_humano não está definido, assume HUMANO (true)
                 const estaEmModoHumano = contato.atendimento_humano !== false;
                 
                 if (estaEmModoHumano) {
                     // Modo HUMANO: salvar mensagem no histórico aqui
+                    const historicoAtual = contato.historico_mensagens || [];
+                    historicoAtual.push({
+                        role: 'user',
+                        content: mediaUrl ? `${textoMensagem}\n${mediaUrl}` : textoMensagem,
+                        timestamp: agora,
+                        mediaType: mediaType,
+                        mediaUrl: mediaUrl,
+                        messageId: msgId
+                    });
                     await base44.asServiceRole.entities.Contato.update(contato.id, {
                         historico_mensagens: historicoAtual.slice(-50),
                         ultima_interacao: agora,
@@ -244,7 +242,8 @@ async function processarMensagemRecebida(base44, payload) {
                     console.log('👤 Contato em atendimento HUMANO (padrão) - mensagem salva, NÃO processando IA');
                     return new Response(JSON.stringify({ message: "Atendimento humano", status: "salvo" }), { status: 200 });
                 } else {
-                    // Modo IA: encaminhar para webhookWhatsappChatbot para processamento
+                    // Modo IA: NÃO salvar histórico aqui - o webhookWhatsappChatbot cuida disso
+                    // Apenas encaminhar para processamento
                     if (!contato.nome && senderName) {
                         await base44.asServiceRole.entities.Contato.update(contato.id, {
                             nome: senderName
