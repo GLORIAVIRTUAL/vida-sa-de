@@ -557,14 +557,21 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
     // Filtro por status
     if (filtroStatus === 'atendimento') {
       if (contato.conversa_finalizada) return false;
-      const temResposta = contato.historico_mensagens?.some(m => m.role === 'assistant') || contato.ultima_resposta;
-      if (!temResposta) return false;
+      // Verificar se a última mensagem do usuário já foi respondida
+      const msgs = contato.historico_mensagens || [];
+      if (msgs.length === 0) return false;
+      const ultimaMsg = msgs[msgs.length - 1];
+      // Se a última mensagem é do usuário, significa que está sem resposta
+      if (ultimaMsg.role === 'user') return false;
       return true;
     }
     if (filtroStatus === 'sem_resposta') {
       if (contato.conversa_finalizada) return false;
-      const temResposta = contato.historico_mensagens?.some(m => m.role === 'assistant') || contato.ultima_resposta;
-      return !temResposta;
+      const msgs = contato.historico_mensagens || [];
+      if (msgs.length === 0) return true;
+      const ultimaMsg = msgs[msgs.length - 1];
+      // Se a última mensagem é do usuário, está sem resposta
+      return ultimaMsg.role === 'user';
     }
     if (filtroStatus === 'finalizadas') {
       return contato.conversa_finalizada === true;
