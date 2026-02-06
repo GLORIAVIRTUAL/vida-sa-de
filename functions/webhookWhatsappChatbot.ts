@@ -88,6 +88,68 @@ Deno.serve(async (req) => {
 
     console.log('💬 Mensagem Z-API:', { phoneNumber, senderName, messageText, mediaType, mediaUrl });
 
+    // Verificar se esta mensagem já foi processada (evitar duplicatas)
+    try {
+      const telNorm = phoneNumber.replace(/\D/g, '');
+      const variantes = [phoneNumber, telNorm];
+      if (telNorm.startsWith('55') && telNorm.length >= 12) variantes.push(telNorm.slice(2));
+      if (!telNorm.startsWith('55') && telNorm.length >= 10) variantes.push('55' + telNorm);
+      
+      let contatos = [];
+      for (const v of variantes) {
+        if (contatos.length > 0) break;
+        contatos = await base44.asServiceRole.entities.Contato.filter({ telefone: v });
+      }
+      
+      if (contatos.length === 0) {
+        const todos = await base44.asServiceRole.entities.Contato.list('-created_date', 500);
+        const ultimos8 = telNorm.slice(-8);
+        contatos = todos.filter(c => (c.telefone || '').replace(/\D/g, '').slice(-8) === ultimos8);
+      }
+      
+      if (contatos.length > 1) {
+        console.log(`⚠️ ${contatos.length} contatos duplicados para ${phoneNumber} - unificando...`);
+        contatos.sort((a, b) => new Date(a.created_date) - new Date(b.created_date));
+        const principal = contatos[0];
+        let hist = [...(principal.historico_mensagens || [])];
+        for (let i = 1; i < contatos.length; i++) {
+          for (const msg of (contatos[i].historico_mensagens || [])) {
+            if (!hist.some(m => m.timestamp === msg.timestamp && m.content === msg.content)) hist.push(msg);
+          }
+          try { await base44.asServiceRole.entities.Contato.delete(contatos[i].id); } catch(e) {}
+        }
+        hist.sort((a, b) => new Date(a.timestamp || 0) - new Date(b.timestamp || 0));
+        await base44.asServiceRole.entities.Contato.update(principal.id, {
+          historico_mensagens: hist.slice(-100),
+          telefone: phoneNumber
+        });
+        contatos = [principal];
+      }
+      
+      if (contatos.length > 0) {
+        const contato = contatos[0];
+        const historicoMensagens = contato.historico_mensagens || [];
+        const mensagensPendentes = contato.mensagens_pendentes || [];
+        
+        const jaProcessadaHistorico = messageId && historicoMensagens.some(m => m.messageId === messageId);
+        const jaProcessadaPendente = messageId && mensagensPendentes.some(m => m.messageId === messageId);
+        
+        const agora10sAtras = new Date(Date.now() - 10000).toISOString();
+        const jaProcessadaConteudo = historicoMensagens.some(m => 
+          m.role === 'user' && 
+          m.content === (messageText || '') && 
+          m.timestamp > agora10sAtras
+        );
+        
+        if (jaProcessadaHistorico || jaProcessadaPendente || jaProcessadaConteudo) {
+          console.log('⏭️ Mensagem já processada. Ignorando duplicata:', messageId);
+          return Response.json({ success: true, status: 'duplicata_ignorada' });
+        }
+      }
+    } catch (e) {
+      console.log('⚠️ Erro ao verificar duplicata:', e.message);
+    }
+
     // Sistema de acumulação de mensagens (debounce de 2 segundos)
     // Armazena a mensagem e aguarda para ver se o cliente envia mais
     const DEBOUNCE_SECONDS = 2;
