@@ -301,8 +301,17 @@ Deno.serve(async (req) => {
         console.log(`⏳ Aguardando ${DEBOUNCE_SECONDS}s para acumular mensagens...`);
         await new Promise(resolve => setTimeout(resolve, DEBOUNCE_SECONDS * 1000));
         
-        // Recarregar contato para pegar todas as mensagens acumuladas
-        const contatoAtualizado = (await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber }))[0];
+        // Recarregar contato para pegar todas as mensagens acumuladas (com normalização)
+        let contatoAtualizado = null;
+        for (const v of variantesDebounce) {
+          const results = await base44.asServiceRole.entities.Contato.filter({ telefone: v });
+          if (results.length > 0) { contatoAtualizado = results[0]; break; }
+        }
+        if (!contatoAtualizado) {
+          const todosReload = await base44.asServiceRole.entities.Contato.list('-created_date', 200);
+          const u8Reload = telNormDebounce.slice(-8);
+          contatoAtualizado = todosReload.find(c => (c.telefone || '').replace(/\D/g, '').slice(-8) === u8Reload);
+        }
         const todasMensagens = contatoAtualizado?.mensagens_pendentes || [];
         
         // LOCK: Verificar se ESTA chamada tem o lock para processar
