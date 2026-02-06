@@ -2853,7 +2853,13 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
                                <div>
                                  <Label htmlFor="forma_pagamento">Forma de Pagamento</Label>
-                                 <Select name="forma_pagamento" value={formData.forma_pagamento} onValueChange={(value) => handleChange('forma_pagamento', value)}>
+                                 <Select name="forma_pagamento" value={formData.forma_pagamento} onValueChange={(value) => {
+                                   handleChange('forma_pagamento', value);
+                                   if (value !== 'Múltiplas Formas') {
+                                     setPagamento1({ forma: '', valor: '' });
+                                     setPagamento2({ forma: '', valor: '' });
+                                   }
+                                 }}>
                                    <SelectTrigger id="forma_pagamento" className="mt-1"><SelectValue /></SelectTrigger>
                                    <SelectContent>
                                      <SelectItem value="Dinheiro">Dinheiro</SelectItem>
@@ -2862,6 +2868,7 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                                      <SelectItem value="PIX">PIX</SelectItem>
                                      <SelectItem value="Transferência">Transferência</SelectItem>
                                      <SelectItem value="Convênio">Convênio</SelectItem>
+                                     <SelectItem value="Múltiplas Formas">Múltiplas Formas</SelectItem>
                                    </SelectContent>
                                  </Select>
                                  </div>
