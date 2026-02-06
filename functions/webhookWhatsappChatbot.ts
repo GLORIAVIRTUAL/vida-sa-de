@@ -163,7 +163,24 @@ Deno.serve(async (req) => {
     const agora = new Date().toISOString();
     
     try {
-      const contatos = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
+      // Buscar contato com normalização de telefone (mesma lógica da dedup acima)
+      const telNormDebounce = phoneNumber.replace(/\D/g, '');
+      const variantesDebounce = [phoneNumber, telNormDebounce];
+      if (telNormDebounce.startsWith('55') && telNormDebounce.length >= 12) variantesDebounce.push(telNormDebounce.slice(2));
+      if (!telNormDebounce.startsWith('55') && telNormDebounce.length >= 10) variantesDebounce.push('55' + telNormDebounce);
+      
+      let contatos = [];
+      for (const v of variantesDebounce) {
+        if (contatos.length > 0) break;
+        contatos = await base44.asServiceRole.entities.Contato.filter({ telefone: v });
+      }
+      
+      // Busca ampla se não encontrou
+      if (contatos.length === 0) {
+        const todosDebounce = await base44.asServiceRole.entities.Contato.list('-created_date', 200);
+        const ultimos8Debounce = telNormDebounce.slice(-8);
+        contatos = todosDebounce.filter(c => (c.telefone || '').replace(/\D/g, '').slice(-8) === ultimos8Debounce);
+      }
       
       if (contatos.length > 0) {
         const contato = contatos[0];
