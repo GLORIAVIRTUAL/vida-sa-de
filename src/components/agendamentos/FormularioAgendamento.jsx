@@ -623,8 +623,8 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
       // Adicionar último horário de 19:00
       horariosAutomaticos.push('19:00');
 
-      // Filtrar horários já ocupados por agendamentos no mesmo dia (e mesmo médico se selecionado)
-      if (data) {
+      // Se NÃO for encaixe, filtrar horários já ocupados
+      if (data && !formData.is_encaixe) {
         const agendamentosNoDia = (todosAgendamentos || []).filter(a => 
           a.data_agendamento === data &&
           a.status !== 'Cancelado' &&
