@@ -969,10 +969,21 @@ function DashboardTab() {
   useEffect(() => {
     const carregarDados = async () => {
       try {
-        const contatosList = await base44.entities.Contato.list('-updated_date', 100);
-        const comHistorico = contatosList.filter(c => c.historico_mensagens?.length > 0 || c.ultima_mensagem);
+        // Buscar todos os contatos (paginado para pegar todos)
+        let todosContatos = [];
+        let skip = 0;
+        const batchSize = 100;
+        while (true) {
+          const batch = await base44.entities.Contato.list('-updated_date', batchSize, skip);
+          if (!batch || batch.length === 0) break;
+          todosContatos = [...todosContatos, ...batch];
+          if (batch.length < batchSize) break;
+          skip += batchSize;
+        }
+        const comHistorico = todosContatos.filter(c => c.historico_mensagens?.length > 0 || c.ultima_mensagem);
         setContatos(comHistorico);
 
+        // Buscar agendamentos da última semana
         const hoje = new Date();
         const inicioSemana = new Date(hoje);
         inicioSemana.setDate(hoje.getDate() - 7);
