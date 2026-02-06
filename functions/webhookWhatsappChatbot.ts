@@ -88,349 +88,166 @@ Deno.serve(async (req) => {
 
     console.log('💬 Mensagem Z-API:', { phoneNumber, senderName, messageText, mediaType, mediaUrl });
 
-    // Verificar se esta mensagem já foi processada (evitar duplicatas)
-    try {
-      const telNorm = phoneNumber.replace(/\D/g, '');
-      const variantes = [phoneNumber, telNorm];
-      if (telNorm.startsWith('55') && telNorm.length >= 12) variantes.push(telNorm.slice(2));
-      if (!telNorm.startsWith('55') && telNorm.length >= 10) variantes.push('55' + telNorm);
-      
-      let contatos = [];
+    // Normalizar telefone uma vez para reutilizar
+    const telNorm = phoneNumber.replace(/\D/g, '');
+    const variantes = [phoneNumber, telNorm];
+    if (telNorm.startsWith('55') && telNorm.length >= 12) variantes.push(telNorm.slice(2));
+    if (!telNorm.startsWith('55') && telNorm.length >= 10) variantes.push('55' + telNorm);
+    
+    // Função auxiliar para buscar contato
+    async function buscarContato() {
       for (const v of variantes) {
-        if (contatos.length > 0) break;
-        contatos = await base44.asServiceRole.entities.Contato.filter({ telefone: v });
+        const results = await base44.asServiceRole.entities.Contato.filter({ telefone: v });
+        if (results.length > 0) return results[0];
       }
-      
-      if (contatos.length === 0) {
-        const todos = await base44.asServiceRole.entities.Contato.list('-created_date', 500);
-        const ultimos8 = telNorm.slice(-8);
-        contatos = todos.filter(c => (c.telefone || '').replace(/\D/g, '').slice(-8) === ultimos8);
-      }
-      
-      if (contatos.length > 1) {
-        console.log(`⚠️ ${contatos.length} contatos duplicados para ${phoneNumber} - unificando...`);
-        contatos.sort((a, b) => new Date(a.created_date) - new Date(b.created_date));
-        const principal = contatos[0];
-        let hist = [...(principal.historico_mensagens || [])];
-        for (let i = 1; i < contatos.length; i++) {
-          for (const msg of (contatos[i].historico_mensagens || [])) {
-            if (!hist.some(m => m.timestamp === msg.timestamp && m.content === msg.content)) hist.push(msg);
-          }
-          try { await base44.asServiceRole.entities.Contato.delete(contatos[i].id); } catch(e) {}
-        }
-        hist.sort((a, b) => new Date(a.timestamp || 0) - new Date(b.timestamp || 0));
-        await base44.asServiceRole.entities.Contato.update(principal.id, {
-          historico_mensagens: hist.slice(-100),
-          telefone: phoneNumber
-        });
-        contatos = [principal];
-      }
-      
-      if (contatos.length > 0) {
-        const contato = contatos[0];
-        const historicoMensagens = contato.historico_mensagens || [];
-        const mensagensPendentes = contato.mensagens_pendentes || [];
-        
-        const jaProcessadaPendente = messageId && mensagensPendentes.some(m => m.messageId === messageId);
-        
-        // Verificar apenas por messageId no histórico (não por conteúdo, pois mensagens iguais são comuns)
-        const jaProcessadaHistorico = messageId && historicoMensagens.some(m => m.messageId === messageId);
-        
-        if (jaProcessadaPendente) {
-          console.log('⏭️ Mensagem já está nas pendentes. Ignorando duplicata:', messageId);
-          return Response.json({ success: true, status: 'duplicata_ignorada' });
-        }
-        
-        // Se está no histórico E já tem uma resposta do assistant depois dela, é duplicata real
-        if (jaProcessadaHistorico) {
-          const idxMsg = historicoMensagens.findIndex(m => m.messageId === messageId);
-          const temRespostaDepois = historicoMensagens.slice(idxMsg + 1).some(m => m.role === 'assistant');
-          if (temRespostaDepois) {
-            console.log('⏭️ Mensagem já processada com resposta. Ignorando duplicata:', messageId);
-            return Response.json({ success: true, status: 'duplicata_ignorada' });
-          }
-          console.log('ℹ️ Mensagem no histórico mas sem resposta ainda - permitindo reprocessamento');
-        }
-      }
-    } catch (e) {
-      console.log('⚠️ Erro ao verificar duplicata:', e.message);
+      // Busca ampla como fallback
+      const todos = await base44.asServiceRole.entities.Contato.list('-created_date', 200);
+      const ultimos8 = telNorm.slice(-8);
+      return todos.find(c => (c.telefone || '').replace(/\D/g, '').slice(-8) === ultimos8) || null;
     }
 
-    // Sistema de acumulação de mensagens (debounce de 2 segundos)
-    // Armazena a mensagem e aguarda para ver se o cliente envia mais
-    const DEBOUNCE_SECONDS = 2;
+    const DEBOUNCE_SECONDS = 3;
     const agora = new Date().toISOString();
     
     try {
-      // Buscar contato com normalização de telefone (mesma lógica da dedup acima)
-      const telNormDebounce = phoneNumber.replace(/\D/g, '');
-      const variantesDebounce = [phoneNumber, telNormDebounce];
-      if (telNormDebounce.startsWith('55') && telNormDebounce.length >= 12) variantesDebounce.push(telNormDebounce.slice(2));
-      if (!telNormDebounce.startsWith('55') && telNormDebounce.length >= 10) variantesDebounce.push('55' + telNormDebounce);
+      let contato = await buscarContato();
       
-      let contatos = [];
-      for (const v of variantesDebounce) {
-        if (contatos.length > 0) break;
-        contatos = await base44.asServiceRole.entities.Contato.filter({ telefone: v });
-      }
-      
-      // Busca ampla se não encontrou
-      if (contatos.length === 0) {
-        const todosDebounce = await base44.asServiceRole.entities.Contato.list('-created_date', 200);
-        const ultimos8Debounce = telNormDebounce.slice(-8);
-        contatos = todosDebounce.filter(c => (c.telefone || '').replace(/\D/g, '').slice(-8) === ultimos8Debounce);
-      }
-      
-      if (contatos.length > 0) {
-        const contato = contatos[0];
-        
-        // Reativar conversa se estava finalizada - LIMPAR HISTÓRICO E INICIAR EM MODO IA
-         if (contato.conversa_finalizada) {
-           console.log('🔄 Reativando conversa finalizada - limpando histórico e ativando modo IA');
-           const updateResult = await base44.asServiceRole.entities.Contato.update(contato.id, {
-             conversa_finalizada: false,
-             historico_mensagens: [], // Limpa todo o histórico
-             mensagens_pendentes: [],
-             ultima_mensagem: null,
-             ultima_resposta: null,
-             ultimo_timestamp_pendente: null,
-             atendimento_humano: false, // IA atende primeiro, humano assume se necessário
-             atendente_atual: null,
-             atendente_id: null
-           });
-           console.log('✅ Conversa reativada em modo IA');
-           // Recarregar contato após limpeza
-           let contatoLimpo = null;
-           for (const v of variantesDebounce) {
-             const results = await base44.asServiceRole.entities.Contato.filter({ telefone: v });
-             if (results.length > 0) { contatoLimpo = results[0]; break; }
-           }
-           if (contatoLimpo) {
-             contato.historico_mensagens = contatoLimpo.historico_mensagens || [];
-             contato.mensagens_pendentes = contatoLimpo.mensagens_pendentes || [];
-             contato.conversa_finalizada = false;
-             contato.atendimento_humano = false;
-           }
-           // NÃO sair aqui - continuar para processar pela IA
-         }
-        
-        // Verificar se há mensagem pendente (não processada)
-        const mensagensPendentes = contato.mensagens_pendentes || [];
-        const ultimoTimestamp = contato.ultimo_timestamp_pendente;
-        
-        // Adicionar nova mensagem ao buffer (com mídia se houver) - incluindo messageId para evitar duplicatas
-        mensagensPendentes.push({
-          texto: messageText,
-          timestamp: agora,
-          mediaType: mediaType,
-          mediaUrl: mediaUrl,
-          messageId: messageId
-        });
-        
-        // Atualizar contato com mensagem pendente
-        // Se tiver mídia, salvar também no histórico imediatamente para visualização
-        let updateData = {
-          mensagens_pendentes: mensagensPendentes,
-          ultimo_timestamp_pendente: agora,
-          conversa_finalizada: false,
-          status: contato.conversa_finalizada ? 'Lead' : contato.status,
-          nome: contato.nome || senderName
-        };
-        
-        // SEMPRE salvar mídia direto no histórico para visualização (especialmente em modo humano)
-        if (mediaUrl && (mediaType === 'image' || mediaType === 'document' || mediaType === 'audio' || mediaType === 'video')) {
-          const historicoAtual = contato.historico_mensagens || [];
-          historicoAtual.push({
-            role: 'user',
-            content: `${messageText}\n${mediaUrl}`,
-            timestamp: agora,
-            mediaType: mediaType,
-            mediaUrl: mediaUrl,
-            messageId: messageId
+      if (contato) {
+        // Reativar conversa se estava finalizada
+        if (contato.conversa_finalizada) {
+          console.log('🔄 Reativando conversa finalizada');
+          await base44.asServiceRole.entities.Contato.update(contato.id, {
+            conversa_finalizada: false,
+            historico_mensagens: [],
+            mensagens_pendentes: [],
+            ultima_mensagem: null,
+            ultima_resposta: null,
+            ultimo_timestamp_pendente: null,
+            atendimento_humano: false,
+            atendente_atual: null,
+            atendente_id: null
           });
-          updateData.historico_mensagens = historicoAtual.slice(-50);
-          updateData.ultima_interacao = agora;
-          console.log('💾 Mídia salva diretamente no histórico:', mediaUrl);
-        } else if (!mediaUrl && messageText) {
-          // Salvar mensagens de texto normais no histórico (modo humano E modo IA)
-          const historicoAtual = contato.historico_mensagens || [];
-          historicoAtual.push({
-            role: 'user',
-            content: messageText,
-            timestamp: agora,
-            messageId: messageId
-          });
-          updateData.historico_mensagens = historicoAtual.slice(-50);
-          updateData.ultima_interacao = agora;
-          console.log('💾 Mensagem salva no histórico (modo:', contato.atendimento_humano ? 'humano' : 'IA', ')');
+          contato = await buscarContato();
         }
         
-        await base44.asServiceRole.entities.Contato.update(contato.id, updateData);
-        
-        // Se está em atendimento humano, não processar pela IA - apenas salvar e sair
+        // Se está em atendimento humano, salvar e sair
         if (contato.atendimento_humano) {
-          console.log('👤 Contato em atendimento humano - mensagem salva, não processando IA');
+          const historicoAtual = contato.historico_mensagens || [];
+          historicoAtual.push({
+            role: 'user',
+            content: mediaUrl ? `${messageText}\n${mediaUrl}` : messageText,
+            timestamp: agora,
+            mediaType, mediaUrl, messageId
+          });
+          await base44.asServiceRole.entities.Contato.update(contato.id, {
+            historico_mensagens: historicoAtual.slice(-50),
+            ultima_interacao: agora,
+            nome: contato.nome || senderName
+          });
+          console.log('👤 Contato em atendimento humano - mensagem salva');
           return Response.json({ success: true, status: 'atendimento_humano' });
         }
         
-        // Se já havia mensagens pendentes, verificar se passou tempo suficiente
-        if (ultimoTimestamp) {
-          const ultimaData = new Date(ultimoTimestamp);
-          const agoraData = new Date(agora);
-          const diferencaSegundos = (agoraData - ultimaData) / 1000;
-          
-          // Se a última mensagem foi há menos de 5 segundos, apenas acumular e sair
-          if (diferencaSegundos < DEBOUNCE_SECONDS) {
-            console.log(`⏳ Acumulando mensagem (${diferencaSegundos.toFixed(1)}s desde última). Total pendentes: ${mensagensPendentes.length}`);
-            return Response.json({ success: true, status: 'acumulando' });
-          }
+        // MODO IA: Adicionar ao buffer de pendentes
+        const mensagensPendentes = contato.mensagens_pendentes || [];
+        
+        // Verificar se esta mensagem já está no buffer
+        if (messageId && mensagensPendentes.some(m => m.messageId === messageId)) {
+          console.log('⏭️ Mensagem já nas pendentes:', messageId);
+          return Response.json({ success: true, status: 'duplicata_ignorada' });
         }
         
-        // Aguardar para ver se chegam mais mensagens (debounce)
-        console.log(`⏳ Aguardando ${DEBOUNCE_SECONDS}s para acumular mensagens...`);
+        mensagensPendentes.push({
+          texto: messageText, timestamp: agora,
+          mediaType, mediaUrl, messageId
+        });
+        
+        // Salvar mensagem no histórico E nas pendentes
+        const historicoAtual = contato.historico_mensagens || [];
+        historicoAtual.push({
+          role: 'user',
+          content: mediaUrl ? `${messageText}\n${mediaUrl}` : messageText,
+          timestamp: agora, mediaType, mediaUrl, messageId
+        });
+        
+        await base44.asServiceRole.entities.Contato.update(contato.id, {
+          mensagens_pendentes: mensagensPendentes,
+          ultimo_timestamp_pendente: agora,
+          historico_mensagens: historicoAtual.slice(-50),
+          ultima_interacao: agora,
+          conversa_finalizada: false,
+          nome: contato.nome || senderName
+        });
+        
+        // Aguardar debounce para acumular mensagens rápidas
+        console.log(`⏳ Aguardando ${DEBOUNCE_SECONDS}s para acumular...`);
         await new Promise(resolve => setTimeout(resolve, DEBOUNCE_SECONDS * 1000));
         
-        // Recarregar contato para pegar todas as mensagens acumuladas
-        let contatoAtualizado = null;
-        for (const v of variantesDebounce) {
-          const results = await base44.asServiceRole.entities.Contato.filter({ telefone: v });
-          if (results.length > 0) { contatoAtualizado = results[0]; break; }
-        }
+        // Recarregar contato após debounce
+        const contatoAtualizado = await buscarContato();
         if (!contatoAtualizado) {
-          const todosReload = await base44.asServiceRole.entities.Contato.list('-created_date', 200);
-          const u8Reload = telNormDebounce.slice(-8);
-          contatoAtualizado = todosReload.find(c => (c.telefone || '').replace(/\D/g, '').slice(-8) === u8Reload);
+          console.log('❌ Contato não encontrado após debounce');
+          return Response.json({ success: true, status: 'erro' });
         }
         
-        // Verificar se já foi processado (mensagens_pendentes vazias = outra chamada já processou)
-        if (!contatoAtualizado || !contatoAtualizado.mensagens_pendentes || contatoAtualizado.mensagens_pendentes.length === 0) {
-          console.log('⏭️ Mensagens já foram processadas por outra chamada. Saindo...');
+        // Se as pendentes estão vazias, outra chamada já processou
+        const pendentesAtuais = contatoAtualizado.mensagens_pendentes || [];
+        if (pendentesAtuais.length === 0) {
+          console.log('⏭️ Pendentes vazias - outra chamada já processou');
           return Response.json({ success: true, status: 'ja_processado' });
         }
         
-        // LOCK ATÔMICO: Tentar obter o lock limpando as pendentes
-        // Apenas a PRIMEIRA chamada que conseguir limpar as pendentes vai processar
-        const todasMensagens = [...contatoAtualizado.mensagens_pendentes];
-        
-        try {
-          await base44.asServiceRole.entities.Contato.update(contatoAtualizado.id, {
-            mensagens_pendentes: [],
-            ultimo_timestamp_pendente: null
-          });
-        } catch (e) {
-          console.log('⚠️ Erro ao obter lock - outra chamada provavelmente processou:', e.message);
-          return Response.json({ success: true, status: 'delegado' });
-        }
-        
-        // Verificar se NOSSA mensagem está entre as pendentes (senão outra chamada limpou antes)
-        const nossaMsgEstaPresente = todasMensagens.some(m => m.messageId === messageId);
-        if (!nossaMsgEstaPresente) {
-          console.log('⏭️ Nossa mensagem não está nas pendentes - outra chamada já processou. Saindo...');
+        // Verificar se NOSSA mensagem ainda está nas pendentes
+        if (!pendentesAtuais.some(m => m.messageId === messageId)) {
+          console.log('⏭️ Nossa mensagem não está nas pendentes - já processada');
           return Response.json({ success: true, status: 'ja_processado' });
         }
         
-        console.log(`🔒 Lock obtido! Processando ${todasMensagens.length} mensagens acumuladas`)
+        // LIMPAR pendentes (lock atômico - quem limpar primeiro processa)
+        const todasMensagens = [...pendentesAtuais];
+        await base44.asServiceRole.entities.Contato.update(contatoAtualizado.id, {
+          mensagens_pendentes: [],
+          ultimo_timestamp_pendente: null
+        });
         
-        // Juntar todas as mensagens pendentes em uma só - MANTER ÚLTIMA MÍDIA
+        console.log(`🔒 Processando ${todasMensagens.length} mensagens acumuladas`);
+        
+        // Juntar mensagens
         const ultimaMidia = [...todasMensagens].reverse().find(m => m.mediaUrl);
         if (ultimaMidia) {
           mediaUrl = ultimaMidia.mediaUrl;
           mediaType = ultimaMidia.mediaType;
-          console.log(`📎 Usando última mídia encontrada: ${mediaType} - ${mediaUrl}`);
         }
         
-        // Se houver apenas mídia sem texto, usar a descrição da mídia como texto
-        let mensagemCompleta = todasMensagens.map(m => m.texto).join('\n');
+        let mensagemCompleta = todasMensagens.map(m => m.texto).filter(t => t).join('\n');
         if (!mensagemCompleta.trim() && ultimaMidia) {
-          console.log('📄 Apenas mídia sem texto - usando descrição da mídia');
           mensagemCompleta = ultimaMidia.texto;
         }
-        console.log(`📝 Processando ${todasMensagens.length} mensagens acumuladas`);
-        
-        // Salvar mídia no histórico com URL
-        if (mediaUrl) {
-          const historicoAtual = contatoAtualizado?.historico_mensagens || [];
-          const mensagemComMidia = mediaType === 'image' 
-            ? `[Imagem recebida]\n${mediaUrl}` 
-            : mediaType === 'document' 
-              ? `[Documento recebido]\n${mediaUrl}`
-              : mediaType === 'audio'
-                ? `[Áudio recebido]\n${mediaUrl}`
-                : mensagemCompleta;
-          
-          // A mídia será salva no histórico pela função processarMensagemAgente
-          console.log(`💾 Mídia será salva no histórico: ${mediaUrl}`);
-        }
-        
-        // Pendentes já foram limpas no lock atômico acima
 
-        // Detectar se a última mensagem do assistente é duplicada (para evitar loops)
-        const historicoAtual = contatoAtualizado?.historico_mensagens || [];
-        const ultimasMensagensAssistente = historicoAtual.filter(m => m.role === 'assistant').slice(-2);
-
-        if (ultimasMensagensAssistente.length >= 2 && 
-            ultimasMensagensAssistente[0]?.content === ultimasMensagensAssistente[1]?.content) {
-          console.log('⚠️ Última mensagem do assistente é duplicada! Pulando processamento para evitar loop.');
-          return Response.json({ success: true, status: 'duplicata_ignorada' });
-        }
-
-        // Continuar com a mensagem completa
         var mensagemFinal = mensagemCompleta;
         
       } else {
-        // Novo contato - criar com histórico e em modo IA para atendimento automático
-        const historicoInicial = [{
-          role: 'user',
-          content: mediaUrl ? `${messageText}\n${mediaUrl}` : messageText,
-          timestamp: agora,
-          mediaType: mediaType,
-          mediaUrl: mediaUrl,
-          messageId: messageId
-        }];
-
-        const novoContato = await base44.asServiceRole.entities.Contato.create({
+        // Novo contato - criar em modo IA
+        await base44.asServiceRole.entities.Contato.create({
           nome: senderName,
           telefone: phoneNumber,
           origem: 'WhatsApp',
           status: 'Novo',
-          atendimento_humano: false, // Novo contato começa com IA atendendo
-          atendente_atual: null,
-          atendente_id: null,
-          historico_mensagens: historicoInicial,
+          atendimento_humano: false,
+          historico_mensagens: [{
+            role: 'user',
+            content: mediaUrl ? `${messageText}\n${mediaUrl}` : messageText,
+            timestamp: agora, mediaType, mediaUrl, messageId
+          }],
           mensagens_pendentes: [],
           ultima_interacao: agora
         });
-
-        console.log('🤖 Novo contato criado em modo IA - processando pela IA');
-        // NÃO sair aqui - continuar para processar pela IA
+        console.log('🤖 Novo contato criado em modo IA');
         var mensagemFinal = messageText;
       }
     } catch (e) {
-      console.log('⚠️ Erro no debounce:', e.message);
-      // Em caso de erro, NÃO processar IA - apenas logar
-      console.log('👤 Erro no processamento - não enviando para IA');
-      return Response.json({ success: true, status: 'erro_debounce' });
-    }
-
-    // VERIFICAÇÃO FINAL: Se chegou aqui, verificar novamente se está em modo humano
-    // (pode ter sido alterado durante o debounce)
-    try {
-      const telNormFinal = phoneNumber.replace(/\D/g, '');
-      const variantesFinal = [phoneNumber, telNormFinal];
-      if (telNormFinal.startsWith('55') && telNormFinal.length >= 12) variantesFinal.push(telNormFinal.slice(2));
-      if (!telNormFinal.startsWith('55') && telNormFinal.length >= 10) variantesFinal.push('55' + telNormFinal);
-      
-      let contatoFinal = null;
-      for (const v of variantesFinal) {
-        const results = await base44.asServiceRole.entities.Contato.filter({ telefone: v });
-        if (results.length > 0) { contatoFinal = results[0]; break; }
-      }
-      if (contatoFinal && contatoFinal.atendimento_humano !== false) {
-        console.log('👤 Verificação final: contato em modo HUMANO - não processando IA');
-        return Response.json({ success: true, status: 'atendimento_humano' });
-      }
-    } catch (e) {
-      console.log('⚠️ Erro na verificação final:', e.message);
+      console.log('⚠️ Erro no processamento:', e.message);
+      return Response.json({ success: true, status: 'erro_processamento' });
     }
 
     // Usar mensagemFinal em vez de messageText daqui em diante
