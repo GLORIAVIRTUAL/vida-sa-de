@@ -155,26 +155,6 @@ export default function AgendamentosHoje({ agendamentos = [], medicos = [], paci
                         </span>
                       </p>
                       <div className="flex gap-1">
-                        <Link 
-                          to={createPageUrl('Agendamentos')}
-                          state={{
-                            dadosIniciais: {
-                              paciente_id: agendamento.paciente_id,
-                              paciente_nome: getNomePaciente(agendamento),
-                              telefone: pacientes.find(p => p.id === agendamento.paciente_id)?.telefone
-                            }
-                          }}
-                        >
-                          <Button
-                            size="sm"
-                            variant="default"
-                            className="h-7 px-2 bg-blue-600 hover:bg-blue-700 text-white"
-                            title="Novo agendamento para este paciente"
-                          >
-                            <CalendarPlus className="w-3.5 h-3.5 mr-1" />
-                            Agendar
-                          </Button>
-                        </Link>
                         <Button
                           size="sm"
                           variant="ghost"
