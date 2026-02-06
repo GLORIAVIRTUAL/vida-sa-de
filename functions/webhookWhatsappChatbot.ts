@@ -356,11 +356,7 @@ Deno.serve(async (req) => {
           console.log(`💾 Mídia será salva no histórico: ${mediaUrl}`);
         }
         
-        // Limpar mensagens pendentes
-        await base44.asServiceRole.entities.Contato.update(contatoAtualizado.id, {
-          mensagens_pendentes: [],
-          ultimo_timestamp_pendente: null
-        });
+        // Pendentes já foram limpas no lock atômico acima
 
         // Detectar se a última mensagem do assistente é duplicada (para evitar loops)
         const historicoAtual = contatoAtualizado?.historico_mensagens || [];
