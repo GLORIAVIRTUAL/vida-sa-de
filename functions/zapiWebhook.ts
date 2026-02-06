@@ -285,11 +285,9 @@ async function processarMensagemRecebida(base44, payload) {
             console.error('⚠️ Erro ao verificar/criar contato:', contatoError.message);
         }
         
-        // Se chegou aqui, o contato existe e NÃO está em modo humano
-        // NÃO encaminhar para webhookWhatsappChatbot - ele já recebe o webhook diretamente do Z-API
-        // Encaminhar daqui causava DUPLICAÇÃO de processamento e mensagens duplicadas
-        console.log('🤖 Contato em modo IA - NÃO encaminhando (webhookWhatsappChatbot recebe direto do Z-API)');
-        return new Response(JSON.stringify({ message: "Modo IA - processado pelo webhookWhatsappChatbot" }), { status: 200 });
+        // Se chegou aqui sem retornar, algo inesperado aconteceu
+        console.log('⚠️ Fluxo inesperado - retornando OK');
+        return new Response(JSON.stringify({ message: "OK" }), { status: 200 });
     }
     
     console.log('✅ Confirmação detectada!');
