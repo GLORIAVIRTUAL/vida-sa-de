@@ -1683,12 +1683,12 @@ Retorne JSON.`;
     }
 
     // Determinar se é primeira mensagem da conversa atual (para saudação)
-    // Primeira mensagem = conversa foi finalizada OU histórico está completamente vazio/inexistente
-    // NÃO usar tamanho do texto como critério - verificar se realmente existe histórico
+    // Primeira mensagem = conversa foi finalizada OU não existe nenhuma resposta do assistente no histórico
     const historicoVazio = !historicoConversa || historicoConversa.trim() === '';
-    const ehPrimeiraMensagem = conversaFinalizada || historicoVazio;
-    
-    console.log('🔍 Verificação primeira mensagem:', { conversaFinalizada, historicoVazio, ehPrimeiraMensagem, historicoTamanho: historicoConversa?.length || 0 });
+    const historicoSemRespostaAssistente = !historicoConversa || !historicoConversa.includes('ASSISTENTE:');
+    const ehPrimeiraMensagem = conversaFinalizada || historicoVazio || historicoSemRespostaAssistente;
+
+    console.log('🔍 Verificação primeira mensagem:', { conversaFinalizada, historicoVazio, historicoSemRespostaAssistente, ehPrimeiraMensagem, historicoTamanho: historicoConversa?.length || 0 });
 
     // Se é primeira mensagem, NÃO chamar LLM - retornar saudação fixa e sair
     if (ehPrimeiraMensagem) {
