@@ -523,9 +523,35 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
         initialFormData.recorrencia_data_fim = '';
         initialFormData.lembrete_equipe = false;
         initialFormData.lembrete_dias_antes = 1;
-        setPacientesEncontrados([]);
-        setBuscaPaciente('');
         setModoMultiplosServicos(false);
+
+        // Handle dadosIniciais from navigation (e.g., from Chat or Dashboard)
+        if (dadosIniciais) {
+          if (dadosIniciais.paciente_id) {
+            initialFormData.paciente_id = dadosIniciais.paciente_id;
+            // Fetch the patient to populate the search
+            try {
+              const pacienteInicial = await Paciente.get(dadosIniciais.paciente_id);
+              if (pacienteInicial) {
+                setPacientesEncontrados([pacienteInicial]);
+                setBuscaPaciente(pacienteInicial.nome || dadosIniciais.paciente_nome || '');
+              } else {
+                setPacientesEncontrados([]);
+                setBuscaPaciente(dadosIniciais.paciente_nome || '');
+              }
+            } catch (e) {
+              console.warn('⚠️ Erro ao buscar paciente inicial:', e);
+              setPacientesEncontrados([]);
+              setBuscaPaciente(dadosIniciais.paciente_nome || '');
+            }
+          } else {
+            setPacientesEncontrados([]);
+            setBuscaPaciente(dadosIniciais.paciente_nome || '');
+          }
+        } else {
+          setPacientesEncontrados([]);
+          setBuscaPaciente('');
+        }
       }
       setFormData(initialFormData);
     };
