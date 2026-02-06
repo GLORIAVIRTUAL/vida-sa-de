@@ -330,7 +330,7 @@ Deno.serve(async (req) => {
     console.log('📝 Resposta da IA recebida:', respostaIA ? respostaIA.substring(0, 100) + '...' : 'NULL');
     
     if (respostaIA) {
-      // Anti-duplicata: verificar se a última resposta do assistente no histórico é idêntica
+      // Anti-duplicata: verificar se já existe resposta do assistente PARA ESTA mensagem específica
       try {
         const telCheck = phoneNumber.replace(/\D/g, '');
         const varCheck = [phoneNumber, telCheck];
@@ -343,12 +343,16 @@ Deno.serve(async (req) => {
           if (res.length > 0) { contatoCheck = res[0]; break; }
         }
         
-        if (contatoCheck) {
+        if (contatoCheck && messageId) {
           const hist = contatoCheck.historico_mensagens || [];
-          const ultimasRespostas = hist.filter(m => m.role === 'assistant').slice(-1);
-          if (ultimasRespostas.length > 0 && ultimasRespostas[0].content === respostaIA) {
-            console.log('⏭️ Resposta IDÊNTICA à última enviada - NÃO enviando duplicata');
-            return Response.json({ success: true, status: 'duplicata_resposta' });
+          // Verificar se JÁ existe uma resposta do assistente LOGO APÓS esta mensagem específica
+          const nossaMsgIdx = hist.findIndex(m => m.messageId === messageId && m.role === 'user');
+          if (nossaMsgIdx >= 0) {
+            const respostaDepois = hist.slice(nossaMsgIdx + 1).find(m => m.role === 'assistant');
+            if (respostaDepois) {
+              console.log('⏭️ Já existe resposta para messageId', messageId, '- NÃO enviando duplicata');
+              return Response.json({ success: true, status: 'duplicata_resposta' });
+            }
           }
         }
       } catch (e) {
