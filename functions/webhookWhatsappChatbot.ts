@@ -409,8 +409,13 @@ Deno.serve(async (req) => {
     // VERIFICAÇÃO FINAL: Se chegou aqui, verificar novamente se está em modo humano
     // (pode ter sido alterado durante o debounce)
     try {
+      const telNormFinal = phoneNumber.replace(/\D/g, '');
+      const variantesFinal = [phoneNumber, telNormFinal];
+      if (telNormFinal.startsWith('55') && telNormFinal.length >= 12) variantesFinal.push(telNormFinal.slice(2));
+      if (!telNormFinal.startsWith('55') && telNormFinal.length >= 10) variantesFinal.push('55' + telNormFinal);
+      
       let contatoFinal = null;
-      for (const v of variantesDebounce) {
+      for (const v of variantesFinal) {
         const results = await base44.asServiceRole.entities.Contato.filter({ telefone: v });
         if (results.length > 0) { contatoFinal = results[0]; break; }
       }
