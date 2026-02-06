@@ -1998,7 +1998,7 @@ Retorne JSON.`;
     ✅ Quando o cliente disser "sim" ou "quero agendar" após ver o preço:
     - NÃO confirme agendamento!
     - MOSTRE os horários disponíveis do médico (se tiver na seção DISPONIBILIDADES)
-    - Se não tiver disponibilidades, diga: "Vou verificar os horários disponíveis. Qual dia da semana fica melhor para você?"
+    - Se não tiver disponibilidades, diga: "Infelizmente não temos horários disponíveis no momento. Sugiro entrar em contato pelo telefone (51) 3661-5991."
     
     ${dadosFaltantes.length > 0 && dadosFaltantes.length < 5 ? `
     📋 DADOS FALTANTES PARA ESTE AGENDAMENTO: ${dadosFaltantes.join(', ')}
