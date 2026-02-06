@@ -185,11 +185,9 @@ Deno.serve(async (req) => {
       if (contatos.length > 0) {
         const contato = contatos[0];
         
-        // Reativar conversa se estava finalizada - LIMPAR HISTÓRICO COMPLETAMENTE
+        // Reativar conversa se estava finalizada - LIMPAR HISTÓRICO E INICIAR EM MODO IA
          if (contato.conversa_finalizada) {
-           console.log('🔄 Reativando conversa finalizada - limpando histórico COMPLETO');
-           // Limpar histórico COMPLETAMENTE para começar do zero (nova conversa)
-           // MANTÉM atendimento_humano = true (humano decide quando ativar IA)
+           console.log('🔄 Reativando conversa finalizada - limpando histórico e ativando modo IA');
            const updateResult = await base44.asServiceRole.entities.Contato.update(contato.id, {
              conversa_finalizada: false,
              historico_mensagens: [], // Limpa todo o histórico
@@ -197,21 +195,24 @@ Deno.serve(async (req) => {
              ultima_mensagem: null,
              ultima_resposta: null,
              ultimo_timestamp_pendente: null,
-             atendimento_humano: true, // Volta para atendimento HUMANO
+             atendimento_humano: false, // IA atende primeiro, humano assume se necessário
              atendente_atual: null,
              atendente_id: null
            });
-           console.log('✅ Conversa reativada em modo HUMANO:', updateResult);
-           // Recarregar contato após limpeza para garantir que está atualizado
-           const contatoLimpo = (await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber }))[0];
+           console.log('✅ Conversa reativada em modo IA');
+           // Recarregar contato após limpeza
+           let contatoLimpo = null;
+           for (const v of variantesDebounce) {
+             const results = await base44.asServiceRole.entities.Contato.filter({ telefone: v });
+             if (results.length > 0) { contatoLimpo = results[0]; break; }
+           }
            if (contatoLimpo) {
              contato.historico_mensagens = contatoLimpo.historico_mensagens || [];
              contato.mensagens_pendentes = contatoLimpo.mensagens_pendentes || [];
              contato.conversa_finalizada = false;
-             contato.atendimento_humano = true;
+             contato.atendimento_humano = false;
            }
-           // Sair aqui pois está em modo humano
-           return Response.json({ success: true, status: 'atendimento_humano' });
+           // NÃO sair aqui - continuar para processar pela IA
          }
         
         // Verificar se há mensagem pendente (não processada)
