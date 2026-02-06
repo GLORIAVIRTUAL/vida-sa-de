@@ -2888,10 +2888,64 @@ export default function FormularioAgendamento({ agendamento, todosAgendamentos, 
                                  </Select>
                                </div>
                              </div>
-                           </div>
-                         </div>
 
-                         {/* SEÇÃO OBSERVAÇÕES */}
+                             {formData.forma_pagamento === 'Múltiplas Formas' && (
+                               <div className="p-4 border-2 border-purple-200 bg-purple-50 rounded-lg space-y-4">
+                                 <h4 className="font-medium text-purple-900">Detalhar Formas de Pagamento</h4>
+                                 <div className="grid grid-cols-2 gap-3">
+                                   <div>
+                                     <Label className="text-sm">Forma 1</Label>
+                                     <Select value={pagamento1.forma} onValueChange={(v) => setPagamento1(prev => ({ ...prev, forma: v }))}>
+                                       <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                                       <SelectContent>
+                                         <SelectItem value="Dinheiro">Dinheiro</SelectItem>
+                                         <SelectItem value="Cartão Débito">Cartão Débito</SelectItem>
+                                         <SelectItem value="Cartão Crédito">Cartão Crédito</SelectItem>
+                                         <SelectItem value="PIX">PIX</SelectItem>
+                                         <SelectItem value="Transferência">Transferência</SelectItem>
+                                       </SelectContent>
+                                     </Select>
+                                   </div>
+                                   <div>
+                                     <Label className="text-sm">Valor (R$)</Label>
+                                     <Input type="number" step="0.01" min="0" placeholder="0,00" value={pagamento1.valor} onChange={(e) => setPagamento1(prev => ({ ...prev, valor: e.target.value }))} />
+                                   </div>
+                                 </div>
+                                 <div className="grid grid-cols-2 gap-3">
+                                   <div>
+                                     <Label className="text-sm">Forma 2</Label>
+                                     <Select value={pagamento2.forma} onValueChange={(v) => setPagamento2(prev => ({ ...prev, forma: v }))}>
+                                       <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                                       <SelectContent>
+                                         <SelectItem value="Dinheiro">Dinheiro</SelectItem>
+                                         <SelectItem value="Cartão Débito">Cartão Débito</SelectItem>
+                                         <SelectItem value="Cartão Crédito">Cartão Crédito</SelectItem>
+                                         <SelectItem value="PIX">PIX</SelectItem>
+                                         <SelectItem value="Transferência">Transferência</SelectItem>
+                                       </SelectContent>
+                                     </Select>
+                                   </div>
+                                   <div>
+                                     <Label className="text-sm">Valor (R$)</Label>
+                                     <Input type="number" step="0.01" min="0" placeholder="0,00" value={pagamento2.valor} onChange={(e) => setPagamento2(prev => ({ ...prev, valor: e.target.value }))} />
+                                   </div>
+                                 </div>
+                                 {(pagamento1.valor || pagamento2.valor) && (
+                                   <div className="pt-2 border-t border-purple-300">
+                                     <div className="flex justify-between text-sm">
+                                       <span className="text-purple-800">Total informado:</span>
+                                       <span className="font-bold text-purple-900">
+                                         R$ {((parseFloat(pagamento1.valor) || 0) + (parseFloat(pagamento2.valor) || 0)).toFixed(2).replace('.', ',')}
+                                       </span>
+                                     </div>
+                                   </div>
+                                 )}
+                               </div>
+                             )}
+                             </div>
+                             </div>
+
+                             {/* SEÇÃO OBSERVAÇÕES */}
                          <div className="space-y-3">
                            <h3 className="text-base font-semibold text-gray-800 border-b pb-2">Outras Informações</h3>
                            <div className="p-4 border rounded-lg bg-gray-50 space-y-4">
