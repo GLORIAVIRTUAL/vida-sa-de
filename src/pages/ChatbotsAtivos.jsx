@@ -695,25 +695,56 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
                     <p className="text-xs text-gray-500">{contatoSelecionado.telefone}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Link 
-                      to={createPageUrl('Agendamentos')}
-                      state={{
-                        dadosIniciais: {
-                          paciente_id: contatoSelecionado.paciente_id,
-                          paciente_nome: contatoSelecionado.nome,
-                          telefone: contatoSelecionado.telefone
+                    <Button 
+                      variant="default"
+                      size="sm"
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                      onClick={async () => {
+                        try {
+                          // Buscar paciente pelo telefone
+                          let pacienteId = contatoSelecionado.paciente_id;
+                          if (!pacienteId && contatoSelecionado.telefone) {
+                            const response = await base44.functions.invoke('searchPatients', { termo: contatoSelecionado.telefone, limit: 5 });
+                            const resultados = Array.isArray(response?.data) ? response.data : [];
+                            if (resultados.length > 0) {
+                              pacienteId = resultados[0].id;
+                            } else {
+                              // Criar paciente automaticamente
+                              const { Paciente } = await import('@/entities/all');
+                              const novoPaciente = await Paciente.create({
+                                nome: contatoSelecionado.nome || 'Cliente WhatsApp',
+                                telefone: contatoSelecionado.telefone,
+                                cpf: 'NÃO INFORMADO',
+                                observacoes: 'Criado automaticamente via chat'
+                              });
+                              pacienteId = novoPaciente.id;
+                            }
+                          }
+                          navigate(createPageUrl('Agendamentos'), {
+                            state: {
+                              dadosIniciais: {
+                                paciente_id: pacienteId,
+                                paciente_nome: contatoSelecionado.nome,
+                                telefone: contatoSelecionado.telefone
+                              }
+                            }
+                          });
+                        } catch (error) {
+                          console.error('Erro ao preparar agendamento:', error);
+                          navigate(createPageUrl('Agendamentos'), {
+                            state: {
+                              dadosIniciais: {
+                                paciente_nome: contatoSelecionado.nome,
+                                telefone: contatoSelecionado.telefone
+                              }
+                            }
+                          });
                         }
                       }}
                     >
-                      <Button 
-                        variant="default"
-                        size="sm"
-                        className="bg-blue-600 hover:bg-blue-700 text-white"
-                      >
-                        <CalendarPlus className="w-3 h-3 mr-1" />
-                        Agendar
-                      </Button>
-                    </Link>
+                      <CalendarPlus className="w-3 h-3 mr-1" />
+                      Agendar
+                    </Button>
                     <Button 
                       variant={modoHumano ? "default" : "outline"} 
                       size="sm"
