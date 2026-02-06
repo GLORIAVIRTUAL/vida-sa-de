@@ -162,16 +162,24 @@ export default function VisualizacaoDiaria({ agendamentos, medicos, pacientes, o
 
   const handleSalvarPaciente = async (data) => {
     try {
-      await Paciente.update(pacienteParaEditar.id, data);
-
-      toast({
-        title: "Paciente atualizado!",
-        description: "Os dados do paciente foram salvos com sucesso."
-      });
+      if (pacienteParaEditar._isNew) {
+        // Criar novo paciente
+        await Paciente.create(data);
+        toast({
+          title: "Paciente cadastrado!",
+          description: "O cadastro do paciente foi criado com sucesso."
+        });
+      } else {
+        await Paciente.update(pacienteParaEditar.id, data);
+        toast({
+          title: "Paciente atualizado!",
+          description: "Os dados do paciente foram salvos com sucesso."
+        });
+      }
 
       setFormularioPacienteAberto(false);
       setPacienteParaEditar(null);
-      onUpdate(); // Recarregar os dados
+      onUpdate();
     } catch (error) {
       console.error("Erro ao salvar paciente:", error);
       toast({
