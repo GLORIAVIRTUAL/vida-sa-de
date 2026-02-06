@@ -592,14 +592,23 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
                          {numMensagens > 0 && (
                            <Badge className="bg-blue-100 text-blue-700 text-[9px] px-1 py-0">{numMensagens}</Badge>
                          )}
-                         {contato.atendimento_humano && contato.atendente_atual && (
+                         {/* Ícones de status do atendimento */}
+                         {contato.atendimento_humano && contato.atendente_atual ? (
                            <Badge className="bg-green-100 text-green-700 text-[9px] px-1 py-0" title={`Atendido por ${contato.atendente_atual}`}>
                              👤 {contato.atendente_atual.split(' ')[0]}
                            </Badge>
-                         )}
-                         {contato.atendimento_humano && !contato.atendente_atual && (
+                         ) : contato.atendimento_humano && !contato.atendente_atual ? (
                            <Badge className="bg-green-100 text-green-700 text-[9px] px-1 py-0">👤</Badge>
-                         )}
+                         ) : (() => {
+                           // Verificar se tem resposta do assistente
+                           const temResposta = contato.historico_mensagens?.some(m => m.role === 'assistant') || contato.ultima_resposta;
+                           if (!temResposta && !contato.conversa_finalizada) {
+                             // Sem resposta ainda - ícone vermelho
+                             return <User className="w-4 h-4 text-red-500" title="Aguardando resposta" />;
+                           }
+                           // Modo IA ativo - ícone robô azul
+                           return <Bot className="w-4 h-4 text-blue-500" title="Atendimento por IA" />;
+                         })()}
                          {contato.conversa_finalizada && (
                            <Badge className="bg-gray-200 text-gray-600 text-[9px] px-1 py-0">✓</Badge>
                          )}
