@@ -285,30 +285,11 @@ async function processarMensagemRecebida(base44, payload) {
             console.error('⚠️ Erro ao verificar/criar contato:', contatoError.message);
         }
         
-        // Se chegou aqui, o contato existe e NÃO está em modo humano - encaminhar para IA
-        console.log('🤖 Contato em modo IA - encaminhando para chatbot...');
-        try {
-            const resultadoChatbot = await base44.asServiceRole.functions.invoke('webhookWhatsappChatbot', {
-                phone: telefone,
-                fromMe: false,
-                isGroup: false,
-                text: { message: textoMensagem },
-                senderName: senderName,
-                messageId: msgId,
-                // Passar mídia se houver
-                image: payload.image,
-                document: payload.document,
-                audio: payload.audio,
-                video: payload.video,
-                sticker: payload.sticker,
-                location: payload.location
-            });
-            console.log('✅ Chatbot processou:', resultadoChatbot.data);
-            return new Response(JSON.stringify({ message: "Encaminhado para chatbot", result: resultadoChatbot.data }), { status: 200 });
-        } catch (chatbotError) {
-            console.error('❌ Erro ao encaminhar para chatbot:', chatbotError.message);
-            return new Response(JSON.stringify({ message: "Erro ao processar chatbot", error: chatbotError.message }), { status: 200 });
-        }
+        // Se chegou aqui, o contato existe e NÃO está em modo humano
+        // NÃO encaminhar para webhookWhatsappChatbot - ele já recebe o webhook diretamente do Z-API
+        // Encaminhar daqui causava DUPLICAÇÃO de processamento e mensagens duplicadas
+        console.log('🤖 Contato em modo IA - NÃO encaminhando (webhookWhatsappChatbot recebe direto do Z-API)');
+        return new Response(JSON.stringify({ message: "Modo IA - processado pelo webhookWhatsappChatbot" }), { status: 200 });
     }
     
     console.log('✅ Confirmação detectada!');
