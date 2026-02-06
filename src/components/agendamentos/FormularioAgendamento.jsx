@@ -889,14 +889,18 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
           }
           horariosAutomaticos.push('19:00');
           
-          // Filtrar horários já ocupados no mesmo dia
-          const agendamentosNoDia = (todosAgendamentos || []).filter(a => 
-            a.data_agendamento === formData.data_agendamento &&
-            a.status !== 'Cancelado' &&
-            (!agendamento || a.id !== agendamento.id)
-          );
-          const horariosOcupados = agendamentosNoDia.map(a => a.horario);
-          horarios = horariosAutomaticos.filter(h => !horariosOcupados.includes(h)).sort();
+          // Se NÃO for encaixe, filtrar horários já ocupados no mesmo dia
+          if (!formData.is_encaixe) {
+            const agendamentosNoDia = (todosAgendamentos || []).filter(a => 
+              a.data_agendamento === formData.data_agendamento &&
+              a.status !== 'Cancelado' &&
+              (!agendamento || a.id !== agendamento.id)
+            );
+            const horariosOcupados = agendamentosNoDia.map(a => a.horario);
+            horarios = horariosAutomaticos.filter(h => !horariosOcupados.includes(h)).sort();
+          } else {
+            horarios = horariosAutomaticos.sort();
+          }
         }
       } else if (formData.medico_id && formData.data_agendamento) {
         // For consultations and returns, load based on the doctor
