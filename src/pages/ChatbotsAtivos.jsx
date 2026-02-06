@@ -556,22 +556,17 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
   const contatosFiltrados = contatos.filter(contato => {
     // Filtro por status
     if (filtroStatus === 'atendimento') {
+      // Em atendimento = tem atendente humano atribuído e não finalizada
       if (contato.conversa_finalizada) return false;
-      // Verificar se a última mensagem do usuário já foi respondida
-      const msgs = contato.historico_mensagens || [];
-      if (msgs.length === 0) return false;
-      const ultimaMsg = msgs[msgs.length - 1];
-      // Se a última mensagem é do usuário, significa que está sem resposta
-      if (ultimaMsg.role === 'user') return false;
-      return true;
+      return contato.atendimento_humano && contato.atendente_atual;
     }
     if (filtroStatus === 'sem_resposta') {
+      // Sem resposta = ninguém atendeu ainda (sem atendente e não finalizada)
       if (contato.conversa_finalizada) return false;
-      const msgs = contato.historico_mensagens || [];
-      if (msgs.length === 0) return true;
-      const ultimaMsg = msgs[msgs.length - 1];
-      // Se a última mensagem é do usuário, está sem resposta
-      return ultimaMsg.role === 'user';
+      if (contato.atendimento_humano && contato.atendente_atual) return false;
+      // Sem atendente humano atribuído
+      const temResposta = contato.historico_mensagens?.some(m => m.role === 'assistant') || contato.ultima_resposta;
+      return !temResposta;
     }
     if (filtroStatus === 'finalizadas') {
       return contato.conversa_finalizada === true;
