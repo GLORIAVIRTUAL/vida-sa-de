@@ -70,7 +70,7 @@ const uploadWithRetry = async (file, maxRetries = 3, delay = 2000) => {
   }
 };
 
-export default function FormularioAgendamento({ agendamento, todosAgendamentos, medicos, pacientes: pacientesProps, procedimentos, exames, categorias, tabelaPrecos, onSave, onClose }) {
+export default function FormularioAgendamento({ agendamento, dadosIniciais, todosAgendamentos, medicos, pacientes: pacientesProps, procedimentos, exames, categorias, tabelaPrecos, onSave, onClose }) {
   const { toast } = useToast();
   const [formData, setFormData] = useState({
     id: null,
