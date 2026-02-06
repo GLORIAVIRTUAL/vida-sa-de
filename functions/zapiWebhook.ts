@@ -243,23 +243,15 @@ async function processarMensagemRecebida(base44, payload) {
                     return new Response(JSON.stringify({ message: "Atendimento humano", status: "salvo" }), { status: 200 });
                 } else {
                     // Modo IA: NÃO salvar histórico aqui - o webhookWhatsappChatbot cuida disso
-                    // Apenas encaminhar para processamento
+                    // NÃO encaminhar daqui - o Z-API envia o webhook diretamente para ambas as funções
+                    // Se encaminharmos daqui, causa DUPLICAÇÃO porque o webhookWhatsappChatbot já recebe do Z-API
                     if (!contato.nome && senderName) {
                         await base44.asServiceRole.entities.Contato.update(contato.id, {
                             nome: senderName
                         });
                     }
-                    console.log('🤖 Contato em modo IA - encaminhando para webhookWhatsappChatbot...');
-                    
-                    // Encaminhar o payload original para o webhookWhatsappChatbot
-                    try {
-                        const resultado = await base44.asServiceRole.functions.invoke('webhookWhatsappChatbot', payload);
-                        console.log('✅ webhookWhatsappChatbot retornou:', JSON.stringify(resultado.data).substring(0, 200));
-                        return new Response(JSON.stringify(resultado.data), { status: 200 });
-                    } catch (invokeError) {
-                        console.error('❌ Erro ao encaminhar para webhookWhatsappChatbot:', invokeError.message);
-                        return new Response(JSON.stringify({ error: invokeError.message }), { status: 500 });
-                    }
+                    console.log('🤖 Contato em modo IA - webhookWhatsappChatbot processará diretamente do Z-API');
+                    return new Response(JSON.stringify({ message: "Modo IA - processado pelo webhookWhatsappChatbot diretamente" }), { status: 200 });
                 }
             } else {
                 // Novo contato - criar em modo HUMANO
