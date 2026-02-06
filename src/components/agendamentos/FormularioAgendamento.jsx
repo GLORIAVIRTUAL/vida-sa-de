@@ -878,7 +878,7 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
           return;
         }
       } else if (formData.tipo_servico === 'Múltiplos Serviços') {
-        // Para múltiplos serviços, gerar horários automáticos (7h às 19h a cada 10 min)
+        // Para múltiplos serviços, gerar horários automáticos (7h às 19h a cada 10 min) e filtrar ocupados
         if (formData.data_agendamento) {
           const horariosAutomaticos = [];
           for (let hora = 7; hora <= 18; hora++) {
@@ -888,7 +888,15 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
             }
           }
           horariosAutomaticos.push('19:00');
-          horarios = horariosAutomaticos.sort();
+          
+          // Filtrar horários já ocupados no mesmo dia
+          const agendamentosNoDia = (todosAgendamentos || []).filter(a => 
+            a.data_agendamento === formData.data_agendamento &&
+            a.status !== 'Cancelado' &&
+            (!agendamento || a.id !== agendamento.id)
+          );
+          const horariosOcupados = agendamentosNoDia.map(a => a.horario);
+          horarios = horariosAutomaticos.filter(h => !horariosOcupados.includes(h)).sort();
         }
       } else if (formData.medico_id && formData.data_agendamento) {
         // For consultations and returns, load based on the doctor
