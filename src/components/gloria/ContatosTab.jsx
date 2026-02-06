@@ -47,7 +47,7 @@ export default function ContatosTab({ onIniciarConversa }) {
   const carregarContatos = async () => {
     setLoading(true);
     try {
-      const dados = await base44.entities.Contato.list('-created_date', 100);
+      const dados = await base44.entities.Contato.list('-created_date', 5000);
       setContatos(dados);
     } catch (error) {
       console.error('Erro ao carregar contatos:', error);
