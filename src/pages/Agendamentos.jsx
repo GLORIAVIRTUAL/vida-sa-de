@@ -79,11 +79,25 @@ export default function Agendamentos() {
       console.log('🚀 Carregando dados com prioridades...');
 
       // PRIORIDADE ALTA - Dados essenciais em paralelo (3 requisições)
-      // Aumentado o limite de pacientes para 3000 para garantir que todos sejam carregados e os nomes apareçam
+      // Carregar TODOS os pacientes sem limite usando paginação
+      const carregarTodosPacientes = async () => {
+        let todos = [];
+        let skip = 0;
+        const batchSize = 1000;
+        for (let i = 0; i < 200; i++) {
+          const batch = await Paciente.list('-created_date', batchSize, skip);
+          if (!Array.isArray(batch) || batch.length === 0) break;
+          todos = [...todos, ...batch];
+          if (batch.length < batchSize) break;
+          skip += batchSize;
+        }
+        return todos;
+      };
+
       const [agendamentosData, medicosData, pacientesData] = await Promise.all([
       cachedApiCall('agendamentos', () => Agendamento.list('-data_agendamento', 2000), []),
       cachedApiCall('medicos', () => Medico.list(), []),
-      cachedApiCall('pacientes', () => Paciente.list('-created_date', 3000), [])]
+      cachedApiCall('pacientes', carregarTodosPacientes, [])]
       );
 
       setAgendamentos(Array.isArray(agendamentosData) ? agendamentosData : []);

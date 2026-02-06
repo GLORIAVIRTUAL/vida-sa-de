@@ -77,13 +77,14 @@ export default function AgendamentosHoje({ agendamentos = [], medicos = [], paci
       }
     }
     
-    // 5. Fallback: buscar lista completa e filtrar por nome
+    // 5. Fallback: buscar via backend que varre TODOS os pacientes
     if (agendamento.paciente_nome) {
       try {
-        const todosPacientes = await Paciente.list('-created_date', 5000);
-        if (todosPacientes && todosPacientes.length > 0) {
+        const response = await base44.functions.invoke('searchPatients', { termo: agendamento.paciente_nome, limit: 5 });
+        const resultados = response?.data;
+        if (Array.isArray(resultados) && resultados.length > 0) {
           const nomeNorm = normStr(agendamento.paciente_nome);
-          paciente = todosPacientes.find(p => normStr(p.nome) === nomeNorm);
+          paciente = resultados.find(p => normStr(p.nome) === nomeNorm) || resultados[0];
           if (paciente) {
             setPacienteEditando(paciente);
             return;
