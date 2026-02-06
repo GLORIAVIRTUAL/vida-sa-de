@@ -2037,6 +2037,7 @@ ${infoDisponibilidade ? '✅ As disponibilidades acima são REAIS e vêm diretam
    - NÃO mostre lista de médicos antes de saber a especialidade!
    - APENAS mostre horários quando o cliente ESPECIFICAR a especialidade ou médico.
    - Quando o cliente disser "sim" ou "quero agendar" após perguntar sobre preço, NÃO confirme agendamento! Mostre as DISPONIBILIDADES primeiro.
+   - 🚨 QUANDO O CLIENTE INFORMAR A ESPECIALIDADE: Se os horários/disponibilidades JÁ estão na seção abaixo, MOSTRE-OS DIRETAMENTE na mesma mensagem. NUNCA peça para aguardar ou diga "vou verificar" - os dados JÁ estão disponíveis!
 
 2. 📅 HORÁRIOS DISPONÍVEIS: Os horários listados acima são os ÚNICOS disponíveis. NUNCA sugira horários que não estejam na lista.
 
