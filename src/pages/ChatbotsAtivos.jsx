@@ -295,7 +295,18 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
 
   const buscarContatos = async () => {
     try {
-      const lista = await base44.entities.Contato.list('-ultima_interacao', 50);
+      // Buscar todos os contatos paginando
+      let todosContatos = [];
+      let skip = 0;
+      const batchSize = 100;
+      while (true) {
+        const batch = await base44.entities.Contato.list('-ultima_interacao', batchSize, skip);
+        if (!batch || batch.length === 0) break;
+        todosContatos = [...todosContatos, ...batch];
+        if (batch.length < batchSize) break;
+        skip += batchSize;
+      }
+      const lista = todosContatos;
       const comHistorico = lista.filter(c => 
         (c.historico_mensagens && c.historico_mensagens.length > 0) || c.ultima_mensagem
       );
