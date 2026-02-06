@@ -552,24 +552,82 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
 
   const mensagens = getMensagens(contatoSelecionado);
 
+  // Filtrar contatos
+  const contatosFiltrados = contatos.filter(contato => {
+    // Filtro por status
+    if (filtroStatus === 'atendimento') {
+      if (contato.conversa_finalizada) return false;
+      const temResposta = contato.historico_mensagens?.some(m => m.role === 'assistant') || contato.ultima_resposta;
+      if (!temResposta) return false;
+      return true;
+    }
+    if (filtroStatus === 'sem_resposta') {
+      if (contato.conversa_finalizada) return false;
+      const temResposta = contato.historico_mensagens?.some(m => m.role === 'assistant') || contato.ultima_resposta;
+      return !temResposta;
+    }
+    if (filtroStatus === 'finalizadas') {
+      return contato.conversa_finalizada === true;
+    }
+    return true; // 'todos'
+  }).filter(contato => {
+    // Filtro por data
+    if (!filtroData) return true;
+    const dataInteracao = contato.ultima_interacao || contato.updated_date || contato.created_date;
+    if (!dataInteracao) return false;
+    return dataInteracao.substring(0, 10) === filtroData;
+  });
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
       <div className="lg:col-span-1">
          <Card>
-           <CardHeader className="pb-2">
+           <CardHeader className="pb-2 space-y-2">
              <CardTitle className="text-sm flex items-center justify-between">
-               <span>Conversas ({contatos.length})</span>
+               <span>Conversas ({contatosFiltrados.length})</span>
                <Button onClick={atualizarContatoSelecionado} variant="ghost" size="sm" title="Atualizar conversa atual">
                  <RefreshCw className="w-3 h-3" />
                </Button>
              </CardTitle>
+             <div className="flex gap-1 flex-wrap">
+               {[
+                 { value: 'todos', label: 'Todos' },
+                 { value: 'atendimento', label: 'Atendimento' },
+                 { value: 'sem_resposta', label: 'S/ Resposta' },
+                 { value: 'finalizadas', label: 'Finalizadas' },
+               ].map(f => (
+                 <button
+                   key={f.value}
+                   onClick={() => setFiltroStatus(f.value)}
+                   className={`text-[10px] px-2 py-1 rounded-full border transition ${
+                     filtroStatus === f.value
+                       ? 'bg-blue-600 text-white border-blue-600'
+                       : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-100'
+                   }`}
+                 >
+                   {f.label}
+                 </button>
+               ))}
+             </div>
+             <Input
+               type="date"
+               value={filtroData}
+               onChange={(e) => setFiltroData(e.target.value)}
+               className="h-7 text-xs"
+               placeholder="Filtrar por data"
+             />
+             {filtroData && (
+               <button onClick={() => setFiltroData('')} className="text-[10px] text-blue-600 hover:underline">
+                 Limpar data
+               </button>
+             )}
            </CardHeader>
            <CardContent className="p-0 max-h-[600px] overflow-y-auto">
-             {contatos.length === 0 ? (
+             {contatosFiltrados.length === 0 ? (
                <div className="p-4 text-center text-gray-500 text-sm">Nenhuma conversa</div>
              ) : (
                <div className="divide-y">
-                 {contatos.map((contato) => {
+                 {contatosFiltrados.map((contato) => {
                    const ultimaIntercao = contato.ultima_interacao 
                      ? format(new Date(contato.ultima_interacao), 'HH:mm', { locale: ptBR })
                      : '-';
