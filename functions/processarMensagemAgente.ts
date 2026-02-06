@@ -702,63 +702,65 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
       // Cliente quer AGENDAR - processar normalmente
 
       // Detectar especialidade mencionada - lista expandida com sinônimos
+      // IMPORTANTE: Lista de especialidades para detecção automática
+      // Usar apenas termos ESPECÍFICOS (mín 5 chars) que identifiquem claramente uma especialidade
+      // NÃO incluir termos genéricos como "consulta", "osso", "peso", "eco", "ultra", "canal", "grau", "lente"
+      // que podem causar falsos positivos
       const especialidades = [
       // Cardiologia
-      'Cardiologia', 'Cardiologista', 'Cardio', 'Coração', 'Coracao', 'Arritmia', 'Pressão Alta', 'Pressao Alta', 'Hipertensão', 'Hipertensao',
+      'Cardiologia', 'Cardiologista', 'Arritmia', 'Hipertensão', 'Hipertensao',
       // Clínico Geral
-      'Clínico Geral', 'Clinico Geral', 'Clínico', 'Clinico', 'Médico Geral', 'Medico Geral', 'Consulta Geral', 'Check-up', 'Checkup',
+      'Clínico Geral', 'Clinico Geral', 'Clínico', 'Clinico', 'Check-up', 'Checkup',
       // Dermatologia
-      'Dermatologia', 'Dermatologista', 'Dermato', 'Pele', 'Acne', 'Manchas', 'Espinhas',
+      'Dermatologia', 'Dermatologista', 'Dermato',
       // Endocrinologia
-      'Endocrinologia', 'Endocrinologista', 'Endocrino', 'Tireoide', 'Tireóide', 'Diabetes', 'Hormônio', 'Hormonio', 'Metabolismo',
+      'Endocrinologia', 'Endocrinologista', 'Tireoide', 'Tireóide', 'Diabetes',
       // Ginecologia
-      'Ginecologia', 'Ginecologista', 'Gineco', 'Preventivo', 'Papanicolau', 'Útero', 'Utero', 'Ovário', 'Ovario', 'Menstruação', 'Menstruacao',
+      'Ginecologia', 'Ginecologista', 'Gineco', 'Preventivo', 'Papanicolau',
       // Nutrição
-      'Nutrição', 'Nutricao', 'Nutricionista', 'Nutri', 'Dieta', 'Emagrecer', 'Alimentação', 'Alimentacao', 'Peso',
+      'Nutrição', 'Nutricao', 'Nutricionista',
       // Psicologia
-      'Psicologia', 'Psicólogo', 'Psicologo', 'Psicóloga', 'Psicologa', 'Psico', 'Ansiedade', 'Depressão', 'Depressao',
+      'Psicologia', 'Psicólogo', 'Psicologo', 'Psicóloga', 'Psicologa',
       // Ortopedia
-      'Ortopedia', 'Ortopedista', 'Orto', 'Osso', 'Ossos', 'Fratura', 'Coluna', 'Joelho', 'Ombro', 'Articulação', 'Articulacao',
+      'Ortopedia', 'Ortopedista', 'Traumatologia', 'Traumatologista',
       // Urologia
-      'Urologia', 'Urologista', 'Uro', 'Próstata', 'Prostata', 'Rim', 'Rins', 'Bexiga', 'Urina',
+      'Urologia', 'Urologista', 'Próstata', 'Prostata',
       // Geriatria
-      'Geriatria', 'Geriatra', 'Idoso', 'Idosos', 'Terceira Idade', 'Envelhecimento',
+      'Geriatria', 'Geriatra',
       // Gastroenterologia
-      'Gastroenterologia', 'Gastro', 'Gastroenterologista', 'Estômago', 'Estomago', 'Intestino', 'Fígado', 'Figado', 'Digestão', 'Digestao', 'Azia', 'Refluxo',
+      'Gastroenterologia', 'Gastro', 'Gastroenterologista',
       // Reumatologia
-      'Reumatologia', 'Reumatologista', 'Reumato', 'Reumatismo', 'Artrite', 'Artrose', 'Lupus', 'Fibromialgia',
+      'Reumatologia', 'Reumatologista', 'Reumatismo', 'Fibromialgia',
       // Psiquiatria
-      'Psiquiatria', 'Psiquiatra', 'Remédio Controlado', 'Remedio Controlado', 'Medicação Psiquiátrica', 'Medicacao Psiquiatrica',
+      'Psiquiatria', 'Psiquiatra',
       // Fisioterapia
-      'Fisioterapia', 'Fisioterapeuta', 'Fisio', 'RPG', 'Reabilitação', 'Reabilitacao', 'Dor nas Costas', 'Alongamento',
+      'Fisioterapia', 'Fisioterapeuta',
       // Ecografia/Ultrassom
-      'Ecografia', 'Eco', 'Ultrassom', 'Ultrassonografia', 'Ultra', 'Ecografista',
-      // Traumatologia
-      'Traumatologia', 'Traumatologista', 'Trauma', 'Acidente', 'Lesão', 'Lesao',
+      'Ecografia', 'Ecocardiograma', 'Ultrassom', 'Ultrassonografia',
       // Oftalmologia
-      'Oftalmologia', 'Oftalmologista', 'Oftalmo', 'Olho', 'Olhos', 'Vista', 'Visão', 'Visao', 'Óculos', 'Oculos', 'Catarata', 'Glaucoma',
+      'Oftalmologia', 'Oftalmologista', 'Oftalmo', 'Catarata', 'Glaucoma',
       // Otorrinolaringologia
-      'Otorrinolaringologia', 'Otorrino', 'Otorrinolaringologista', 'Ouvido', 'Nariz', 'Garganta', 'Sinusite', 'Rinite', 'Amígdala', 'Amigdala',
+      'Otorrinolaringologia', 'Otorrino', 'Otorrinolaringologista', 'Sinusite', 'Rinite',
       // Pediatria
-      'Pediatria', 'Pediatra', 'Criança', 'Crianca', 'Crianças', 'Criancas', 'Bebê', 'Bebe', 'Infantil',
+      'Pediatria', 'Pediatra',
       // Pneumologia
-      'Pneumologia', 'Pneumologista', 'Pneumo', 'Pulmão', 'Pulmao', 'Respiração', 'Respiracao', 'Asma', 'Bronquite', 'Tosse',
+      'Pneumologia', 'Pneumologista', 'Asma', 'Bronquite',
       // Neurologia
-      'Neurologia', 'Neurologista', 'Neuro', 'Cérebro', 'Cerebro', 'Cabeça', 'Cabeca', 'Enxaqueca', 'Dor de Cabeça', 'Dor de Cabeca', 'Convulsão', 'Convulsao',
+      'Neurologia', 'Neurologista', 'Enxaqueca', 'Convulsão', 'Convulsao', 'Neuropediatria',
       // Quiropraxia
-      'Quiropraxia', 'Quiropraxista', 'Quiro', 'Ajuste', 'Coluna Vertebral',
+      'Quiropraxia', 'Quiropraxista',
       // Massoterapia
-      'Massoterapia', 'Massoterapeuta', 'Massagem', 'Relaxamento', 'Tensão Muscular', 'Tensao Muscular',
+      'Massoterapia', 'Massoterapeuta', 'Drenagem Linfática', 'Drenagem Linfatica',
       // Optometria
-      'Optometria', 'Optometrista', 'Grau', 'Lente', 'Lentes',
+      'Optometria', 'Optometrista',
       // Hidroginástica/Hidroterapia/Pilates
-      'Hidroginástica', 'Hidroginastica', 'Hidroterapia', 'Hidro', 'Pilates', 'Natação', 'Natacao', 'Piscina', 'Exercício na Água', 'Exercicio na Agua',
+      'Hidroginástica', 'Hidroginastica', 'Hidroterapia', 'Pilates', 'Natação', 'Natacao',
       // Psicopedagogia
-      'Psicopedagoga', 'Psicopedagogia', 'Psicopedagogo', 'Aprendizagem', 'Dificuldade Escolar',
+      'Psicopedagoga', 'Psicopedagogia', 'Psicopedagogo',
       // Odontologia
-      'Odontologia', 'Odontologista', 'Dentista', 'Dentário', 'Dentario', 'Dente', 'Dentes', 'Ortodontia', 'Implante', 'Canal', 'Prótese Dentária', 'Protese Dentaria', 'Limpeza Dental', 'Extração', 'Extracao', 'Cárie', 'Carie',
+      'Odontologia', 'Odontologista', 'Dentista', 'Ortodontia', 'Implantodontia',
       // Eletrocardiograma
-      'Eletrocardiograma', 'ECG', 'Eletro'
+      'Eletrocardiograma', 'ECG'
       ];
 
     // Função para normalizar texto (remover acentos e converter para lowercase)
