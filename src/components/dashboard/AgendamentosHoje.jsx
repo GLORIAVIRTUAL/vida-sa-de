@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Clock, User, Calendar, Edit, CalendarPlus } from "lucide-react"; 
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
-import { Agendamento } from "@/entities/all";
+import { Agendamento, Paciente } from "@/entities/all";
 import { base44 } from "@/api/base44Client";
 import FormularioPaciente from "../pacientes/FormularioPaciente";
 import { Link } from "react-router-dom";
@@ -44,7 +44,7 @@ export default function AgendamentosHoje({ agendamentos = [], medicos = [], paci
   
   const normStr = (s) => s ? String(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : '';
 
-  const handleEditarPaciente = (agendamento) => {
+  const handleEditarPaciente = async (agendamento) => {
     let paciente = null;
     
     // 1. Busca local por ID (instantânea)
@@ -64,32 +64,39 @@ export default function AgendamentosHoje({ agendamentos = [], medicos = [], paci
       return;
     }
     
-    // 4. Se tem paciente_id mas não está na lista local, buscar por ID direto (rápido)
+    // 4. Buscar no banco por ID usando filter (mais confiável)
     if (agendamento.paciente_id) {
-      import('@/entities/all').then(({ Paciente }) => {
-        Paciente.get(agendamento.paciente_id).then(p => {
-          if (p) setPacienteEditando(p);
-        }).catch(err => console.error('Erro ao buscar paciente:', err));
-      });
-      return;
+      try {
+        const resultados = await Paciente.filter({ id: agendamento.paciente_id });
+        if (resultados && resultados.length > 0) {
+          setPacienteEditando(resultados[0]);
+          return;
+        }
+      } catch (err) {
+        console.error('Erro ao buscar paciente por ID:', err);
+      }
     }
     
-    // 5. Último fallback: buscar via backend por nome
+    // 5. Fallback: buscar lista completa e filtrar por nome
     if (agendamento.paciente_nome) {
-      base44.functions.invoke('searchPatients', { termo: agendamento.paciente_nome, limit: 5 }).then(response => {
-        const resultados = response?.data;
-        if (Array.isArray(resultados) && resultados.length > 0) {
+      try {
+        const todosPacientes = await Paciente.list('-created_date', 5000);
+        if (todosPacientes && todosPacientes.length > 0) {
           const nomeNorm = normStr(agendamento.paciente_nome);
-          const found = resultados.find(p => normStr(p.nome) === nomeNorm) || resultados[0];
-          setPacienteEditando(found);
+          paciente = todosPacientes.find(p => normStr(p.nome) === nomeNorm);
+          if (paciente) {
+            setPacienteEditando(paciente);
+            return;
+          }
         }
-      }).catch(err => console.error('Erro ao buscar paciente via API:', err));
+      } catch (err) {
+        console.error('Erro ao buscar paciente por nome:', err);
+      }
     }
   };
   
   const handleSalvarPaciente = async (dadosPaciente) => {
     try {
-      const { Paciente } = await import('@/entities/all');
       await Paciente.update(pacienteEditando.id, dadosPaciente);
       setPacienteEditando(null);
       if (onUpdate) {

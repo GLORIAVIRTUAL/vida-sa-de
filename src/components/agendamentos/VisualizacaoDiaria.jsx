@@ -115,17 +115,35 @@ export default function VisualizacaoDiaria({ agendamentos, medicos, pacientes, o
       return;
     }
     
-    // 3. Fallback: buscar por ID direto no banco (rápido)
+    // 3. Fallback: buscar no banco por ID usando filter (mais confiável que .get)
     if (pacienteId) {
       try {
-        const p = await Paciente.get(pacienteId);
-        if (p) {
-          setPacienteParaEditar(p);
+        const resultados = await Paciente.filter({ id: pacienteId });
+        if (resultados && resultados.length > 0) {
+          setPacienteParaEditar(resultados[0]);
           setFormularioPacienteAberto(true);
           return;
         }
       } catch (error) {
         console.error('Erro ao buscar paciente por ID:', error);
+      }
+    }
+
+    // 4. Fallback: buscar no banco pela lista completa e filtrar por nome
+    if (agendamento?.paciente_nome) {
+      try {
+        const todosPacientes = await Paciente.list('-created_date', 5000);
+        if (todosPacientes && todosPacientes.length > 0) {
+          const nomeNorm = normStr(agendamento.paciente_nome);
+          paciente = todosPacientes.find((p) => normStr(p.nome) === nomeNorm);
+          if (paciente) {
+            setPacienteParaEditar(paciente);
+            setFormularioPacienteAberto(true);
+            return;
+          }
+        }
+      } catch (error) {
+        console.error('Erro ao buscar paciente por nome:', error);
       }
     }
     
