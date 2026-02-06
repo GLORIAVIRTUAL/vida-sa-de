@@ -107,11 +107,33 @@ export default function VisualizacaoDiaria({ agendamentos, medicos, pacientes, o
       const nomeNorm = normStr(agendamento.paciente_nome);
       paciente = pacientes.find((p) => normStr(p.nome) === nomeNorm);
     }
+
+    // Se encontrou localmente, abrir imediatamente
+    if (paciente) {
+      setPacienteParaEditar(paciente);
+      setFormularioPacienteAberto(true);
+      return;
+    }
     
-    // 3. Fallback: buscar via backend por NOME apenas (rápido)
-    if (!paciente && agendamento?.paciente_nome) {
+    // 3. Fallback: buscar por ID direto no banco (mais rápido e confiável)
+    if (pacienteId) {
       try {
-        const response = await base44.functions.invoke('searchPatients', { termo: agendamento.paciente_nome });
+        const { Paciente } = await import('@/entities/all');
+        const p = await Paciente.get(pacienteId);
+        if (p) {
+          setPacienteParaEditar(p);
+          setFormularioPacienteAberto(true);
+          return;
+        }
+      } catch (error) {
+        console.error('Erro ao buscar paciente por ID:', error);
+      }
+    }
+    
+    // 4. Último fallback: buscar via backend por nome
+    if (agendamento?.paciente_nome) {
+      try {
+        const response = await base44.functions.invoke('searchPatients', { termo: agendamento.paciente_nome, limit: 5 });
         const resultados = response?.data;
         if (Array.isArray(resultados) && resultados.length > 0) {
           const nomeNorm = normStr(agendamento.paciente_nome);
