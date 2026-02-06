@@ -906,15 +906,37 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
   );
 }
 
-// ========== COMPONENTE: PIPELINE ==========
-const estagios = [
-  { id: 'novo', nome: 'Novo', cor: 'bg-blue-500', icon: MessageCircle },
-  { id: 'atendimento', nome: 'Em Atendimento', cor: 'bg-yellow-500', icon: Clock },
-  { id: 'agendado', nome: 'Agendado', cor: 'bg-green-500', icon: Calendar },
-  { id: 'cancelou', nome: 'Cancelou Consulta', cor: 'bg-orange-500', icon: XCircle },
-  { id: 'concluido', nome: 'Concluído', cor: 'bg-gray-500', icon: CheckCircle },
-  { id: 'perdido', nome: 'Perdido', cor: 'bg-red-500', icon: XCircle }
+// ========== COMPONENTE: PIPELINE POR MOTIVO ==========
+import { Stethoscope, FlaskConical, CreditCard, FileText as FileTextIcon, Dumbbell, HelpCircle } from 'lucide-react';
+
+const motivosColunas = [
+  { id: 'agendamento_consulta', nome: 'Agendamento Consulta', cor: 'bg-blue-500', icon: Calendar },
+  { id: 'agendamento_exame', nome: 'Agendamento Exame', cor: 'bg-cyan-500', icon: FlaskConical },
+  { id: 'cancelamento', nome: 'Cancelamento', cor: 'bg-red-500', icon: XCircle },
+  { id: 'orcamento', nome: 'Orçamento', cor: 'bg-yellow-500', icon: DollarSign },
+  { id: 'cartao_mais_vida', nome: 'Cartão Mais Vida', cor: 'bg-purple-500', icon: CreditCard },
+  { id: 'resultado_exames', nome: 'Resultado Exames', cor: 'bg-green-500', icon: FileTextIcon },
+  { id: 'procedimentos', nome: 'Procedimentos', cor: 'bg-orange-500', icon: Stethoscope },
+  { id: 'turmas', nome: 'Turmas', cor: 'bg-teal-500', icon: Dumbbell },
+  { id: 'informacoes', nome: 'Informações Gerais', cor: 'bg-indigo-500', icon: HelpCircle },
+  { id: 'outros', nome: 'Outros', cor: 'bg-gray-500', icon: MessageCircle },
 ];
+
+function classificarMotivo(contato) {
+  const interesse = (contato.interesses?.[contato.interesses.length - 1] || '').toLowerCase();
+  
+  if (interesse.includes('consulta') || (interesse.includes('agendamento') && !interesse.includes('exame'))) return 'agendamento_consulta';
+  if (interesse.includes('exame') && (interesse.includes('agendamento') || interesse.includes('agendar') || interesse.includes('marcar'))) return 'agendamento_exame';
+  if (interesse.includes('cancelamento') || interesse.includes('cancelar') || interesse.includes('desmarcar')) return 'cancelamento';
+  if (interesse.includes('orçamento') || interesse.includes('orcamento') || interesse.includes('preço') || interesse.includes('valor')) return 'orcamento';
+  if (interesse.includes('cartão') || interesse.includes('cartao') || interesse.includes('mais vida')) return 'cartao_mais_vida';
+  if (interesse.includes('resultado') || interesse.includes('laudo')) return 'resultado_exames';
+  if (interesse.includes('procedimento')) return 'procedimentos';
+  if (interesse.includes('turma') || interesse.includes('hidrogin') || interesse.includes('pilates')) return 'turmas';
+  if (interesse.includes('informaç') || interesse.includes('informac') || interesse.includes('dúvida') || interesse.includes('duvida')) return 'informacoes';
+  if (!interesse) return 'outros';
+  return 'outros';
+}
 
 function PipelineTab() {
   const [contatos, setContatos] = useState([]);
@@ -924,19 +946,24 @@ function PipelineTab() {
   const carregarContatos = async () => {
     try {
       setLoading(true);
-      const lista = await base44.entities.Contato.list('-updated_date', 100);
-      const comHistorico = lista.filter(c => c.historico_mensagens?.length > 0 || c.ultima_mensagem);
+      let todosContatos = [];
+      let skip = 0;
+      const batchSize = 100;
+      while (true) {
+        const batch = await base44.entities.Contato.list('-updated_date', batchSize, skip);
+        if (!batch || batch.length === 0) break;
+        todosContatos = [...todosContatos, ...batch];
+        if (batch.length < batchSize) break;
+        skip += batchSize;
+      }
+      const comHistorico = todosContatos.filter(c => c.historico_mensagens?.length > 0 || c.ultima_mensagem);
       setContatos(comHistorico);
 
-      const pipelineOrganizado = { novo: [], atendimento: [], agendado: [], cancelou: [], concluido: [], perdido: [] };
+      const pipelineOrganizado = {};
+      motivosColunas.forEach(m => { pipelineOrganizado[m.id] = []; });
       comHistorico.forEach(contato => {
-        const estagio = contato.status === 'Novo' ? 'novo' :
-                       contato.status === 'Lead' ? 'atendimento' :
-                       contato.status === 'Qualificado' ? 'agendado' :
-                       contato.status === 'Cancelou' ? 'cancelou' :
-                       contato.status === 'Cliente' ? 'concluido' :
-                       contato.status === 'Inativo' ? 'perdido' : 'novo';
-        pipelineOrganizado[estagio].push(contato);
+        const motivo = classificarMotivo(contato);
+        pipelineOrganizado[motivo].push(contato);
       });
       setPipeline(pipelineOrganizado);
     } catch (error) {
@@ -958,9 +985,25 @@ function PipelineTab() {
     novoPipeline[destination.droppableId].splice(destination.index, 0, contatoMovido);
     setPipeline(novoPipeline);
 
-    const statusMap = { novo: 'Novo', atendimento: 'Lead', agendado: 'Qualificado', cancelou: 'Cancelou', concluido: 'Cliente', perdido: 'Inativo' };
+    // Mapear o id da coluna para o texto de interesse correspondente
+    const motivoMap = {
+      agendamento_consulta: 'Agendamento de Consulta',
+      agendamento_exame: 'Agendamento de Exame',
+      cancelamento: 'Cancelamento',
+      orcamento: 'Orçamento',
+      cartao_mais_vida: 'Cartão Mais Vida',
+      resultado_exames: 'Resultado de Exames',
+      procedimentos: 'Procedimentos',
+      turmas: 'Turmas (Hidroginástica/Pilates)',
+      informacoes: 'Informações Gerais',
+      outros: 'Outro'
+    };
     try {
-      await base44.entities.Contato.update(draggableId, { status: statusMap[destination.droppableId] });
+      const novoInteresse = motivoMap[destination.droppableId] || 'Outro';
+      const interessesAtuais = contatoMovido.interesses || [];
+      await base44.entities.Contato.update(draggableId, {
+        interesses: [...interessesAtuais, novoInteresse]
+      });
     } catch (error) {
       console.error('Erro:', error);
       carregarContatos();
@@ -973,17 +1016,17 @@ function PipelineTab() {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-6 gap-2">
-        {estagios.map((estagio) => {
-          const Icon = estagio.icon;
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+        {motivosColunas.map((motivo) => {
+          const Icon = motivo.icon;
           return (
-            <Card key={estagio.id}>
+            <Card key={motivo.id}>
               <CardContent className="p-3 flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-gray-600">{estagio.nome}</p>
-                  <p className="text-xl font-bold">{pipeline[estagio.id]?.length || 0}</p>
+                  <p className="text-[10px] text-gray-600 leading-tight">{motivo.nome}</p>
+                  <p className="text-xl font-bold">{pipeline[motivo.id]?.length || 0}</p>
                 </div>
-                <div className={`${estagio.cor} p-2 rounded-lg`}>
+                <div className={`${motivo.cor} p-2 rounded-lg`}>
                   <Icon className="w-4 h-4 text-white" />
                 </div>
               </CardContent>
@@ -993,49 +1036,55 @@ function PipelineTab() {
       </div>
 
       <DragDropContext onDragEnd={onDragEnd}>
-        <div className="grid grid-cols-6 gap-2">
-          {estagios.map((estagio) => {
-            const Icon = estagio.icon;
-            return (
-              <div key={estagio.id} className="flex flex-col">
-                <div className={`${estagio.cor} text-white p-2 rounded-t-lg flex items-center gap-1`}>
-                  <Icon className="w-3 h-3" />
-                  <span className="text-xs font-semibold">{estagio.nome}</span>
+        <div className="overflow-x-auto pb-4">
+          <div className="flex gap-2" style={{ minWidth: `${motivosColunas.length * 180}px` }}>
+            {motivosColunas.map((motivo) => {
+              const Icon = motivo.icon;
+              return (
+                <div key={motivo.id} className="flex flex-col" style={{ minWidth: '170px', flex: '1 1 0' }}>
+                  <div className={`${motivo.cor} text-white p-2 rounded-t-lg flex items-center gap-1`}>
+                    <Icon className="w-3 h-3" />
+                    <span className="text-[10px] font-semibold truncate">{motivo.nome}</span>
+                    <Badge className="ml-auto bg-white/20 text-white text-[9px] px-1 py-0">{pipeline[motivo.id]?.length || 0}</Badge>
+                  </div>
+                  <Droppable droppableId={motivo.id}>
+                    {(provided, snapshot) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                        className={`flex-1 bg-gray-100 p-2 rounded-b-lg min-h-[400px] space-y-2 ${snapshot.isDraggingOver ? 'bg-purple-50' : ''}`}
+                      >
+                        {pipeline[motivo.id]?.map((contato, index) => (
+                          <Draggable key={contato.id} draggableId={contato.id} index={index}>
+                            {(provided, snapshot) => (
+                              <Card
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                {...provided.dragHandleProps}
+                                className={`cursor-move hover:shadow-md transition ${snapshot.isDragging ? 'shadow-lg rotate-1' : ''}`}
+                              >
+                                <CardContent className="p-2">
+                                  <p className="font-medium text-xs truncate">{contato.nome || 'Cliente'}</p>
+                                  <p className="text-[10px] text-gray-500 truncate">{contato.telefone}</p>
+                                  {contato.created_date && (
+                                    <p className="text-[9px] text-gray-400">{format(new Date(contato.created_date), 'dd/MM', { locale: ptBR })}</p>
+                                  )}
+                                </CardContent>
+                              </Card>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
+                        {pipeline[motivo.id]?.length === 0 && (
+                          <div className="text-center text-gray-400 text-xs py-8">Vazio</div>
+                        )}
+                      </div>
+                    )}
+                  </Droppable>
                 </div>
-                <Droppable droppableId={estagio.id}>
-                  {(provided, snapshot) => (
-                    <div
-                      ref={provided.innerRef}
-                      {...provided.droppableProps}
-                      className={`flex-1 bg-gray-100 p-2 rounded-b-lg min-h-[400px] space-y-2 ${snapshot.isDraggingOver ? 'bg-purple-50' : ''}`}
-                    >
-                      {pipeline[estagio.id]?.map((contato, index) => (
-                        <Draggable key={contato.id} draggableId={contato.id} index={index}>
-                          {(provided, snapshot) => (
-                            <Card
-                              ref={provided.innerRef}
-                              {...provided.draggableProps}
-                              {...provided.dragHandleProps}
-                              className={`cursor-move hover:shadow-md transition ${snapshot.isDragging ? 'shadow-lg rotate-1' : ''}`}
-                            >
-                              <CardContent className="p-2">
-                                <p className="font-medium text-xs truncate">{contato.nome || 'Cliente'}</p>
-                                <p className="text-xs text-gray-500 truncate">{contato.telefone}</p>
-                              </CardContent>
-                            </Card>
-                          )}
-                        </Draggable>
-                      ))}
-                      {provided.placeholder}
-                      {pipeline[estagio.id]?.length === 0 && (
-                        <div className="text-center text-gray-400 text-xs py-8">Vazio</div>
-                      )}
-                    </div>
-                  )}
-                </Droppable>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </DragDropContext>
     </div>
