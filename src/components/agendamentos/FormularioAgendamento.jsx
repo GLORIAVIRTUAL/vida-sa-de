@@ -607,7 +607,7 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
 
   // Função para carregar horários disponíveis baseado no médico e data
   const carregarHorarios = useCallback(async (medicoId, data) => {
-    // Para Exames e Procedimentos, gerar horários automáticos
+    // Para Exames e Procedimentos, gerar horários automáticos mas filtrar ocupados
     if (formData.tipo_servico === 'Exame' || formData.tipo_servico === 'Procedimento') {
       console.log('🔄 Gerando horários automáticos para', formData.tipo_servico);
       
@@ -622,8 +622,30 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
       
       // Adicionar último horário de 19:00
       horariosAutomaticos.push('19:00');
+
+      // Filtrar horários já ocupados por agendamentos no mesmo dia (e mesmo médico se selecionado)
+      if (data) {
+        const agendamentosNoDia = (todosAgendamentos || []).filter(a => 
+          a.data_agendamento === data &&
+          a.status !== 'Cancelado' &&
+          (!agendamento || a.id !== agendamento.id) && // Excluir o próprio agendamento em edição
+          (medicoId ? a.medico_id === medicoId : true) // Se tem médico, filtrar por ele
+        );
+        const horariosOcupados = agendamentosNoDia.map(a => a.horario);
+        
+        const horariosLivres = horariosAutomaticos.filter(h => !horariosOcupados.includes(h));
+        
+        // Se estiver editando, garantir que o horário original esteja na lista
+        let horariosFinais = horariosLivres;
+        if (agendamento?.horario && !horariosFinais.includes(agendamento.horario)) {
+          horariosFinais = [...horariosFinais, agendamento.horario].sort();
+        }
+        
+        setHorariosDisponiveis(horariosFinais.sort());
+      } else {
+        setHorariosDisponiveis(horariosAutomaticos.sort());
+      }
       
-      setHorariosDisponiveis(horariosAutomaticos.sort()); // Sort them
       setLoadingHorarios(false);
       return;
     }
