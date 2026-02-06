@@ -1248,8 +1248,8 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
     // Verificar se o cliente está escolhendo horário (pode ser hoje, 13 horas, etc.)
     const clienteEscolhendoHorarioAgora = /pode ser|quero|às?\s*\d|hoje|\d{1,2}[h:]|horário/i.test(messageText);
     
-    if (estaEmFluxoAgendamento || historicoConversa || clienteEscolhendoHorarioAgora) {
-      console.log('📝 Verificando dados para agendamento...', { estaEmFluxoAgendamento, clienteEscolhendoHorarioAgora });
+    if ((estaEmFluxoAgendamento || clienteEscolhendoHorarioAgora) && !clienteRecusandoAgendar) {
+          console.log('📝 Verificando dados para agendamento...', { estaEmFluxoAgendamento, clienteEscolhendoHorarioAgora });
       
       try {
         // Usar LLM para extrair dados do agendamento do histórico + mensagem atual
