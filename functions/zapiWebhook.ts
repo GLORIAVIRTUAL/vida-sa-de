@@ -232,18 +232,26 @@ async function processarMensagemRecebida(base44, payload) {
                 // PADRÃO: Se atendimento_humano não está definido, assume HUMANO (true)
                 const estaEmModoHumano = contato.atendimento_humano !== false;
                 
-                await base44.asServiceRole.entities.Contato.update(contato.id, {
-                    historico_mensagens: historicoAtual.slice(-50),
-                    ultima_interacao: agora,
-                    nome: contato.nome || senderName,
-                    conversa_finalizada: false,
-                    atendimento_humano: estaEmModoHumano // Garantir que está definido
-                });
-                
-                // PADRÃO É HUMANO - só vai para IA se atendimento_humano === false
                 if (estaEmModoHumano) {
+                    // Modo HUMANO: salvar mensagem no histórico aqui
+                    await base44.asServiceRole.entities.Contato.update(contato.id, {
+                        historico_mensagens: historicoAtual.slice(-50),
+                        ultima_interacao: agora,
+                        nome: contato.nome || senderName,
+                        conversa_finalizada: false,
+                        atendimento_humano: true
+                    });
                     console.log('👤 Contato em atendimento HUMANO (padrão) - mensagem salva, NÃO processando IA');
                     return new Response(JSON.stringify({ message: "Atendimento humano", status: "salvo" }), { status: 200 });
+                } else {
+                    // Modo IA: NÃO salvar histórico aqui - o webhookWhatsappChatbot cuida disso
+                    // Apenas atualizar nome se necessário
+                    if (!contato.nome && senderName) {
+                        await base44.asServiceRole.entities.Contato.update(contato.id, {
+                            nome: senderName
+                        });
+                    }
+                    console.log('🤖 Contato em modo IA - NÃO salvando histórico aqui (chatbot fará isso)');
                 }
             } else {
                 // Novo contato - criar em modo HUMANO
