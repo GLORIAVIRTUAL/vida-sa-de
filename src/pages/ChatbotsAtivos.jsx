@@ -1036,8 +1036,8 @@ function PipelineTab() {
       </div>
 
       <DragDropContext onDragEnd={onDragEnd}>
-        <div className="overflow-x-auto pb-4" style={{ maxWidth: '100%' }}>
-          <div className="inline-flex gap-2" style={{ minWidth: 'max-content' }}>
+        <div className="overflow-x-auto pb-2" style={{ maxWidth: '100%', direction: 'rtl', transform: 'rotateX(180deg)' }}>
+          <div className="inline-flex gap-2" style={{ minWidth: 'max-content', direction: 'ltr', transform: 'rotateX(180deg)' }}>
             {motivosColunas.map((motivo) => {
               const Icon = motivo.icon;
               return (
