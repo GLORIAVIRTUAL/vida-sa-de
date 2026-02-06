@@ -850,7 +850,7 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
     } finally {
       setLoadingHorarios(false);
     }
-  }, [medicos, todosAgendamentos, agendamento, formData.tipo_servico]);
+  }, [medicos, todosAgendamentos, agendamento, formData.tipo_servico, formData.is_encaixe]);
 
   // Função para verificar se o médico atende em uma data específica
   const medicoAtendeNaData = useCallback((data) => {
