@@ -913,7 +913,7 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
     };
 
     loadHorarios();
-  }, [formData.medico_id, formData.data_agendamento, formData.tipo_servico, carregarHorarios, agendamento]);
+  }, [formData.medico_id, formData.data_agendamento, formData.tipo_servico, formData.is_encaixe, carregarHorarios, agendamento]);
 
   // NOVO: Carregar horários do médico selecionado para consulta em múltiplos serviços
   const carregarHorariosParaMedicoMultiplo = useCallback(async (medicoId) => {
