@@ -413,7 +413,11 @@ Deno.serve(async (req) => {
     // VERIFICAÇÃO FINAL: Se chegou aqui, verificar novamente se está em modo humano
     // (pode ter sido alterado durante o debounce)
     try {
-      const contatoFinal = (await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber }))[0];
+      let contatoFinal = null;
+      for (const v of variantesDebounce) {
+        const results = await base44.asServiceRole.entities.Contato.filter({ telefone: v });
+        if (results.length > 0) { contatoFinal = results[0]; break; }
+      }
       if (contatoFinal && contatoFinal.atendimento_humano !== false) {
         console.log('👤 Verificação final: contato em modo HUMANO - não processando IA');
         return Response.json({ success: true, status: 'atendimento_humano' });
