@@ -15,20 +15,21 @@ Deno.serve(async (req) => {
 
         let body = {};
         try { body = await req.json(); } catch (e) {}
-        const { termo, paciente_id } = body;
+        const { termo, paciente_id, limit } = body;
         const adminClient = base44.asServiceRole;
+        const maxResults = limit || 500;
 
-        // Busca por ID - escaneia até encontrar
+        // Busca por ID direto
         if (paciente_id) {
             let skip = 0;
-            const batchSize = 500;
-            for (let i = 0; i < 100; i++) {
-                const batch = await adminClient.entities.Paciente.filter({}, '-created_date', batchSize, skip);
+            const batchSize = 1000;
+            for (let i = 0; i < 200; i++) {
+                const batch = await adminClient.entities.Paciente.list('-created_date', batchSize, skip);
                 if (!batch || batch.length === 0) break;
                 const found = batch.find(p => p.id === paciente_id);
                 if (found) return Response.json([found]);
-                skip += batchSize;
                 if (batch.length < batchSize) break;
+                skip += batchSize;
             }
             return Response.json([]);
         }
@@ -39,59 +40,29 @@ Deno.serve(async (req) => {
             return Response.json(recentes || []);
         }
 
-        // Busca por nome - otimizada com parada rápida
+        // Busca por nome, CPF, telefone - varre TODOS os pacientes sem limite
         const searchTerms = normalize(termo).split(/\s+/).filter(t => t.length > 0);
         const filtered = [];
         let skip = 0;
-        const batchSize = 500;
-        const maxResults = 20; // Reduzido - raramente precisamos de mais
+        const batchSize = 1000;
         
-        for (let i = 0; i < 100; i++) {
-            const batch = await adminClient.entities.Paciente.filter({}, '-created_date', batchSize, skip);
+        for (let i = 0; i < 200; i++) {
+            const batch = await adminClient.entities.Paciente.list('-created_date', batchSize, skip);
             if (!batch || batch.length === 0) break;
             
             for (const paciente of batch) {
-                const nomeNorm = normalize(paciente.nome);
-                // Busca otimizada: só no nome primeiro (mais rápido)
-                if (searchTerms.every(term => nomeNorm.includes(term))) {
+                const searchableText = normalize(
+                    `${paciente.nome} ${paciente.cpf} ${paciente.telefone} ${paciente.email}`
+                );
+                if (searchTerms.every(term => searchableText.includes(term))) {
                     filtered.push(paciente);
                     if (filtered.length >= maxResults) break;
                 }
             }
             
-            // Se já encontrou resultados suficientes, para
             if (filtered.length >= maxResults) break;
-            
-            skip += batchSize;
             if (batch.length < batchSize) break;
-            
-            // Se já encontrou pelo menos 1 resultado e escaneou 3 lotes, para
-            // (provavelmente já encontrou o que precisava)
-            if (filtered.length > 0 && i >= 2) break;
-        }
-
-        // Se não encontrou nada por nome, tentar busca mais ampla (CPF, telefone)
-        if (filtered.length === 0) {
-            skip = 0;
-            for (let i = 0; i < 100; i++) {
-                const batch = await adminClient.entities.Paciente.filter({}, '-created_date', batchSize, skip);
-                if (!batch || batch.length === 0) break;
-                
-                for (const paciente of batch) {
-                    const searchableText = normalize(
-                        `${paciente.nome} ${paciente.cpf} ${paciente.telefone}`
-                    );
-                    if (searchTerms.every(term => searchableText.includes(term))) {
-                        filtered.push(paciente);
-                        if (filtered.length >= maxResults) break;
-                    }
-                }
-                
-                if (filtered.length >= maxResults) break;
-                skip += batchSize;
-                if (batch.length < batchSize) break;
-                if (filtered.length > 0 && i >= 2) break;
-            }
+            skip += batchSize;
         }
 
         return Response.json(filtered);
