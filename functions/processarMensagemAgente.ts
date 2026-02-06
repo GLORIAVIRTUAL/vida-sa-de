@@ -817,12 +817,15 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
     
     // Só buscar disponibilidades se:
     // 1. Detectou médico específico OU especialidade específica, OU
-    // 2. Já está em fluxo de agendamento com dados parciais no histórico, OU
-    // 3. Cliente está confirmando horário/data (hoje, 8 horas, 13:00, etc.)
+    // 2. Já está em fluxo de agendamento com dados parciais no histórico E o cliente está escolhendo horário/data
+    // NUNCA buscar quando o cliente apenas diz "quero agendar" sem especificar especialidade
     const temEspecialidadeOuMedico = especialidadeDetectada || medicoEspecificoDetectado;
     const clienteEscolhendoHorario = /hoje|\d{1,2}[h:]?\s*(?:horas?)?|\d{1,2}:\d{2}|amanhã|segunda|terça|quarta|quinta|sexta|sábado/i.test(messageText);
     const deveBuscarDisponibilidades = querAgendar && (temEspecialidadeOuMedico || 
-      (jaEmFluxoAgendamento && (/médico|doutor|dr\.|especialidade|horário|data/i.test(historicoConversa) || clienteEscolhendoHorario)));
+      (jaEmFluxoAgendamento && temEspecialidadeOuMedico) ||
+      (jaEmFluxoAgendamento && clienteEscolhendoHorario && /Dr\.|👨‍⚕️|médico.*horário/i.test(historicoConversa)));
+
+    console.log('📋 Detecção agendamento:', { querAgendar, especialidadeDetectada, medicoEspecificoDetectado: !!medicoEspecificoDetectado, deveBuscarDisponibilidades, clienteRecusandoAgendar });
     
     // REMOVIDO: Bloco de resposta automática para agendamento
     // Agora deixamos o LLM responder naturalmente e AGUARDAR o cliente dizer o que deseja
