@@ -251,6 +251,8 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
   const [carregandoTemplates, setCarregandoTemplates] = useState(false);
   const [enviandoTemplate, setEnviandoTemplate] = useState(false);
   const [enviandoConvite, setEnviandoConvite] = useState(false);
+  const [filtroStatus, setFiltroStatus] = useState('todos');
+  const [filtroData, setFiltroData] = useState('');
   const messagesEndRef = useRef(null);
   const navigate = useNavigate();
   
