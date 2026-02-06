@@ -81,13 +81,21 @@ Deno.serve(async (req) => {
         const mensagensPendentes = contato.mensagens_pendentes || [];
         
         // Verificar duplicata por messageId no histórico
-        const jaProcessadaHistorico = historicoMensagens.some(m => m.messageId === messageId);
+        const jaProcessadaHistorico = messageId && historicoMensagens.some(m => m.messageId === messageId);
         
         // Verificar duplicata por messageId nas pendentes
-        const jaProcessadaPendente = mensagensPendentes.some(m => m.messageId === messageId);
+        const jaProcessadaPendente = messageId && mensagensPendentes.some(m => m.messageId === messageId);
         
-        if (jaProcessadaHistorico || jaProcessadaPendente) {
-          console.log('⏭️ Mensagem já processada. Ignorando duplicata:', messageId);
+        // Verificar duplicata por conteúdo+timestamp (mensagens idênticas nos últimos 10s)
+        const agora10sAtras = new Date(Date.now() - 10000).toISOString();
+        const jaProcessadaConteudo = historicoMensagens.some(m => 
+          m.role === 'user' && 
+          m.content === (messageText || '') && 
+          m.timestamp > agora10sAtras
+        );
+        
+        if (jaProcessadaHistorico || jaProcessadaPendente || jaProcessadaConteudo) {
+          console.log('⏭️ Mensagem já processada. Ignorando duplicata:', messageId, { jaProcessadaHistorico, jaProcessadaPendente, jaProcessadaConteudo });
           return Response.json({ success: true, status: 'duplicata_ignorada' });
         }
       }
