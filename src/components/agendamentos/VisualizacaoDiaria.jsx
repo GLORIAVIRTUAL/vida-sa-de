@@ -6,7 +6,7 @@ import { Calendar, Clock, User, CheckCircle, XCircle, ArrowUpCircle, DollarSign,
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Agendamento } from "@/entities/all";
+import { Agendamento, Paciente } from "@/entities/all";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { safeApiCall } from "@/components/shared/apiThrottle";
@@ -115,10 +115,9 @@ export default function VisualizacaoDiaria({ agendamentos, medicos, pacientes, o
       return;
     }
     
-    // 3. Fallback: buscar por ID direto no banco (mais rápido e confiável)
+    // 3. Fallback: buscar por ID direto no banco (rápido)
     if (pacienteId) {
       try {
-        const { Paciente } = await import('@/entities/all');
         const p = await Paciente.get(pacienteId);
         if (p) {
           setPacienteParaEditar(p);
@@ -130,36 +129,16 @@ export default function VisualizacaoDiaria({ agendamentos, medicos, pacientes, o
       }
     }
     
-    // 4. Último fallback: buscar via backend por nome
-    if (agendamento?.paciente_nome) {
-      try {
-        const response = await base44.functions.invoke('searchPatients', { termo: agendamento.paciente_nome, limit: 5 });
-        const resultados = response?.data;
-        if (Array.isArray(resultados) && resultados.length > 0) {
-          const nomeNorm = normStr(agendamento.paciente_nome);
-          paciente = resultados.find(p => normStr(p.nome) === nomeNorm) || resultados[0];
-        }
-      } catch (error) {
-        console.error('Erro ao buscar paciente via API:', error);
-      }
-    }
-    
-    if (paciente) {
-      setPacienteParaEditar(paciente);
-      setFormularioPacienteAberto(true);
-    } else {
-      toast({
-        title: "Paciente não encontrado",
-        description: "Não foi possível localizar o cadastro deste paciente.",
-        variant: "destructive"
-      });
-    }
+    toast({
+      title: "Paciente não encontrado",
+      description: "Não foi possível localizar o cadastro deste paciente.",
+      variant: "destructive"
+    });
   };
 
   const handleSalvarPaciente = async (data) => {
     try {
-      const { Paciente } = await import('@/entities/all');
-      await safeApiCall(() => Paciente.update(pacienteParaEditar.id, data));
+      await Paciente.update(pacienteParaEditar.id, data);
 
       toast({
         title: "Paciente atualizado!",
