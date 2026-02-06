@@ -193,15 +193,39 @@ Deno.serve(async (req) => {
         // Se as pendentes estão vazias, outra chamada já processou
         const pendentesAtuais = contatoAtualizado.mensagens_pendentes || [];
         if (pendentesAtuais.length === 0) {
-          console.log('⏭️ Pendentes vazias - outra chamada já processou');
-          return Response.json({ success: true, status: 'ja_processado' });
-        }
+          // Verificar se já existe uma resposta do assistente APÓS nossa mensagem no histórico
+          const histVerif = contatoAtualizado.historico_mensagens || [];
+          const nossaMsgIndex = histVerif.findIndex(m => m.messageId === messageId && m.role === 'user');
+          const temRespostaDepois = nossaMsgIndex >= 0 && histVerif.slice(nossaMsgIndex + 1).some(m => m.role === 'assistant');
+          
+          if (temRespostaDepois) {
+            console.log('⏭️ Pendentes vazias E já há resposta no histórico - outra chamada processou');
+            return Response.json({ success: true, status: 'ja_processado' });
+          }
+          
+          // Pendentes vazias MAS sem resposta = outra chamada limpou mas pode ter falhado
+          // Processar nossa mensagem diretamente
+          console.log('⚠️ Pendentes vazias MAS sem resposta - processando diretamente');
+          var mensagemFinal = messageText;
+          // Pular o bloco de limpeza abaixo
+        } else {
         
         // Verificar se NOSSA mensagem ainda está nas pendentes
         if (!pendentesAtuais.some(m => m.messageId === messageId)) {
-          console.log('⏭️ Nossa mensagem não está nas pendentes - já processada');
-          return Response.json({ success: true, status: 'ja_processado' });
-        }
+          // Verificar se já existe resposta
+          const histVerif2 = contatoAtualizado.historico_mensagens || [];
+          const nossaMsgIndex2 = histVerif2.findIndex(m => m.messageId === messageId && m.role === 'user');
+          const temRespostaDepois2 = nossaMsgIndex2 >= 0 && histVerif2.slice(nossaMsgIndex2 + 1).some(m => m.role === 'assistant');
+          
+          if (temRespostaDepois2) {
+            console.log('⏭️ Nossa mensagem não está nas pendentes E já tem resposta - já processada');
+            return Response.json({ success: true, status: 'ja_processado' });
+          }
+          
+          // Sem resposta ainda - processar diretamente
+          console.log('⚠️ Nossa mensagem saiu das pendentes MAS sem resposta - processando diretamente');
+          var mensagemFinal = messageText;
+        } else {
         
         // LIMPAR pendentes (lock atômico - quem limpar primeiro processa)
         const todasMensagens = [...pendentesAtuais];
