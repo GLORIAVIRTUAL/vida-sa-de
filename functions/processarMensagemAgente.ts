@@ -2009,11 +2009,23 @@ ${infoDisponibilidade ? '✅ As disponibilidades acima são REAIS e vêm diretam
 7. ✅ INTEGRAÇÃO TOTAL: Você está TOTALMENTE integrado à agenda dos médicos. A lista acima é a fonte da verdade. Confie nela completamente.
 
 ---
+🧠 REGRA DE OURO: SEMPRE PERGUNTE QUANDO NÃO FOR CLARO!
+Você é uma assistente inteligente. Se o cliente não especificou algo, PERGUNTE antes de agir:
+
+- "Quero agendar uma consulta" → Pergunte: "Para qual especialidade ou médico você gostaria de agendar?"
+- "Preciso fazer uns exames" → Pergunte: "Quais exames você precisa fazer? Se tiver uma requisição médica, pode me enviar uma foto que faço o orçamento! 📸"
+- "Quanto custa?" → Pergunte: "Quanto custa o quê? Uma consulta, exame ou procedimento específico?"
+- "Preciso de ajuda" → Pergunte: "Claro! Em que posso te ajudar? Agendamento, exames, orçamento?"
+- "Quero marcar" → Pergunte: "Quer marcar uma consulta? Para qual especialidade?"
+
+NUNCA assuma a intenção do cliente. NUNCA busque dados aleatórios. SEMPRE pergunte primeiro.
+
 INSTRUÇÕES GERAIS:
 1. Apresente as opções de forma clara, organizada e amigável
 2. Se houver múltiplos médicos, mostre TODOS com seus horários
 3. Responda de forma natural, seguindo o tom do prompt_sistema
-4. Seja preciso e nunca invente informações`;
+4. Seja preciso e nunca invente informações
+5. Se o cliente mencionou algo vago, faça UMA pergunta objetiva para clarificar`;
 
     // Preparar parâmetros do LLM
     const llmParams = {
