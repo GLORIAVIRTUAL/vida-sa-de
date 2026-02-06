@@ -251,7 +251,9 @@ async function processarMensagemRecebida(base44, payload) {
                             nome: senderName
                         });
                     }
-                    console.log('🤖 Contato em modo IA - NÃO salvando histórico aqui (chatbot fará isso)');
+                    console.log('🤖 Contato em modo IA - delegando para webhookWhatsappChatbot (NÃO processar aqui)');
+                    // NÃO encaminhar para chatbot aqui - deixar o webhookWhatsappChatbot processar
+                    // Evita duplicação de processamento
                 }
             } else {
                 // Novo contato - criar em modo HUMANO
