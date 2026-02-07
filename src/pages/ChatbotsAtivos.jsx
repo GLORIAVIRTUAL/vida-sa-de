@@ -560,6 +560,16 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
   // Filtrar contatos
   const contatosFiltrados = contatos.filter(contato => {
     // Filtro por status
+    if (filtroStatus === 'minhas') {
+      // Minhas = conversas onde o usuário atual é o atendente
+      if (contato.conversa_finalizada) return false;
+      if (!currentUser) return false;
+      const nomeUsuario = currentUser.display_name || currentUser.full_name || '';
+      const emailUsuario = currentUser.email || '';
+      return (contato.atendente_atual && contato.atendente_atual === nomeUsuario) ||
+             (contato.atendente_id && contato.atendente_id === currentUser.id) ||
+             (contato.atendente_id && contato.atendente_id === emailUsuario);
+    }
     if (filtroStatus === 'atendimento') {
       // Em atendimento = tem atendente humano atribuído e não finalizada
       if (contato.conversa_finalizada) return false;
