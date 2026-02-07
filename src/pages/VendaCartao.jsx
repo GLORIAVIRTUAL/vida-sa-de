@@ -75,6 +75,7 @@ export default function VendaCartaoPage() {
 
   const [contratoAberto, setContratoAberto] = useState(false);
   const [cartoesAberto, setCartoesAberto] = useState(false);
+  const [relatorioAberto, setRelatorioAberto] = useState(false);
 
   useEffect(() => {
     carregarVendas();
