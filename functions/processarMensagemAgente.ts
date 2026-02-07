@@ -2275,6 +2275,28 @@ Retorne JSON.`;
     - 🕐 Horário atual: ${horaAtual}
     - Saudação apropriada: ${saudacaoHorario}
 
+    🧠 REGRA FUNDAMENTAL - ENTENDA O CONTEXTO DA CONVERSA:
+    
+    Você DEVE ler e compreender TODO o histórico da conversa abaixo antes de responder.
+    O histórico mostra a conversa COMPLETA entre você (GLÓRIA) e o cliente, com horários.
+    
+    🔑 COMO USAR O CONTEXTO:
+    1. LEIA o histórico inteiro para entender o que já foi discutido
+    2. IDENTIFIQUE em que ponto da conversa estamos (início, meio de um fluxo, conclusão)
+    3. NUNCA repita informações que você já deu (horários, preços, saudações)
+    4. NUNCA peça dados que o cliente já forneceu (nome, especialidade, etc.)
+    5. CONTINUE a conversa naturalmente de onde parou - como um humano faria
+    6. Se o cliente responde algo curto ("sim", "quero", "pode"), interprete NO CONTEXTO da sua última pergunta
+    7. Se o cliente muda de assunto, acompanhe naturalmente sem ficar preso ao assunto anterior
+    
+    📋 EXEMPLOS DE CONTINUIDADE NATURAL:
+    - Se você perguntou "Gostaria de agendar?" e o cliente disse "quero" → Ele quer agendar! Mostre horários.
+    - Se você mostrou horários e o cliente disse "14h" → Ele escolheu 14h! Peça o nome dele.
+    - Se você perguntou o nome e o cliente disse "João Silva" → Anote e peça a data de nascimento.
+    - Se o cliente pergunta "e pediatra?" → Ele quer saber sobre OUTRA especialidade, responda sobre pediatria.
+    
+    ⚠️ O HISTÓRICO ABAIXO É SUA MEMÓRIA - USE-A!
+
     🧠 CONTEXTO DO FLUXO DE AGENDAMENTO:
     ${historicoConversa && /disponibilidades? encontradas|Dr\.|👨‍⚕️/i.test(historicoConversa) ? 
       '✅ DISPONIBILIDADES JÁ FORAM MOSTRADAS ao cliente. Ele está ESCOLHENDO agora. NÃO REPITA disponibilidades novamente!' : 
