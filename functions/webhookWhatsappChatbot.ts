@@ -170,25 +170,20 @@ Deno.serve(async (req) => {
             nome: contato.nome || senderName
           });
           console.log('👤 Contato em atendimento humano - mensagem salva');
+          if (messageId) releaseLock(messageId);
           return Response.json({ success: true, status: 'atendimento_humano' });
         }
         
-        // MODO IA: Adicionar ao buffer de pendentes
-        const mensagensPendentes = contato.mensagens_pendentes || [];
+        // MODO IA: Salvar mensagem no histórico
+        const historicoAtual = contato.historico_mensagens || [];
         
-        // Verificar se esta mensagem já está no buffer
-        if (messageId && mensagensPendentes.some(m => m.messageId === messageId)) {
-          console.log('⏭️ Mensagem já nas pendentes:', messageId);
-          return Response.json({ success: true, status: 'duplicata_ignorada' });
+        // Verificar se esta mensagem já está no histórico (outra instância já salvou)
+        if (messageId && historicoAtual.some(m => m.messageId === messageId && m.role === 'user')) {
+          console.log('⏭️ Mensagem já está no histórico:', messageId);
+          if (messageId) releaseLock(messageId);
+          return Response.json({ success: true, status: 'ja_no_historico' });
         }
         
-        mensagensPendentes.push({
-          texto: messageText, timestamp: agora,
-          mediaType, mediaUrl, messageId
-        });
-        
-        // Salvar mensagem no histórico E nas pendentes
-        const historicoAtual = contato.historico_mensagens || [];
         historicoAtual.push({
           role: 'user',
           content: mediaUrl ? `${messageText}\n${mediaUrl}` : messageText,
@@ -196,87 +191,11 @@ Deno.serve(async (req) => {
         });
         
         await base44.asServiceRole.entities.Contato.update(contato.id, {
-          mensagens_pendentes: mensagensPendentes,
-          ultimo_timestamp_pendente: agora,
           historico_mensagens: historicoAtual.slice(-50),
           ultima_interacao: agora,
           conversa_finalizada: false,
           nome: contato.nome || senderName
         });
-        
-        // Aguardar debounce para acumular mensagens rápidas
-        console.log(`⏳ Aguardando ${DEBOUNCE_SECONDS}s para acumular...`);
-        await new Promise(resolve => setTimeout(resolve, DEBOUNCE_SECONDS * 1000));
-        
-        // Recarregar contato após debounce
-        const contatoAtualizado = await buscarContato();
-        if (!contatoAtualizado) {
-          console.log('❌ Contato não encontrado após debounce');
-          return Response.json({ success: true, status: 'erro' });
-        }
-        
-        // Se as pendentes estão vazias, outra chamada já processou
-        const pendentesAtuais = contatoAtualizado.mensagens_pendentes || [];
-        if (pendentesAtuais.length === 0) {
-          // Verificar se já existe uma resposta do assistente APÓS nossa mensagem no histórico
-          const histVerif = contatoAtualizado.historico_mensagens || [];
-          const nossaMsgIndex = histVerif.findIndex(m => m.messageId === messageId && m.role === 'user');
-          const temRespostaDepois = nossaMsgIndex >= 0 && histVerif.slice(nossaMsgIndex + 1).some(m => m.role === 'assistant');
-          
-          if (temRespostaDepois) {
-            console.log('⏭️ Pendentes vazias E já há resposta no histórico - outra chamada processou');
-            return Response.json({ success: true, status: 'ja_processado' });
-          }
-          
-          // Pendentes vazias MAS sem resposta = outra chamada limpou mas pode ter falhado
-          // Processar nossa mensagem diretamente
-          console.log('⚠️ Pendentes vazias MAS sem resposta - processando diretamente');
-          var mensagemFinal = messageText;
-          // Pular o bloco de limpeza abaixo
-        } else {
-        
-        // Verificar se NOSSA mensagem ainda está nas pendentes
-        if (!pendentesAtuais.some(m => m.messageId === messageId)) {
-          // Verificar se já existe resposta
-          const histVerif2 = contatoAtualizado.historico_mensagens || [];
-          const nossaMsgIndex2 = histVerif2.findIndex(m => m.messageId === messageId && m.role === 'user');
-          const temRespostaDepois2 = nossaMsgIndex2 >= 0 && histVerif2.slice(nossaMsgIndex2 + 1).some(m => m.role === 'assistant');
-          
-          if (temRespostaDepois2) {
-            console.log('⏭️ Nossa mensagem não está nas pendentes E já tem resposta - já processada');
-            return Response.json({ success: true, status: 'ja_processado' });
-          }
-          
-          // Sem resposta ainda - processar diretamente
-          console.log('⚠️ Nossa mensagem saiu das pendentes MAS sem resposta - processando diretamente');
-          var mensagemFinal = messageText;
-        } else {
-        
-        // LIMPAR pendentes (lock atômico - quem limpar primeiro processa)
-        const todasMensagens = [...pendentesAtuais];
-        await base44.asServiceRole.entities.Contato.update(contatoAtualizado.id, {
-          mensagens_pendentes: [],
-          ultimo_timestamp_pendente: null
-        });
-        
-        console.log(`🔒 Processando ${todasMensagens.length} mensagens acumuladas`);
-        
-        // Juntar mensagens
-        const ultimaMidia = [...todasMensagens].reverse().find(m => m.mediaUrl);
-        if (ultimaMidia) {
-          mediaUrl = ultimaMidia.mediaUrl;
-          mediaType = ultimaMidia.mediaType;
-        }
-        
-        let mensagemCompleta = todasMensagens.map(m => m.texto).filter(t => t).join('\n');
-        if (!mensagemCompleta.trim() && ultimaMidia) {
-          mensagemCompleta = ultimaMidia.texto;
-        }
-
-        var mensagemFinal = mensagemCompleta;
-        
-        } // fecha else da mensagem nas pendentes
-        } // fecha else do pendentesAtuais.length > 0
         
       } else {
         // Novo contato - criar em modo IA
@@ -295,15 +214,15 @@ Deno.serve(async (req) => {
           ultima_interacao: agora
         });
         console.log('🤖 Novo contato criado em modo IA');
-        var mensagemFinal = messageText;
       }
     } catch (e) {
       console.log('⚠️ Erro no processamento:', e.message);
+      if (messageId) releaseLock(messageId);
       return Response.json({ success: true, status: 'erro_processamento' });
     }
 
-    // Usar mensagemFinal
-    const textoParaProcessar = typeof mensagemFinal !== 'undefined' && mensagemFinal ? mensagemFinal : messageText;
+    // Texto a processar é simplesmente a mensagem recebida
+    const textoParaProcessar = messageText;
     console.log('📨 Texto final para processar:', textoParaProcessar?.substring(0, 100));
 
     // Buscar ou criar paciente
