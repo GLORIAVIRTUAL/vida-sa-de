@@ -599,6 +599,7 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
              <div className="flex gap-1 flex-wrap">
                {[
                  { value: 'todos', label: 'Todos' },
+                 { value: 'minhas', label: 'Minhas' },
                  { value: 'atendimento', label: 'Atendimento' },
                  { value: 'sem_resposta', label: 'S/ Resposta' },
                  { value: 'finalizadas', label: 'Finalizadas' },
