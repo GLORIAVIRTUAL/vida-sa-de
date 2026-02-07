@@ -178,7 +178,8 @@ Deno.serve(async (req) => {
           return Response.json({ success: true, status: 'atendimento_humano' });
         }
         
-        // MODO IA: Salvar mensagem no histórico
+        // MODO IA: Verificar duplicata, mas NÃO salvar mensagem aqui
+        // O processarMensagemAgente cuida de salvar no histórico para evitar duplicação
         const historicoAtual = contato.historico_mensagens || [];
         
         // Verificar se esta mensagem já está no histórico (outra instância já salvou)
@@ -188,14 +189,9 @@ Deno.serve(async (req) => {
           return Response.json({ success: true, status: 'ja_no_historico' });
         }
         
-        historicoAtual.push({
-          role: 'user',
-          content: mediaUrl ? `${messageText}\n${mediaUrl}` : messageText,
-          timestamp: agora, mediaType, mediaUrl, messageId
-        });
-        
+        // Apenas atualizar metadata, NÃO salvar a mensagem do user aqui
+        // processarMensagemAgente salvará user + assistant juntos
         await base44.asServiceRole.entities.Contato.update(contato.id, {
-          historico_mensagens: historicoAtual.slice(-50),
           ultima_interacao: agora,
           conversa_finalizada: false,
           nome: contato.nome || senderName
