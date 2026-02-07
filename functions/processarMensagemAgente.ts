@@ -1866,23 +1866,50 @@ Retorne JSON.`;
           })
         ]);
 
-        if (procedimentos.length > 0 || exames.length > 0) {
+        // Buscar todas as categorias de preço para mostrar múltiplos valores
+        let categoriasPreco = [];
+        try {
+          categoriasPreco = await Promise.race([
+            base44.asServiceRole.entities.CategoriaPreco.filter({ status: 'Ativo' }),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout CategoriaPreco')), 2000))
+          ]);
+        } catch (e) {
+          console.warn('⚠️ Erro categorias:', e.message);
+        }
+        const categoriasMap = {};
+        categoriasPreco.forEach(c => { categoriasMap[c.id] = c.nome; });
+
+      if (procedimentos.length > 0 || exames.length > 0) {
           infoProcedimentosExames = `\n\n📋 BASE DE DADOS - PROCEDIMENTOS E EXAMES COM PREÇOS:\n`;
 
           if (procedimentos.length > 0) {
             infoProcedimentosExames += '\n🏥 PROCEDIMENTOS DISPONÍVEIS:\n';
             for (const proc of procedimentos) {
-              const preco = tabelaPrecos.find(tp => tp.procedimento_id === proc.id);
-              const valorNum = preco?.valor || 0;
-              infoProcedimentosExames += `• ${proc.nome}${proc.especialidade ? ` (${proc.especialidade})` : ''} - R$ ${valorNum.toFixed(2)}\n`;
+              // Buscar TODOS os preços deste procedimento em todas as categorias
+              const precosDeste = tabelaPrecos.filter(tp => tp.procedimento_id === proc.id && tp.valor > 0);
+              let valoresStr = '';
+              if (precosDeste.length > 0) {
+                const partes = precosDeste.map(tp => {
+                  const catNome = categoriasMap[tp.categoria_id] || 'Outro';
+                  return `${catNome}: R$ ${tp.valor.toFixed(2)}`;
+                });
+                valoresStr = partes.join(' | ');
+              } else {
+                valoresStr = 'Consultar';
+              }
+              infoProcedimentosExames += `• ${proc.nome}${proc.especialidade ? ` (${proc.especialidade})` : ''} - ${valoresStr}\n`;
             }
           }
 
           if (exames.length > 0) {
             infoProcedimentosExames += '\n🔬 EXAMES DISPONÍVEIS:\n';
             for (const exame of exames) {
-              const valorNum = exame.valor_particular || 0;
-              infoProcedimentosExames += `• ${exame.nome}${exame.tipo ? ` (${exame.tipo})` : ''} - R$ ${valorNum.toFixed(2)}\n`;
+              // Exames têm valor_particular e valor_convenio diretamente
+              const valores = [];
+              if (exame.valor_particular) valores.push(`Particular: R$ ${exame.valor_particular.toFixed(2)}`);
+              if (exame.valor_convenio) valores.push(`Convênio/Cartão: R$ ${exame.valor_convenio.toFixed(2)}`);
+              const valoresStr = valores.length > 0 ? valores.join(' | ') : 'Consultar';
+              infoProcedimentosExames += `• ${exame.nome}${exame.tipo ? ` (${exame.tipo})` : ''} - ${valoresStr}\n`;
             }
           }
 
