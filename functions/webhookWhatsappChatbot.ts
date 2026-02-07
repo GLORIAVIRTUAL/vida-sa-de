@@ -1,5 +1,24 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
+// Lock em memória para evitar processamento paralelo do mesmo messageId
+const processingLock = new Map();
+const LOCK_TTL_MS = 120000; // 2 minutos
+
+function acquireLock(messageId) {
+  // Limpar locks antigos
+  const now = Date.now();
+  for (const [key, ts] of processingLock.entries()) {
+    if (now - ts > LOCK_TTL_MS) processingLock.delete(key);
+  }
+  if (processingLock.has(messageId)) return false;
+  processingLock.set(messageId, now);
+  return true;
+}
+
+function releaseLock(messageId) {
+  processingLock.delete(messageId);
+}
+
 Deno.serve(async (req) => {
   // Verificação do webhook (GET) - mantido para compatibilidade
   if (req.method === 'GET') {
@@ -11,7 +30,7 @@ Deno.serve(async (req) => {
   
   try {
     const body = await req.json();
-    console.log('📨 Z-API Webhook Chatbot recebido:', JSON.stringify(body, null, 2));
+    console.log('📨 Z-API Webhook Chatbot recebido');
 
     // === FORMATO Z-API ===
     // Ignorar mensagens enviadas pelo próprio bot (fromMe=true) ou de grupos
@@ -24,6 +43,12 @@ Deno.serve(async (req) => {
     const phoneNumber = body.phone || body.from;
     const messageId = body.messageId || body.id;
     const senderName = body.senderName || body.pushName || body.chatName || 'Usuário';
+    
+    // LOCK: Garantir que apenas UMA instância processa cada messageId
+    if (messageId && !acquireLock(messageId)) {
+      console.log('🔒 MessageId já está sendo processado por outra instância:', messageId);
+      return Response.json({ success: true, status: 'locked' });
+    }
     
     // Verificar se tem mensagem válida
     const temMensagem = body.text?.message || body.body || body.message || 
