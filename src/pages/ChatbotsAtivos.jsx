@@ -253,6 +253,11 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
   const [enviandoConvite, setEnviandoConvite] = useState(false);
   const [filtroStatus, setFiltroStatus] = useState('todos');
   const [filtroData, setFiltroData] = useState('');
+  const [currentUser, setCurrentUser] = useState(null);
+
+  useEffect(() => {
+    base44.auth.me().then(u => setCurrentUser(u)).catch(() => {});
+  }, []);
   const messagesEndRef = useRef(null);
   const navigate = useNavigate();
   
