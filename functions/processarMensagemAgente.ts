@@ -724,7 +724,10 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
     let medicoEspecificoDetectado = null;
     const msgLower = normalizarTexto(messageText);
     const historicoLower = normalizarTexto(historicoConversa || '');
-    const textoCompleto = msgLower + ' ' + historicoLower;
+
+    // IMPORTANTE: Primeiro buscar na MENSAGEM do cliente, depois no histórico
+    // Isso evita que a IA liste "Clínico Geral, Cardiologia..." e o sistema detecte "Cardiologia" do histórico
+    // quando o cliente disse "clinico geral"
 
     // Primeiro verificar se mencionou nome de médico específico (com timeout)
     let todosMedicosParaDeteccao = [];
@@ -737,29 +740,70 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
       console.warn('⚠️ Timeout ao buscar médicos:', e.message);
     }
     
+    // Buscar médico na MENSAGEM primeiro, depois no histórico
     for (const medico of todosMedicosParaDeteccao) {
       const nomeMedicoLower = medico.nome.toLowerCase();
       const partesNome = nomeMedicoLower.split(' ').filter(p => p.length > 3);
       
       for (const parte of partesNome) {
-        if (textoCompleto.includes(parte)) {
+        if (msgLower.includes(parte)) {
           medicoEspecificoDetectado = medico;
           especialidadeDetectada = medico.especialidade;
-          console.log(`🎯 Médico específico detectado: ${medico.nome} (${medico.especialidade})`);
+          console.log(`🎯 Médico específico detectado NA MENSAGEM: ${medico.nome} (${medico.especialidade})`);
           break;
         }
       }
       if (medicoEspecificoDetectado) break;
     }
+    
+    // Se não encontrou na mensagem, buscar no histórico
+    if (!medicoEspecificoDetectado) {
+      for (const medico of todosMedicosParaDeteccao) {
+        const nomeMedicoLower = medico.nome.toLowerCase();
+        const partesNome = nomeMedicoLower.split(' ').filter(p => p.length > 3);
+        
+        for (const parte of partesNome) {
+          if (historicoLower.includes(parte)) {
+            medicoEspecificoDetectado = medico;
+            especialidadeDetectada = medico.especialidade;
+            console.log(`🎯 Médico específico detectado NO HISTÓRICO: ${medico.nome} (${medico.especialidade})`);
+            break;
+          }
+        }
+        if (medicoEspecificoDetectado) break;
+      }
+    }
 
     // Se não encontrou médico específico, buscar por especialidade
+    // PRIORIDADE: mensagem do cliente PRIMEIRO, histórico DEPOIS
     if (!medicoEspecificoDetectado) {
+      // 1. Buscar na MENSAGEM do cliente
       for (const esp of especialidades) {
         const espNorm = normalizarTexto(esp);
-        if (textoCompleto.includes(espNorm)) {
+        if (msgLower.includes(espNorm)) {
           especialidadeDetectada = esp;
-          console.log(`🎯 Especialidade detectada: ${esp}`);
+          console.log(`🎯 Especialidade detectada NA MENSAGEM: ${esp}`);
           break;
+        }
+      }
+      
+      // 2. Se não encontrou na mensagem, buscar no histórico
+      // MAS filtrar mensagens do ASSISTENTE que listam especialidades (evitar falsos positivos)
+      if (!especialidadeDetectada) {
+        // Extrair apenas mensagens do CLIENTE no histórico
+        const historicoClienteOnly = (historicoConversa || '').split('\n')
+          .filter(l => l.startsWith('CLIENTE:'))
+          .map(l => l.replace('CLIENTE:', '').trim())
+          .join(' ');
+        const historicoClienteLower = normalizarTexto(historicoClienteOnly);
+        
+        for (const esp of especialidades) {
+          const espNorm = normalizarTexto(esp);
+          if (historicoClienteLower.includes(espNorm)) {
+            especialidadeDetectada = esp;
+            console.log(`🎯 Especialidade detectada NO HISTÓRICO DO CLIENTE: ${esp}`);
+            break;
+          }
         }
       }
     }
