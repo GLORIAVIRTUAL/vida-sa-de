@@ -1042,18 +1042,19 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
         (/Dr\.\s+\w+/i.test(historico) && /\d{2}:\d{2}/i.test(historico))
       );
 
-      if (clienteEstaEscolhendoHorario) {
-        console.log('⏭️ Cliente está ESCOLHENDO horário - informando LLM que horários já foram mostrados');
+      if (clienteEstaEscolhendoHorario || jaShowouDisponibilidades) {
+        console.log('⏭️ Cliente está escolhendo/respondendo - NÃO rebuscando disponibilidades');
         infoDisponibilidade = `\n\n✅ DISPONIBILIDADES JÁ FORAM MOSTRADAS AO CLIENTE ANTERIORMENTE.
-O cliente está ESCOLHENDO um horário/médico. Ele disse: "${messageText}"
-NÃO diga que não há horários! O cliente está respondendo à lista que você já apresentou.
-Apenas confirme a escolha dele e peça os dados faltantes (nome completo e data de nascimento).
-Se ele mencionou um médico e horário/data, CONFIRME a escolha e peça: nome completo e data de nascimento (DD/MM/AAAA).`;
-      } else if (jaShowouDisponibilidades) {
-        console.log('⏭️ Disponibilidades já foram mostradas - cliente está respondendo');
-          infoDisponibilidade = `\n\n✅ DISPONIBILIDADES JÁ FORAM MOSTRADAS AO CLIENTE ANTERIORMENTE.
-O cliente está respondendo. NÃO diga que não há horários!
-Se ele está escolhendo, confirme a escolha e colete dados faltantes (nome completo e data de nascimento).`;
+O cliente está ESCOLHENDO/RESPONDENDO. Ele disse: "${messageText}"
+
+🚨 REGRAS ABSOLUTAS:
+1. NÃO diga que não há horários! O cliente está respondendo à lista que você já apresentou.
+2. NÃO diga "infelizmente não temos horários disponíveis" - você ACABOU de mostrar horários!
+3. Se ele mencionou um médico e horário/data, CONFIRME a escolha dele.
+4. Peça os dados faltantes: nome completo e data de nascimento (DD/MM/AAAA).
+5. O SISTEMA vai criar o agendamento automaticamente quando tiver todos os dados.
+
+⚠️ IMPORTANTE: O cliente está se referindo aos horários que VOCÊ mostrou na mensagem anterior. Consulte o HISTÓRICO para ver quais horários foram oferecidos e confirme a escolha do cliente.`;
         } else if (!querVerificarAgendamento) {
           console.log('📅 Cliente quer agendar - buscando disponibilidades...');
 
