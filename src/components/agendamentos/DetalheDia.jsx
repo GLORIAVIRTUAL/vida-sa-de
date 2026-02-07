@@ -67,6 +67,8 @@ export default function DetalheDia({ dia, agendamentos, medicos, pacientes, load
         if (!medico.horarios_atendimento) return;
 
         medico.horarios_atendimento.forEach(config => {
+          // Ignorar agendas bloqueadas
+          if (config.bloqueado) return;
           // Verifica dia da semana
           if (config.dia_semana !== diaSemana) return;
 

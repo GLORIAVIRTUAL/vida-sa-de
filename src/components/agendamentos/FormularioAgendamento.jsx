@@ -343,16 +343,16 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
     const dataFormatada = format(date, 'yyyy-MM-dd');
     const diaSemana = date.getDay();
     
-    // 1. Verificar se há horário com data específica para esta data
+    // 1. Verificar se há horário com data específica para esta data (não bloqueado)
     const temDataEspecifica = medicoSelecionado.horarios_atendimento.some(h => 
-      h.data_especifica === dataFormatada
+      h.data_especifica === dataFormatada && !h.bloqueado
     );
     
     if (temDataEspecifica) return true;
     
-    // 2. Verificar horários recorrentes (sem data específica)
+    // 2. Verificar horários recorrentes (sem data específica, não bloqueados)
     const horariosRecorrentes = medicoSelecionado.horarios_atendimento.filter(h => 
-      h.dia_semana === diaSemana && !h.data_especifica
+      h.dia_semana === diaSemana && !h.data_especifica && !h.bloqueado
     );
     
     if (horariosRecorrentes.length === 0) return false;
