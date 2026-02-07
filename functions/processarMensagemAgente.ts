@@ -2012,7 +2012,13 @@ Retorne JSON.`;
       );
     }
     
-    const ehPrimeiraMensagem = conversaFinalizada || (historicoVazio && !contatoJaTemHistorico) || (historicoSemRespostaAssistente && !contatoJaTemHistorico);
+    // IMPORTANTE: Se já existe conversa ativa com resposta do assistente, NUNCA é primeira mensagem
+    // Mesmo que o histórico pareça vazio, verificar se o contato tem dados de conversa
+    const ehPrimeiraMensagem = conversaFinalizada || 
+      ((historicoVazio && !contatoJaTemHistorico) || (historicoSemRespostaAssistente && !contatoJaTemHistorico));
+    
+    // SEGURANÇA EXTRA: Se detectamos especialidade ou o cliente está respondendo a uma pergunta, NÃO é primeira mensagem
+    const respostaPossivelAFluxo = especialidadeDetectada || clienteConfirmouAgendar || clienteAceitouAgendar || querAgendar || querVerificarAgendamento || querCancelar || querResultado;
 
     console.log('🔍 Verificação primeira mensagem:', { conversaFinalizada, historicoVazio, historicoSemRespostaAssistente, contatoJaTemHistorico, ehPrimeiraMensagem, historicoTamanho: historicoConversa?.length || 0 });
 
