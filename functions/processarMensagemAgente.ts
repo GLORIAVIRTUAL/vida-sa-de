@@ -2130,46 +2130,8 @@ Retorne JSON.`;
 
     console.log('🔍 Verificação primeira mensagem:', { conversaFinalizada, historicoVazio, historicoSemRespostaAssistente, contatoJaTemHistorico, jaEnviouSaudacaoRecente, ehPrimeiraMensagem, historicoTamanho: historicoConversa?.length || 0 });
 
-    // Se é primeira mensagem E não está respondendo a um fluxo, NÃO chamar LLM - retornar saudação fixa e sair
-    if (ehPrimeiraMensagem && !respostaPossivelAFluxo) {
-      console.log('👋 Primeira mensagem - retornando saudação fixa SEM chamar LLM');
-      
-      const nomeCliente = (senderName || '').split(' ')[0] || 'cliente';
-      const saudacaoFixa = `${saudacaoHorario}, ${nomeCliente}! 👋 Eu sou a Glória, atendente virtual do Centro Vida Saúde. Como posso te ajudar hoje? 😊`;
-      
-      // Salvar no histórico
-      try {
-        const contatos = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
-        const timestamp = new Date().toISOString();
-        
-        if (contatos.length > 0) {
-          const contato = contatos[0];
-          const historicoAtual = contato.historico_mensagens || [];
-          historicoAtual.push(
-            { role: 'user', content: messageText, timestamp, messageId },
-            { role: 'assistant', content: saudacaoFixa, timestamp }
-          );
-          
-          await base44.asServiceRole.entities.Contato.update(contato.id, {
-            ultima_mensagem: messageText,
-            ultima_resposta: saudacaoFixa,
-            historico_mensagens: historicoAtual.slice(-50),
-            ultima_interacao: timestamp,
-            total_mensagens: 2,
-            conversa_finalizada: false
-          });
-        }
-      } catch (e) {
-        console.error('⚠️ Erro ao salvar saudação:', e.message);
-      }
-      
-      return Response.json({ 
-        success: true, 
-        resposta: saudacaoFixa,
-        conversationId: null,
-        primeira_mensagem: true
-      });
-    }
+    // NOTA: Detecção de primeira mensagem agora é feita no início da função (antes dos fluxos).
+    // Este bloco foi removido para evitar duplicação.
 
     // Buscar procedimentos e exames disponíveis - SEMPRE carregar para que a IA tenha informações atualizadas
     let infoProcedimentosExames = '';
