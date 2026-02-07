@@ -1091,7 +1091,7 @@ O cliente está ESCOLHENDO/RESPONDENDO. Ele disse: "${messageText}"
             'psicologia': ['psicologia', 'psicologo', 'psicologa', 'terapeuta', 'ansiedade', 'depressao'],
             'geriatria': ['geriatria', 'geriatra', 'idoso', 'idosos', 'terceira idade'],
             'ortopedia': ['ortopedia', 'ortopedista', 'fratura', 'coluna', 'joelho', 'ombro', 'articulacao', 'traumatologia', 'traumatologista'],
-            'ecocardiograma': ['ecocardiograma', 'eco cardiaco', 'ultrassom cardiaco'],
+            'ecocardiograma': ['ecocardiograma', 'eco cardiaco', 'ultrassom cardiaco', 'ecografia', 'eco', 'ultrassom', 'ultrassonografia', 'ecografico', 'eco transtorácica', 'eco transtoracica', 'ecografia abdominal', 'ecografia tireoide', 'ecografia pelvica', 'ecografia obstetrica', 'ecografia mamaria', 'ecografia prostata', 'ecografia cervical', 'ecografia transvaginal', 'ecografia vascular'],
             'psiquiatria': ['psiquiatria', 'psiquiatra', 'remedio controlado'],
             'urologia': ['urologia', 'urologista', 'prostata', 'bexiga'],
             'cardiologia': ['cardiologia', 'cardiologista', 'coracao', 'arritmia', 'hipertensao'],
