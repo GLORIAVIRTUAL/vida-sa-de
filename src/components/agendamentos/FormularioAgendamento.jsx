@@ -1032,16 +1032,23 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
   
   // NOVO: Callback para verificar a disponibilidade do horário selecionado
   const checkSelectedHorarioAvailability = useCallback(async () => {
-    // For Exames and Procedimentos, a selected time slot is typically always "available"
-    // because they don't block doctor's specific schedules in the same way.
-    if (formData.tipo_servico === 'Exame' || formData.tipo_servico === 'Procedimento') {
+    // Para Exames sem médico, horário é sempre "disponível"
+    if (formData.tipo_servico === 'Exame') {
       if (!formData.horario) {
-        setHorarioDisponivel(true); // Consider available if no specific time yet
+        setHorarioDisponivel(true);
         setMensagemDisponibilidade('');
       } else {
         setHorarioDisponivel(true);
         setMensagemDisponibilidade('Horário selecionado.');
       }
+      return;
+    }
+    
+    // Para Procedimentos COM médico, verificar conflito como consulta (1 por horário)
+    // Para Procedimentos SEM médico, considerar disponível
+    if (formData.tipo_servico === 'Procedimento' && !formData.medico_id) {
+      setHorarioDisponivel(true);
+      setMensagemDisponibilidade(formData.horario ? 'Horário selecionado.' : '');
       return;
     }
 
