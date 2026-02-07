@@ -47,15 +47,28 @@ export default function DetalhesOS({ os, pacienteNome, medicoNome, categoriaNome
   const [statusPagamento, setStatusPagamento] = useState(os?.status_pagamento || 'Pendente');
   const [formaPagamento, setFormaPagamento] = useState(os?.forma_pagamento || 'Dinheiro');
   const [valorFinal, setValorFinal] = useState(os?.valor_final || 0);
+  const [pagamento1, setPagamento1] = useState({ forma: os?.pagamentos_detalhados?.[0]?.forma || '', valor: os?.pagamentos_detalhados?.[0]?.valor || '' });
+  const [pagamento2, setPagamento2] = useState({ forma: os?.pagamentos_detalhados?.[1]?.forma || '', valor: os?.pagamentos_detalhados?.[1]?.valor || '' });
 
   if (!os) return null;
 
   const handleSalvar = async () => {
     setSalvando(true);
     try {
+      let pagamentosDetalhados = [];
+      if (formaPagamento === 'Múltiplas Formas') {
+        if (pagamento1.forma && pagamento1.valor) {
+          pagamentosDetalhados.push({ forma: pagamento1.forma, valor: parseFloat(pagamento1.valor) || 0 });
+        }
+        if (pagamento2.forma && pagamento2.valor) {
+          pagamentosDetalhados.push({ forma: pagamento2.forma, valor: parseFloat(pagamento2.valor) || 0 });
+        }
+      }
+
       await OrdemServico.update(os.id, {
         status_pagamento: statusPagamento,
         forma_pagamento: formaPagamento,
+        pagamentos_detalhados: pagamentosDetalhados,
         valor_final: parseFloat(valorFinal) || 0,
         data_pagamento: statusPagamento === 'Pago' ? new Date().toISOString() : null
       });
@@ -83,6 +96,8 @@ export default function DetalhesOS({ os, pacienteNome, medicoNome, categoriaNome
     setStatusPagamento(os.status_pagamento);
     setFormaPagamento(os.forma_pagamento);
     setValorFinal(os.valor_final || 0);
+    setPagamento1({ forma: os?.pagamentos_detalhados?.[0]?.forma || '', valor: os?.pagamentos_detalhados?.[0]?.valor || '' });
+    setPagamento2({ forma: os?.pagamentos_detalhados?.[1]?.forma || '', valor: os?.pagamentos_detalhados?.[1]?.valor || '' });
     setEditando(false);
   };
 
@@ -773,7 +788,13 @@ export default function DetalhesOS({ os, pacienteNome, medicoNome, categoriaNome
               <span className="font-semibold text-blue-900">Forma de Pagamento:</span>
             </div>
             {editando ? (
-              <Select value={formaPagamento} onValueChange={setFormaPagamento}>
+              <Select value={formaPagamento} onValueChange={(v) => {
+                setFormaPagamento(v);
+                if (v !== 'Múltiplas Formas') {
+                  setPagamento1({ forma: '', valor: '' });
+                  setPagamento2({ forma: '', valor: '' });
+                }
+              }}>
                 <SelectTrigger className="w-48">
                   <SelectValue />
                 </SelectTrigger>
@@ -792,8 +813,80 @@ export default function DetalhesOS({ os, pacienteNome, medicoNome, categoriaNome
             )}
           </div>
 
-          {/* Detalhamento de Múltiplas Formas */}
-          {os.forma_pagamento === 'Múltiplas Formas' && os.pagamentos_detalhados && os.pagamentos_detalhados.length > 0 && (
+          {/* Box Múltiplas Formas - Modo Edição */}
+          {editando && formaPagamento === 'Múltiplas Formas' && (
+            <div className="p-4 border-2 border-purple-200 bg-purple-50 rounded-lg space-y-4">
+              <h4 className="font-medium text-purple-900">Detalhar Formas de Pagamento</h4>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-sm font-medium">Forma 1</label>
+                  <Select value={pagamento1.forma} onValueChange={(v) => setPagamento1(prev => ({ ...prev, forma: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Dinheiro">Dinheiro</SelectItem>
+                      <SelectItem value="Cartão Débito">Cartão Débito</SelectItem>
+                      <SelectItem value="Cartão Crédito">Cartão Crédito</SelectItem>
+                      <SelectItem value="PIX">PIX</SelectItem>
+                      <SelectItem value="Transferência">Transferência</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Valor (R$)</label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0,00"
+                    value={pagamento1.valor}
+                    onChange={(e) => setPagamento1(prev => ({ ...prev, valor: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-sm font-medium">Forma 2</label>
+                  <Select value={pagamento2.forma} onValueChange={(v) => setPagamento2(prev => ({ ...prev, forma: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Dinheiro">Dinheiro</SelectItem>
+                      <SelectItem value="Cartão Débito">Cartão Débito</SelectItem>
+                      <SelectItem value="Cartão Crédito">Cartão Crédito</SelectItem>
+                      <SelectItem value="PIX">PIX</SelectItem>
+                      <SelectItem value="Transferência">Transferência</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Valor (R$)</label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0,00"
+                    value={pagamento2.valor}
+                    onChange={(e) => setPagamento2(prev => ({ ...prev, valor: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              {(pagamento1.valor || pagamento2.valor) && (
+                <div className="pt-2 border-t border-purple-300">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-purple-800">Total informado:</span>
+                    <span className="font-bold text-purple-900">
+                      R$ {((parseFloat(pagamento1.valor) || 0) + (parseFloat(pagamento2.valor) || 0)).toFixed(2).replace('.', ',')}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Detalhamento de Múltiplas Formas - Modo Visualização */}
+          {!editando && os.forma_pagamento === 'Múltiplas Formas' && os.pagamentos_detalhados && os.pagamentos_detalhados.length > 0 && (
             <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
               <h4 className="font-semibold text-purple-900 mb-3">Detalhamento do Pagamento</h4>
               <div className="space-y-2">
