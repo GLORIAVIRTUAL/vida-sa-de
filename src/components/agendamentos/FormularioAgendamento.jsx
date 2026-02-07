@@ -717,8 +717,9 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
         
         // Se houver horários com data específica, usar eles; senão, usar horários recorrentes
         const horariosDesteMedico = horariosDataEspecifica.length > 0 
-          ? horariosDataEspecifica 
+          ? horariosDataEspecifica.filter(h => !h.bloqueado)
           : medico.horarios_atendimento.filter(h => {
+              if (h.bloqueado) return false;
               if (h.dia_semana !== diaSemana || h.data_especifica) return false;
               
               // Verificar recorrência
@@ -958,8 +959,9 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
       
       // Se houver horários com data específica, usar eles; senão, usar horários recorrentes
       const horariosDoMedico = horariosDataEspecifica.length > 0 
-        ? horariosDataEspecifica 
+        ? horariosDataEspecifica.filter(h => !h.bloqueado)
         : medicoSelecionado.horarios_atendimento.filter(h => {
+            if (h.bloqueado) return false;
             if (h.dia_semana !== diaSemana || h.data_especifica) return false;
             
             // Verificar recorrência
