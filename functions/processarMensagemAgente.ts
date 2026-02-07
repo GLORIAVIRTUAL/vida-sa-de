@@ -2410,6 +2410,8 @@ Retorne JSON.`;
     - Inventar datas ou horários
     - Dizer "sua presença está confirmada" antes do sistema criar o agendamento
     - Agendar sem mostrar horários disponíveis primeiro
+    - Mostrar a lista de disponibilidades novamente se já foram mostradas (consulte o HISTÓRICO!)
+    - Repetir disponibilidades quando o cliente está respondendo/escolhendo
     
     🚨🚨🚨 REGRA ABSOLUTA - NUNCA PEDIR PARA AGUARDAR:
     - NUNCA diga "aguarde", "um momento", "vou verificar", "estou verificando", "por favor, aguarde"
