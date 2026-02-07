@@ -112,16 +112,28 @@ Deno.serve(async (req) => {
 
     // Verificar se cliente quer verificar status do agendamento
     // FLUXO SEPARADO: VERIFICAÇÃO é completamente diferente de AGENDAMENTO
+    // IMPORTANTE: Se o histórico mostra que o assistente está pedindo nome/data de nascimento para AGENDAR,
+    // NÃO confundir com fluxo de verificação!
+    const historicoMostraFluxoAgendamento = historicoConversa && (
+      /nome completo.*paciente|data de nascimento.*paciente|qual.*médico.*prefere|horário.*prefere|disponibilidades|agendar.*consulta|qual especialidade.*agendar/i.test(historicoConversa) ||
+      // Assistente mostrou horários de médicos
+      (/Dr\.\s+\w+/i.test(historicoConversa) && /\d{2}:\d{2}/i.test(historicoConversa) && /qual.*prefere|escolh|horário/i.test(historicoConversa))
+    );
+    
     const temPedidoVerificacaoNoHistorico = historicoConversa && 
       /verificar|consultar|checar|status|confirma|está confirmado|foi confirmado|meu agendamento/i.test(historicoConversa) &&
-      !/agendar|marcar|nova consulta|qual especialidade/i.test(historicoConversa);
+      !/agendar|marcar|nova consulta|qual especialidade/i.test(historicoConversa) &&
+      !historicoMostraFluxoAgendamento;
 
     const querVerificarAgendamento = 
-      // Cliente está pedindo para verificar agora
-      (/verificar|consultar|checar|status|confirma|está confirmado|foi confirmado|meu agendamento/i.test(messageText) && 
-       !/cancelar|desmarcar|agendar|marcar|nova|novo/i.test(messageText)) ||
-      // OU: já pediu verificação antes e agora está enviando dados (nome/data)
-      (temPedidoVerificacaoNoHistorico && /(\d{1,2})\/(\d{1,2})\/(\d{4})|nascimento|nascido|me chamo/i.test(messageText));
+      // Se estamos claramente em fluxo de agendamento, NÃO entrar em verificação
+      !historicoMostraFluxoAgendamento && (
+        // Cliente está pedindo para verificar agora
+        (/verificar|consultar|checar|status|confirma|está confirmado|foi confirmado|meu agendamento/i.test(messageText) && 
+         !/cancelar|desmarcar|agendar|marcar|nova|novo/i.test(messageText)) ||
+        // OU: já pediu verificação antes e agora está enviando dados (nome/data)
+        (temPedidoVerificacaoNoHistorico && /(\d{1,2})\/(\d{1,2})\/(\d{4})|nascimento|nascido|me chamo/i.test(messageText))
+      );
 
     // Verificar se cliente quer cancelar agendamento
     const querCancelar = /cancelar|desmarcar|n[aã]o (vou|posso|irei)|remarcar|adiar|desistir/i.test(messageText) ||
