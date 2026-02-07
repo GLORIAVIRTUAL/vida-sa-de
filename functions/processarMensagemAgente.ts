@@ -2022,8 +2022,8 @@ Retorne JSON.`;
 
     console.log('🔍 Verificação primeira mensagem:', { conversaFinalizada, historicoVazio, historicoSemRespostaAssistente, contatoJaTemHistorico, ehPrimeiraMensagem, historicoTamanho: historicoConversa?.length || 0 });
 
-    // Se é primeira mensagem, NÃO chamar LLM - retornar saudação fixa e sair
-    if (ehPrimeiraMensagem) {
+    // Se é primeira mensagem E não está respondendo a um fluxo, NÃO chamar LLM - retornar saudação fixa e sair
+    if (ehPrimeiraMensagem && !respostaPossivelAFluxo) {
       console.log('👋 Primeira mensagem - retornando saudação fixa SEM chamar LLM');
       
       const nomeCliente = (senderName || '').split(' ')[0] || 'cliente';
