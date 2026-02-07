@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Agendamento, Medico, Paciente, Procedimento, Exame, Notification, CategoriaPreco, TabelaPreco } from "@/entities/all";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarIcon, Plus, List, Grid3x3, Printer, Clock, Stethoscope, User, RefreshCw } from "lucide-react"; // Import Stethoscope and User icons
+import { Calendar as CalendarIcon, Plus, List, Grid3x3, Printer, Clock, Stethoscope, User, RefreshCw, Columns3 } from "lucide-react";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -18,6 +18,7 @@ import { useLocation } from "react-router-dom";
 import ProtectedRoute from "../components/auth/ProtectedRoute";
 import VisualizacaoDiaria from "../components/agendamentos/VisualizacaoDiaria";
 import VisualizacaoCalendario from "../components/agendamentos/VisualizacaoCalendario";
+import VisualizacaoKanban from "../components/agendamentos/VisualizacaoKanban";
 import FormularioAgendamento from "../components/agendamentos/FormularioAgendamento";
 import FormularioReserva from "../components/agendamentos/FormularioReserva";
 import FiltrosAgendamento from "../components/agendamentos/FiltrosAgendamento";
@@ -574,7 +575,7 @@ export default function Agendamentos() {
               <h1 className="text-cyan-500 mb-2 text-3xl font-bold">Agendamentos</h1>
               <p className="text-gray-600 mt-1"></p>
               <div className="flex items-center gap-4">
-                {visualizacao === "lista" &&
+                {(visualizacao === "lista" || visualizacao === "kanban") &&
                 <Popover>
                     <PopoverTrigger asChild>
                       <Button variant="outline" className="w-64 justify-start text-left font-normal">
@@ -613,16 +614,22 @@ export default function Agendamentos() {
                   size="sm"
                   onClick={() => setVisualizacao("lista")}
                   className="gap-2">
-
                   <List className="w-4 h-4" />
                   Lista
+                </Button>
+                <Button
+                  variant={visualizacao === "kanban" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setVisualizacao("kanban")}
+                  className="gap-2">
+                  <Columns3 className="w-4 h-4" />
+                  Kanban
                 </Button>
                 <Button
                   variant={visualizacao === "calendario" ? "default" : "ghost"}
                   size="sm"
                   onClick={() => setVisualizacao("calendario")}
                   className="gap-2">
-
                   <Grid3x3 className="w-4 h-4" />
                   Calendário
                 </Button>
@@ -698,7 +705,7 @@ export default function Agendamentos() {
             </Card>
           }
 
-          {visualizacao === "lista" &&
+          {(visualizacao === "lista" || visualizacao === "kanban") &&
           <FiltrosAgendamento
             filtros={filtros}
             onFiltrosChange={setFiltros}
@@ -717,6 +724,14 @@ export default function Agendamentos() {
             onUpdate={carregarDados}
             periodo={filtros.periodo} /> :
 
+          visualizacao === "kanban" ?
+          <VisualizacaoKanban
+            agendamentos={Array.isArray(agendamentosFiltrados) ? agendamentosFiltrados : []}
+            medicos={Array.isArray(medicos) ? medicos : []}
+            pacientes={Array.isArray(pacientes) ? pacientes : []}
+            onEditarAgendamento={handleEditarAgendamento}
+            loading={loading}
+            dia={diaSelecionado} /> :
 
           <VisualizacaoCalendario
             agendamentos={Array.isArray(agendamentosCalendario) ? agendamentosCalendario : []} // Use filtered list for calendar
