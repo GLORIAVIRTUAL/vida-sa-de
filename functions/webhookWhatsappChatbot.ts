@@ -290,13 +290,28 @@ Deno.serve(async (req) => {
       // Se houver arquivo para enviar (resultado de exame)
       if (resultado.data?.arquivoParaEnviar) {
         const arquivo = resultado.data.arquivoParaEnviar;
-        console.log('📎 Arquivo para enviar detectado:', JSON.stringify(arquivo));
+        const docKey = `${phoneNumber}_${arquivo.url}`;
         
-        try {
-          await enviarWhatsAppDocumento(phoneNumber, arquivo.url, arquivo.nome);
-          console.log('✅ Documento enviado com sucesso!');
-        } catch (docError) {
-          console.error('❌ Erro ao enviar documento:', docError.message);
+        // Limpar locks de documentos antigos
+        const nowDoc = Date.now();
+        for (const [key, ts] of documentSentLock.entries()) {
+          if (nowDoc - ts > DOC_LOCK_TTL_MS) documentSentLock.delete(key);
+        }
+        
+        // Verificar se já enviamos este documento para este telefone recentemente
+        if (documentSentLock.has(docKey)) {
+          console.log('⏭️ Documento já enviado recentemente para este telefone - ignorando duplicata');
+        } else {
+          documentSentLock.set(docKey, nowDoc);
+          console.log('📎 Arquivo para enviar detectado:', JSON.stringify(arquivo));
+          
+          try {
+            await enviarWhatsAppDocumento(phoneNumber, arquivo.url, arquivo.nome);
+            console.log('✅ Documento enviado com sucesso!');
+          } catch (docError) {
+            console.error('❌ Erro ao enviar documento:', docError.message);
+            documentSentLock.delete(docKey); // Liberar lock se falhou
+          }
         }
       }
       
