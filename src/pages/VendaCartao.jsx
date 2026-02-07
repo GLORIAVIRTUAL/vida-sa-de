@@ -26,6 +26,7 @@ import FormularioVendaCartao from "../components/venda-cartao/FormularioVendaCar
 import ReciboVenda from "../components/venda-cartao/ReciboVenda";
 import ContratoAdesao from "../components/venda-cartao/ContratoAdesao";
 import GeradorCartoes from "../components/venda-cartao/GeradorCartoes";
+import RelatorioVendaCartao from "../components/venda-cartao/RelatorioVendaCartao";
 
 const SENHA_CANCELAMENTO = "123123";
 
