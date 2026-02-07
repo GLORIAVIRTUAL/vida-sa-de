@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useToast } from "@/components/ui/use-toast";
-import { Calendar, Bell, AlertTriangle } from "lucide-react";
+import { Calendar, Bell, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { Notification, User } from "@/entities/all";
 import { base44 } from "@/api/base44Client";
 
@@ -8,6 +8,7 @@ export default function NotificacaoAgendamento() {
   const { toast } = useToast();
   const [ultimaNotificacaoId, setUltimaNotificacaoId] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const processedIdsRef = useRef(new Set());
 
   // Verificar autenticação ao montar o componente
   useEffect(() => {
