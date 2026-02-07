@@ -267,6 +267,7 @@ Deno.serve(async (req) => {
 
     if (resultado.data?.duplicata || resultado.data?.status === 'duplicata_ignorada') {
       console.log('⏭️ Resposta duplicada detectada - não enviando');
+      if (messageId) releaseLock(messageId);
       return Response.json({ success: true, status: 'duplicata_ignorada' });
     }
     
@@ -274,46 +275,12 @@ Deno.serve(async (req) => {
     console.log('📝 Resposta da IA recebida:', respostaIA ? respostaIA.substring(0, 100) + '...' : 'NULL');
     
     if (respostaIA) {
-      // Anti-duplicata: verificar se já existe resposta do assistente PARA ESTA mensagem
-      // E também verificar se a resposta é muito similar a uma resposta recente (evitar duplicatas de conteúdo)
-      try {
-        const telCheck = phoneNumber.replace(/\D/g, '');
-        const varCheck = [phoneNumber, telCheck];
-        if (telCheck.startsWith('55') && telCheck.length >= 12) varCheck.push(telCheck.slice(2));
-        if (!telCheck.startsWith('55') && telCheck.length >= 10) varCheck.push('55' + telCheck);
-        
-        let contatoCheck = null;
-        for (const v of varCheck) {
-          const res = await base44.asServiceRole.entities.Contato.filter({ telefone: v });
-          if (res.length > 0) { contatoCheck = res[0]; break; }
-        }
-        
-        if (contatoCheck && messageId) {
-          const hist = contatoCheck.historico_mensagens || [];
-          
-          // Verificar se DUAS respostas do assistente já existem após esta mensagem
-          // (uma resposta é salva pelo processarMensagemAgente, duplicata seria se já enviamos via WhatsApp antes)
-          const nossaMsgIdx = hist.findIndex(m => m.messageId === messageId && m.role === 'user');
-          if (nossaMsgIdx >= 0) {
-            const respostasDepois = hist.slice(nossaMsgIdx + 1).filter(m => m.role === 'assistant');
-            // Se há 2+ respostas do assistente após esta msg, significa que já processamos E enviamos
-            if (respostasDepois.length >= 2) {
-              console.log('⏭️ Já existem 2+ respostas para messageId', messageId, '- NÃO enviando duplicata');
-              return Response.json({ success: true, status: 'duplicata_resposta' });
-            }
-          }
-        }
-      } catch (e) {
-        console.log('⚠️ Erro na verificação anti-duplicata de resposta:', e.message);
-      }
-      
       console.log('📤 Enviando resposta via Z-API para:', phoneNumber);
       try {
         await enviarWhatsApp(phoneNumber, respostaIA);
         console.log('✅ WhatsApp texto enviado com sucesso');
       } catch (whatsappError) {
         console.error('❌ ERRO ao enviar WhatsApp:', whatsappError.message);
-        // Não lançar erro - apenas logar e continuar
       }
       
       // Se houver arquivo para enviar (resultado de exame)
@@ -329,10 +296,11 @@ Deno.serve(async (req) => {
         }
       }
       
+      if (messageId) releaseLock(messageId);
       return Response.json({ success: true, resposta: respostaIA });
     } else {
-      // Não enviar mensagem de fallback - só logar
       console.log('⚠️ Sem resposta da IA:', JSON.stringify(resultado.data));
+      if (messageId) releaseLock(messageId);
       return Response.json({ success: true, status: 'sem_resposta' });
     }
 
