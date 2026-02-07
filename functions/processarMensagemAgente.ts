@@ -860,6 +860,18 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
         .replace(/[\u0300-\u036f]/g, '');
     };
 
+    // Detectar conversa sobre Cartão Mais Vida / planos / benefícios (declarar ANTES de usar)
+    const ehPerguntaPrecoEarly = /quanto\s*custa|qual\s*o?\s*(valor|pre[çc]o)|pre[çc]o\s*(da|do|de)|valor\s*(da|do|de)|custa\s*quanto/i.test(messageText);
+    const ehPerguntaInformativaEarly = /^(a[ií]\s+)?(voc[êe]s\s+)?(faz(em)?|tem|t[êe]m|realiza[m]?|oferece[m]?|atende[m]?|existe|trabalha[m]?\s+com)\s+/i.test(messageText) ||
+      /faz(em)?\s+.+\?/i.test(messageText) ||
+      /tem\s+.+\?/i.test(messageText) ||
+      /^a[ií]\s+faz\b/i.test(messageText);
+    const ehPerguntaSobreCartao = /cart[aã]o\s*mais\s*(vida|sa[uú]de)|mais\s*vida|mais\s*sa[uú]de|planos?\s*(do|da|de)?\s*cart|benef[ií]cios?\s*(do|da)?\s*cart|cart[aã]o\s*da\s*cl[ií]nica|informa[çc][oõ]es?\s*sobre\s*o?\s*cart|planos?\s*(e\s*benef)?/i.test(messageText) ||
+      (/plano|benef[ií]cio|cart[aã]o/i.test(messageText) && /cart[aã]o\s*mais|mais\s*vida|mais\s*sa[uú]de/i.test(historicoConversa || ''));
+    const ehContextoCartaoNoHistorico = /cart[aã]o\s*mais\s*(vida|sa[uú]de)|mais\s*vida|planos?\s*(do|da)?\s*cart|benef[ií]cios/i.test(historicoConversa || '');
+    const respostaCurtaEmContextoCartao = ehContextoCartaoNoHistorico && 
+      /^(planos?|quais|sim|ok|benefícios?|beneficios?|valores?|como\s*funciona|me\s*fala|conta\s*mais|explica|detalh|informa)/i.test(messageText.trim());
+
     let especialidadeDetectada = null;
     let medicoEspecificoDetectado = null;
     const msgLower = normalizarTexto(messageText);
