@@ -693,15 +693,20 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
     // Verificar se o cliente disse "sim" e a IA tinha perguntado "Gostaria de agendar?"
     const ultimasMensagensAssistente = (historicoConversa || '').split('\n').filter(l => l.startsWith('ASSISTENTE:'));
     const ultimaMsgAssistente = ultimasMensagensAssistente.length > 0 ? ultimasMensagensAssistente[ultimasMensagensAssistente.length - 1] : '';
-    const iaPerguntoSeQuerAgendar = /gostaria de agendar|quer agendar|deseja agendar|posso agendar|agendar.*\?/i.test(ultimaMsgAssistente);
+    const iaPerguntoSeQuerAgendar = /gostaria de agendar|quer agendar|deseja agendar|posso agendar|agendar.*\?|como posso te ajudar|qual especialidade|para qual especialidade/i.test(ultimaMsgAssistente);
     const clienteConfirmouAgendar = iaPerguntoSeQuerAgendar && /^(sim|s|ok|quero|pode|claro|bora|vamos|isso|por favor|yes|vou|gostaria|please)$/i.test(messageText.trim().toLowerCase());
+
+    // Verificar se a IA perguntou "como posso te ajudar?" ou "qual especialidade?" e o cliente respondeu com uma especialidade
+    // Isso é KEY: quando a IA diz "como posso te ajudar?" e o cliente responde "clinico geral", isso É um pedido de agendamento
+    const iaPerguntoComoAjudar = /como posso te ajudar|como posso ajudar|qual especialidade|para qual especialidade/i.test(ultimaMsgAssistente);
+    const clienteRespondeuComEspecialidade = iaPerguntoComoAjudar && especialidadeDetectada;
 
     // Fluxo de agendamento no histórico: APENAS se a ÚLTIMA mensagem do USUÁRIO (não do assistente) mencionava agendamento
     // E o cliente NÃO está recusando agora
     const ultimasMensagensUsuario = (historicoConversa || '').split('\n').filter(l => l.startsWith('CLIENTE:'));
     const ultimaMsgUsuario = ultimasMensagensUsuario.length > 0 ? ultimasMensagensUsuario[ultimasMensagensUsuario.length - 1] : '';
     const jaEmFluxoAgendamento = !clienteRecusandoAgendar && ultimaMsgUsuario && /agendar|marcar|consulta|vamos agendar|seguir com o agendamento/i.test(ultimaMsgUsuario);
-    const querAgendar = querAgendarMensagem || jaEmFluxoAgendamento || clienteConfirmouAgendar;
+    const querAgendar = querAgendarMensagem || jaEmFluxoAgendamento || clienteConfirmouAgendar || clienteRespondeuComEspecialidade;
     
     // Se cliente está em fluxo de VERIFICAÇÃO, NÃO entrar em fluxo de AGENDAMENTO
     // NOTA: Se chegou aqui, verificação já retornou acima - este é um fallback de segurança
