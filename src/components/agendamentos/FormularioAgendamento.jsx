@@ -2128,154 +2128,115 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
         <title>Orçamento - Centro Vida Saúde</title>
         <style>
           @media print {
-            @page { margin: 1cm; }
+            @page { margin: 8mm; size: A4; }
             body { margin: 0; }
           }
+          * { box-sizing: border-box; }
           body { 
             font-family: Arial, sans-serif; 
-            margin: 20px;
+            margin: 10px;
             color: #333;
-            line-height: 1.6;
+            font-size: 11px;
+            line-height: 1.3;
           }
           .header { 
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 3px solid #10b981;
-            padding-bottom: 20px;
-            margin-bottom: 30px;
-          }
-          .logo-section {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-          }
-          .logo { 
-            width: 80px; 
-            height: 80px;
-            object-fit: contain;
-          }
-          .clinic-info {
-            flex: 1;
-          }
-          .clinic-name { 
-            font-size: 24px; 
-            font-weight: bold; 
-            color: #10b981;
-            margin: 0;
-          }
-          .clinic-details {
-            font-size: 12px;
-            color: #666;
-            margin-top: 5px;
-          }
-          .document-type {
-            text-align: right;
-          }
-          .document-type-label {
-            font-size: 32px;
-            font-weight: bold;
-            color: #10b981;
-            margin: 0;
-          }
-          .document-date {
-            font-size: 12px;
-            color: #666;
-            margin-top: 5px;
-          }
-          .section {
-            margin: 25px 0;
-            padding: 15px;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            background-color: #f9fafb;
-          }
-          .section-title {
-            font-size: 16px;
-            font-weight: bold;
-            color: #10b981;
-            margin: 0 0 15px 0;
-            padding-bottom: 8px;
             border-bottom: 2px solid #10b981;
+            padding-bottom: 8px;
+            margin-bottom: 10px;
           }
-          .info-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid #e5e7eb;
+          .logo-section { display: flex; align-items: center; gap: 8px; }
+          .logo { width: 50px; height: 50px; object-fit: contain; }
+          .clinic-name { font-size: 16px; font-weight: bold; color: #10b981; margin: 0; }
+          .clinic-details { font-size: 9px; color: #666; margin-top: 2px; }
+          .document-type { text-align: right; }
+          .document-type-label { font-size: 20px; font-weight: bold; color: #10b981; margin: 0; }
+          .document-date { font-size: 9px; color: #666; margin-top: 2px; }
+          .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 10px;
           }
-          .info-row:last-child {
-            border-bottom: none;
+          .info-box {
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            padding: 8px;
           }
-          .info-label {
-            font-weight: 600;
-            color: #4b5563;
-            flex: 0 0 40%;
+          .info-box-title {
+            font-size: 10px;
+            font-weight: bold;
+            color: #10b981;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+            border-bottom: 1px solid #10b981;
+            padding-bottom: 3px;
           }
-          .info-value {
-            color: #1f2937;
-            flex: 1;
-            text-align: right;
+          .info-line { 
+            display: flex; 
+            justify-content: space-between; 
+            padding: 2px 0;
+            font-size: 10px;
           }
+          .info-line .label { color: #6b7280; }
+          .info-line .value { font-weight: 600; }
           .items-table {
             width: 100%;
             border-collapse: collapse;
-            margin: 15px 0;
+            margin: 8px 0;
           }
           .items-table th {
             background-color: #10b981;
             color: white;
-            padding: 12px;
+            padding: 5px 8px;
             text-align: left;
+            font-size: 10px;
             font-weight: 600;
           }
           .items-table td {
-            padding: 10px 12px;
+            padding: 4px 8px;
             border-bottom: 1px solid #e5e7eb;
+            font-size: 10px;
           }
-          .items-table tr:nth-child(even) {
-            background-color: #f9fafb;
-          }
-          .totals-section {
-            margin: 30px 0;
-            padding: 20px;
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            border-radius: 8px;
+          .items-table tr:nth-child(even) { background-color: #f9fafb; }
+          .total-bar {
+            background: #10b981;
             color: white;
-          }
-          .total-row {
+            padding: 10px 15px;
+            border-radius: 4px;
             display: flex;
             justify-content: space-between;
-            padding: 10px 0;
+            align-items: center;
+            margin: 10px 0;
             font-size: 16px;
-          }
-          .total-final {
-            font-size: 28px;
             font-weight: bold;
-            border-top: 2px solid rgba(255,255,255,0.3);
-            padding-top: 15px;
-            margin-top: 10px;
           }
           .validade {
             background-color: #fef3c7;
-            border-left: 4px solid #f59e0b;
-            padding: 15px;
-            margin: 20px 0;
-            border-radius: 4px;
-            text-align: center;
-          }
-          .validade-text {
+            border-left: 3px solid #f59e0b;
+            padding: 6px 10px;
+            font-size: 9px;
             font-weight: bold;
             color: #92400e;
-            font-size: 14px;
+            margin: 8px 0;
           }
+          .obs-box {
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            padding: 6px 8px;
+            margin: 8px 0;
+            font-size: 10px;
+          }
+          .obs-box strong { color: #10b981; font-size: 10px; }
           .footer {
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 2px solid #e5e7eb;
+            margin-top: 10px;
+            padding-top: 6px;
+            border-top: 1px solid #e5e7eb;
             text-align: center;
-            font-size: 11px;
-            color: #6b7280;
+            font-size: 8px;
+            color: #9ca3af;
           }
         </style>
       </head>
@@ -2283,95 +2244,57 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
         <div class="header">
           <div class="logo-section">
             <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68b9fe84de5d54897629e61a/a0f6566fe_ImagemdoWhatsAppde2025-08-31s094100_18581e21.jpg" alt="Logo" class="logo" />
-            <div class="clinic-info">
+            <div>
               <h1 class="clinic-name">CENTRO VIDA SAÚDE</h1>
-              <div class="clinic-details">
-                Endereço da Clínica • Telefone: (XX) XXXX-XXXX<br/>
-                CNPJ: XX.XXX.XXX/XXXX-XX
-              </div>
+              <div class="clinic-details">Tristão Monteiro, 580 – Zona Nova, Tramandaí/RS • Tel: (51) 3661-5991</div>
             </div>
           </div>
           <div class="document-type">
             <p class="document-type-label">ORÇAMENTO</p>
-            <p class="document-date">Gerado em: ${dataAtual}</p>
+            <p class="document-date">${dataAtual}</p>
           </div>
         </div>
 
-        <div class="section">
-          <h3 class="section-title">Informações do Paciente</h3>
-          <div class="info-row">
-            <span class="info-label">Nome:</span>
-            <span class="info-value">${paciente?.nome || 'A definir'}</span>
+        <div class="info-grid">
+          <div class="info-box">
+            <div class="info-box-title">Paciente</div>
+            <div class="info-line"><span class="label">Nome:</span><span class="value">${paciente?.nome || 'A definir'}</span></div>
+            ${paciente?.telefone ? `<div class="info-line"><span class="label">Telefone:</span><span class="value">${paciente.telefone}</span></div>` : ''}
           </div>
-          ${paciente?.telefone ? `
-          <div class="info-row">
-            <span class="info-label">Telefone:</span>
-            <span class="info-value">${paciente.telefone}</span>
-          </div>
-          ` : ''}
-        </div>
-
-        <div class="section">
-          <h3 class="section-title">Informações do Agendamento</h3>
-          <div class="info-row">
-            <span class="info-label">Data do Agendamento:</span>
-            <span class="info-value">${dataAgendamento}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">Horário:</span>
-            <span class="info-value">${formData.horario || 'A definir'}</span>
-          </div>
-          ${medico ? `
-          <div class="info-row">
-            <span class="info-label">Profissional:</span>
-            <span class="info-value">Dr(a). ${medico.nome} - ${medico.especialidade}</span>
-          </div>
-          ` : ''}
-          <div class="info-row">
-            <span class="info-label">Categoria:</span>
-            <span class="info-value">${categoria?.nome || 'N/A'}</span>
+          <div class="info-box">
+            <div class="info-box-title">Agendamento</div>
+            <div class="info-line"><span class="label">Data:</span><span class="value">${dataAgendamento}</span></div>
+            <div class="info-line"><span class="label">Horário:</span><span class="value">${formData.horario || 'A definir'}</span></div>
+            ${medico ? `<div class="info-line"><span class="label">Prof.:</span><span class="value">Dr(a). ${medico.nome}</span></div>` : ''}
+            <div class="info-line"><span class="label">Categoria:</span><span class="value">${categoria?.nome || 'N/A'}</span></div>
           </div>
         </div>
 
-        <div class="section">
-          <h3 class="section-title">Itens do Orçamento</h3>
-          <table class="items-table">
-            <thead>
-              <tr>
-                <th>Descrição</th>
-                <th style="text-align: center;">Qtd</th>
-                <th style="text-align: right;">Valor Unit.</th>
-                <th style="text-align: right;">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${itensHtml}
-            </tbody>
-          </table>
+        <table class="items-table">
+          <thead>
+            <tr>
+              <th>Descrição</th>
+              <th style="text-align: center; width: 40px;">Qtd</th>
+              <th style="text-align: right; width: 80px;">Valor Unit.</th>
+              <th style="text-align: right; width: 80px;">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itensHtml}
+          </tbody>
+        </table>
+
+        <div class="total-bar">
+          <span>VALOR TOTAL:</span>
+          <span>R$ ${parseFloat(formData.valor_total).toFixed(2).replace('.', ',')}</span>
         </div>
 
-        <div class="totals-section">
-          <div class="total-row total-final">
-            <span>VALOR TOTAL:</span>
-            <span>R$ ${parseFloat(formData.valor_total).toFixed(2).replace('.', ',')}</span>
-          </div>
-        </div>
+        <div class="validade">⏰ Orçamento válido por 30 dias a partir da data de emissão</div>
 
-        <div class="validade">
-          <p class="validade-text">⏰ Orçamento válido por 30 dias a partir da data de emissão</p>
-        </div>
-
-        ${formData.observacoes ? `
-        <div class="section">
-          <h3 class="section-title">Observações</h3>
-          <p>${formData.observacoes}</p>
-        </div>
-        ` : ''}
+        ${formData.observacoes ? `<div class="obs-box"><strong>Observações:</strong> ${formData.observacoes}</div>` : ''}
 
         <div class="footer">
-          <p><strong>CENTRO VIDA SAÚDE</strong></p>
-          <p>Sistema desenvolvido por Glória Virtual - Soluções com Inteligência Artificial</p>
-          <p>gloriavirtual.com | CNPJ: 51.424.200/0001-02</p>
+          <strong>CENTRO VIDA SAÚDE</strong> • Desenvolvido por Glória Virtual – gloriavirtual.com
         </div>
       </body>
       </html>
