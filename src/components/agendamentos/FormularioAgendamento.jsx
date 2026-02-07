@@ -874,11 +874,21 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
     const loadHorarios = async () => {
       let horarios = [];
       
-      if (formData.tipo_servico === 'Exame' || formData.tipo_servico === 'Procedimento') {
-        // Para exames e procedimentos, carregar horários sem depender de médico
+      if (formData.tipo_servico === 'Exame') {
+        // Para exames, carregar horários sem depender de médico
         if (formData.data_agendamento) {
           await carregarHorarios(null, formData.data_agendamento);
-          return; // carregarHorarios já seta horariosDisponiveis
+          return;
+        } else {
+          setHorariosDisponiveis([]);
+          return;
+        }
+      } else if (formData.tipo_servico === 'Procedimento') {
+        // Para procedimentos: se tem médico, usar agenda do médico (trava 1 por horário)
+        // Se não tem médico, gerar horários livres
+        if (formData.data_agendamento) {
+          await carregarHorarios(formData.medico_id || null, formData.data_agendamento);
+          return;
         } else {
           setHorariosDisponiveis([]);
           return;
