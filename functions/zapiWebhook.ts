@@ -242,11 +242,18 @@ async function processarMensagemRecebida(base44, payload) {
                     console.log('👤 Contato em atendimento HUMANO (padrão) - mensagem salva, NÃO processando IA');
                     return new Response(JSON.stringify({ message: "Atendimento humano", status: "salvo" }), { status: 200 });
                 } else {
-                    // Modo IA: NÃO salvar NADA aqui - o webhookWhatsappChatbot cuida de TUDO
-                    // Se salvarmos a mensagem aqui, o webhookWhatsappChatbot vê como duplicata e não processa
-                    console.log('🤖 Contato em modo IA - NÃO salvando nada (webhookWhatsappChatbot será chamado diretamente pelo Z-API e cuidará do histórico)');
+                    // Modo IA: Encaminhar para webhookWhatsappChatbot via invoke (com autenticação)
+                    // Z-API NÃO pode chamar webhookWhatsappChatbot diretamente (precisa de auth Base44)
+                    console.log('🤖 Contato em modo IA - encaminhando para webhookWhatsappChatbot...');
                     
-                    return new Response(JSON.stringify({ message: "Modo IA - webhookWhatsappChatbot processará" }), { status: 200 });
+                    try {
+                        const resultado = await base44.asServiceRole.functions.invoke('webhookWhatsappChatbot', payload);
+                        console.log('✅ webhookWhatsappChatbot retornou:', JSON.stringify(resultado.data).substring(0, 200));
+                        return new Response(JSON.stringify(resultado.data), { status: 200 });
+                    } catch (invokeError) {
+                        console.error('❌ Erro ao encaminhar para webhookWhatsappChatbot:', invokeError.message);
+                        return new Response(JSON.stringify({ error: invokeError.message }), { status: 500 });
+                    }
                 }
             } else {
                 // Novo contato - criar em modo HUMANO
