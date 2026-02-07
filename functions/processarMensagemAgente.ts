@@ -995,6 +995,10 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
     const iaPerguntoComoAjudar = /como posso te ajudar|como posso ajudar|qual especialidade|para qual especialidade/i.test(ultimaMsgAssistente);
     const clienteRespondeuComEspecialidade = iaPerguntoComoAjudar && especialidadeDetectada;
 
+    // KEY: quando a IA perguntou "Gostaria de agendar?" e o cliente respondeu "quero", "sim", "por favor" etc.
+    const iaPerguntoSeQuerAgendarConsulta = /gostaria de agendar|quer agendar|deseja agendar|posso agendar/i.test(ultimaMsgAssistente);
+    const clienteAceitouAgendar = iaPerguntoSeQuerAgendarConsulta && /^(quero|sim|s|ok|pode|claro|bora|vamos|isso|por favor|yes|vou|gostaria|please|quero\s*sim|sim\s*quero)$/i.test(messageText.trim().toLowerCase());
+
     const ultimasMensagensUsuario = (historicoConversa || '').split('\n').filter(l => l.startsWith('CLIENTE:'));
     const ultimaMsgUsuario = ultimasMensagensUsuario.length > 0 ? ultimasMensagensUsuario[ultimasMensagensUsuario.length - 1] : '';
     const jaEmFluxoAgendamento = !clienteRecusandoAgendar && !agendamentoRecenteConcluido && ultimaMsgUsuario && /agendar|marcar|consulta|vamos agendar|seguir com o agendamento/i.test(ultimaMsgUsuario);
