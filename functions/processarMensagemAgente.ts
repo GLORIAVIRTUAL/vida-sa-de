@@ -509,8 +509,10 @@ Deno.serve(async (req) => {
         const msgLower = messageText.toLowerCase().trim();
         let agendamentoParaCancelar = null;
         
-        // 1. Verificar se cliente disse número (1, 2, 3...)
-        const numeroMatch = messageText.match(/^(\d)$/);
+        console.log('🔍 Analisando resposta para cancelamento:', msgLower, '| Agendamentos:', agendamentosFuturos.length);
+        
+        // 1. Verificar se cliente disse número (1, 2, 3...) - aceita formatos: "2", "2.", "2. 13:15", "opção 2"
+        const numeroMatch = messageText.match(/^(?:op[çc][aã]o\s*)?(\d)\s*[.\-,:]?\s*/i);
         if (numeroMatch) {
           const num = parseInt(numeroMatch[1]);
           if (num > 0 && num <= agendamentosFuturos.length) {
@@ -519,7 +521,22 @@ Deno.serve(async (req) => {
           }
         }
         
-        // 2. Verificar se cliente mencionou nome do médico (douglas, rovani, etc)
+        // 2. Verificar se cliente mencionou horário específico (13:15, 13h15, às 13:15)
+        if (!agendamentoParaCancelar) {
+          const horarioMatch = messageText.match(/(\d{1,2})[h:](\d{2})/);
+          if (horarioMatch) {
+            const horarioBuscado = `${String(horarioMatch[1]).padStart(2,'0')}:${horarioMatch[2]}`;
+            for (const ag of agendamentosFuturos) {
+              if (ag.horario === horarioBuscado) {
+                agendamentoParaCancelar = ag.id;
+                console.log(`✅ Cliente mencionou horário ${horarioBuscado}: ${ag.id}`);
+                break;
+              }
+            }
+          }
+        }
+        
+        // 3. Verificar se cliente mencionou nome do médico (douglas, rovani, etc)
         if (!agendamentoParaCancelar) {
           for (const ag of agendamentosFuturos) {
             const medico = medicosMap[ag.medico_id];
@@ -538,7 +555,7 @@ Deno.serve(async (req) => {
           }
         }
         
-        // 3. Verificar se cliente mencionou data (19/01, dia 19)
+        // 4. Verificar se cliente mencionou data (19/01, dia 19, 12/02)
         if (!agendamentoParaCancelar) {
           const dataMatch = messageText.match(/(\d{1,2})\/(\d{1,2})|dia\s*(\d{1,2})/i);
           if (dataMatch) {
@@ -556,9 +573,9 @@ Deno.serve(async (req) => {
           }
         }
         
-        // 4. Se só tem um agendamento e cliente confirmou
+        // 5. Se só tem um agendamento e cliente confirmou
         if (!agendamentoParaCancelar && agendamentosFuturos.length === 1) {
-          const confirmacao = /^(sim|s|ok|isso|confirmo|pode|certo|correto|cancela)$/i.test(msgLower);
+          const confirmacao = /^(sim|s|ok|isso|confirmo|pode|certo|correto|cancela|1)$/i.test(msgLower);
           if (confirmacao) {
             agendamentoParaCancelar = agendamentosFuturos[0].id;
             console.log('✅ Cliente confirmou único agendamento:', agendamentoParaCancelar);
