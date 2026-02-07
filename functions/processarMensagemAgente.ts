@@ -589,6 +589,42 @@ Deno.serve(async (req) => {
           if (cancelou) {
             agendamentoCancelado = true;
             console.log('✅ CANCELAMENTO EXECUTADO COM SUCESSO!');
+            
+            // Buscar dados do agendamento cancelado para resposta
+            const agCancelado = agendamentosFuturos.find(a => a.id === agendamentoParaCancelar);
+            const medicoCanc = agCancelado ? medicosMap[agCancelado.medico_id] : null;
+            const dataObjCanc = agCancelado ? new Date(agCancelado.data_agendamento + 'T12:00:00') : null;
+            const dataFmtCanc = dataObjCanc ? dataObjCanc.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' }) : '';
+            
+            const respostaCancelamento = `✅ Agendamento cancelado com sucesso!\n\n❌ *Cancelado:* ${agCancelado?.tipo_servico || 'Consulta'} - ${dataFmtCanc} às ${agCancelado?.horario || ''}${medicoCanc ? ` com ${medicoCanc.nome} (${medicoCanc.especialidade || ''})` : ''}\n\nSe precisar de mais alguma coisa, estou à disposição! 😊`;
+            
+            // Salvar no histórico e retornar IMEDIATAMENTE
+            try {
+              const contatosCancelHist = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
+              if (contatosCancelHist.length > 0) {
+                const contatoCancel = contatosCancelHist[0];
+                const historicoAtualCancel = contatoCancel.historico_mensagens || [];
+                const timestampCancel = new Date().toISOString();
+                historicoAtualCancel.push(
+                  { role: 'user', content: messageText, timestamp: timestampCancel, messageId },
+                  { role: 'assistant', content: respostaCancelamento, timestamp: timestampCancel }
+                );
+                await base44.asServiceRole.entities.Contato.update(contatoCancel.id, {
+                  historico_mensagens: historicoAtualCancel.slice(-50),
+                  ultima_interacao: timestampCancel,
+                  ultima_mensagem: messageText,
+                  ultima_resposta: respostaCancelamento
+                });
+              }
+            } catch (e) {
+              console.error('⚠️ Erro ao salvar histórico cancelamento:', e.message);
+            }
+            
+            return Response.json({ 
+              success: true, 
+              resposta: respostaCancelamento,
+              cancelamento_executado: true
+            });
           } else {
             console.log('❌ Falha ao executar cancelamento');
           }
