@@ -863,9 +863,20 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
     if (deveBuscarDisponibilidades) {
       // Verificar se já mostramos disponibilidades recentemente
       const historico = historicoConversa || '';
-      const jaShowouDisponibilidades = /disponibilidades? encontradas|Dr\.|👨‍⚕️/i.test(historico) && /data_formatada|horários?|14:00|15:00|16:00/i.test(historico);
+      
+      // Verificar se o cliente está ESCOLHENDO um horário/médico específico
+      // Neste caso, NÃO precisamos buscar novamente - o fluxo de extração cuidará disso
+      const clienteEstaEscolhendoHorario = /dr\.?\s*\w+.*\d{1,2}[,:/h]|\d{1,2}[:/h]\s*\d{0,2}|dia\s*\d{1,2}|segunda|terça|quarta|quinta|sexta/i.test(messageText) 
+        && /Dr\.|👨‍⚕️/i.test(historico);
+      
+      // Verificar se disponibilidades já foram mostradas (com horários reais no formato que usamos)
+      const jaShowouDisponibilidades = /\d{2}\/\d{2}:\s*\d{2}:\d{2}/i.test(historico) || 
+        (/Dr\.\s+\w+/i.test(historico) && /\d{2}:\d{2},\s*\d{2}:\d{2}/i.test(historico));
 
-      if (jaShowouDisponibilidades) {
+      if (clienteEstaEscolhendoHorario) {
+        console.log('⏭️ Cliente está ESCOLHENDO horário - deixando extração de dados cuidar');
+        infoDisponibilidade = ''; // Não buscar novamente
+      } else if (jaShowouDisponibilidades) {
         console.log('⏭️ Disponibilidades já foram mostradas - cliente está escolhendo');
           infoDisponibilidade = ''; // Não mostrar novamente
         } else if (!querVerificarAgendamento) {
