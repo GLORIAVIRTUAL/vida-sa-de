@@ -39,16 +39,31 @@ export default function Relatorios() {
   const [categorias, setCategorias] = useState([]);
   const [pacientes, setPacientes] = useState([]);
   
-  // Filtros - iniciar com dados dos últimos 2 anos para mostrar registros
-  const [filtros, setFiltros] = useState({
-    dataInicio: format(new Date(new Date().setFullYear(new Date().getFullYear() - 2)), 'yyyy-MM-dd'),
-    dataFim: format(new Date(), 'yyyy-MM-dd'),
-    medicoId: 'todos',
-    categoriaNome: 'todos', // Mudado de categoriaId para categoriaNome
-    formaPagamento: 'todos',
-    statusPagamento: 'todos',
-    ordenacao: 'data'
+  // Filtros - restaurar do localStorage ou iniciar com padrão
+  const [filtros, setFiltros] = useState(() => {
+    try {
+      const salvos = localStorage.getItem('relatorios_filtros');
+      if (salvos) {
+        return JSON.parse(salvos);
+      }
+    } catch (e) {}
+    return {
+      dataInicio: format(new Date(new Date().setFullYear(new Date().getFullYear() - 2)), 'yyyy-MM-dd'),
+      dataFim: format(new Date(), 'yyyy-MM-dd'),
+      medicoId: 'todos',
+      categoriaNome: 'todos',
+      formaPagamento: 'todos',
+      statusPagamento: 'todos',
+      ordenacao: 'data'
+    };
   });
+
+  // Salvar filtros no localStorage sempre que mudarem
+  useEffect(() => {
+    try {
+      localStorage.setItem('relatorios_filtros', JSON.stringify(filtros));
+    } catch (e) {}
+  }, [filtros]);
   
   const printRef = useRef(null);
 
