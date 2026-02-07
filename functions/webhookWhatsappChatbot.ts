@@ -344,35 +344,18 @@ Deno.serve(async (req) => {
           if (res.length > 0) { contatoCheck = res[0]; break; }
         }
         
-        if (contatoCheck) {
+        if (contatoCheck && messageId) {
           const hist = contatoCheck.historico_mensagens || [];
           
-          // Check 1: messageId já tem resposta
-          if (messageId) {
-            const nossaMsgIdx = hist.findIndex(m => m.messageId === messageId && m.role === 'user');
-            if (nossaMsgIdx >= 0) {
-              const respostaDepois = hist.slice(nossaMsgIdx + 1).find(m => m.role === 'assistant');
-              if (respostaDepois) {
-                console.log('⏭️ Já existe resposta para messageId', messageId, '- NÃO enviando duplicata');
-                return Response.json({ success: true, status: 'duplicata_resposta' });
-              }
-            }
-          }
-          
-          // Check 2: resposta EXATAMENTE IGUAL enviada nos últimos 8 segundos (evitar duplicata real)
-          const ultimasRespostas = hist.filter(m => m.role === 'assistant').slice(-3);
-          const agora = Date.now();
-          for (const resp of ultimasRespostas) {
-            const tempoResp = resp.timestamp ? new Date(resp.timestamp).getTime() : 0;
-            const diferencaSegundos = (agora - tempoResp) / 1000;
-            if (diferencaSegundos < 8 && resp.content) {
-              // Comparar resposta COMPLETA (não apenas início) para evitar falsos positivos
-              const respostaAtual = respostaIA.trim();
-              const respostaAnterior = resp.content.trim();
-              if (respostaAtual === respostaAnterior) {
-                console.log('⏭️ Resposta IDÊNTICA enviada há', Math.round(diferencaSegundos), 's - NÃO duplicando');
-                return Response.json({ success: true, status: 'duplicata_conteudo' });
-              }
+          // Verificar se DUAS respostas do assistente já existem após esta mensagem
+          // (uma resposta é salva pelo processarMensagemAgente, duplicata seria se já enviamos via WhatsApp antes)
+          const nossaMsgIdx = hist.findIndex(m => m.messageId === messageId && m.role === 'user');
+          if (nossaMsgIdx >= 0) {
+            const respostasDepois = hist.slice(nossaMsgIdx + 1).filter(m => m.role === 'assistant');
+            // Se há 2+ respostas do assistente após esta msg, significa que já processamos E enviamos
+            if (respostasDepois.length >= 2) {
+              console.log('⏭️ Já existem 2+ respostas para messageId', messageId, '- NÃO enviando duplicata');
+              return Response.json({ success: true, status: 'duplicata_resposta' });
             }
           }
         }
