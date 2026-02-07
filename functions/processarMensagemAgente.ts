@@ -486,19 +486,63 @@ Deno.serve(async (req) => {
       console.log('📝 Mensagem do cliente:', messageText);
       
       // Buscar agendamentos futuros do paciente vinculado ao telefone
+      // IMPORTANTE: Normalizar telefone e buscar com múltiplas variantes (como no bloco querCancelar)
       const hoje = new Date().toISOString().split('T')[0];
-      const pacientes = await base44.asServiceRole.entities.Paciente.filter({ telefone: phoneNumber });
+      
+      // Normalizar telefone para busca
+      const telNorm = phoneNumber.replace(/\D/g, '');
+      const variantes = [phoneNumber, telNorm];
+      if (telNorm.startsWith('55') && telNorm.length >= 12) {
+        variantes.push(telNorm.slice(2)); // sem código país
+      }
+      if (!telNorm.startsWith('55') && telNorm.length >= 10) {
+        variantes.push('55' + telNorm); // com código país
+      }
+      
+      let pacientes = [];
+      for (const variante of variantes) {
+        if (pacientes.length > 0) break;
+        try {
+          pacientes = await base44.asServiceRole.entities.Paciente.filter({ telefone: variante });
+        } catch (e) {}
+      }
+      
+      // Se não encontrou, buscar por últimos 8 dígitos
+      if (pacientes.length === 0) {
+        try {
+          const todosPacientes = await base44.asServiceRole.entities.Paciente.list('-created_date', 500);
+          const ultimos8 = telNorm.slice(-8);
+          pacientes = todosPacientes.filter(p => {
+            const tel = (p.telefone || '').replace(/\D/g, '');
+            return tel.slice(-8) === ultimos8;
+          });
+        } catch (e) {
+          console.warn('⚠️ Erro busca ampla pacientes:', e.message);
+        }
+      }
+      
+      console.log(`🔍 Pacientes encontrados para cancelamento: ${pacientes.length}`, pacientes.map(p => p.nome));
       
       let agendamentosFuturos = [];
       
       if (pacientes.length > 0) {
-        const paciente = pacientes[0];
-        const agendamentos = await base44.asServiceRole.entities.Agendamento.filter({
-          paciente_id: paciente.id,
-          status: { $in: ['Agendado', 'Pago'] }
+        // Buscar agendamentos de TODOS os pacientes encontrados
+        for (const paciente of pacientes) {
+          const agendamentos = await base44.asServiceRole.entities.Agendamento.filter({
+            paciente_id: paciente.id,
+            status: { $in: ['Agendado', 'Pago'] }
+          });
+          const futuros = agendamentos.filter(ag => ag.data_agendamento >= hoje);
+          agendamentosFuturos.push(...futuros);
+        }
+        // Remover duplicatas
+        const idsVistos = new Set();
+        agendamentosFuturos = agendamentosFuturos.filter(ag => {
+          if (idsVistos.has(ag.id)) return false;
+          idsVistos.add(ag.id);
+          return true;
         });
-        agendamentosFuturos = agendamentos.filter(ag => ag.data_agendamento >= hoje);
-        console.log(`📋 Encontrados ${agendamentosFuturos.length} agendamentos futuros para ${paciente.nome}`);
+        console.log(`📋 Encontrados ${agendamentosFuturos.length} agendamentos futuros`);
       }
       
       if (agendamentosFuturos.length > 0) {
