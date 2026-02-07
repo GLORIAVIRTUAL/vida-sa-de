@@ -330,7 +330,8 @@ Deno.serve(async (req) => {
     console.log('📝 Resposta da IA recebida:', respostaIA ? respostaIA.substring(0, 100) + '...' : 'NULL');
     
     if (respostaIA) {
-      // Anti-duplicata: verificar se já existe resposta do assistente PARA ESTA mensagem específica
+      // Anti-duplicata: verificar se já existe resposta do assistente PARA ESTA mensagem
+      // E também verificar se a resposta é muito similar a uma resposta recente (evitar duplicatas de conteúdo)
       try {
         const telCheck = phoneNumber.replace(/\D/g, '');
         const varCheck = [phoneNumber, telCheck];
@@ -343,15 +344,35 @@ Deno.serve(async (req) => {
           if (res.length > 0) { contatoCheck = res[0]; break; }
         }
         
-        if (contatoCheck && messageId) {
+        if (contatoCheck) {
           const hist = contatoCheck.historico_mensagens || [];
-          // Verificar se JÁ existe uma resposta do assistente LOGO APÓS esta mensagem específica
-          const nossaMsgIdx = hist.findIndex(m => m.messageId === messageId && m.role === 'user');
-          if (nossaMsgIdx >= 0) {
-            const respostaDepois = hist.slice(nossaMsgIdx + 1).find(m => m.role === 'assistant');
-            if (respostaDepois) {
-              console.log('⏭️ Já existe resposta para messageId', messageId, '- NÃO enviando duplicata');
-              return Response.json({ success: true, status: 'duplicata_resposta' });
+          
+          // Check 1: messageId já tem resposta
+          if (messageId) {
+            const nossaMsgIdx = hist.findIndex(m => m.messageId === messageId && m.role === 'user');
+            if (nossaMsgIdx >= 0) {
+              const respostaDepois = hist.slice(nossaMsgIdx + 1).find(m => m.role === 'assistant');
+              if (respostaDepois) {
+                console.log('⏭️ Já existe resposta para messageId', messageId, '- NÃO enviando duplicata');
+                return Response.json({ success: true, status: 'duplicata_resposta' });
+              }
+            }
+          }
+          
+          // Check 2: resposta com conteúdo muito similar enviada nos últimos 10 segundos
+          const ultimasRespostas = hist.filter(m => m.role === 'assistant').slice(-3);
+          const agora = Date.now();
+          for (const resp of ultimasRespostas) {
+            const tempoResp = resp.timestamp ? new Date(resp.timestamp).getTime() : 0;
+            const diferencaSegundos = (agora - tempoResp) / 1000;
+            if (diferencaSegundos < 10 && resp.content) {
+              // Comparar primeiros 80 chars da resposta
+              const respostaAtualInicio = respostaIA.substring(0, 80).toLowerCase().trim();
+              const respostaAnteriorInicio = resp.content.substring(0, 80).toLowerCase().trim();
+              if (respostaAtualInicio === respostaAnteriorInicio) {
+                console.log('⏭️ Resposta com conteúdo similar enviada há', Math.round(diferencaSegundos), 's - NÃO duplicando');
+                return Response.json({ success: true, status: 'duplicata_conteudo' });
+              }
             }
           }
         }
