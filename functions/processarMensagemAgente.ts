@@ -1416,9 +1416,11 @@ Se ele está escolhendo, confirme a escolha e colete dados faltantes (nome compl
       (/^[A-Za-zÀ-ÿ\s]+$/.test(messageText.trim()) && messageText.trim().split(/\s+/).length >= 2)
     );
     
-    const estaEmFluxoAgendamento = (querAgendar && historicoTemEspecialidadeLocal) || 
-      (historicoConversa && /horário|data|nascimento|doutor|dr\./i.test(historicoConversa) && historicoTemEspecialidadeLocal) ||
-      clienteFornecendoDadosPessoais;
+    const estaEmFluxoAgendamento = !agendamentoRecenteConcluido && (
+      (querAgendar && historicoTemEspecialidadeLocal) || 
+      (historicoConversa && /horário|data|nascimento|doutor|dr\./i.test(historicoConversa) && historicoTemEspecialidadeLocal && !ehPerguntaPreco) ||
+      clienteFornecendoDadosPessoais
+    );
     
     // Verificar se o cliente está escolhendo horário (pode ser hoje, 13 horas, etc.)
     const clienteEscolhendoHorarioAgora = /pode ser|quero|às?\s*\d|hoje|\d{1,2}[h:]|horário/i.test(messageText) && historicoTemEspecialidadeLocal;
