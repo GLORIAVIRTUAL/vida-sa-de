@@ -681,103 +681,38 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
     // Verificar se cliente quer agendar - buscar disponibilidades
     let infoDisponibilidade = '';
 
-    // REGRA ANTI-LOOP: Se o cliente está RECUSANDO agendar, NÃO entrar em fluxo de agendamento
-    const clienteRecusandoAgendar = /n[aã]o\s*(quero|preciso|desejo|vou|queria)?\s*(agendar|marcar|consulta)|n[aã]o\s*[,.]?\s*(obrigad|valeu|brigad)|deixa\s*(pra\s*l[aá]|quieto)|agora\s*n[aã]o|depois|sem\s*agendar/i.test(messageText);
-
-    // Detectar se o histórico já tem uma especialidade mencionada
-    const historicoTemEspecialidadeCheck = historicoConversa && /clínico|clinico|cardiolog|dermatolog|ginecolog|nutrici|psicolog|ortoped|urolog|geriatr|gastro|reumato|psiquiatr|fisioterap|oftalmolog|otorrino|pediatr|pneumolog|neurolog|quiroprax|massoterap|optometr|hidro|pilates|odontolog|dentist|endocrinolog|Dr\.|👨‍⚕️/i.test(historicoConversa);
-
-    // Verificar se quer agendar na mensagem ATUAL (não no histórico - evita loop)
-    const querAgendarMensagem = !clienteRecusandoAgendar && /agendar|marcar|consulta|atend|hor[áa]rio|dispon[íi]vel|vaga/i.test(messageText);
-
-    // Verificar se o cliente disse "sim" e a IA tinha perguntado "Gostaria de agendar?"
-    const ultimasMensagensAssistente = (historicoConversa || '').split('\n').filter(l => l.startsWith('ASSISTENTE:'));
-    const ultimaMsgAssistente = ultimasMensagensAssistente.length > 0 ? ultimasMensagensAssistente[ultimasMensagensAssistente.length - 1] : '';
-    const iaPerguntoSeQuerAgendar = /gostaria de agendar|quer agendar|deseja agendar|posso agendar|agendar.*\?|como posso te ajudar|qual especialidade|para qual especialidade/i.test(ultimaMsgAssistente);
-    const clienteConfirmouAgendar = iaPerguntoSeQuerAgendar && /^(sim|s|ok|quero|pode|claro|bora|vamos|isso|por favor|yes|vou|gostaria|please)$/i.test(messageText.trim().toLowerCase());
-
-    // Verificar se a IA perguntou "como posso te ajudar?" ou "qual especialidade?" e o cliente respondeu com uma especialidade
-    // Isso é KEY: quando a IA diz "como posso te ajudar?" e o cliente responde "clinico geral", isso É um pedido de agendamento
-    const iaPerguntoComoAjudar = /como posso te ajudar|como posso ajudar|qual especialidade|para qual especialidade/i.test(ultimaMsgAssistente);
-    const clienteRespondeuComEspecialidade = iaPerguntoComoAjudar && especialidadeDetectada;
-
-    // Fluxo de agendamento no histórico: APENAS se a ÚLTIMA mensagem do USUÁRIO (não do assistente) mencionava agendamento
-    // E o cliente NÃO está recusando agora
-    const ultimasMensagensUsuario = (historicoConversa || '').split('\n').filter(l => l.startsWith('CLIENTE:'));
-    const ultimaMsgUsuario = ultimasMensagensUsuario.length > 0 ? ultimasMensagensUsuario[ultimasMensagensUsuario.length - 1] : '';
-    const jaEmFluxoAgendamento = !clienteRecusandoAgendar && ultimaMsgUsuario && /agendar|marcar|consulta|vamos agendar|seguir com o agendamento/i.test(ultimaMsgUsuario);
-    const querAgendar = querAgendarMensagem || jaEmFluxoAgendamento || clienteConfirmouAgendar || clienteRespondeuComEspecialidade;
-    
-    // Se cliente está em fluxo de VERIFICAÇÃO, NÃO entrar em fluxo de AGENDAMENTO
-    // NOTA: Se chegou aqui, verificação já retornou acima - este é um fallback de segurança
-    if (querVerificarAgendamento) {
-      console.log('ℹ️ Cliente em fluxo de VERIFICAÇÃO - pulando lógica de agendamento');
-    } else {
-      // Cliente quer AGENDAR - processar normalmente
-
-      // Detectar especialidade mencionada - lista expandida com sinônimos
-      // IMPORTANTE: Lista de especialidades para detecção automática
-      // Usar apenas termos ESPECÍFICOS (mín 5 chars) que identifiquem claramente uma especialidade
-      // NÃO incluir termos genéricos como "consulta", "osso", "peso", "eco", "ultra", "canal", "grau", "lente"
-      // que podem causar falsos positivos
-      const especialidades = [
-      // Cardiologia
+    // ===== DETECÇÃO DE ESPECIALIDADE E MÉDICO (ANTES de avaliar querAgendar) =====
+    // Detectar especialidade mencionada - lista expandida com sinônimos
+    const especialidades = [
       'Cardiologia', 'Cardiologista', 'Arritmia', 'Hipertensão', 'Hipertensao',
-      // Clínico Geral
       'Clínico Geral', 'Clinico Geral', 'Clínico', 'Clinico', 'Check-up', 'Checkup',
-      // Dermatologia
       'Dermatologia', 'Dermatologista', 'Dermato',
-      // Endocrinologia
       'Endocrinologia', 'Endocrinologista', 'Tireoide', 'Tireóide', 'Diabetes',
-      // Ginecologia
       'Ginecologia', 'Ginecologista', 'Gineco', 'Preventivo', 'Papanicolau',
-      // Nutrição
       'Nutrição', 'Nutricao', 'Nutricionista',
-      // Psicologia
       'Psicologia', 'Psicólogo', 'Psicologo', 'Psicóloga', 'Psicologa',
-      // Ortopedia
       'Ortopedia', 'Ortopedista', 'Traumatologia', 'Traumatologista',
-      // Urologia
       'Urologia', 'Urologista', 'Próstata', 'Prostata',
-      // Geriatria
       'Geriatria', 'Geriatra',
-      // Gastroenterologia
       'Gastroenterologia', 'Gastro', 'Gastroenterologista',
-      // Reumatologia
       'Reumatologia', 'Reumatologista', 'Reumatismo', 'Fibromialgia',
-      // Psiquiatria
       'Psiquiatria', 'Psiquiatra',
-      // Fisioterapia
       'Fisioterapia', 'Fisioterapeuta',
-      // Ecografia/Ultrassom
       'Ecografia', 'Ecocardiograma', 'Ultrassom', 'Ultrassonografia',
-      // Oftalmologia
       'Oftalmologia', 'Oftalmologista', 'Oftalmo', 'Catarata', 'Glaucoma',
-      // Otorrinolaringologia
       'Otorrinolaringologia', 'Otorrino', 'Otorrinolaringologista', 'Sinusite', 'Rinite',
-      // Pediatria
       'Pediatria', 'Pediatra',
-      // Pneumologia
       'Pneumologia', 'Pneumologista', 'Asma', 'Bronquite',
-      // Neurologia
       'Neurologia', 'Neurologista', 'Enxaqueca', 'Convulsão', 'Convulsao', 'Neuropediatria',
-      // Quiropraxia
       'Quiropraxia', 'Quiropraxista',
-      // Massoterapia
       'Massoterapia', 'Massoterapeuta', 'Drenagem Linfática', 'Drenagem Linfatica',
-      // Optometria
       'Optometria', 'Optometrista',
-      // Hidroginástica/Hidroterapia/Pilates
       'Hidroginástica', 'Hidroginastica', 'Hidroterapia', 'Pilates', 'Natação', 'Natacao',
-      // Psicopedagogia
       'Psicopedagoga', 'Psicopedagogia', 'Psicopedagogo',
-      // Odontologia
       'Odontologia', 'Odontologista', 'Dentista', 'Ortodontia', 'Implantodontia',
-      // Eletrocardiograma
       'Eletrocardiograma', 'ECG'
-      ];
+    ];
 
-    // Função para normalizar texto (remover acentos e converter para lowercase)
     const normalizarTexto = (texto) => {
       return (texto || '')
         .toLowerCase()
@@ -806,7 +741,6 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
       const nomeMedicoLower = medico.nome.toLowerCase();
       const partesNome = nomeMedicoLower.split(' ').filter(p => p.length > 3);
       
-      // Verificar se alguma parte significativa do nome está na mensagem
       for (const parte of partesNome) {
         if (textoCompleto.includes(parte)) {
           medicoEspecificoDetectado = medico;
@@ -819,17 +753,48 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
     }
 
     // Se não encontrou médico específico, buscar por especialidade
-     if (!medicoEspecificoDetectado) {
-       for (const esp of especialidades) {
-         const espNorm = normalizarTexto(esp);
-         // Verifica se a mensagem ou histórico contém a especialidade (normalizado)
-         if (textoCompleto.includes(espNorm)) {
-           especialidadeDetectada = esp;
-           console.log(`🎯 Especialidade detectada: ${esp}`);
-           break;
-         }
-       }
-     }
+    if (!medicoEspecificoDetectado) {
+      for (const esp of especialidades) {
+        const espNorm = normalizarTexto(esp);
+        if (textoCompleto.includes(espNorm)) {
+          especialidadeDetectada = esp;
+          console.log(`🎯 Especialidade detectada: ${esp}`);
+          break;
+        }
+      }
+    }
+
+    // ===== AGORA avaliar querAgendar (especialidadeDetectada já está definida) =====
+
+    // REGRA ANTI-LOOP: Se o cliente está RECUSANDO agendar, NÃO entrar em fluxo de agendamento
+    const clienteRecusandoAgendar = /n[aã]o\s*(quero|preciso|desejo|vou|queria)?\s*(agendar|marcar|consulta)|n[aã]o\s*[,.]?\s*(obrigad|valeu|brigad)|deixa\s*(pra\s*l[aá]|quieto)|agora\s*n[aã]o|depois|sem\s*agendar/i.test(messageText);
+
+    // Detectar se o histórico já tem uma especialidade mencionada
+    const historicoTemEspecialidadeCheck = historicoConversa && /clínico|clinico|cardiolog|dermatolog|ginecolog|nutrici|psicolog|ortoped|urolog|geriatr|gastro|reumato|psiquiatr|fisioterap|oftalmolog|otorrino|pediatr|pneumolog|neurolog|quiroprax|massoterap|optometr|hidro|pilates|odontolog|dentist|endocrinolog|Dr\.|👨‍⚕️/i.test(historicoConversa);
+
+    // Verificar se quer agendar na mensagem ATUAL
+    const querAgendarMensagem = !clienteRecusandoAgendar && /agendar|marcar|consulta|atend|hor[áa]rio|dispon[íi]vel|vaga/i.test(messageText);
+
+    // Verificar se o cliente disse "sim" e a IA tinha perguntado algo
+    const ultimasMensagensAssistente = (historicoConversa || '').split('\n').filter(l => l.startsWith('ASSISTENTE:'));
+    const ultimaMsgAssistente = ultimasMensagensAssistente.length > 0 ? ultimasMensagensAssistente[ultimasMensagensAssistente.length - 1] : '';
+    const iaPerguntoSeQuerAgendar = /gostaria de agendar|quer agendar|deseja agendar|posso agendar|agendar.*\?|como posso te ajudar|qual especialidade|para qual especialidade/i.test(ultimaMsgAssistente);
+    const clienteConfirmouAgendar = iaPerguntoSeQuerAgendar && /^(sim|s|ok|quero|pode|claro|bora|vamos|isso|por favor|yes|vou|gostaria|please)$/i.test(messageText.trim().toLowerCase());
+
+    // KEY: quando a IA diz "como posso te ajudar?" e o cliente responde "clinico geral", isso É um pedido de agendamento
+    const iaPerguntoComoAjudar = /como posso te ajudar|como posso ajudar|qual especialidade|para qual especialidade/i.test(ultimaMsgAssistente);
+    const clienteRespondeuComEspecialidade = iaPerguntoComoAjudar && especialidadeDetectada;
+
+    const ultimasMensagensUsuario = (historicoConversa || '').split('\n').filter(l => l.startsWith('CLIENTE:'));
+    const ultimaMsgUsuario = ultimasMensagensUsuario.length > 0 ? ultimasMensagensUsuario[ultimasMensagensUsuario.length - 1] : '';
+    const jaEmFluxoAgendamento = !clienteRecusandoAgendar && ultimaMsgUsuario && /agendar|marcar|consulta|vamos agendar|seguir com o agendamento/i.test(ultimaMsgUsuario);
+    const querAgendar = querAgendarMensagem || jaEmFluxoAgendamento || clienteConfirmouAgendar || clienteRespondeuComEspecialidade;
+    
+    // Se cliente está em fluxo de VERIFICAÇÃO, NÃO entrar em fluxo de AGENDAMENTO
+    if (querVerificarAgendamento) {
+      console.log('ℹ️ Cliente em fluxo de VERIFICAÇÃO - pulando lógica de agendamento');
+    } else {
+      // Cliente quer AGENDAR - processar normalmente
     
     // Só buscar disponibilidades se:
     // 1. Detectou médico específico OU especialidade específica, OU
