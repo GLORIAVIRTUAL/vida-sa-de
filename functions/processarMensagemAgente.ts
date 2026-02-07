@@ -2281,6 +2281,18 @@ Retorne JSON.`;
     ${infoResultadoExame}
     ${infoCancelamento}
 
+${infoCancelamento ? `
+🚨🚨🚨 REGRA ABSOLUTA SOBRE CANCELAMENTO 🚨🚨🚨
+NUNCA diga que um agendamento foi cancelado por conta própria!
+O SISTEMA é quem cancela automaticamente - você NÃO tem poder de cancelar.
+Se o cliente está pedindo cancelamento e você tem a lista de agendamentos:
+1. MOSTRE a lista ao cliente e pergunte QUAL deseja cancelar
+2. Quando o cliente indicar qual, diga APENAS: "Vou cancelar esse agendamento para você."
+3. NÃO diga "foi cancelado com sucesso" - o sistema fará isso automaticamente
+4. Se o sistema já cancelou (a mensagem veio com cancelamento_executado=true), ACOMPANHE a confirmação
+IMPORTANTE: Se você disser "cancelado" sem o sistema ter executado, o agendamento CONTINUARÁ ATIVO no sistema!
+` : ''}
+
 ---
 🎯 INSTRUÇÕES CRÍTICAS SOBRE AGENDAMENTOS E HORÁRIOS:
 
