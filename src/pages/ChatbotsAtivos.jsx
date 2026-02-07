@@ -794,7 +794,7 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
                               )}
                             </div>
                             {msg.timestamp && (
-                              <div className={`px-3 pb-2 text-[10px] ${
+                              <div className={`px-3 pb-2 text-[10px] flex items-center ${msg.role === 'user' ? 'justify-start' : 'justify-end'} gap-1 ${
                                 msg.role === 'user' 
                                   ? 'text-gray-400' 
                                   : isHumano 
@@ -802,6 +802,9 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
                                     : 'text-blue-200'
                               }`}>
                                 {format(new Date(msg.timestamp), 'HH:mm', { locale: ptBR })}
+                                {msg.role === 'assistant' && (
+                                  <span className={`ml-0.5 font-bold ${isHumano ? 'text-green-500' : 'text-blue-200'}`}>✓✓</span>
+                                )}
                               </div>
                             )}
                           </div>
