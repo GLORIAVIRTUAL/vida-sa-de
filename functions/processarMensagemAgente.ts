@@ -1001,6 +1001,37 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
     } else {
       // Cliente quer AGENDAR - processar normalmente
     
+    // Verificar se cliente pergunta sobre ecografia/ecocardiograma e médico está de férias/inativo
+    const ecografiaNorm = normalizarTexto(especialidadeDetectada || '');
+    const ehEcografia = ['ecografia', 'ecocardiograma', 'eco', 'ultrassom', 'ultrassonografia'].some(t => ecografiaNorm.includes(t));
+    
+    if (ehEcografia && medicosParaBuscar.length === 0) {
+      // Buscar médico de ecografia mesmo inativo/férias para informar ao cliente
+      let medicosEcoInativos = [];
+      try {
+        const todosMedicosGeral = await base44.asServiceRole.entities.Medico.list();
+        medicosEcoInativos = todosMedicosGeral.filter(m => {
+          const espNorm = normalizarTexto(m.especialidade || '');
+          const espsNorm = (m.especialidades || []).map(e => normalizarTexto(e));
+          return espNorm.includes('ecocardiograma') || espNorm.includes('ecografia') || 
+                 espsNorm.some(e => e.includes('ecocardiograma') || e.includes('ecografia'));
+        });
+      } catch (e) { console.warn('⚠️ Erro busca médicos eco:', e.message); }
+      
+      if (medicosEcoInativos.length > 0 && medicosEcoInativos.every(m => m.status !== 'Ativo')) {
+        const nomesMedicos = medicosEcoInativos.map(m => m.nome).join(', ');
+        const statusMedicos = medicosEcoInativos.map(m => `${m.nome}: ${m.status}`).join(', ');
+        infoDisponibilidade = `\n\n⚠️ ECOGRAFIA/ECOCARDIOGRAMA - MÉDICO TEMPORARIAMENTE INDISPONÍVEL:
+O profissional responsável pelas ecografias (${nomesMedicos}) está atualmente com status: ${statusMedicos}.
+
+Informe ao cliente que:
+1. SIM, a clínica realiza ecografias (diversos tipos: abdominal, tireoide, obstétrica, mamária, ecocardiograma, etc.)
+2. O médico responsável está TEMPORARIAMENTE indisponível
+3. Sugira que entre em contato pelo telefone (51) 3661-5991 para saber quando haverá nova agenda disponível
+4. NÃO diga que a clínica não faz ecografia - ela FAZ!`;
+      }
+    }
+    
     // Só buscar disponibilidades se:
     // 1. Detectou médico específico OU especialidade específica, OU
     // 2. Já está em fluxo de agendamento com dados parciais no histórico E o cliente está escolhendo horário/data
