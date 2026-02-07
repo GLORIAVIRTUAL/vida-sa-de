@@ -874,11 +874,17 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
         (/Dr\.\s+\w+/i.test(historico) && /\d{2}:\d{2},\s*\d{2}:\d{2}/i.test(historico));
 
       if (clienteEstaEscolhendoHorario) {
-        console.log('⏭️ Cliente está ESCOLHENDO horário - deixando extração de dados cuidar');
-        infoDisponibilidade = ''; // Não buscar novamente
+        console.log('⏭️ Cliente está ESCOLHENDO horário - informando LLM que horários já foram mostrados');
+        infoDisponibilidade = `\n\n✅ DISPONIBILIDADES JÁ FORAM MOSTRADAS AO CLIENTE ANTERIORMENTE.
+O cliente está ESCOLHENDO um horário/médico. Ele disse: "${messageText}"
+NÃO diga que não há horários! O cliente está respondendo à lista que você já apresentou.
+Apenas confirme a escolha dele e peça os dados faltantes (nome completo e data de nascimento).
+Se ele mencionou um médico e horário/data, CONFIRME a escolha e peça: nome completo e data de nascimento (DD/MM/AAAA).`;
       } else if (jaShowouDisponibilidades) {
-        console.log('⏭️ Disponibilidades já foram mostradas - cliente está escolhendo');
-          infoDisponibilidade = ''; // Não mostrar novamente
+        console.log('⏭️ Disponibilidades já foram mostradas - cliente está respondendo');
+          infoDisponibilidade = `\n\n✅ DISPONIBILIDADES JÁ FORAM MOSTRADAS AO CLIENTE ANTERIORMENTE.
+O cliente está respondendo. NÃO diga que não há horários!
+Se ele está escolhendo, confirme a escolha e colete dados faltantes (nome completo e data de nascimento).`;
         } else if (!querVerificarAgendamento) {
           console.log('📅 Cliente quer agendar - buscando disponibilidades...');
 
