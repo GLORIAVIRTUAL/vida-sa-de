@@ -2398,10 +2398,11 @@ Retorne JSON.`;
     PASSO 2️⃣ - MOSTRAR DISPONIBILIDADES: Mostre os horários disponíveis que aparecem na seção "DISPONIBILIDADES ENCONTRADAS"
        ⚠️ Se NÃO houver disponibilidades listadas, informe que não há horários disponíveis e sugira contato telefônico
        ⚠️ NUNCA invente horários - use APENAS os que aparecem nas disponibilidades
-    PASSO 3️⃣ - ESCOLHA DO HORÁRIO: Aguarde o cliente ESCOLHER um dia e horário da lista
-    PASSO 4️⃣ - NOME COMPLETO: Peça o nome completo do paciente
-    PASSO 5️⃣ - DATA DE NASCIMENTO: Peça a data de nascimento (DD/MM/AAAA)
-    PASSO 6️⃣ - O SISTEMA CRIA O AGENDAMENTO AUTOMATICAMENTE (você NÃO faz nada aqui!)
+    PASSO 3️⃣ - ESCOLHA DO HORÁRIO: Aguarde o cliente ESCOLHER um médico, dia e horário da lista
+       ⚠️ Quando o cliente escolher (ex: "dr ruben, dia 09/02"), CONFIRME a escolha dele dizendo: "Ótimo! Vou agendar com Dr. Ruben no dia 09/02 às 08:00."
+       ⚠️ DEPOIS peça os dados: "Preciso do seu nome completo e data de nascimento (DD/MM/AAAA) para confirmar."
+    PASSO 4️⃣ - NOME COMPLETO + DATA NASCIMENTO: Peça nome completo e data de nascimento do paciente (pode ser na mesma mensagem)
+    PASSO 5️⃣ - O SISTEMA CRIA O AGENDAMENTO AUTOMATICAMENTE (você NÃO faz nada aqui! NÃO diga "confirmado"!)
     
     ❌ PROIBIDO:
     - Pular qualquer passo
