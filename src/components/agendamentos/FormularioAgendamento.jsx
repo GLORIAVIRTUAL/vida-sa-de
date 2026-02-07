@@ -2766,51 +2766,100 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
                          )}
 
                          {formData.tipo_servico === 'Exame' && (
-                           <div className="space-y-3">
-                             <h3 className="text-base font-semibold text-gray-800 border-b pb-2">Exames</h3>
-                             <div className="p-4 border rounded-lg bg-gray-50 space-y-4">
-                               <div>
-                                 <Label htmlFor="busca_exame">Buscar Exame</Label>
-                                 <Input 
-                                   id="busca_exame" 
-                                   placeholder="Digite o nome do exame..." 
-                                   value={buscaExame} 
-                                   onChange={(e) => setBuscaExame(e.target.value)} 
-                                   className="mt-1" 
-                                 />
-                               </div>
-                               <div>
-                                 <Label>Adicionar Exame</Label>
-                                 <Select onValueChange={adicionarExame} value="">
-                                   <SelectTrigger><SelectValue placeholder="Selecione um exame para adicionar..." /></SelectTrigger>
-                                   <SelectContent>
-                                     {examesFiltrados.filter(e => !formData.exames_ids.includes(e.id)).length === 0 ? (
-                                       <SelectItem value="none" disabled>Nenhum exame encontrado</SelectItem>
-                                     ) : (
-                                       examesFiltrados.filter(e => !formData.exames_ids.includes(e.id)).map(e => (
-                                         <SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>
-                                       ))
-                                     )}
-                                   </SelectContent>
-                                 </Select>
-                               </div>
-                               {selectedExames.length > 0 && (
-                                 <div>
-                                   <Label className="font-medium">Selecionados ({selectedExames.length})</Label>
-                                   <div className="space-y-2 mt-2">
-                                     {selectedExames.map(exame => (
-                                       <div key={exame.id} className="flex items-center justify-between p-2 bg-white rounded border">
-                                         <span className="text-sm">{exame.nome}</span>
-                                         <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => removerExame(exame.id)}>
-                                           <X className="w-4 h-4" />
-                                         </Button>
-                                       </div>
-                                     ))}
-                                   </div>
-                                 </div>
-                               )}
-                             </div>
-                           </div>
+                          <div className="space-y-3">
+                            <h3 className="text-base font-semibold text-gray-800 border-b pb-2">Exames</h3>
+                            <div className="p-4 border rounded-lg bg-gray-50 space-y-4">
+                              {/* Análise de requisição com IA */}
+                              <div className="p-3 border-2 border-dashed border-blue-300 bg-blue-50 rounded-lg space-y-2">
+                                <Label className="text-blue-800 font-medium flex items-center gap-2">
+                                  <FileScan className="w-4 h-4" />
+                                  Importar Requisição de Exames (IA)
+                                </Label>
+                                <p className="text-xs text-blue-600">Envie uma foto ou PDF da requisição médica. A IA identificará os exames e adicionará automaticamente.</p>
+                                <div className="flex gap-2">
+                                  <Input
+                                    id="pedido-exame-input"
+                                    type="file"
+                                    accept=".pdf,.jpg,.jpeg,.png"
+                                    onChange={(e) => setPedidoExameFile(e.target.files?.[0] || null)}
+                                    disabled={analisando}
+                                    className="flex-1 bg-white"
+                                  />
+                                  <Button
+                                    type="button"
+                                    onClick={handleAnalisarPedidoExame}
+                                    disabled={analisando || !pedidoExameFile}
+                                    className="bg-blue-600 hover:bg-blue-700 gap-2"
+                                    size="sm"
+                                  >
+                                    {analisando ? (
+                                      <>
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        {uploadStatus || 'Analisando...'}
+                                      </>
+                                    ) : (
+                                      <>
+                                        <FileScan className="w-4 h-4" />
+                                        Analisar
+                                      </>
+                                    )}
+                                  </Button>
+                                </div>
+                                {analisando && uploadProgress > 0 && (
+                                  <div className="w-full bg-blue-200 rounded-full h-2">
+                                    <div 
+                                      className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                                      style={{ width: `${uploadProgress}%` }}
+                                    />
+                                  </div>
+                                )}
+                              </div>
+
+                              <div>
+                                <Label htmlFor="busca_exame">Buscar Exame</Label>
+                                <Input 
+                                  id="busca_exame" 
+                                  placeholder="Digite o nome do exame..." 
+                                  value={buscaExame} 
+                                  onChange={(e) => setBuscaExame(e.target.value)} 
+                                  className="mt-1" 
+                                />
+                              </div>
+                              <div>
+                                <Label>Adicionar Exame</Label>
+                                <Select onValueChange={adicionarExame} value="">
+                                  <SelectTrigger><SelectValue placeholder="Selecione um exame para adicionar..." /></SelectTrigger>
+                                  <SelectContent>
+                                    {examesFiltrados.filter(e => !formData.exames_ids.includes(e.id)).length === 0 ? (
+                                      <SelectItem value="none" disabled>Nenhum exame encontrado</SelectItem>
+                                    ) : (
+                                      examesFiltrados.filter(e => !formData.exames_ids.includes(e.id)).map(e => (
+                                        <SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>
+                                      ))
+                                    )}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              {selectedExames.length > 0 && (
+                                <div>
+                                  <Label className="font-medium">Selecionados ({selectedExames.length})</Label>
+                                  <div className="space-y-2 mt-2">
+                                    {selectedExames.map(exame => (
+                                      <div key={exame.id} className="flex items-center justify-between p-2 bg-white rounded border">
+                                        <div className="flex-1">
+                                          <span className="text-sm">{exame.nome}</span>
+                                          <span className="text-xs text-gray-500 ml-2">R$ {exame.display_valor?.toFixed(2).replace('.', ',') || '0,00'}</span>
+                                        </div>
+                                        <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => removerExame(exame.id)}>
+                                          <X className="w-4 h-4" />
+                                        </Button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
                          )}
 
                          {formData.tipo_servico === 'Múltiplos Serviços' && (
