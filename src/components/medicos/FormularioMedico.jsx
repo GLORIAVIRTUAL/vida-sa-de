@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Plus, Trash2, Upload } from "lucide-react";
+import { Loader2, Plus, Trash2, Upload, Lock, Unlock } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -531,8 +531,13 @@ export default function FormularioMedico({ medico, open, onClose, onUpdate }) {
               </CardHeader>
               <CardContent className="space-y-4">
                 {formData.horarios_atendimento.map((horario, index) => (
-                  <div key={index} className="flex gap-2 items-end p-3 border rounded-lg bg-gray-50">
+                  <div key={index} className={`flex gap-2 items-end p-3 border rounded-lg ${horario.bloqueado ? 'bg-red-50 border-red-200' : 'bg-gray-50'}`}>
                     <div className="flex-1 space-y-2">
+                      {horario.bloqueado && (
+                        <div className="flex items-center gap-1 text-xs text-red-600 font-medium">
+                          <Lock className="w-3 h-3" /> AGENDA BLOQUEADA
+                        </div>
+                      )}
                       <div className="grid grid-cols-5 gap-2">
                         <div>
                           <Label className="text-xs">Dia da Semana</Label>
@@ -604,14 +609,30 @@ export default function FormularioMedico({ medico, open, onClose, onUpdate }) {
                         </p>
                       )}
                     </div>
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon"
-                      onClick={() => handleRemoverHorario(index)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                    <div className="flex flex-col gap-1">
+                      <Button
+                        type="button"
+                        variant={horario.bloqueado ? "outline" : "secondary"}
+                        size="icon"
+                        title={horario.bloqueado ? "Desbloquear agenda" : "Bloquear agenda"}
+                        onClick={() => {
+                          const novosHorarios = [...formData.horarios_atendimento];
+                          novosHorarios[index] = { ...novosHorarios[index], bloqueado: !horario.bloqueado };
+                          handleInputChange('horarios_atendimento', novosHorarios);
+                        }}
+                        className={horario.bloqueado ? "border-green-500 text-green-600 hover:bg-green-50" : "text-red-600 hover:bg-red-50"}
+                      >
+                        {horario.bloqueado ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        onClick={() => handleRemoverHorario(index)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
                 ))}
                 <Button
