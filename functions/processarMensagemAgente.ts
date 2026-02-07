@@ -2241,8 +2241,8 @@ Retorne JSON.`;
     Confirme o recebimento e pergunte como pode ajudar.`;
     }
     
-    // Preparar histórico para o prompt - se conversa foi finalizada, limpar histórico mas mencionar que há histórico anterior
-    let historicoParaPrompt = historicoConversa || '(primeira mensagem)';
+    // Preparar histórico para o prompt - formato estruturado para o LLM entender melhor o contexto
+    let historicoParaPrompt = '';
     let contextoPreviousConversation = '';
 
     if (conversaFinalizada && historicoConversa) {
@@ -2254,6 +2254,16 @@ Retorne JSON.`;
     ${historicoConversa}
     ---`;
       historicoParaPrompt = '(nova conversa - conversa anterior foi finalizada)';
+    } else if (historicoMensagensRaw.length > 0) {
+      // Formato estruturado com timestamps para o LLM entender a sequência temporal
+      historicoParaPrompt = historicoMensagensRaw.map(m => {
+        const role = m.role === 'user' ? '👤 CLIENTE' : '🤖 GLÓRIA';
+        const time = m.timestamp ? new Date(m.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
+        const media = m.mediaType && m.mediaType !== 'text' ? ` [${m.mediaType.toUpperCase()}]` : '';
+        return `${role}${time ? ` (${time})` : ''}${media}: ${m.content}`;
+      }).join('\n');
+    } else {
+      historicoParaPrompt = '(primeira mensagem - sem histórico)';
     }
 
     const promptCompleto = `${config.prompt_sistema}
