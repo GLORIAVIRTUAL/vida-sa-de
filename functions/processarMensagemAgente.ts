@@ -95,9 +95,11 @@ Deno.serve(async (req) => {
     // Buscar histórico de conversa - CARREGAR MAIS MENSAGENS para contexto rico
     let historicoConversa = '';
     let historicoMensagensRaw = []; // Guardar mensagens brutas para contexto do LLM
+    let contatoHistorico = null; // Referência ao contato para uso posterior
     try {
       const contatos = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
       if (contatos.length > 0) {
+        contatoHistorico = contatos[0];
         // Se a conversa foi finalizada ou histórico está vazio, tratar como primeira mensagem
         if (conversaFinalizada || !contatos[0].historico_mensagens || contatos[0].historico_mensagens.length === 0) {
           console.log('🗑️ Histórico vazio ou conversa finalizada - tratando como PRIMEIRA MENSAGEM');
@@ -112,6 +114,61 @@ Deno.serve(async (req) => {
       }
     } catch (e) {
       console.log('⚠️ Não foi possível buscar histórico');
+    }
+
+    // ===== DETECÇÃO DEFINITIVA DE PRIMEIRA MENSAGEM (logo após carregar histórico) =====
+    // Usa o histórico do contato ANTES de qualquer processamento
+    // REGRA: primeira mensagem = contato sem NENHUMA resposta do assistente no histórico
+    const assistenteJaRespondeu = contatoHistorico && 
+      (contatoHistorico.historico_mensagens || []).some(m => m.role === 'assistant');
+    const ehPrimeiraMensagemDefinitiva = !assistenteJaRespondeu && !conversaFinalizada 
+      ? true 
+      : (conversaFinalizada && historicoMensagensRaw.length === 0);
+    
+    console.log('🔍 Primeira mensagem definitiva:', ehPrimeiraMensagemDefinitiva, 
+      '| assistenteJaRespondeu:', assistenteJaRespondeu, 
+      '| conversaFinalizada:', conversaFinalizada);
+    
+    // Se é primeira mensagem, retornar saudação fixa IMEDIATAMENTE (não precisa de LLM)
+    if (ehPrimeiraMensagemDefinitiva) {
+      // Calcular saudação por horário
+      const horaNumeroSaudacao = parseInt(new Date().toLocaleTimeString('pt-BR', { timeZone: 'America/Recife', hour: '2-digit', hour12: false }));
+      let saudacao = 'Bom dia';
+      if (horaNumeroSaudacao >= 12 && horaNumeroSaudacao < 18) {
+        saudacao = 'Boa tarde';
+      } else if (horaNumeroSaudacao >= 18 || horaNumeroSaudacao < 5) {
+        saudacao = 'Boa noite';
+      }
+      
+      const primeiroNome = (senderName || '').split(' ')[0] || 'cliente';
+      const saudacaoFixa = `${saudacao}, ${primeiroNome}! 👋 Eu sou a Glória, atendente virtual do *Centro Vida Saúde*. Como posso te ajudar hoje? 😊`;
+      
+      console.log('👋 PRIMEIRA MENSAGEM - retornando saudação fixa:', saudacaoFixa.substring(0, 60));
+      
+      // Salvar no histórico
+      const timestamp = new Date().toISOString();
+      if (contatoHistorico) {
+        const hist = contatoHistorico.historico_mensagens || [];
+        hist.push(
+          { role: 'user', content: messageText, timestamp, messageId },
+          { role: 'assistant', content: saudacaoFixa, timestamp }
+        );
+        await base44.asServiceRole.entities.Contato.update(contatoHistorico.id, {
+          ultima_mensagem: messageText,
+          ultima_resposta: saudacaoFixa,
+          historico_mensagens: hist.slice(-50),
+          ultima_interacao: timestamp,
+          total_mensagens: 2,
+          conversa_finalizada: false
+        });
+      }
+      
+      return Response.json({ 
+        success: true, 
+        resposta: saudacaoFixa,
+        conversationId: null,
+        primeira_mensagem: true
+      });
     }
 
     // Verificar se cliente quer verificar status do agendamento
