@@ -912,7 +912,9 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
     const historicoTemEspecialidadeCheck = historicoConversa && /clínico|clinico|cardiolog|dermatolog|ginecolog|nutrici|psicolog|ortoped|urolog|geriatr|gastro|reumato|psiquiatr|fisioterap|oftalmolog|otorrino|pediatr|pneumolog|neurolog|quiroprax|massoterap|optometr|hidro|pilates|odontolog|dentist|endocrinolog|Dr\.|👨‍⚕️/i.test(historicoConversa);
 
     // Verificar se quer agendar na mensagem ATUAL
-    const querAgendarMensagem = !clienteRecusandoAgendar && /agendar|marcar|consulta|atend|hor[áa]rio|dispon[íi]vel|vaga/i.test(messageText);
+    // IMPORTANTE: Se o cliente pergunta "quanto custa a consulta" ou "valor da consulta", NÃO é pedido de agendamento
+    const ehPerguntaPreco = /quanto\s*custa|qual\s*o?\s*(valor|pre[çc]o)|pre[çc]o\s*(da|do|de)|valor\s*(da|do|de)|custa\s*quanto/i.test(messageText);
+    const querAgendarMensagem = !clienteRecusandoAgendar && !ehPerguntaPreco && /agendar|marcar|consulta|atend|hor[áa]rio|dispon[íi]vel|vaga/i.test(messageText);
 
     // Verificar se o cliente disse "sim" e a IA tinha perguntado algo
     const ultimasMensagensAssistente = (historicoConversa || '').split('\n').filter(l => l.startsWith('ASSISTENTE:'));
