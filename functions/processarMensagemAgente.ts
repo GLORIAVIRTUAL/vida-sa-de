@@ -1096,10 +1096,10 @@ Se ele está escolhendo, confirme a escolha e colete dados faltantes (nome compl
                   day: '2-digit', 
                   month: '2-digit'
                 }),
-                horarios: horariosDisponiveis.sort().slice(0, 5)
+                horarios: horariosDisponiveis.sort().slice(0, 1)
               });
 
-              if (disponibilidadesMedico.length >= 3) break;
+              if (disponibilidadesMedico.length >= 5) break;
             }
           }
 
@@ -1121,9 +1121,9 @@ Se ele está escolhendo, confirme a escolha e colete dados faltantes (nome compl
             infoDisponibilidade += `\n👨‍⚕️ ${medico.medico_nome} (${medico.especialidade}):\n`;
             infoDisponibilidade += `   ID do médico: ${medico.medico_id}\n`;
 
-            // Mostrar mais dias e horários para cada médico
-            for (const dia of medico.disponibilidades.slice(0, 3)) {
-              infoDisponibilidade += `   • ${dia.data_formatada}: ${dia.horarios.slice(0, 5).join(', ')}\n`;
+            // Mostrar primeiro horário de cada dia disponível
+            for (const dia of medico.disponibilidades.slice(0, 5)) {
+              infoDisponibilidade += `   • ${dia.data_formatada}: ${dia.horarios[0]}\n`;
             }
           }
 
