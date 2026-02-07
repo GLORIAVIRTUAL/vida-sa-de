@@ -635,8 +635,15 @@ Deno.serve(async (req) => {
     }
 
     // Verificar se cliente quer resultado de exame
-    const querResultado = /resultado|exame pronto|pegar|buscar resultado|retirar|laudo|meu exame|meus exames|localizar|pegar resultado|resultado do exame/i.test(messageText) ||
-                          /resultado|exame pronto|localizar/i.test(historicoConversa || '');
+    // ANTI-DUPLICATA: Se no histórico já tem uma resposta do assistente com "encontrei o resultado" ou "PDF está sendo enviado",
+    // NÃO buscar resultado novamente
+    const historicoJaEnviouResultado = (historicoConversa || '').includes('encontrei o resultado') || 
+                                        (historicoConversa || '').includes('PDF está sendo enviado') ||
+                                        (historicoConversa || '').includes('arquivo PDF');
+    
+    const querResultado = !historicoJaEnviouResultado && (
+                          /resultado|exame pronto|pegar|buscar resultado|retirar|laudo|meu exame|meus exames|localizar|pegar resultado|resultado do exame/i.test(messageText) ||
+                          /resultado|exame pronto|localizar/i.test(historicoConversa || ''));
     let infoResultadoExame = '';
     let arquivoParaEnviar = null;
     
