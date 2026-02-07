@@ -478,7 +478,8 @@ Deno.serve(async (req) => {
 
     // Verificar se o cliente está tentando indicar qual agendamento cancelar
     // Pode ser: número (1, 2), nome do médico, data (19/01), ou confirmação
-    const contextoCancel = /cancelar|desmarcar|qual.*cancelar|gostaria de cancelar/i.test(historicoConversa || '');
+    // TAMBÉM detectar quando o assistente mostrou a lista de agendamentos e perguntou "Qual consulta você deseja cancelar?"
+    const contextoCancel = /cancelar|desmarcar|qual.*cancelar|gostaria de cancelar|qual\s*consulta.*deseja|deseja\s*cancelar/i.test(historicoConversa || '');
     
     if (contextoCancel && historicoConversa) {
       console.log('🔍 Contexto de cancelamento detectado, analisando resposta do cliente...');
