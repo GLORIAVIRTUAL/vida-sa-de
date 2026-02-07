@@ -2067,7 +2067,14 @@ Retorne JSON.`;
             }
           }
 
-          infoProcedimentosExames += `\n⚠️ REGRAS OBRIGATÓRIAS PARA ORÇAMENTO:
+          infoProcedimentosExames += `\n⚠️ REGRAS OBRIGATÓRIAS PARA USO DA BASE DE DADOS:
+
+    📌 REGRA FUNDAMENTAL: Esta lista acima contém TODOS os serviços que a clínica oferece.
+    - Se o cliente perguntar "vocês fazem X?", "tem X?", "quanto custa X?", CONSULTE ESTA LISTA.
+    - Se o serviço ESTÁ na lista = SIM, oferecemos! Informe os preços.
+    - Se o serviço NÃO ESTÁ na lista = NÃO oferecemos no momento. Diga que não temos disponível.
+    - NUNCA invente serviços ou preços que não estão na lista.
+    - Esta lista é atualizada em tempo real - confie nela 100%.
 
     🚨 IMPORTANTE: NÃO PEÇA NOME, CPF OU DADOS PESSOAIS PARA DAR ORÇAMENTO!
     Quando o cliente enviar uma requisição (imagem ou PDF), você DEVE:
