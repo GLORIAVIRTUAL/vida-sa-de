@@ -1002,15 +1002,16 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
       // Cliente quer AGENDAR - processar normalmente
     
     // Verificar se cliente pergunta sobre ecografia/ecocardiograma e médico está de férias/inativo
+    // NOTA: Esta verificação precisa rodar ANTES da declaração de medicosParaBuscar
     const ecografiaNorm = normalizarTexto(especialidadeDetectada || '');
     const ehEcografia = ['ecografia', 'ecocardiograma', 'eco', 'ultrassom', 'ultrassonografia'].some(t => ecografiaNorm.includes(t));
     
-    if (ehEcografia && medicosParaBuscar.length === 0) {
-      // Buscar médico de ecografia mesmo inativo/férias para informar ao cliente
-      let medicosEcoInativos = [];
+    if (ehEcografia) {
+      // Buscar TODOS os médicos de ecografia (ativos e inativos) para verificar status
+      let medicosEcoTodos = [];
       try {
         const todosMedicosGeral = await base44.asServiceRole.entities.Medico.list();
-        medicosEcoInativos = todosMedicosGeral.filter(m => {
+        medicosEcoTodos = todosMedicosGeral.filter(m => {
           const espNorm = normalizarTexto(m.especialidade || '');
           const espsNorm = (m.especialidades || []).map(e => normalizarTexto(e));
           return espNorm.includes('ecocardiograma') || espNorm.includes('ecografia') || 
@@ -1018,8 +1019,11 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
         });
       } catch (e) { console.warn('⚠️ Erro busca médicos eco:', e.message); }
       
-      if (medicosEcoInativos.length > 0 && medicosEcoInativos.every(m => m.status !== 'Ativo')) {
-        const nomesMedicos = medicosEcoInativos.map(m => m.nome).join(', ');
+      // Se NENHUM médico de ecografia está ativo, informar que está de férias
+      const temMedicoEcoAtivo = medicosEcoTodos.some(m => m.status === 'Ativo');
+      if (medicosEcoTodos.length > 0 && !temMedicoEcoAtivo) {
+        const nomesMedicos = medicosEcoTodos.map(m => m.nome).join(', ');
+        console.log('⚠️ Médicos de ecografia encontrados mas TODOS inativos/férias:', nomesMedicos);
         infoDisponibilidade = `\n\n⚠️ ECOGRAFIA/ECOCARDIOGRAMA - MÉDICO DE FÉRIAS:
 O profissional responsável pelas ecografias é o ${nomesMedicos}, que está atualmente de FÉRIAS.
 
