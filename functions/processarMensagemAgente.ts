@@ -938,12 +938,20 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
       
       // Verificar se o cliente está ESCOLHENDO um horário/médico específico
       // Neste caso, NÃO precisamos buscar novamente - o fluxo de extração cuidará disso
-      const clienteEstaEscolhendoHorario = /dr\.?\s*\w+.*\d{1,2}[,:/h]|\d{1,2}[:/h]\s*\d{0,2}|dia\s*\d{1,2}|segunda|terça|quarta|quinta|sexta/i.test(messageText) 
-        && /Dr\.|👨‍⚕️/i.test(historico);
+      // Padrões: "dia 12: 13:15", "sexta dia 13: 8:30", "13:15", "dia 12", "segunda", "Dr. Altamiro"
+      const clienteEstaEscolhendoHorario = (
+        /dia\s*\d{1,2}/i.test(messageText) ||
+        /\d{1,2}[:/h]\d{2}/i.test(messageText) ||
+        /segunda|terça|terca|quarta|quinta|sexta|sábado|sabado/i.test(messageText) ||
+        /dr\.?\s*\w+/i.test(messageText)
+      ) && /Dr\.|👨‍⚕️|\d{2}:\d{2}/i.test(historico);
       
       // Verificar se disponibilidades já foram mostradas (com horários reais no formato que usamos)
-      const jaShowouDisponibilidades = /\d{2}\/\d{2}:\s*\d{2}:\d{2}/i.test(historico) || 
-        (/Dr\.\s+\w+/i.test(historico) && /\d{2}:\d{2},\s*\d{2}:\d{2}/i.test(historico));
+      // Padrões: "12/02: 13:15", "Dr. Altamiro" + "13:15", "quinta-feira, 12/02: 13:15"
+      const jaShowouDisponibilidades = (
+        /\d{2}\/\d{2}.*\d{2}:\d{2}/i.test(historico) || 
+        (/Dr\.\s+\w+/i.test(historico) && /\d{2}:\d{2}/i.test(historico))
+      );
 
       if (clienteEstaEscolhendoHorario) {
         console.log('⏭️ Cliente está ESCOLHENDO horário - informando LLM que horários já foram mostrados');
