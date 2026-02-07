@@ -611,43 +611,49 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
     if (formData.tipo_servico === 'Exame' || formData.tipo_servico === 'Procedimento') {
       console.log('🔄 Gerando horários automáticos para', formData.tipo_servico);
       
-      // Gerar horários das 7h às 19h, a cada 10 minutos
-      const horariosAutomaticos = [];
-      for (let hora = 7; hora <= 18; hora++) {
-        for (let minuto = 0; minuto < 60; minuto += 10) {
-          const horario = `${String(hora).padStart(2, '0')}:${String(minuto).padStart(2, '0')}`;
-          horariosAutomaticos.push(horario);
-        }
-      }
-      
-      // Adicionar último horário de 19:00
-      horariosAutomaticos.push('19:00');
-
-      // Se NÃO for encaixe, filtrar horários já ocupados
-      if (data && !formData.is_encaixe) {
-        const agendamentosNoDia = (todosAgendamentos || []).filter(a => 
-          a.data_agendamento === data &&
-          a.status !== 'Cancelado' &&
-          (!agendamento || a.id !== agendamento.id) && // Excluir o próprio agendamento em edição
-          (medicoId ? a.medico_id === medicoId : true) // Se tem médico, filtrar por ele
-        );
-        const horariosOcupados = agendamentosNoDia.map(a => a.horario);
-        
-        const horariosLivres = horariosAutomaticos.filter(h => !horariosOcupados.includes(h));
-        
-        // Se estiver editando, garantir que o horário original esteja na lista
-        let horariosFinais = horariosLivres;
-        if (agendamento?.horario && !horariosFinais.includes(agendamento.horario)) {
-          horariosFinais = [...horariosFinais, agendamento.horario].sort();
-        }
-        
-        setHorariosDisponiveis(horariosFinais.sort());
+      // Se for Procedimento COM médico selecionado, usar a lógica de agenda do médico (Horários Marcados)
+      // para travar 1 agendamento por horário
+      if (formData.tipo_servico === 'Procedimento' && medicoId) {
+        console.log('🔒 Procedimento com médico - usando agenda do médico para travar horários');
+        // NÃO retornar aqui, deixar cair na lógica de consultas abaixo que já trata "Horários Marcados"
       } else {
-        setHorariosDisponiveis(horariosAutomaticos.sort());
+        // Para Exames (sem médico obrigatório), gerar horários das 7h às 19h, a cada 10 minutos
+        const horariosAutomaticos = [];
+        for (let hora = 7; hora <= 18; hora++) {
+          for (let minuto = 0; minuto < 60; minuto += 10) {
+            const horario = `${String(hora).padStart(2, '0')}:${String(minuto).padStart(2, '0')}`;
+            horariosAutomaticos.push(horario);
+          }
+        }
+        
+        // Adicionar último horário de 19:00
+        horariosAutomaticos.push('19:00');
+
+        // Se NÃO for encaixe, filtrar horários já ocupados
+        if (data && !formData.is_encaixe) {
+          const agendamentosNoDia = (todosAgendamentos || []).filter(a => 
+            a.data_agendamento === data &&
+            a.status !== 'Cancelado' &&
+            (!agendamento || a.id !== agendamento.id)
+          );
+          const horariosOcupados = agendamentosNoDia.map(a => a.horario);
+          
+          const horariosLivres = horariosAutomaticos.filter(h => !horariosOcupados.includes(h));
+          
+          // Se estiver editando, garantir que o horário original esteja na lista
+          let horariosFinais = horariosLivres;
+          if (agendamento?.horario && !horariosFinais.includes(agendamento.horario)) {
+            horariosFinais = [...horariosFinais, agendamento.horario].sort();
+          }
+          
+          setHorariosDisponiveis(horariosFinais.sort());
+        } else {
+          setHorariosDisponiveis(horariosAutomaticos.sort());
+        }
+        
+        setLoadingHorarios(false);
+        return;
       }
-      
-      setLoadingHorarios(false);
-      return;
     }
     
     // Para Consultas e Retornos, usar a lógica existente
