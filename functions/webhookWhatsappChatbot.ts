@@ -359,18 +359,18 @@ Deno.serve(async (req) => {
             }
           }
           
-          // Check 2: resposta com conteúdo muito similar enviada nos últimos 10 segundos
+          // Check 2: resposta EXATAMENTE IGUAL enviada nos últimos 8 segundos (evitar duplicata real)
           const ultimasRespostas = hist.filter(m => m.role === 'assistant').slice(-3);
           const agora = Date.now();
           for (const resp of ultimasRespostas) {
             const tempoResp = resp.timestamp ? new Date(resp.timestamp).getTime() : 0;
             const diferencaSegundos = (agora - tempoResp) / 1000;
-            if (diferencaSegundos < 10 && resp.content) {
-              // Comparar primeiros 80 chars da resposta
-              const respostaAtualInicio = respostaIA.substring(0, 80).toLowerCase().trim();
-              const respostaAnteriorInicio = resp.content.substring(0, 80).toLowerCase().trim();
-              if (respostaAtualInicio === respostaAnteriorInicio) {
-                console.log('⏭️ Resposta com conteúdo similar enviada há', Math.round(diferencaSegundos), 's - NÃO duplicando');
+            if (diferencaSegundos < 8 && resp.content) {
+              // Comparar resposta COMPLETA (não apenas início) para evitar falsos positivos
+              const respostaAtual = respostaIA.trim();
+              const respostaAnterior = resp.content.trim();
+              if (respostaAtual === respostaAnterior) {
+                console.log('⏭️ Resposta IDÊNTICA enviada há', Math.round(diferencaSegundos), 's - NÃO duplicando');
                 return Response.json({ success: true, status: 'duplicata_conteudo' });
               }
             }
