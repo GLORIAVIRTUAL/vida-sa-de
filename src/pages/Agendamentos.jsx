@@ -459,18 +459,19 @@ export default function Agendamentos() {
             <tr>
               <th style="width: 55px;">Data</th>
               <th style="width: 35px;">Hora</th>
+              <th style="width: 45px;">Tipo</th>
               <th>Descrição</th>
               <th style="width: 65px;">Conv. Paciente</th>
               <th style="width: 70px;">Celular</th>
               <th style="width: 80px;">Categoria</th>
-              <th style="width: 70px;">Observação</th>
-              <th style="width: 55px;">Atendente</th>
+              <th style="width: 60px;">Observação</th>
+              <th style="width: 50px;">Atendente</th>
             </tr>
           </thead>
           <tbody>
             ${agendamentosParaImpressao.length === 0 ? `
               <tr>
-                <td colspan="8" style="text-align: center; padding: 20px;">
+                <td colspan="9" style="text-align: center; padding: 20px;">
                   Nenhum agendamento
                 </td>
               </tr>
@@ -478,6 +479,7 @@ export default function Agendamentos() {
       const paciente = pacientes.find((p) => p.id === ag.paciente_id);
       const medico = medicos.find((m) => m.id === ag.medico_id);
       const categoria = categorias.find((c) => c.id === ag.categoria_preco_id);
+      const proc = procedimentos.find((p) => p.id === ag.procedimento_id);
       
       // Usar nome do paciente encontrado OU o nome salvo no agendamento
       const nomePaciente = paciente?.nome || ag.paciente_nome || 'N/A';
@@ -485,19 +487,38 @@ export default function Agendamentos() {
       const telefonePaciente = paciente?.telefone || '';
       const convenioPaciente = paciente?.convenio || '';
 
+      // Tipo de serviço com estilo visual
+      const tipoServico = ag.tipo_servico || '';
+      let tipoLabel = tipoServico;
+      let tipoStyle = '';
+      if (tipoServico === 'Retorno') {
+        tipoLabel = '↩ Retorno';
+        tipoStyle = 'color: #7c3aed; font-weight: bold;';
+      } else if (tipoServico === 'Consulta') {
+        tipoLabel = 'Consulta';
+        tipoStyle = 'color: #2563eb; font-weight: bold;';
+      } else if (tipoServico === 'Procedimento') {
+        tipoLabel = 'Proced.';
+        tipoStyle = 'color: #d97706;';
+      } else if (tipoServico === 'Exame') {
+        tipoLabel = 'Exame';
+        tipoStyle = 'color: #059669;';
+      }
+
       // Limpar observações removendo info duplicada
       let obsLimpa = ag.observacoes || '';
       if (obsLimpa) {
-        // Remover linhas que mencionam convênio, categoria, cartão (já aparecem em outras colunas)
         obsLimpa = obsLimpa
           .split('\n')
           .filter(linha => {
             const linhaUpper = linha.toUpperCase();
             return !linhaUpper.includes('CONVÊNIO:') && 
                    !linhaUpper.includes('CATEGORIA') && 
-                   !linhaUpper.includes('CARTÃO');
+                   !linhaUpper.includes('CARTÃO') &&
+                   !linhaUpper.includes('DENTISTA:') &&
+                   !linhaUpper.includes('ESPECIALIDADE:');
           })
-          .join(' | ') // Juntar em uma linha com separador
+          .join(' | ')
           .trim();
       }
 
@@ -505,6 +526,7 @@ export default function Agendamentos() {
                 <tr>
                   <td>${format(new Date(ag.data_agendamento + 'T00:00:00'), 'dd/MM/yyyy')}</td>
                   <td><strong>${ag.horario}</strong></td>
+                  <td style="${tipoStyle}">${tipoLabel}</td>
                   <td>${cpfPaciente ? cpfPaciente + ' - ' : ''}${nomePaciente}</td>
                   <td>${convenioPaciente}</td>
                   <td>${telefonePaciente}</td>
