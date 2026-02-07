@@ -2591,7 +2591,7 @@ INSTRUÇÕES GERAIS:
 
     console.log('🏷️ Motivo identificado:', motivoIdentificado);
 
-    // Salvar conversa no histórico
+    // Salvar conversa no histórico (user + assistant juntos para evitar duplicação)
     try {
       const contatos = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
       const timestamp = new Date().toISOString();
@@ -2625,9 +2625,18 @@ INSTRUÇÕES GERAIS:
           conteudoUsuario = `${messageText}\n${mediaUrl}`;
         }
 
-        // Adicionar novas mensagens ao histórico (com mídia se houver)
+        // ANTI-DUPLICATA: Verificar se a mensagem do user já está no histórico
+        const userMsgJaExiste = messageId && historicoAtual.some(m => m.messageId === messageId && m.role === 'user');
+        
+        if (!userMsgJaExiste) {
+          // Adicionar mensagem do user + resposta do assistant juntas
+          historicoAtual.push(
+            { role: 'user', content: conteudoUsuario, timestamp, messageId, mediaType, mediaUrl }
+          );
+        }
+        
+        // Sempre adicionar a resposta do assistant
         historicoAtual.push(
-          { role: 'user', content: conteudoUsuario, timestamp, messageId, mediaType, mediaUrl },
           { role: 'assistant', content: llmResponse, timestamp }
         );
         
