@@ -4,6 +4,10 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 const processingLock = new Map();
 const LOCK_TTL_MS = 120000; // 2 minutos
 
+// Lock para evitar envio duplicado de documentos (resultado de exame)
+const documentSentLock = new Map();
+const DOC_LOCK_TTL_MS = 300000; // 5 minutos
+
 function acquireLock(messageId) {
   // Limpar locks antigos
   const now = Date.now();
