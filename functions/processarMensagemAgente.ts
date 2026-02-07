@@ -1926,11 +1926,25 @@ Retorne JSON.`;
 
     // Determinar se é primeira mensagem da conversa atual (para saudação)
     // Primeira mensagem = conversa foi finalizada OU não existe nenhuma resposta do assistente no histórico
+    // IMPORTANTE: Verificar também os dados do contato para evitar falsos positivos
     const historicoVazio = !historicoConversa || historicoConversa.trim() === '';
     const historicoSemRespostaAssistente = !historicoConversa || !historicoConversa.includes('ASSISTENTE:');
-    const ehPrimeiraMensagem = conversaFinalizada || historicoVazio || historicoSemRespostaAssistente;
+    
+    // Verificar no contato se já houve interação recente (anti falso-positivo)
+    let contatoJaTemHistorico = false;
+    if (contatosCheck.length > 0) {
+      const contato = contatosCheck[0];
+      // Se o contato tem mensagens recentes e não foi finalizado, NÃO é primeira mensagem
+      contatoJaTemHistorico = !conversaFinalizada && (
+        (contato.total_mensagens > 1) || 
+        (contato.ultima_resposta && contato.ultima_resposta.length > 0) ||
+        (contato.historico_mensagens && contato.historico_mensagens.length > 1)
+      );
+    }
+    
+    const ehPrimeiraMensagem = conversaFinalizada || (historicoVazio && !contatoJaTemHistorico) || (historicoSemRespostaAssistente && !contatoJaTemHistorico);
 
-    console.log('🔍 Verificação primeira mensagem:', { conversaFinalizada, historicoVazio, historicoSemRespostaAssistente, ehPrimeiraMensagem, historicoTamanho: historicoConversa?.length || 0 });
+    console.log('🔍 Verificação primeira mensagem:', { conversaFinalizada, historicoVazio, historicoSemRespostaAssistente, contatoJaTemHistorico, ehPrimeiraMensagem, historicoTamanho: historicoConversa?.length || 0 });
 
     // Se é primeira mensagem, NÃO chamar LLM - retornar saudação fixa e sair
     if (ehPrimeiraMensagem) {
