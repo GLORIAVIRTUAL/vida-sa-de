@@ -198,18 +198,14 @@ Deno.serve(async (req) => {
         });
         
       } else {
-        // Novo contato - criar em modo IA
+        // Novo contato - criar em modo IA (sem mensagem no histórico - processarMensagemAgente salvará)
         await base44.asServiceRole.entities.Contato.create({
           nome: senderName,
           telefone: phoneNumber,
           origem: 'WhatsApp',
           status: 'Novo',
           atendimento_humano: false,
-          historico_mensagens: [{
-            role: 'user',
-            content: mediaUrl ? `${messageText}\n${mediaUrl}` : messageText,
-            timestamp: agora, mediaType, mediaUrl, messageId
-          }],
+          historico_mensagens: [],
           mensagens_pendentes: [],
           ultima_interacao: agora
         });
