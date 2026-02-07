@@ -1012,9 +1012,15 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
     const iaPerguntoSeQuerAgendar = /gostaria de agendar|quer agendar|deseja agendar|posso agendar|agendar.*\?|como posso te ajudar|qual especialidade|para qual especialidade/i.test(ultimaMsgAssistente);
     const clienteConfirmouAgendar = iaPerguntoSeQuerAgendar && /^(sim|s|ok|quero|pode|claro|bora|vamos|isso|por favor|yes|vou|gostaria|please)$/i.test(messageText.trim().toLowerCase());
 
-    // KEY: quando a IA diz "como posso te ajudar?" e o cliente responde "clinico geral", isso É um pedido de agendamento
-    const iaPerguntoComoAjudar = /como posso te ajudar|como posso ajudar|qual especialidade|para qual especialidade/i.test(ultimaMsgAssistente);
-    const clienteRespondeuComEspecialidade = iaPerguntoComoAjudar && especialidadeDetectada;
+    // KEY: quando a IA perguntou "qual especialidade?" e o cliente responde "clinico geral", isso É um pedido de agendamento
+    // MAS: quando a IA perguntou "como posso te ajudar?" e o cliente responde com especialidade, é AMBÍGUO
+    // Pode ser pergunta informativa ("ai tem clinico geral?") ou pedido de agendamento
+    // REGRA: Só considerar como pedido de agendamento se a IA ESPECIFICAMENTE perguntou sobre especialidade para agendar
+    const iaPerguntoComoAjudar = /qual especialidade|para qual especialidade/i.test(ultimaMsgAssistente);
+    const iaPerguntoGenerico = /como posso te ajudar|como posso ajudar/i.test(ultimaMsgAssistente) && !iaPerguntoComoAjudar;
+    // Se a IA fez pergunta genérica ("como posso te ajudar?"), NÃO assumir que especialidade = agendamento
+    // O LLM deve responder naturalmente (pode ser pergunta informativa, orçamento, etc.)
+    const clienteRespondeuComEspecialidade = iaPerguntoComoAjudar && especialidadeDetectada && !ehPerguntaInformativa && !ehPerguntaSobreCartao;
 
     // KEY: quando a IA perguntou "Gostaria de agendar?" e o cliente respondeu "quero", "sim", "por favor" etc.
     const iaPerguntoSeQuerAgendarConsulta = /gostaria de agendar|quer agendar|deseja agendar|posso agendar/i.test(ultimaMsgAssistente);
