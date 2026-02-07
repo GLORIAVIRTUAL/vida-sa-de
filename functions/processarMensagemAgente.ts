@@ -117,9 +117,16 @@ Deno.serve(async (req) => {
     }
 
     // ===== DETECÇÃO DEFINITIVA DE PRIMEIRA MENSAGEM (logo após carregar histórico) =====
-    // Usa o histórico do contato ANTES de qualquer processamento
-    // REGRA: primeira mensagem = contato sem NENHUMA resposta do assistente no histórico
-    const historicoMsgs = contatoHistorico ? (contatoHistorico.historico_mensagens || []) : [];
+    // REGRA ROBUSTA: Verificar se o assistente já respondeu nesta conversa
+    // Recarregar contato fresh para evitar race conditions entre instâncias paralelas
+    let contatoFresh = contatoHistorico;
+    if (contatoHistorico) {
+      try {
+        const freshList = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
+        if (freshList.length > 0) contatoFresh = freshList[0];
+      } catch (e) {}
+    }
+    const historicoMsgs = contatoFresh ? (contatoFresh.historico_mensagens || []) : [];
     const assistenteJaRespondeu = historicoMsgs.some(m => m.role === 'assistant');
     // Primeira mensagem se: assistente nunca respondeu (contato novo ou sem resposta)
     // OU conversa foi finalizada e histórico foi limpo
@@ -127,7 +134,8 @@ Deno.serve(async (req) => {
     
     console.log('🔍 Primeira mensagem definitiva:', ehPrimeiraMensagemDefinitiva, 
       '| assistenteJaRespondeu:', assistenteJaRespondeu, 
-      '| conversaFinalizada:', conversaFinalizada);
+      '| conversaFinalizada:', conversaFinalizada,
+      '| historicoMsgs:', historicoMsgs.length);
     
     // Se é primeira mensagem, retornar saudação fixa IMEDIATAMENTE (não precisa de LLM)
     if (ehPrimeiraMensagemDefinitiva) {
