@@ -977,8 +977,13 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
 
     // Verificar se quer agendar na mensagem ATUAL
     // IMPORTANTE: Se o cliente pergunta "quanto custa a consulta" ou "valor da consulta", NÃO é pedido de agendamento
+    // IMPORTANTE: Se o cliente pergunta "faz X?", "tem X?", "vocês fazem X?", "atende X?", é PERGUNTA INFORMATIVA, NÃO agendamento
     const ehPerguntaPreco = /quanto\s*custa|qual\s*o?\s*(valor|pre[çc]o)|pre[çc]o\s*(da|do|de)|valor\s*(da|do|de)|custa\s*quanto/i.test(messageText);
-    const querAgendarMensagem = !clienteRecusandoAgendar && !ehPerguntaPreco && /agendar|marcar|consulta|atend|hor[áa]rio|dispon[íi]vel|vaga/i.test(messageText);
+    const ehPerguntaInformativa = /^(a[ií]\s+)?(voc[êe]s\s+)?(faz(em)?|tem|t[êe]m|realiza[m]?|oferece[m]?|atende[m]?|existe|trabalha[m]?\s+com)\s+/i.test(messageText) ||
+      /faz(em)?\s+.+\?/i.test(messageText) ||
+      /tem\s+.+\?/i.test(messageText) ||
+      /^a[ií]\s+faz\b/i.test(messageText);
+    const querAgendarMensagem = !clienteRecusandoAgendar && !ehPerguntaPreco && !ehPerguntaInformativa && /agendar|marcar|consulta|atend|hor[áa]rio|dispon[íi]vel|vaga/i.test(messageText);
 
     // Verificar se o cliente disse "sim" e a IA tinha perguntado algo
     const ultimasMensagensAssistente = (historicoConversa || '').split('\n').filter(l => l.startsWith('ASSISTENTE:'));
