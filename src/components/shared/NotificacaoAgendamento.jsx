@@ -80,54 +80,81 @@ export default function NotificacaoAgendamento() {
 
   const reproduzirSomCancelamento = () => {
     try {
-      // Som de alerta para cancelamento (notas descendentes)
       const audioContext = new (window.AudioContext || window.webkitAudioContext)();
       
-      // Primeira nota (Sol - alta)
       const oscillator1 = audioContext.createOscillator();
       const gainNode1 = audioContext.createGain();
       oscillator1.connect(gainNode1);
       gainNode1.connect(audioContext.destination);
       oscillator1.type = 'sine';
-      oscillator1.frequency.setValueAtTime(783.99, audioContext.currentTime); // G5
+      oscillator1.frequency.setValueAtTime(783.99, audioContext.currentTime);
       gainNode1.gain.setValueAtTime(0, audioContext.currentTime);
       gainNode1.gain.linearRampToValueAtTime(0.4, audioContext.currentTime + 0.01);
       gainNode1.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
       oscillator1.start(audioContext.currentTime);
       oscillator1.stop(audioContext.currentTime + 0.3);
 
-      // Segunda nota (Mi)
       const oscillator2 = audioContext.createOscillator();
       const gainNode2 = audioContext.createGain();
       oscillator2.connect(gainNode2);
       gainNode2.connect(audioContext.destination);
       oscillator2.type = 'sine';
-      oscillator2.frequency.setValueAtTime(659.25, audioContext.currentTime + 0.15); // E5
+      oscillator2.frequency.setValueAtTime(659.25, audioContext.currentTime + 0.15);
       gainNode2.gain.setValueAtTime(0, audioContext.currentTime + 0.15);
       gainNode2.gain.linearRampToValueAtTime(0.4, audioContext.currentTime + 0.16);
       gainNode2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.45);
       oscillator2.start(audioContext.currentTime + 0.15);
       oscillator2.stop(audioContext.currentTime + 0.45);
 
-      // Terceira nota (Dó - baixa)
       const oscillator3 = audioContext.createOscillator();
       const gainNode3 = audioContext.createGain();
       oscillator3.connect(gainNode3);
       gainNode3.connect(audioContext.destination);
       oscillator3.type = 'sine';
-      oscillator3.frequency.setValueAtTime(392.00, audioContext.currentTime + 0.3); // G4 (mais grave)
+      oscillator3.frequency.setValueAtTime(392.00, audioContext.currentTime + 0.3);
       gainNode3.gain.setValueAtTime(0, audioContext.currentTime + 0.3);
       gainNode3.gain.linearRampToValueAtTime(0.4, audioContext.currentTime + 0.31);
       gainNode3.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.7);
       oscillator3.start(audioContext.currentTime + 0.3);
       oscillator3.stop(audioContext.currentTime + 0.7);
-
-      console.log('🔔 Som de cancelamento reproduzido!');
     } catch (error) {
       console.log("Não foi possível reproduzir o som:", error);
       if (navigator.vibrate) {
         navigator.vibrate([300, 100, 300]);
       }
+    }
+  };
+
+  const reproduzirSomConfirmacao = () => {
+    try {
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      
+      // Som de "ding-dong" agradável para confirmação
+      const osc1 = audioContext.createOscillator();
+      const gain1 = audioContext.createGain();
+      osc1.connect(gain1);
+      gain1.connect(audioContext.destination);
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(659.25, audioContext.currentTime); // E5
+      gain1.gain.setValueAtTime(0, audioContext.currentTime);
+      gain1.gain.linearRampToValueAtTime(0.35, audioContext.currentTime + 0.01);
+      gain1.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
+      osc1.start(audioContext.currentTime);
+      osc1.stop(audioContext.currentTime + 0.4);
+
+      const osc2 = audioContext.createOscillator();
+      const gain2 = audioContext.createGain();
+      osc2.connect(gain2);
+      gain2.connect(audioContext.destination);
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(880, audioContext.currentTime + 0.2); // A5
+      gain2.gain.setValueAtTime(0, audioContext.currentTime + 0.2);
+      gain2.gain.linearRampToValueAtTime(0.35, audioContext.currentTime + 0.21);
+      gain2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.7);
+      osc2.start(audioContext.currentTime + 0.2);
+      osc2.stop(audioContext.currentTime + 0.7);
+    } catch (error) {
+      console.log("Não foi possível reproduzir o som:", error);
     }
   };
 
