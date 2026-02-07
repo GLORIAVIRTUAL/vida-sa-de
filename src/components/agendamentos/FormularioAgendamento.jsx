@@ -1815,55 +1815,173 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
       const nomesExamesIA = resultadoIA.output.exames_solicitados;
       const examesEncontradosIds = [];
       const examesNaoEncontrados = [];
-      const examnesEncontradosNomes = []; // Para mostrar quais foram encontrados
+      const examnesEncontradosNomes = [];
       
       console.log('🔍 Exames identificados pela IA:', nomesExamesIA);
       
-      // Criar um mapa mais robusto para encontrar exames
-      const mapaExames = new Map();
-      const mapaExamesReverso = new Map(); // Para saber qual nome original corresponde
-      exames.forEach(e => {
-        const nomeNormalizado = normalizeString(e.nome);
-        mapaExames.set(nomeNormalizado, e.id);
-        mapaExamesReverso.set(e.id, e.nome);
-        
-        // Adicionar variações comuns (palavras-chave)
-        const palavrasChave = nomeNormalizado.split(' ');
-        if (palavrasChave.length > 3) { // Considerar apenas palavras com mais de 3 caracteres
-          for (let i = 0; i < palavrasChave.length; i++) {
-            const palavra = palavrasChave[i];
-            if (palavra.length > 3) { // Considerar apenas palavras com mais de 3 caracteres
-              if (!mapaExames.has(palavra)) { // Evitar sobrescrever se já tiver um match exato
-                mapaExames.set(palavra, e.id);
-              }
-            }
-          }
-        }
-      });
+      // Criar lista de exames normalizados para busca
+      const examesNormalizados = exames.map(e => ({
+        id: e.id,
+        nome: e.nome,
+        nomeNorm: normalizeString(e.nome),
+        // Gerar variações: remover palavras curtas, pegar raiz das palavras
+        palavras: normalizeString(e.nome).split(/[\s,\-\/]+/).filter(p => p.length > 2)
+      }));
 
-      for (const nomeIA of nomesExamesIA) {
-        const nomeNormalizado = normalizeString(nomeIA);
-        let idExame = mapaExames.get(nomeNormalizado);
+      // Função para calcular similaridade entre dois textos normalizados
+      const calcularSimilaridade = (textoA, textoB) => {
+        if (textoA === textoB) return 1.0;
+        if (textoA.includes(textoB) || textoB.includes(textoA)) return 0.9;
         
-        // Se não encontrou match exato, tentar match parcial (contém ou é contido por)
-        if (!idExame) {
-          for (const [nomeExameCadastrado, id] of mapaExames.entries()) {
-            if (nomeExameCadastrado.includes(nomeNormalizado) || nomeNormalizado.includes(nomeExameCadastrado)) {
-              idExame = id;
+        // Comparar por raiz (primeiros N chars de cada palavra)
+        const palavrasA = textoA.split(/[\s,\-\/]+/).filter(p => p.length > 2);
+        const palavrasB = textoB.split(/[\s,\-\/]+/).filter(p => p.length > 2);
+        
+        if (palavrasA.length === 0 || palavrasB.length === 0) return 0;
+        
+        let matches = 0;
+        for (const pA of palavrasA) {
+          for (const pB of palavrasB) {
+            // Match por raiz: se os primeiros 5 chars coincidem (ex: TRIGLIC... = TRIGLIC...)
+            const raizLen = Math.min(5, Math.min(pA.length, pB.length));
+            if (pA.substring(0, raizLen) === pB.substring(0, raizLen) && raizLen >= 4) {
+              matches++;
+              break;
+            }
+            // Match exato de palavra
+            if (pA === pB) {
+              matches++;
               break;
             }
           }
         }
         
-        if (idExame && !formData.exames_ids.includes(idExame)) {
+        return matches / Math.max(palavrasA.length, palavrasB.length);
+      };
+
+      // Mapa de sinônimos/variações comuns em exames
+      const sinonimosExames = {
+        'TRIGLICERIDEOS': ['TRIGLICERIDIOS', 'TRIGLICERIDOS', 'TG', 'TRIGLIC'],
+        'TRIGLICERIDIOS': ['TRIGLICERIDEOS', 'TRIGLICERIDOS', 'TG', 'TRIGLIC'],
+        'GLICEMIA DE JEJUM': ['GLICOSE', 'GLICEMIA', 'GLICOSE JEJUM', 'GLICEMIA JEJUM'],
+        'GLICOSE': ['GLICEMIA', 'GLICEMIA DE JEJUM', 'GLICOSE JEJUM'],
+        'AST': ['TGO', 'TRANSAMINASE OXALACETICA', 'ASPARTATO AMINOTRANSFERASE'],
+        'TGO': ['AST', 'TRANSAMINASE OXALACETICA', 'ASPARTATO AMINOTRANSFERASE'],
+        'ALT': ['TGP', 'TRANSAMINASE PIRUVICA', 'ALANINA AMINOTRANSFERASE'],
+        'TGP': ['ALT', 'TRANSAMINASE PIRUVICA', 'ALANINA AMINOTRANSFERASE'],
+        'AST E ALT': ['TGO E TGP', 'TGO', 'TGP', 'AST', 'ALT', 'TRANSAMINASES'],
+        'GAMA GT': ['GGT', 'GAMA GLUTAMIL', 'GAMA GLUTAMILTRANSFERASE', 'GAMAGLUTAMILTRANSFERASE'],
+        'GGT': ['GAMA GT', 'GAMA GLUTAMIL', 'GAMA GLUTAMILTRANSFERASE'],
+        'HEMOGRAMA': ['HEMOGRAMA COMPLETO'],
+        'HEMOGRAMA COMPLETO': ['HEMOGRAMA'],
+        'COLESTEROL TOTAL': ['COLESTEROL'],
+        'HDL': ['HDL COLESTEROL', 'COLESTEROL HDL'],
+        'LDL': ['LDL COLESTEROL', 'COLESTEROL LDL'],
+        'VLDL': ['VLDL COLESTEROL', 'COLESTEROL VLDL'],
+        'TSH': ['HORMONIO TIREOESTIMULANTE', 'TIREOESTIMULANTE'],
+        'T4 LIVRE': ['T4L', 'TIROXINA LIVRE'],
+        'T3': ['TRIIODOTIRONINA'],
+        'PSA': ['ANTIGENO PROSTATICO', 'PSA TOTAL'],
+        'UREIA': ['UREIA SERICA'],
+        'CREATININA': ['CREATININA SERICA'],
+        'ACIDO URICO': ['URATO'],
+        'EAS': ['URINA TIPO 1', 'URINA I', 'PARCIAL DE URINA', 'SUMARIO DE URINA', 'URINA ROTINA'],
+        'VITAMINA D': ['25 HIDROXI VITAMINA D', '25-OH VITAMINA D', 'VITAMINA D 25 HIDROXI'],
+        'VITAMINA B12': ['CIANOCOBALAMINA'],
+        'FERRO SERICO': ['FERRO', 'FERRO SERICO'],
+        'FERRITINA': ['FERRITINA SERICA'],
+        'PCR': ['PROTEINA C REATIVA'],
+        'VHS': ['VELOCIDADE HEMOSSEDIMENTACAO'],
+      };
+
+      for (const nomeIA of nomesExamesIA) {
+        const nomeNorm = normalizeString(nomeIA);
+        let idExame = null;
+        let melhorScore = 0;
+        let melhorNome = '';
+        
+        // 1. Match exato
+        const matchExato = examesNormalizados.find(e => e.nomeNorm === nomeNorm);
+        if (matchExato) {
+          idExame = matchExato.id;
+          melhorNome = matchExato.nome;
+          melhorScore = 1.0;
+        }
+        
+        // 2. Match por contém/contido
+        if (!idExame) {
+          for (const e of examesNormalizados) {
+            if (e.nomeNorm.includes(nomeNorm) || nomeNorm.includes(e.nomeNorm)) {
+              idExame = e.id;
+              melhorNome = e.nome;
+              melhorScore = 0.9;
+              break;
+            }
+          }
+        }
+        
+        // 3. Match por sinônimos
+        if (!idExame) {
+          const sinonimos = sinonimosExames[nomeNorm] || [];
+          // Também buscar sinônimos para cada palavra individual (ex: "AST E ALT" -> buscar "AST", "ALT")
+          const palavrasIA = nomeNorm.split(/[\s,\-\/]+/).filter(p => p.length > 1);
+          for (const palavra of palavrasIA) {
+            const sinPalavra = sinonimosExames[palavra];
+            if (sinPalavra) sinonimos.push(...sinPalavra);
+          }
+          
+          for (const sin of sinonimos) {
+            const sinNorm = normalizeString(sin);
+            for (const e of examesNormalizados) {
+              if (e.nomeNorm === sinNorm || e.nomeNorm.includes(sinNorm) || sinNorm.includes(e.nomeNorm)) {
+                if (!idExame) {
+                  idExame = e.id;
+                  melhorNome = e.nome;
+                  melhorScore = 0.85;
+                }
+              }
+            }
+            if (idExame) break;
+          }
+        }
+        
+        // 4. Match por similaridade de raiz de palavras
+        if (!idExame) {
+          for (const e of examesNormalizados) {
+            const score = calcularSimilaridade(nomeNorm, e.nomeNorm);
+            if (score > melhorScore && score >= 0.5) {
+              melhorScore = score;
+              idExame = e.id;
+              melhorNome = e.nome;
+            }
+          }
+        }
+        
+        // 5. Match por palavra-chave significativa (mín 5 chars)
+        if (!idExame) {
+          const palavrasIA = nomeNorm.split(/[\s,\-\/]+/).filter(p => p.length >= 5);
+          for (const palavra of palavrasIA) {
+            for (const e of examesNormalizados) {
+              if (e.palavras.some(pe => pe.includes(palavra) || palavra.includes(pe))) {
+                idExame = e.id;
+                melhorNome = e.nome;
+                melhorScore = 0.6;
+                break;
+              }
+            }
+            if (idExame) break;
+          }
+        }
+        
+        if (idExame && !formData.exames_ids.includes(idExame) && !examesEncontradosIds.includes(idExame)) {
           examesEncontradosIds.push(idExame);
-          examnesEncontradosNomes.push(mapaExamesReverso.get(idExame));
-          console.log(`✅ Exame encontrado: "${nomeIA}" → "${mapaExamesReverso.get(idExame)}"`);
+          examnesEncontradosNomes.push(melhorNome);
+          console.log(`✅ Exame encontrado: "${nomeIA}" → "${melhorNome}" (score: ${melhorScore.toFixed(2)})`);
         } else if (!idExame) {
           examesNaoEncontrados.push(nomeIA);
           console.log(`❌ Exame NÃO encontrado: "${nomeIA}"`);
         } else {
-          console.log(`⚠️ Exame já estava na lista: "${nomeIA}"`);
+          console.log(`⚠️ Exame já na lista: "${nomeIA}"`);
         }
       }
       
