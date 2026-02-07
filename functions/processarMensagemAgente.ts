@@ -1164,6 +1164,31 @@ O cliente está ESCOLHENDO/RESPONDENDO. Ele disse: "${messageText}"
           // Se não encontrou nenhum médico para a especialidade, NÃO usar todos os médicos
           if (medicosParaBuscar.length === 0) {
             console.log(`❌ Nenhum médico encontrado para especialidade: ${especialidadeDetectada}`);
+            // Verificar se é um PROCEDIMENTO ou EXAME (ex: ecografia, eletrocardiograma)
+            // Se sim, NÃO dizer que não tem - o LLM vai encontrar na base de procedimentos/exames
+            const espNormCheck = normalizarTexto(especialidadeDetectada);
+            let existeComoProcedimentoOuExame = false;
+            try {
+              const [procsCheck, examesCheck] = await Promise.all([
+                Promise.race([
+                  base44.asServiceRole.entities.Procedimento.filter({ status: 'Ativo' }),
+                  new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 3000))
+                ]).catch(() => []),
+                Promise.race([
+                  base44.asServiceRole.entities.Exame.filter({ status: 'Ativo' }),
+                  new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 3000))
+                ]).catch(() => [])
+              ]);
+              existeComoProcedimentoOuExame = procsCheck.some(p => normalizarTexto(p.nome).includes(espNormCheck) || espNormCheck.includes(normalizarTexto(p.nome))) ||
+                examesCheck.some(e => normalizarTexto(e.nome).includes(espNormCheck) || espNormCheck.includes(normalizarTexto(e.nome)));
+              if (existeComoProcedimentoOuExame) {
+                console.log(`✅ "${especialidadeDetectada}" existe como procedimento/exame - NÃO reportar como indisponível`);
+                // Limpar especialidadeDetectada para que não entre no bloco "ESPECIALIDADE NÃO DISPONÍVEL"
+                especialidadeDetectada = null;
+              }
+            } catch (e) {
+              console.warn('⚠️ Erro ao verificar procedimentos/exames:', e.message);
+            }
           }
           } else {
               // NÃO usar todos os médicos sem especialidade - a IA deve perguntar primeiro
