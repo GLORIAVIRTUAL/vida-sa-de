@@ -1945,7 +1945,10 @@ Retorne JSON.`;
     2. Se o exame NÃO estiver na lista, coloque em "NÃO realizamos".
     3. SEMPRE calcule e mostre o VALOR TOTAL.
     4. Ao final, pergunte se deseja agendar.
-    5. NÃO peça nome/CPF para orçamento - só peça se for AGENDAR.`;
+    5. NÃO peça nome/CPF para orçamento - só peça se for AGENDAR.
+    6. 💰 REGRA CRÍTICA DE MÚLTIPLOS PREÇOS: Quando um procedimento ou exame tiver MAIS DE UM preço (ex: Particular E Cartão Mais Vida), SEMPRE mostre TODOS os valores disponíveis. Exemplo:
+       • Biópsia - *Particular:* R$ 300,00 | *Cartão Mais Vida:* R$ 270,00
+       NUNCA omita preços! Se há valor Particular e valor no Cartão, mostre AMBOS.`;
         }
       } catch (e) {
         console.error('⚠️ Erro ao buscar procedimentos/exames:', e.message);
