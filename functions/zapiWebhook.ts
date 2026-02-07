@@ -355,28 +355,31 @@ async function processarMensagemRecebida(base44, payload) {
     console.log('🆔 IDs dos pacientes:', pacienteIds);
     
     // Filtrar agendamentos que pertencem a qualquer um dos pacientes encontrados
-    // Também buscar pelo nome do paciente no campo paciente_nome
-    const nomesEncontrados = pacientesEncontrados.map(p => p.nome.toLowerCase());
+    // APENAS por paciente_id - NÃO usar match por primeiro nome pois causa falsos positivos
+    // (ex: "Antonio Thiago" e "Antonio Simon" são pacientes diferentes)
     
     const agendamentos = todosAgendamentos.filter(a => {
-        // Match por paciente_id
+        // Match APENAS por paciente_id - mais seguro
         const matchPorId = pacienteIds.includes(a.paciente_id);
         
-        // Match por nome do paciente (para casos onde o ID não bate)
-        const nomeAgendamentoLower = (a.paciente_nome || '').toLowerCase();
-        const matchPorNome = nomesEncontrados.some(nome => 
-            nomeAgendamentoLower.includes(nome.split(' ')[0]) || 
-            nome.includes(nomeAgendamentoLower.split(' ')[0])
-        );
+        // Match por nome COMPLETO (não apenas primeiro nome) como fallback
+        const nomeAgendamentoLower = (a.paciente_nome || '').toLowerCase().trim();
+        const matchPorNomeCompleto = pacientesEncontrados.some(p => {
+            const nomePacienteLower = (p.nome || '').toLowerCase().trim();
+            // Exigir match do nome completo ou quase completo (pelo menos 2 palavras coincidindo)
+            return nomeAgendamentoLower === nomePacienteLower ||
+                   (nomePacienteLower.split(' ').filter(w => w.length > 2 && nomeAgendamentoLower.includes(w)).length >= 2 &&
+                    nomeAgendamentoLower.split(' ').filter(w => w.length > 2 && nomePacienteLower.includes(w)).length >= 2);
+        });
         
         const statusOk = a.status === 'Agendado';
         const dataOk = a.data_agendamento >= hoje;
         
-        if ((matchPorId || matchPorNome) && dataOk) {
-            console.log(`🔍 Agendamento candidato: ${a.id} | ${a.paciente_nome} | ${a.data_agendamento} ${a.horario} | status=${a.status} | matchId=${matchPorId} matchNome=${matchPorNome}`);
+        if ((matchPorId || matchPorNomeCompleto) && dataOk) {
+            console.log(`🔍 Agendamento candidato: ${a.id} | ${a.paciente_nome} | ${a.data_agendamento} ${a.horario} | status=${a.status} | matchId=${matchPorId} matchNome=${matchPorNomeCompleto}`);
         }
         
-        return (matchPorId || matchPorNome) && statusOk && dataOk;
+        return (matchPorId || matchPorNomeCompleto) && statusOk && dataOk;
     });
 
     if (agendamentos.length === 0) {
