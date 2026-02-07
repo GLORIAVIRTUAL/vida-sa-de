@@ -1052,7 +1052,7 @@ Informe ao cliente que:
     // 1. Quer agendar E tem especialidade/médico detectado
     // 2. Cliente confirmou que quer agendar ("sim") após ver preço E tem especialidade no histórico
     // 3. Está em fluxo e escolhendo horário com médico já identificado
-    const deveBuscarDisponibilidades = querAgendar && (temEspecialidadeOuMedico || 
+    const deveBuscarDisponibilidades = querAgendar && !ehPerguntaInformativa && (temEspecialidadeOuMedico || 
       (clienteConfirmouAgendar && historicoTemEspecialidadeCheck) ||
       (jaEmFluxoAgendamento && temEspecialidadeOuMedico) ||
       (jaEmFluxoAgendamento && clienteEscolhendoHorario && /Dr\.|👨‍⚕️|médico.*horário/i.test(historicoConversa)));
