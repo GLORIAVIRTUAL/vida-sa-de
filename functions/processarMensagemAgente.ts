@@ -575,10 +575,29 @@ Deno.serve(async (req) => {
         
         // 5. Se só tem um agendamento e cliente confirmou
         if (!agendamentoParaCancelar && agendamentosFuturos.length === 1) {
-          const confirmacao = /^(sim|s|ok|isso|confirmo|pode|certo|correto|cancela|1)$/i.test(msgLower);
+          const confirmacao = /^(sim|s|ok|isso|confirmo|pode|certo|correto|cancela|1|essa|esse|essa\s*mesm[ao]|esse\s*mesm[ao]|é\s*essa|é\s*esse|exato|exatamente|isso\s*mesmo|pode\s*cancelar|quero\s*cancelar)$/i.test(msgLower);
           if (confirmacao) {
             agendamentoParaCancelar = agendamentosFuturos[0].id;
             console.log('✅ Cliente confirmou único agendamento:', agendamentoParaCancelar);
+          }
+        }
+        
+        // 6. Se cliente disse algo genérico de confirmação referindo-se ao agendamento mostrado
+        // Ex: "essa mesmo", "pode ser", "é essa", "a primeira", "a do dr. X"
+        if (!agendamentoParaCancelar) {
+          const confirmacaoGenerica = /essa|esse|mesm[ao]|pode\s*ser|isso|é\s*ess[ae]|a\s*primeira|quero\s*cancelar|pode\s*cancelar|exato|exatamente/i.test(msgLower);
+          if (confirmacaoGenerica && agendamentosFuturos.length === 1) {
+            agendamentoParaCancelar = agendamentosFuturos[0].id;
+            console.log('✅ Cliente confirmou com expressão genérica (único agendamento):', agendamentoParaCancelar);
+          } else if (confirmacaoGenerica && agendamentosFuturos.length > 1) {
+            // Tentar identificar pelo último agendamento mencionado no histórico
+            // Verificar se o assistente listou agendamentos e o cliente está se referindo ao primeiro (ou único mostrado)
+            const historicoMostrouLista = /1\.\s+.*cancelar|seguinte.*agendamento|tem\s+os?\s+seguint/i.test(historicoConversa || '');
+            if (historicoMostrouLista) {
+              // Se disse "essa" sem especificar e tem contexto, pegar o primeiro da lista
+              agendamentoParaCancelar = agendamentosFuturos[0].id;
+              console.log('✅ Cliente confirmou primeiro agendamento da lista:', agendamentoParaCancelar);
+            }
           }
         }
         
