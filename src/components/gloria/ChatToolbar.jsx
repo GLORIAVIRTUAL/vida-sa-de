@@ -1,8 +1,8 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
-  Image as ImageIcon, Paperclip, Mic, Smile, MessageSquare, X, Loader2, StopCircle
+  Image as ImageIcon, Paperclip, Mic, Smile, MessageSquare, X, Loader2, StopCircle, Plus, Trash2
 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import {
@@ -11,13 +11,13 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-// Frases pré-salvas
-const FRASES_RAPIDAS = [
+// Frases padrão
+const FRASES_PADRAO = [
   { emoji: "👋", texto: "Olá! Como posso ajudar você hoje?" },
   { emoji: "📅", texto: "Gostaria de agendar uma consulta? Me informe a especialidade desejada." },
   { emoji: "⏰", texto: "Nosso horário de atendimento é de segunda a sexta, das 8h às 18h." },
-  { emoji: "📍", texto: "Nosso endereço é: Av. Isabel, 29 – Sobreloja, Santa Cruz, Rio de Janeiro – RJ" },
-  { emoji: "📞", texto: "Para mais informações, ligue para (21) 2222-3333" },
+  { emoji: "📍", texto: "Nosso endereço é: Av. Tristão Monteiro, Zona Nova, Tramandaí – RS" },
+  { emoji: "📞", texto: "Para mais informações, ligue para (51) 3661-1818" },
   { emoji: "✅", texto: "Seu agendamento foi confirmado! Te aguardamos." },
   { emoji: "🙏", texto: "Obrigado pelo contato! Qualquer dúvida, estou à disposição." },
   { emoji: "💳", texto: "Aceitamos cartões de crédito, débito, PIX e dinheiro." },
@@ -93,8 +93,41 @@ export default function ChatToolbar({
   const [recording, setRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState(null);
   const [audioChunks, setAudioChunks] = useState([]);
+  const [frasesCustom, setFrasesCustom] = useState([]);
+  const [novaFrase, setNovaFrase] = useState('');
+  const [novaFraseEmoji, setNovaFraseEmoji] = useState('💬');
+  const [mostrarFormFrase, setMostrarFormFrase] = useState(false);
   const fileInputRef = useRef(null);
   const imageInputRef = useRef(null);
+
+  // Carregar frases customizadas do localStorage
+  useEffect(() => {
+    try {
+      const salvas = localStorage.getItem('frases_rapidas_custom');
+      if (salvas) setFrasesCustom(JSON.parse(salvas));
+    } catch {}
+  }, []);
+
+  const salvarFrasesCustom = (novas) => {
+    setFrasesCustom(novas);
+    localStorage.setItem('frases_rapidas_custom', JSON.stringify(novas));
+  };
+
+  const adicionarFrase = () => {
+    if (!novaFrase.trim()) return;
+    const novas = [...frasesCustom, { emoji: novaFraseEmoji || '💬', texto: novaFrase.trim() }];
+    salvarFrasesCustom(novas);
+    setNovaFrase('');
+    setNovaFraseEmoji('💬');
+    setMostrarFormFrase(false);
+  };
+
+  const removerFrase = (index) => {
+    const novas = frasesCustom.filter((_, i) => i !== index);
+    salvarFrasesCustom(novas);
+  };
+
+  const todasFrases = [...FRASES_PADRAO, ...frasesCustom];
 
   // Upload de arquivo/imagem
   const handleFileUpload = async (event, type) => {
@@ -304,19 +337,74 @@ export default function ChatToolbar({
               <MessageSquare className="w-4 h-4 text-gray-500" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-80 p-2" align="start">
-            <p className="text-xs font-medium text-gray-500 mb-2">Frases Rápidas</p>
+          <PopoverContent className="w-96 p-2" align="start">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-medium text-gray-500">Frases Rápidas</p>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2 text-xs text-purple-600"
+                onClick={() => setMostrarFormFrase(!mostrarFormFrase)}
+              >
+                <Plus className="w-3 h-3 mr-1" />
+                Nova
+              </Button>
+            </div>
+
+            {mostrarFormFrase && (
+              <div className="mb-2 p-2 bg-purple-50 rounded-lg space-y-2 border border-purple-200">
+                <div className="flex gap-2">
+                  <Input
+                    value={novaFraseEmoji}
+                    onChange={(e) => setNovaFraseEmoji(e.target.value)}
+                    className="w-12 text-center p-1 h-8"
+                    maxLength={2}
+                    placeholder="💬"
+                  />
+                  <Input
+                    value={novaFrase}
+                    onChange={(e) => setNovaFrase(e.target.value)}
+                    className="flex-1 h-8 text-sm"
+                    placeholder="Digite a frase..."
+                    onKeyDown={(e) => { if (e.key === 'Enter') adicionarFrase(); }}
+                  />
+                </div>
+                <div className="flex justify-end gap-1">
+                  <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => { setMostrarFormFrase(false); setNovaFrase(''); }}>
+                    Cancelar
+                  </Button>
+                  <Button size="sm" className="h-6 text-xs bg-purple-600 hover:bg-purple-700" onClick={adicionarFrase} disabled={!novaFrase.trim()}>
+                    Salvar
+                  </Button>
+                </div>
+              </div>
+            )}
+
             <div className="space-y-1 max-h-60 overflow-y-auto">
-              {FRASES_RAPIDAS.map((frase, i) => (
-                <button
-                  key={i}
-                  onClick={() => usarFrase(frase.texto)}
-                  className="w-full text-left p-2 hover:bg-purple-50 rounded-lg transition text-sm flex items-start gap-2"
-                >
-                  <span>{frase.emoji}</span>
-                  <span className="text-gray-700 line-clamp-2">{frase.texto}</span>
-                </button>
-              ))}
+              {todasFrases.map((frase, i) => {
+                const isCustom = i >= FRASES_PADRAO.length;
+                const customIndex = i - FRASES_PADRAO.length;
+                return (
+                  <div key={i} className="flex items-start gap-1 group">
+                    <button
+                      onClick={() => usarFrase(frase.texto)}
+                      className="flex-1 text-left p-2 hover:bg-purple-50 rounded-lg transition text-sm flex items-start gap-2"
+                    >
+                      <span>{frase.emoji}</span>
+                      <span className="text-gray-700 line-clamp-2">{frase.texto}</span>
+                    </button>
+                    {isCustom && (
+                      <button
+                        onClick={() => removerFrase(customIndex)}
+                        className="p-1 mt-1.5 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Remover frase"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </PopoverContent>
         </Popover>
