@@ -1297,8 +1297,23 @@ Se ele está escolhendo, confirme a escolha e colete dados faltantes (nome compl
     // Precisa ter especialidade/médico identificado no histórico para ser "em fluxo"
     // NOTA: historicoTemEspecialidade é definido mais acima no bloco de detecção de agendamento
     const historicoTemEspecialidadeLocal = historicoConversa && /clínico|clinico|cardiolog|dermatolog|ginecolog|nutrici|psicolog|ortoped|urolog|geriatr|gastro|reumato|psiquiatr|fisioterap|oftalmolog|otorrino|pediatr|pneumolog|neurolog|quiroprax|massoterap|optometr|hidro|pilates|odontolog|dentist|endocrinolog|Dr\.|👨‍⚕️/i.test(historicoConversa);
+    
+    // Verificar se o assistente está pedindo dados do paciente (nome ou data de nascimento)
+    const assistentePediuDadosPaciente = historicoConversa && /nome completo|data de nascimento|DD\/MM\/AAAA|nome do paciente/i.test(historicoConversa);
+    
+    // Verificar se o cliente está fornecendo dados pessoais (nome ou data de nascimento) no contexto de agendamento
+    const clienteFornecendoDadosPessoais = assistentePediuDadosPaciente && (
+      // Data de nascimento no formato DD/MM/AAAA
+      /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(messageText.trim()) ||
+      // Nome seguido de data (ex: "Antonio thiago cavalcanti 19/04/1982")
+      /[A-Za-zÀ-ÿ]+\s+[A-Za-zÀ-ÿ]+.*\d{1,2}\/\d{1,2}\/\d{4}/.test(messageText) ||
+      // Apenas nome (2+ palavras, sem números exceto possível data)
+      (/^[A-Za-zÀ-ÿ\s]+$/.test(messageText.trim()) && messageText.trim().split(/\s+/).length >= 2)
+    );
+    
     const estaEmFluxoAgendamento = (querAgendar && historicoTemEspecialidadeLocal) || 
-      (historicoConversa && /horário|data|nascimento|doutor|dr\./i.test(historicoConversa) && historicoTemEspecialidadeLocal);
+      (historicoConversa && /horário|data|nascimento|doutor|dr\./i.test(historicoConversa) && historicoTemEspecialidadeLocal) ||
+      clienteFornecendoDadosPessoais;
     
     // Verificar se o cliente está escolhendo horário (pode ser hoje, 13 horas, etc.)
     const clienteEscolhendoHorarioAgora = /pode ser|quero|às?\s*\d|hoje|\d{1,2}[h:]|horário/i.test(messageText) && historicoTemEspecialidadeLocal;
