@@ -388,11 +388,7 @@ async function processarMensagemRecebida(base44, payload) {
         // Log de debug - mostrar agendamentos futuros sem filtro de status
         const agendamentosSemFiltroStatus = todosAgendamentos.filter(a => {
             const matchPorId = pacienteIds.includes(a.paciente_id);
-            const nomeAgendamentoLower = (a.paciente_nome || '').toLowerCase();
-            const matchPorNome = nomesEncontrados.some(nome => 
-                nomeAgendamentoLower.includes(nome.split(' ')[0])
-            );
-            return (matchPorId || matchPorNome) && a.data_agendamento >= hoje;
+            return matchPorId && a.data_agendamento >= hoje;
         });
         
         console.log('📋 Agendamentos futuros (todos status):', agendamentosSemFiltroStatus.map(a => ({
