@@ -416,9 +416,41 @@ async function processarMensagemRecebida(base44, payload) {
         return dataA - dataB;
     });
     
-    // Verificar se há apenas um agendamento - confirmar diretamente
-    // Se há múltiplos, confirmar o mais próximo (geralmente é o que recebeu lembrete)
-    const agendamentoParaConfirmar = agendamentosOrdenados[0];
+    // SMART CONFIRMATION: Se há múltiplos agendamentos, tentar identificar qual recebeu o lembrete mais recente
+    // Buscar o último lembrete enviado para este telefone nos NotificationLogs
+    let agendamentoParaConfirmar = agendamentosOrdenados[0]; // fallback: o mais próximo
+    
+    if (agendamentosOrdenados.length > 1) {
+        console.log(`⚠️ ${agendamentosOrdenados.length} agendamentos encontrados - buscando lembrete mais recente...`);
+        try {
+            const logs = await base44.asServiceRole.entities.NotificationLog.list('-created_date', 50);
+            
+            // Filtrar logs de lembrete enviados para este telefone
+            const logsDesteTelefone = logs.filter(log => {
+                const telLog = (log.telefone_destino || '').replace(/\D/g, '');
+                return telLog.slice(-8) === telefoneNormalizado.slice(-8) && 
+                       log.agendamento_id &&
+                       (log.mensagem_enviada || '').includes('lembr');
+            });
+            
+            console.log(`📋 Lembretes encontrados para este telefone: ${logsDesteTelefone.length}`);
+            
+            if (logsDesteTelefone.length > 0) {
+                // Pegar o lembrete mais recente
+                const ultimoLembrete = logsDesteTelefone[0]; // já ordenado por -created_date
+                const agendamentoDoLembrete = agendamentosOrdenados.find(a => a.id === ultimoLembrete.agendamento_id);
+                
+                if (agendamentoDoLembrete) {
+                    agendamentoParaConfirmar = agendamentoDoLembrete;
+                    console.log(`✅ Agendamento identificado pelo lembrete: ${agendamentoDoLembrete.paciente_nome} - ${agendamentoDoLembrete.data_agendamento} ${agendamentoDoLembrete.horario}`);
+                } else {
+                    console.log(`⚠️ Lembrete encontrado mas agendamento_id (${ultimoLembrete.agendamento_id}) não está entre os elegíveis`);
+                }
+            }
+        } catch (logError) {
+            console.warn('⚠️ Erro ao buscar logs de lembrete:', logError.message);
+        }
+    }
     
     // Encontrar o paciente específico deste agendamento
     const pacienteDoAgendamento = pacientesEncontrados.find(p => p.id === agendamentoParaConfirmar.paciente_id) || pacientesEncontrados[0];
