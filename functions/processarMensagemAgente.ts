@@ -884,9 +884,9 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
 
     // REGRA ANTI-LOOP: Se acabou de concluir um agendamento no histórico recente, NÃO entrar em fluxo de agendamento novamente
     // Detectar se a última resposta do assistente é uma confirmação de agendamento
-    const agendamentoRecenteConcluido = historicoConversa && /Agendamento confirmado|Te aguardamos|Lembre-se de trazer documento/i.test(
-      (ultimasMensagensAssistente.length > 0 ? ultimasMensagensAssistente[ultimasMensagensAssistente.length - 1] : '')
-    );
+    const todasMsgAssistente = (historicoConversa || '').split('\n').filter(l => l.startsWith('ASSISTENTE:'));
+    const ultimaMsgAssistenteCheck = todasMsgAssistente.length > 0 ? todasMsgAssistente[todasMsgAssistente.length - 1] : '';
+    const agendamentoRecenteConcluido = historicoConversa && /Agendamento confirmado|Te aguardamos|Lembre-se de trazer documento/i.test(ultimaMsgAssistenteCheck);
     
     if (agendamentoRecenteConcluido) {
       console.log('✅ Agendamento recém concluído detectado no histórico - resetando detecção de especialidade/médico do histórico');
