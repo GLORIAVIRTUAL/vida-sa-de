@@ -2084,51 +2084,9 @@ Retorne JSON.`;
       saudacaoHorario = 'Boa-noite';
     }
 
-    // Determinar se é primeira mensagem da conversa atual (para saudação)
-    // REGRA SIMPLES: primeira mensagem = conversa finalizada E sem histórico, OU contato novo sem nenhuma resposta anterior
-    const historicoVazio = !historicoConversa || historicoConversa.trim() === '';
-    const historicoSemRespostaAssistente = !historicoConversa || !historicoConversa.includes('ASSISTENTE:');
-    
-    // Verificar no contato se já houve interação recente (anti falso-positivo)
-    let contatoJaTemHistorico = false;
-    if (contatosCheck.length > 0) {
-      const contato = contatosCheck[0];
-      // Se o contato tem QUALQUER resposta anterior e não foi finalizado, NÃO é primeira mensagem
-      contatoJaTemHistorico = !conversaFinalizada && (
-        (contato.total_mensagens > 0) || 
-        (contato.ultima_resposta && contato.ultima_resposta.length > 0) ||
-        (contato.historico_mensagens && contato.historico_mensagens.length > 0)
-      );
-    }
-    
-    // ANTI-SAUDAÇÃO DUPLICADA: Verificar se já enviamos saudação recentemente no histórico
-    let jaEnviouSaudacaoRecente = false;
-    if (contatosCheck.length > 0) {
-      const contato = contatosCheck[0];
-      const hist = contato.historico_mensagens || [];
-      // Verificar se alguma das últimas 5 mensagens do assistente contém saudação
-      const ultimasRespostas = hist.filter(m => m.role === 'assistant').slice(-5);
-      jaEnviouSaudacaoRecente = ultimasRespostas.some(m => 
-        m.content && /Eu sou a Glória|atendente virtual|Como posso te ajudar/i.test(m.content)
-      );
-      if (jaEnviouSaudacaoRecente) {
-        console.log('⚠️ Saudação já enviada recentemente - NÃO é primeira mensagem');
-      }
-    }
-    
-    // REGRA: Primeira mensagem APENAS se:
-    // 1. Conversa foi explicitamente finalizada E histórico está vazio (já foi limpo acima), OU
-    // 2. Contato completamente novo sem nenhum histórico
-    // E NUNCA se já enviamos saudação recentemente
-    const ehPrimeiraMensagem = !jaEnviouSaudacaoRecente && (
-      (conversaFinalizada && historicoVazio) || 
-      (historicoVazio && historicoSemRespostaAssistente && !contatoJaTemHistorico)
-    );
-    
-    // SEGURANÇA EXTRA: Se detectamos especialidade ou o cliente está respondendo a uma pergunta, NÃO é primeira mensagem
-    const respostaPossivelAFluxo = especialidadeDetectada || clienteConfirmouAgendar || clienteAceitouAgendar || querAgendar || querVerificarAgendamento || querCancelar || querResultado;
-
-    console.log('🔍 Verificação primeira mensagem:', { conversaFinalizada, historicoVazio, historicoSemRespostaAssistente, contatoJaTemHistorico, jaEnviouSaudacaoRecente, ehPrimeiraMensagem, historicoTamanho: historicoConversa?.length || 0 });
+    // NOTA: Primeira mensagem já foi tratada no início da função (retorno imediato com saudação fixa).
+    // Se chegamos aqui, NÃO é primeira mensagem - é sempre conversa em andamento.
+    const ehPrimeiraMensagem = false;
 
     // NOTA: Detecção de primeira mensagem agora é feita no início da função (antes dos fluxos).
     // Este bloco foi removido para evitar duplicação.
