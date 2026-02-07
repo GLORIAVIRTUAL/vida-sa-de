@@ -242,18 +242,26 @@ async function processarMensagemRecebida(base44, payload) {
                     console.log('👤 Contato em atendimento HUMANO (padrão) - mensagem salva, NÃO processando IA');
                     return new Response(JSON.stringify({ message: "Atendimento humano", status: "salvo" }), { status: 200 });
                 } else {
-                    // Modo IA: NÃO salvar nada aqui - o webhookWhatsappChatbot cuida de TUDO
-                    // Apenas encaminhar o payload original
-                    console.log('🤖 Contato em modo IA - encaminhando para webhookWhatsappChatbot...');
+                    // Modo IA: NÃO processar aqui - o webhookWhatsappChatbot é chamado diretamente pelo Z-API
+                    // Se encaminharmos daqui, causa DUPLICAÇÃO porque Z-API chama ambos os webhooks
+                    console.log('🤖 Contato em modo IA - NÃO encaminhando (webhookWhatsappChatbot será chamado diretamente pelo Z-API)');
                     
-                    try {
-                        const resultado = await base44.asServiceRole.functions.invoke('webhookWhatsappChatbot', payload);
-                        console.log('✅ webhookWhatsappChatbot retornou:', JSON.stringify(resultado.data).substring(0, 200));
-                        return new Response(JSON.stringify(resultado.data), { status: 200 });
-                    } catch (invokeError) {
-                        console.error('❌ Erro ao encaminhar para webhookWhatsappChatbot:', invokeError.message);
-                        return new Response(JSON.stringify({ error: invokeError.message }), { status: 500 });
-                    }
+                    // Apenas salvar a mensagem no histórico (sem responder)
+                    const historicoIA = contato.historico_mensagens || [];
+                    historicoIA.push({
+                        role: 'user',
+                        content: mediaUrl ? `${textoMensagem}\n${mediaUrl}` : textoMensagem,
+                        timestamp: agora,
+                        mediaType, mediaUrl, messageId: msgId
+                    });
+                    await base44.asServiceRole.entities.Contato.update(contato.id, {
+                        historico_mensagens: historicoIA.slice(-50),
+                        ultima_interacao: agora,
+                        nome: contato.nome || senderName,
+                        conversa_finalizada: false
+                    });
+                    
+                    return new Response(JSON.stringify({ message: "Modo IA - aguardando webhookWhatsappChatbot" }), { status: 200 });
                 }
             } else {
                 // Novo contato - criar em modo HUMANO
