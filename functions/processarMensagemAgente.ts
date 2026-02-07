@@ -1020,15 +1020,16 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
       
       if (medicosEcoInativos.length > 0 && medicosEcoInativos.every(m => m.status !== 'Ativo')) {
         const nomesMedicos = medicosEcoInativos.map(m => m.nome).join(', ');
-        const statusMedicos = medicosEcoInativos.map(m => `${m.nome}: ${m.status}`).join(', ');
-        infoDisponibilidade = `\n\n⚠️ ECOGRAFIA/ECOCARDIOGRAMA - MÉDICO TEMPORARIAMENTE INDISPONÍVEL:
-O profissional responsável pelas ecografias (${nomesMedicos}) está atualmente com status: ${statusMedicos}.
+        infoDisponibilidade = `\n\n⚠️ ECOGRAFIA/ECOCARDIOGRAMA - MÉDICO DE FÉRIAS:
+O profissional responsável pelas ecografias é o ${nomesMedicos}, que está atualmente de FÉRIAS.
 
 Informe ao cliente que:
-1. SIM, a clínica realiza ecografias (diversos tipos: abdominal, tireoide, obstétrica, mamária, ecocardiograma, etc.)
-2. O médico responsável está TEMPORARIAMENTE indisponível
-3. Sugira que entre em contato pelo telefone (51) 3661-5991 para saber quando haverá nova agenda disponível
-4. NÃO diga que a clínica não faz ecografia - ela FAZ!`;
+1. SIM, a clínica realiza ecografias (diversos tipos: abdominal, tireoide, obstétrica, mamária, pélvica, ecocardiograma, próstata, articulação, etc.)
+2. O Dr. Douglas Filipe Bianchi está de FÉRIAS no momento
+3. Em breve a agenda será reaberta para agendamentos de ecografia
+4. Sugira que entre em contato pelo telefone (51) 3661-5991 ou mande mensagem novamente em alguns dias para verificar a nova agenda
+5. Se o cliente quiser saber os TIPOS e VALORES das ecografias, consulte a lista de procedimentos abaixo e informe normalmente
+6. NÃO diga que a clínica não faz ecografia - ela FAZ! Apenas o médico está temporariamente de férias`;
       }
     }
     
