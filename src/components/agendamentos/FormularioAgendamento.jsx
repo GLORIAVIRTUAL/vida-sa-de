@@ -1870,29 +1870,29 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
       if (examesEncontradosIds.length > 0) {
         handleChange('exames_ids', [...new Set([...formData.exames_ids, ...examesEncontradosIds])]);
         
-        let message = `✅ ${examesEncontradosIds.length} exame(s) adicionado(s):\n${examnesEncontradosNomes.join(', ')}`;
-        
-        if (examesNaoEncontrados.length > 0) {
-          message += `\n\n⚠️ ${examesNaoEncontrados.length} exame(s) NÃO encontrado(s) no sistema:\n${examesNaoEncontrados.join(', ')}\n\n💡 Estes exames precisam ser cadastrados primeiro no sistema.`;
-        }
-        
         toast({
-          title: "Análise concluída! 🎉",
-          description: message,
-          duration: 8000, // Mais tempo para ler
+          title: `✅ ${examesEncontradosIds.length} exame(s) adicionado(s)!`,
+          description: examnesEncontradosNomes.join(', '),
+          duration: 6000,
         });
-      } else {
-        let message = "Nenhum exame novo foi adicionado.";
-        
-        if (examesNaoEncontrados.length > 0) {
-          message += `\n\n❌ Exames identificados mas NÃO cadastrados no sistema:\n${examesNaoEncontrados.join(', ')}\n\n💡 Por favor, cadastre estes exames primeiro ou adicione manualmente.`;
-        }
-        
+      }
+      
+      if (examesNaoEncontrados.length > 0) {
+        // Mostrar toast separado para os não encontrados (mais visível)
         toast({
-          title: "Análise concluída",
-          description: message,
+          title: `⚠️ ${examesNaoEncontrados.length} exame(s) NÃO encontrado(s)`,
+          description: examesNaoEncontrados.join(', ') + '. Cadastre-os no sistema ou adicione manualmente.',
           variant: "destructive",
-          duration: 8000,
+          duration: 12000,
+        });
+      }
+      
+      if (examesEncontradosIds.length === 0 && examesNaoEncontrados.length === 0) {
+        toast({
+          title: "Nenhum exame identificado",
+          description: "A IA não conseguiu identificar exames no documento. Verifique se o arquivo está legível.",
+          variant: "destructive",
+          duration: 6000,
         });
       }
 
