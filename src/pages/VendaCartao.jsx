@@ -569,6 +569,8 @@ export default function VendaCartaoPage() {
         />
       )}
 
+      <RelatorioVendaCartao open={relatorioAberto} onClose={() => setRelatorioAberto(false)} />
+
       {/* Modal de Cancelamento */}
       <Dialog open={modalCancelarAberto} onOpenChange={setModalCancelarAberto}>
         <DialogContent className="sm:max-w-md">
