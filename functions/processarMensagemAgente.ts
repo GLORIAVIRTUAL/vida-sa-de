@@ -1987,15 +1987,12 @@ Retorne JSON.`;
       });
     }
 
-    // Buscar procedimentos e exames disponíveis para orçamento
+    // Buscar procedimentos e exames disponíveis - SEMPRE carregar para que a IA tenha informações atualizadas
     let infoProcedimentosExames = '';
     
-    // Carregar lista de procedimentos e exames para qualquer mensagem sobre orçamento/preço ou mídia
-    // SEMPRE carregar quando mencionar preço, valor, exame específico, quanto custa, etc.
-    const querOrcamento = /or[çc]amento|pre[çc]o|valor|quanto\s*custa|custa\s*quanto|quanto|custa|faz|realiza|exame|procedimento|requisição|pedido|hemograma|glicose|colesterol|triglice|vitamina|urina|fezes|sangue|tireoide|tsh|t4|psa|creatinina|ureia|tgo|tgp|ácido|acido/i.test(messageText);
-
-    if (mediaType === 'image' || mediaType === 'document' || querOrcamento) {
-      console.log('📋 Carregando lista de procedimentos e exames para orçamento...');
+    // SEMPRE carregar a lista completa de procedimentos e exames para que a IA possa responder sobre qualquer serviço
+    {
+      console.log('📋 Carregando lista COMPLETA de procedimentos e exames...');
 
       try {
         // Carregamento paralelo com timeout
