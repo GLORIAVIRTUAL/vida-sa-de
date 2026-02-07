@@ -998,23 +998,9 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
     // Detectar se o histórico já tem uma especialidade mencionada
     const historicoTemEspecialidadeCheck = historicoConversa && /clínico|clinico|cardiolog|dermatolog|ginecolog|nutrici|psicolog|ortoped|urolog|geriatr|gastro|reumato|psiquiatr|fisioterap|oftalmolog|otorrino|pediatr|pneumolog|neurolog|quiroprax|massoterap|optometr|hidro|pilates|odontolog|dentist|endocrinolog|Dr\.|👨‍⚕️/i.test(historicoConversa);
 
-    // Verificar se quer agendar na mensagem ATUAL
-    // IMPORTANTE: Se o cliente pergunta "quanto custa a consulta" ou "valor da consulta", NÃO é pedido de agendamento
-    // IMPORTANTE: Se o cliente pergunta "faz X?", "tem X?", "vocês fazem X?", "atende X?", é PERGUNTA INFORMATIVA, NÃO agendamento
-    const ehPerguntaPreco = /quanto\s*custa|qual\s*o?\s*(valor|pre[çc]o)|pre[çc]o\s*(da|do|de)|valor\s*(da|do|de)|custa\s*quanto/i.test(messageText);
-    const ehPerguntaInformativa = /^(a[ií]\s+)?(voc[êe]s\s+)?(faz(em)?|tem|t[êe]m|realiza[m]?|oferece[m]?|atende[m]?|existe|trabalha[m]?\s+com)\s+/i.test(messageText) ||
-      /faz(em)?\s+.+\?/i.test(messageText) ||
-      /tem\s+.+\?/i.test(messageText) ||
-      /^a[ií]\s+faz\b/i.test(messageText);
-    
-    // Detectar conversa sobre Cartão Mais Vida / planos / benefícios
-    const ehPerguntaSobreCartao = /cart[aã]o\s*mais\s*(vida|sa[uú]de)|mais\s*vida|mais\s*sa[uú]de|planos?\s*(do|da|de)?\s*cart|benef[ií]cios?\s*(do|da)?\s*cart|cart[aã]o\s*da\s*cl[ií]nica|informa[çc][oõ]es?\s*sobre\s*o?\s*cart|planos?\s*(e\s*benef)?/i.test(messageText) ||
-      (/plano|benef[ií]cio|cart[aã]o/i.test(messageText) && /cart[aã]o\s*mais|mais\s*vida|mais\s*sa[uú]de/i.test(historicoConversa || ''));
-    const ehContextoCartaoNoHistorico = /cart[aã]o\s*mais\s*(vida|sa[uú]de)|mais\s*vida|planos?\s*(do|da)?\s*cart|benef[ií]cios/i.test(historicoConversa || '');
-    
-    // Se o histórico é sobre cartão e a mensagem é curta/genérica ("planos", "quais", "sim"), manter no contexto informativo
-    const respostaCurtaEmContextoCartao = ehContextoCartaoNoHistorico && 
-      /^(planos?|quais|sim|ok|benefícios?|beneficios?|valores?|como\s*funciona|me\s*fala|conta\s*mais|explica|detalh|informa)/i.test(messageText.trim());
+    // Verificar se quer agendar na mensagem ATUAL (reusa variáveis declaradas acima)
+    const ehPerguntaPreco = ehPerguntaPrecoEarly;
+    const ehPerguntaInformativa = ehPerguntaInformativaEarly;
     
     const querAgendarMensagem = !clienteRecusandoAgendar && !ehPerguntaPreco && !ehPerguntaInformativa && !ehPerguntaSobreCartao && !respostaCurtaEmContextoCartao && /agendar|marcar|consulta|atend|hor[áa]rio|dispon[íi]vel|vaga/i.test(messageText);
 
