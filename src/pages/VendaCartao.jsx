@@ -306,6 +306,15 @@ export default function VendaCartaoPage() {
               <PlusCircle className="w-5 h-5 mr-2" />
               Nova Venda
             </Button>
+            <Button 
+              onClick={() => setRelatorioAberto(true)} 
+              size="lg"
+              variant="outline"
+              className="border-teal-600 text-teal-600 hover:bg-teal-50"
+            >
+              <Printer className="w-5 h-5 mr-2" />
+              Relatórios
+            </Button>
             <Link to={createPageUrl('ImportarVendasCartao')}>
               <Button 
                 variant="outline" 
