@@ -948,6 +948,13 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
       }
     }
 
+    // Se conversa é sobre Cartão Mais Vida, limpar detecção de especialidade para não entrar em fluxo de agendamento
+    if (ehPerguntaSobreCartao || respostaCurtaEmContextoCartao) {
+      console.log('💳 Conversa sobre Cartão Mais Vida - resetando detecção de especialidade/médico');
+      especialidadeDetectada = null;
+      medicoEspecificoDetectado = null;
+    }
+
     // ===== AGORA avaliar querAgendar (especialidadeDetectada já está definida) =====
 
     // REGRA ANTI-LOOP: Se acabou de concluir um agendamento no histórico recente, NÃO entrar em fluxo de agendamento novamente
