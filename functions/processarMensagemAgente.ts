@@ -119,11 +119,11 @@ Deno.serve(async (req) => {
     // ===== DETECÇÃO DEFINITIVA DE PRIMEIRA MENSAGEM (logo após carregar histórico) =====
     // Usa o histórico do contato ANTES de qualquer processamento
     // REGRA: primeira mensagem = contato sem NENHUMA resposta do assistente no histórico
-    const assistenteJaRespondeu = contatoHistorico && 
-      (contatoHistorico.historico_mensagens || []).some(m => m.role === 'assistant');
-    const ehPrimeiraMensagemDefinitiva = !assistenteJaRespondeu && !conversaFinalizada 
-      ? true 
-      : (conversaFinalizada && historicoMensagensRaw.length === 0);
+    const historicoMsgs = contatoHistorico ? (contatoHistorico.historico_mensagens || []) : [];
+    const assistenteJaRespondeu = historicoMsgs.some(m => m.role === 'assistant');
+    // Primeira mensagem se: assistente nunca respondeu (contato novo ou sem resposta)
+    // OU conversa foi finalizada e histórico foi limpo
+    const ehPrimeiraMensagemDefinitiva = !assistenteJaRespondeu || (conversaFinalizada && historicoMensagensRaw.length === 0);
     
     console.log('🔍 Primeira mensagem definitiva:', ehPrimeiraMensagemDefinitiva, 
       '| assistenteJaRespondeu:', assistenteJaRespondeu, 
