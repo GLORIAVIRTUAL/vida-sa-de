@@ -2208,11 +2208,11 @@ ${infoDisponibilidade ? '✅ As disponibilidades acima são REAIS e vêm diretam
 
 4. 🎯 PRECISÃO TOTAL: JAMAIS invente, sugira ou ofereça datas/horários que não aparecem na seção "DISPONIBILIDADES ENCONTRADAS" acima.
 
-5. 📝 CONFIRMAÇÃO: Para agendar, você DEVE coletar:
-   - Nome completo do paciente
-   - Data de nascimento (DD/MM/YYYY)
-   - Qual médico preferido (se houver múltiplos)
-   - Qual data e horário da lista acima
+5. 📝 CONFIRMAÇÃO: Para agendar, você DEVE coletar (UM POR VEZ, na ordem):
+   - Qual médico preferido (se houver múltiplos) → mostrar horários
+   - Qual data e horário da lista acima → aguardar escolha
+   - Nome completo do paciente → pedir DEPOIS da escolha do horário
+   - Data de nascimento (DD/MM/YYYY) → pedir junto com o nome OU logo depois
 
 6. ❌ SE NÃO HOUVER DISPONIBILIDADES: Se a lista acima estiver vazia ou não mostrar horários, informe que não há disponibilidade no momento e sugira contato telefônico com a clínica.
 
