@@ -1076,19 +1076,23 @@ Informe ao cliente que:
       
       // Verificar se o cliente está ESCOLHENDO um horário/médico específico
       // Neste caso, NÃO precisamos buscar novamente - o fluxo de extração cuidará disso
-      // Padrões: "dia 12: 13:15", "sexta dia 13: 8:30", "13:15", "dia 12", "segunda", "Dr. Altamiro"
+      // Padrões: "dia 12: 13:15", "sexta dia 13: 8:30", "13:15", "dia 12", "segunda", "Dr. Altamiro", "quero", "sim"
       const clienteEstaEscolhendoHorario = (
         /dia\s*\d{1,2}/i.test(messageText) ||
         /\d{1,2}[:/h]\d{2}/i.test(messageText) ||
+        /\d{1,2}\/\d{1,2}/i.test(messageText) ||
         /segunda|terça|terca|quarta|quinta|sexta|sábado|sabado/i.test(messageText) ||
-        /dr\.?\s*\w+/i.test(messageText)
+        /dr\.?\s*\w+/i.test(messageText) ||
+        /^(sim|quero|ok|pode|claro|esse|essa|este|esta|o primeiro|a primeira|o segundo|a segunda)\s*/i.test(messageText.trim())
       ) && /Dr\.|👨‍⚕️|\d{2}:\d{2}/i.test(historico);
       
       // Verificar se disponibilidades já foram mostradas (com horários reais no formato que usamos)
       // Padrões: "12/02: 13:15", "Dr. Altamiro" + "13:15", "quinta-feira, 12/02: 13:15"
+      // TAMBÉM detectar quando o assistente mostrou lista de médicos com horários
       const jaShowouDisponibilidades = (
         /\d{2}\/\d{2}.*\d{2}:\d{2}/i.test(historico) || 
-        (/Dr\.\s+\w+/i.test(historico) && /\d{2}:\d{2}/i.test(historico))
+        (/Dr\.\s+\w+/i.test(historico) && /\d{2}:\d{2}/i.test(historico)) ||
+        /Qual médico.*prefere|Qual horário.*prefere|qual.*você.*prefere/i.test(historico)
       );
 
       if (clienteEstaEscolhendoHorario || jaShowouDisponibilidades) {
