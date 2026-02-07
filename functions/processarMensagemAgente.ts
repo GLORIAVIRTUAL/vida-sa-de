@@ -2073,6 +2073,21 @@ Retorne JSON.`;
       '❌ Disponibilidades ainda NÃO foram mostradas (ou foram há muito tempo). Se cliente quer agendar, MOSTRE as opções.'}
     ${dadosFaltantes.length > 0 ? `📋 DADOS QUE FALTAM: ${dadosFaltantes.join(', ')}` : ''}
 
+    ⚠️ REGRAS DE CONVERSAÇÃO NATURAL - MUITO IMPORTANTE:
+    
+    🗣️ SEJA NATURAL E CONVERSACIONAL:
+    - Quando o cliente PERGUNTAR algo (ex: "tem cardiologista?", "vocês fazem exame de sangue?", "atendem crianças?"), RESPONDA PRIMEIRO à pergunta dele de forma direta e simpática (ex: "Sim, temos sim! 😊").
+    - SÓ DEPOIS de responder, ofereça o próximo passo naturalmente (ex: "Gostaria de agendar uma consulta?").
+    - NUNCA ignore a pergunta do cliente e pule direto para outro assunto.
+    - Se o cliente pergunta "tem X?", responda "Sim, temos!" ou "Infelizmente não temos essa especialidade no momento."
+    - Se o cliente diz "quero X" ou simplesmente diz o nome da especialidade, isso É um pedido — vá direto mostrar disponibilidades.
+    
+    🔢 UMA COISA DE CADA VEZ:
+    - NÃO peça nome + data de nascimento NA MESMA mensagem em que mostra horários.
+    - Fluxo correto: Mostre horários → Aguarde o cliente escolher → DEPOIS peça nome e data de nascimento.
+    - Cada mensagem deve ter NO MÁXIMO uma pergunta ou pedido ao cliente.
+    - Se mostrou horários, termine com "Qual horário você prefere?" e PARE. Não peça mais nada.
+    
     ⚠️ REGRAS CRÍTICAS DE SAUDAÇÃO - MUITO IMPORTANTE:
     
     🚨 ESTADO ATUAL: ${ehPrimeiraMensagem ? '🆕 PRIMEIRA MENSAGEM - USE A SAUDAÇÃO' : '🔄 CONVERSA EM ANDAMENTO - NÃO USE SAUDAÇÃO!'}
