@@ -92,8 +92,9 @@ Deno.serve(async (req) => {
       });
     }
     
-    // Buscar histórico de conversa
+    // Buscar histórico de conversa - CARREGAR MAIS MENSAGENS para contexto rico
     let historicoConversa = '';
+    let historicoMensagensRaw = []; // Guardar mensagens brutas para contexto do LLM
     try {
       const contatos = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
       if (contatos.length > 0) {
@@ -101,8 +102,11 @@ Deno.serve(async (req) => {
         if (conversaFinalizada || !contatos[0].historico_mensagens || contatos[0].historico_mensagens.length === 0) {
           console.log('🗑️ Histórico vazio ou conversa finalizada - tratando como PRIMEIRA MENSAGEM');
           historicoConversa = '';
+          historicoMensagensRaw = [];
         } else {
-          const ultimas = contatos[0].historico_mensagens.slice(-10);
+          // Carregar últimas 20 mensagens para contexto mais rico
+          const ultimas = contatos[0].historico_mensagens.slice(-20);
+          historicoMensagensRaw = ultimas;
           historicoConversa = ultimas.map(m => `${m.role === 'user' ? 'CLIENTE' : 'ASSISTENTE'}: ${m.content}`).join('\n');
         }
       }
