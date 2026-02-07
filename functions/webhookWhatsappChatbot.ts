@@ -306,6 +306,7 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('❌ Erro:', error);
+    if (messageId) releaseLock(messageId);
     return Response.json({ error: error.message }, { status: 500 });
   }
 });
