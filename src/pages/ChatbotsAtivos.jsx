@@ -392,21 +392,12 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
     setEnviando(true);
     if (!textoCustom) setInputMsg('');
     try {
-      if (modoHumano) {
-        // Modo humano: enviar direto pelo WhatsApp sem passar pela IA
-        await base44.functions.invoke('enviarMensagemHumano', {
-          phoneNumber: contatoSelecionado.telefone,
-          messageText: texto,
-          contatoId: contatoSelecionado.id
-        });
-      } else {
-        await base44.functions.invoke('processarMensagemAgente', {
-          phoneNumber: contatoSelecionado.telefone,
-          messageText: texto,
-          senderName: 'Operador',
-          pacienteId: contatoSelecionado.paciente_id
-        });
-      }
+      // SEMPRE enviar via WhatsApp para o cliente receber a mensagem
+      await base44.functions.invoke('enviarMensagemHumano', {
+        phoneNumber: contatoSelecionado.telefone,
+        messageText: texto,
+        contatoId: contatoSelecionado.id
+      });
       if (!skipRefresh) await buscarContatos();
     } catch (error) {
       alert('Erro: ' + error.message);
