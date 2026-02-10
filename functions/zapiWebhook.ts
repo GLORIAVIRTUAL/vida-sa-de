@@ -301,7 +301,16 @@ async function processarMensagemRecebida(base44, payload) {
                 });
                 
                 console.log('🤖 Novo contato criado em modo IA');
-                return new Response(JSON.stringify({ message: "Novo contato em modo humano", status: "salvo" }), { status: 200 });
+                
+                // Encaminhar para chatbot para processar a primeira mensagem
+                try {
+                    const resultado = await base44.asServiceRole.functions.invoke('webhookWhatsappChatbot', payload);
+                    console.log('✅ webhookWhatsappChatbot retornou para novo contato:', JSON.stringify(resultado.data).substring(0, 200));
+                    return new Response(JSON.stringify(resultado.data), { status: 200 });
+                } catch (invokeError) {
+                    console.error('❌ Erro ao encaminhar novo contato para chatbot:', invokeError.message);
+                    return new Response(JSON.stringify({ error: invokeError.message }), { status: 500 });
+                }
             }
         } catch (contatoError) {
             console.error('⚠️ Erro ao verificar/criar contato:', contatoError.message);
