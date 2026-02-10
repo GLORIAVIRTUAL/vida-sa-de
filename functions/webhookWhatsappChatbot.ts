@@ -167,6 +167,22 @@ Deno.serve(async (req) => {
     const DEBOUNCE_SECONDS = 3;
     const agora = new Date().toISOString();
     
+    // Anti-duplicata extra para mídia: verificar se já recebemos mídia deste telefone nos últimos 10s
+    if (mediaType !== 'text') {
+      const mediaLockKey = `media_${telNorm}_${mediaType}`;
+      const now = Date.now();
+      // Limpar locks antigos
+      for (const [key, ts] of processingLock.entries()) {
+        if (key.startsWith('media_') && now - ts > 10000) processingLock.delete(key);
+      }
+      if (processingLock.has(mediaLockKey)) {
+        console.log('🔒 Mídia duplicada detectada (mesmo tipo/telefone em <10s) - ignorando');
+        if (messageId) releaseLock(messageId);
+        return Response.json({ success: true, status: 'media_duplicata' });
+      }
+      processingLock.set(mediaLockKey, now);
+    }
+    
     try {
       let contato = await buscarContato();
       
