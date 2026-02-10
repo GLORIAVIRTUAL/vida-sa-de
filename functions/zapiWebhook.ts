@@ -293,14 +293,14 @@ async function processarMensagemRecebida(base44, payload) {
                     telefone: telefone,
                     origem: 'WhatsApp',
                     status: 'Novo',
-                    atendimento_humano: true, // SEMPRE começa em modo HUMANO
+                    atendimento_humano: false, // Começa em modo IA para chatbot responder
                     atendente_atual: null,
                     atendente_id: null,
                     historico_mensagens: historicoInicial,
                     ultima_interacao: agora
                 });
                 
-                console.log('👤 Novo contato criado em modo HUMANO - NÃO processando IA');
+                console.log('🤖 Novo contato criado em modo IA');
                 return new Response(JSON.stringify({ message: "Novo contato em modo humano", status: "salvo" }), { status: 200 });
             }
         } catch (contatoError) {
