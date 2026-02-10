@@ -54,6 +54,31 @@ Deno.serve(async (req) => {
       return Response.json({ success: true, status: 'locked' });
     }
     
+    // ANTI-DUPLICATA PERSISTENTE: Verificar se esta mensagem já foi processada no histórico do contato
+    // Isso protege contra chamadas de múltiplos webhooks (zapiWebhook + webhookWhatsappChatbot)
+    try {
+      const telCheck = phoneNumber.replace(/\D/g, '');
+      const variantesCheck = [phoneNumber, telCheck];
+      if (telCheck.startsWith('55') && telCheck.length >= 12) variantesCheck.push(telCheck.slice(2));
+      
+      for (const v of variantesCheck) {
+        const contatosCheck = await base44.asServiceRole.entities.Contato.filter({ telefone: v });
+        if (contatosCheck.length > 0) {
+          const hist = contatosCheck[0].historico_mensagens || [];
+          // Se já existe uma RESPOSTA (assistant) para esta mensagem no histórico, já foi processada
+          const userMsgIdx = hist.findIndex(m => m.messageId === messageId && m.role === 'user');
+          if (userMsgIdx >= 0 && hist.slice(userMsgIdx + 1).some(m => m.role === 'assistant')) {
+            console.log('⏭️ MessageId já tem resposta no histórico - duplicata entre webhooks:', messageId);
+            if (messageId) releaseLock(messageId);
+            return Response.json({ success: true, status: 'ja_respondida' });
+          }
+          break;
+        }
+      }
+    } catch (checkErr) {
+      console.warn('⚠️ Erro na verificação anti-duplicata persistente:', checkErr.message);
+    }
+    
     // Verificar se tem mensagem válida
     const temMensagem = body.text?.message || body.body || body.message || 
                         body.image || body.document || body.audio || body.video || body.sticker;
