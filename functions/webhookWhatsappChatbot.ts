@@ -117,6 +117,33 @@ Deno.serve(async (req) => {
 
     console.log('💬 Mensagem Z-API:', { phoneNumber, senderName, messageText, mediaType, mediaUrl });
 
+    // Se tem mídia com URL, fazer upload permanente no storage do Base44
+    if (mediaUrl && mediaType !== 'text' && mediaType !== 'location') {
+      try {
+        console.log('📥 Baixando mídia do Z-API para upload permanente...');
+        const mediaResponse = await fetch(mediaUrl);
+        if (mediaResponse.ok) {
+          const blob = await mediaResponse.blob();
+          // Determinar extensão
+          const extMap = { image: 'jpg', document: 'pdf', audio: 'ogg', video: 'mp4', sticker: 'webp' };
+          const ext = extMap[mediaType] || 'bin';
+          const fileName = `whatsapp_${Date.now()}.${ext}`;
+          const file = new File([blob], fileName, { type: blob.type });
+          
+          const uploadResult = await base44.asServiceRole.integrations.Core.UploadFile({ file });
+          if (uploadResult?.file_url) {
+            console.log('✅ Mídia salva permanentemente:', uploadResult.file_url);
+            mediaUrl = uploadResult.file_url;
+          }
+        } else {
+          console.warn('⚠️ Não foi possível baixar mídia do Z-API:', mediaResponse.status);
+        }
+      } catch (uploadErr) {
+        console.warn('⚠️ Erro ao salvar mídia permanentemente:', uploadErr.message);
+        // Continua com a URL temporária do Z-API
+      }
+    }
+
     // Normalizar telefone uma vez para reutilizar
     const telNorm = phoneNumber.replace(/\D/g, '');
     const variantes = [phoneNumber, telNorm];
