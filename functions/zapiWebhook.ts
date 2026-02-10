@@ -239,9 +239,8 @@ async function processarMensagemRecebida(base44, payload) {
             if (contatos.length > 0) {
                 const contato = contatos[0];
                 
-                // LÓGICA CORRIGIDA: Se atendimento_humano é explicitamente true, é modo humano.
-                // Se é false, undefined, ou null, é modo IA (para contatos novos/manuais funcionarem com chatbot)
-                const estaEmModoHumano = contato.atendimento_humano === true;
+                // LÓGICA: Padrão é SEMPRE modo humano. Só entra em modo IA se atendimento_humano for EXPLICITAMENTE false.
+                const estaEmModoHumano = contato.atendimento_humano !== false;
                 
                 if (estaEmModoHumano) {
                     // Modo HUMANO: salvar mensagem no histórico aqui
