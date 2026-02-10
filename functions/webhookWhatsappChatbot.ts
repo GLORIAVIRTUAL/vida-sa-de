@@ -260,7 +260,7 @@ Deno.serve(async (req) => {
             historico_mensagens: [],
             mensagens_pendentes: [],
             ultimo_timestamp_pendente: null,
-            atendimento_humano: false,
+            atendimento_humano: true,
             atendente_atual: null,
             atendente_id: null
           });
