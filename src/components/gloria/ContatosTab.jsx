@@ -447,11 +447,23 @@ export default function ContatosTab({ onIniciarConversa }) {
                   >
                     <div className="flex items-center gap-3">
                       {arquivo.tipo === 'image' ? (
-                        <div className="w-10 h-10 bg-blue-100 rounded flex items-center justify-center">
+                        <img 
+                          src={arquivo.url} 
+                          alt={arquivo.nome}
+                          className="w-12 h-12 rounded object-cover border border-gray-200 cursor-pointer hover:opacity-80 transition"
+                          onClick={() => window.open(arquivo.url, '_blank')}
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'flex';
+                          }}
+                        />
+                      ) : null}
+                      {arquivo.tipo === 'image' ? (
+                        <div className="w-12 h-12 bg-blue-100 rounded items-center justify-center hidden">
                           <Image className="w-5 h-5 text-blue-600" />
                         </div>
                       ) : (
-                        <div className="w-10 h-10 bg-amber-100 rounded flex items-center justify-center">
+                        <div className="w-12 h-12 bg-amber-100 rounded flex items-center justify-center">
                           <File className="w-5 h-5 text-amber-600" />
                         </div>
                       )}
