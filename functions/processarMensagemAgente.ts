@@ -158,8 +158,11 @@ Deno.serve(async (req) => {
       
       // Salvar no histórico
       const timestamp = new Date().toISOString();
+      const userEntry = { role: 'user', content: mediaUrl ? `${messageText}\n${mediaUrl}` : messageText, timestamp, messageId };
+      if (mediaType && mediaType !== 'text') userEntry.mediaType = mediaType;
+      if (mediaUrl) userEntry.mediaUrl = mediaUrl;
       const histEntries = [
-        { role: 'user', content: messageText, timestamp, messageId },
+        userEntry,
         { role: 'assistant', content: saudacaoFixa, timestamp }
       ];
       
