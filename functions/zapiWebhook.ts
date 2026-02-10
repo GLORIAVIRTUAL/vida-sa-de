@@ -294,15 +294,18 @@ async function processarMensagemRecebida(base44, payload) {
                         mediaUrl: mediaUrl
                     });
                     
+                    // Salvar timestamp único desta instância para controle de debounce
+                    const meuTimestamp = agora;
+                    
                     await base44.asServiceRole.entities.Contato.update(contato.id, {
                         mensagens_pendentes: mensagensPendentes,
-                        ultimo_timestamp_pendente: agora,
+                        ultimo_timestamp_pendente: meuTimestamp,
                         ultima_interacao: agora,
                         nome: contato.nome || senderName,
                         conversa_finalizada: false
                     });
                     
-                    console.log(`⏳ Mensagem adicionada ao buffer (${mensagensPendentes.length} pendentes). Aguardando 5s...`);
+                    console.log(`⏳ Mensagem adicionada ao buffer (${mensagensPendentes.length} pendentes). meuTimestamp=${meuTimestamp}. Aguardando 5s...`);
                     
                     // Esperar 5 segundos para acumular mais mensagens
                     await new Promise(resolve => setTimeout(resolve, 5000));
@@ -320,17 +323,24 @@ async function processarMensagemRecebida(base44, payload) {
                         return new Response(JSON.stringify({ message: "Contato não encontrado" }), { status: 200 });
                     }
                     
-                    // Apenas a instância cuja mensagem é a ÚLTIMA no buffer deve processar
-                    const pendentesAtuais = contatoAtualizado.mensagens_pendentes || [];
-                    const ultimaPendente = pendentesAtuais[pendentesAtuais.length - 1];
+                    // Verificar se o ultimo_timestamp_pendente ainda é o MEU
+                    // Se mudou, outra mensagem chegou depois e AQUELA instância vai processar
+                    const timestampAtual = contatoAtualizado.ultimo_timestamp_pendente;
                     
-                    if (!ultimaPendente || ultimaPendente.messageId !== msgId) {
-                        console.log('⏭️ Outra mensagem chegou depois - esta instância NÃO processa');
+                    if (timestampAtual !== meuTimestamp) {
+                        console.log(`⏭️ Outra mensagem chegou depois (meu=${meuTimestamp}, atual=${timestampAtual}) - esta instância NÃO processa`);
                         return new Response(JSON.stringify({ message: "Delegado para próxima instância" }), { status: 200 });
                     }
                     
-                    // Esta é a última mensagem - processar TODAS as pendentes como uma só
-                    console.log(`✅ Última mensagem do buffer (${pendentesAtuais.length} msgs). Processando tudo...`);
+                    // Buffer vazio = outra instância já processou
+                    const pendentesAtuais = contatoAtualizado.mensagens_pendentes || [];
+                    if (pendentesAtuais.length === 0) {
+                        console.log('⏭️ Buffer já foi processado por outra instância');
+                        return new Response(JSON.stringify({ message: "Já processado" }), { status: 200 });
+                    }
+                    
+                    // Esta é a última instância - processar TODAS as pendentes como uma só
+                    console.log(`✅ Sou a última instância (${pendentesAtuais.length} msgs no buffer). Processando tudo...`);
                     
                     // Juntar todas as mensagens pendentes
                     const textosCombinados = pendentesAtuais.map(m => m.texto).join(' ');
