@@ -214,7 +214,47 @@ Deno.serve(async (req) => {
       if (contato) {
         // Reativar conversa se estava finalizada
         if (contato.conversa_finalizada) {
-          console.log('🔄 Reativando conversa finalizada - limpando histórico para conversa nova');
+          console.log('🔄 Reativando conversa finalizada - salvando arquivos e limpando histórico');
+          
+          // Salvar arquivos/imagens do histórico antigo no ArquivoPaciente antes de limpar
+          const historicoAntigo = contato.historico_mensagens || [];
+          const mensagensComMidia = historicoAntigo.filter(m => m.mediaUrl && m.mediaType && m.mediaType !== 'text');
+          
+          if (mensagensComMidia.length > 0) {
+            // Buscar paciente vinculado
+            let pacienteIdArquivo = contato.paciente_id || null;
+            if (!pacienteIdArquivo) {
+              try {
+                const telNormP = (contato.telefone || '').replace(/\D/g, '');
+                const pacientes = await base44.asServiceRole.entities.Paciente.list('-created_date', 500);
+                const paciente = pacientes.find(p => (p.telefone || '').replace(/\D/g, '').slice(-8) === telNormP.slice(-8));
+                if (paciente) pacienteIdArquivo = paciente.id;
+              } catch (e) { /* ignore */ }
+            }
+            
+            if (pacienteIdArquivo) {
+              for (const msg of mensagensComMidia) {
+                try {
+                  // Verificar se já existe no ArquivoPaciente
+                  const existentes = await base44.asServiceRole.entities.ArquivoPaciente.filter({ file_url: msg.mediaUrl });
+                  if (existentes.length === 0) {
+                    const tipoMap = { image: 'Imagem', document: 'Documento', audio: 'Documento', video: 'Documento' };
+                    await base44.asServiceRole.entities.ArquivoPaciente.create({
+                      paciente_id: pacienteIdArquivo,
+                      file_url: msg.mediaUrl,
+                      nome_arquivo: `WhatsApp_${msg.mediaType}_${msg.timestamp || Date.now()}`,
+                      tipo: tipoMap[msg.mediaType] || 'Documento',
+                      descricao: `Arquivo recebido via WhatsApp em ${msg.timestamp || 'data desconhecida'}`
+                    });
+                    console.log('💾 Arquivo salvo no ArquivoPaciente:', msg.mediaUrl);
+                  }
+                } catch (e) {
+                  console.warn('⚠️ Erro ao salvar arquivo:', e.message);
+                }
+              }
+            }
+          }
+          
           await base44.asServiceRole.entities.Contato.update(contato.id, {
             conversa_finalizada: false,
             historico_mensagens: [],
