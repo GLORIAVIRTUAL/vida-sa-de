@@ -73,7 +73,9 @@ export default function ContatosTab({ onIniciarConversa }) {
         data_nascimento: novoContato.data_nascimento || undefined,
         interesses: novoContato.motivo ? [novoContato.motivo] : [],
         origem: 'Manual',
-        status: 'Novo'
+        status: 'Novo',
+        atendimento_humano: false,
+        historico_mensagens: []
       });
       setModalAberto(false);
       setNovoContato({ nome: '', telefone: '', data_nascimento: '', motivo: '' });
