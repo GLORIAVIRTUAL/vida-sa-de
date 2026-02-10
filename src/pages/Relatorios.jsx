@@ -1295,13 +1295,14 @@ export default function Relatorios() {
                 {/* Tabela de Repasses por Médico */}
                 <Card>
                   <CardHeader>
-                    <CardTitle>Repasses por Profissional</CardTitle>
+                    <CardTitle>Repasses por Profissional (Separado por Especialidade)</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <Table>
                       <TableHeader>
                         <TableRow>
                           <TableHead>Profissional</TableHead>
+                          <TableHead>Especialidade</TableHead>
                           <TableHead className="text-center">Atendimentos</TableHead>
                           <TableHead className="text-right">Total Faturado</TableHead>
                           <TableHead className="text-right">Repasse Total</TableHead>
@@ -1310,10 +1311,10 @@ export default function Relatorios() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {Object.entries(estatisticas.porMedico)
+                        {Object.entries(estatisticas.porMedicoId)
                           .sort((a, b) => b[1].repasse - a[1].repasse)
-                          .map(([nomeMedico, dados]) => {
-                            const osMedico = dadosFiltrados.filter(os => obterNomeMedico(os) === nomeMedico);
+                          .map(([medicoId, dados]) => {
+                            const osMedico = dadosFiltrados.filter(os => (os.medico_id || 'sem_medico') === medicoId);
                             const emAberto = osMedico
                               .filter(os => !os.repasse_realizado)
                               .reduce((acc, os) => acc + (os.valor_repasse_medico || 0), 0);
@@ -1322,8 +1323,9 @@ export default function Relatorios() {
                               .reduce((acc, os) => acc + (os.valor_repasse_medico || 0), 0);
                             
                             return (
-                              <TableRow key={nomeMedico}>
-                                <TableCell className="font-medium">{nomeMedico}</TableCell>
+                              <TableRow key={medicoId}>
+                                <TableCell className="font-medium">{dados.nome}</TableCell>
+                                <TableCell><Badge variant="outline" className="text-xs">{dados.especialidade || '-'}</Badge></TableCell>
                                 <TableCell className="text-center">{dados.quantidade}</TableCell>
                                 <TableCell className="text-right">{formatCurrency(dados.valor)}</TableCell>
                                 <TableCell className="text-right font-bold text-purple-600">{formatCurrency(dados.repasse)}</TableCell>
