@@ -289,8 +289,7 @@ Deno.serve(async (req) => {
           return Response.json({ success: true, status: 'atendimento_humano' });
         }
         
-        // MODO IA: Verificar duplicata, mas NÃO salvar mensagem aqui
-        // O processarMensagemAgente cuida de salvar no histórico para evitar duplicação
+        // MODO IA: DEBOUNCE - Acumular mensagens por 5 segundos antes de processar
         const historicoAtual = contato.historico_mensagens || [];
         
         // Verificar se esta mensagem já está no histórico (outra instância já salvou)
@@ -300,12 +299,72 @@ Deno.serve(async (req) => {
           return Response.json({ success: true, status: 'ja_no_historico' });
         }
         
-        // Apenas atualizar metadata, NÃO salvar a mensagem do user aqui
-        // processarMensagemAgente salvará user + assistant juntos
+        // Salvar mensagem no buffer de pendentes para debounce
+        const mensagensPendentes = contato.mensagens_pendentes || [];
+        const jaNoBuffer = messageId && mensagensPendentes.some(m => m.messageId === messageId);
+        if (jaNoBuffer) {
+          console.log('⏭️ Mensagem já está no buffer de pendentes');
+          if (messageId) releaseLock(messageId);
+          return Response.json({ success: true, status: 'ja_no_buffer' });
+        }
+        
+        const conteudoMsg = mediaUrl ? `${messageText}\n${mediaUrl}` : messageText;
+        mensagensPendentes.push({
+          texto: conteudoMsg,
+          timestamp: agora,
+          messageId: messageId,
+          mediaType: mediaType,
+          mediaUrl: mediaUrl
+        });
+        
         await base44.asServiceRole.entities.Contato.update(contato.id, {
+          mensagens_pendentes: mensagensPendentes,
+          ultimo_timestamp_pendente: agora,
           ultima_interacao: agora,
           conversa_finalizada: false,
           nome: contato.nome || senderName
+        });
+        
+        console.log(`⏳ Mensagem adicionada ao buffer (${mensagensPendentes.length} pendentes). Aguardando 5s debounce...`);
+        
+        // Esperar 5 segundos para acumular mais mensagens
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        
+        // Recarregar contato para ver se mais mensagens chegaram durante o delay
+        const contatoAtualizado = await buscarContato();
+        if (!contatoAtualizado) {
+          console.log('⚠️ Contato não encontrado após delay');
+          if (messageId) releaseLock(messageId);
+          return Response.json({ success: true, status: 'contato_nao_encontrado' });
+        }
+        
+        // Apenas a instância cuja mensagem é a ÚLTIMA no buffer deve processar
+        const pendentesAtuais = contatoAtualizado.mensagens_pendentes || [];
+        const ultimaPendente = pendentesAtuais[pendentesAtuais.length - 1];
+        
+        if (!ultimaPendente || ultimaPendente.messageId !== messageId) {
+          console.log('⏭️ Outra mensagem chegou depois - esta instância NÃO processa (delegando)');
+          if (messageId) releaseLock(messageId);
+          return Response.json({ success: true, status: 'delegado_proxima' });
+        }
+        
+        // Esta é a última mensagem - processar TODAS as pendentes como uma só
+        console.log(`✅ Última mensagem do buffer (${pendentesAtuais.length} msgs). Processando tudo junto...`);
+        
+        // Juntar todas as mensagens pendentes em uma só
+        messageText = pendentesAtuais.map(m => m.texto).join(' ');
+        
+        // Pegar a mídia da última mensagem que tem mídia (se houver)
+        const ultimaComMidia = [...pendentesAtuais].reverse().find(m => m.mediaUrl);
+        if (ultimaComMidia) {
+          mediaType = ultimaComMidia.mediaType;
+          mediaUrl = ultimaComMidia.mediaUrl;
+        }
+        
+        // Limpar buffer ANTES de processar (evitar reprocessamento)
+        await base44.asServiceRole.entities.Contato.update(contatoAtualizado.id, {
+          mensagens_pendentes: [],
+          ultimo_timestamp_pendente: null
         });
         
       } else {
