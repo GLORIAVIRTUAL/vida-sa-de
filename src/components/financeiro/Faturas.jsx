@@ -67,12 +67,7 @@ export default function Faturas({ ordensServico, pacientes, medicos, procediment
         return false;
       }
 
-      // Verificar status - excluir canceladas
-      if (os.status_pagamento !== "Pago") {
-        if (debugMode) console.log('❌ OS não paga:', debugInfo);
-        return false;
-      }
-
+      // Verificar status - excluir apenas canceladas (convênios podem estar pendentes)
       if (os.status_pagamento === "Cancelado") {
         if (debugMode) console.log('❌ OS cancelada:', debugInfo);
         return false;
