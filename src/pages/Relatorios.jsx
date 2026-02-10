@@ -260,7 +260,25 @@ export default function Relatorios() {
       porCategoria[nomeCategoria].repasse += (os.valor_repasse_medico || 0);
     });
     
-    // Por médico
+    // Por médico - separar por medico_id real (agendas unificadas ficam separadas)
+    const porMedicoId = {};
+    dadosFiltrados.forEach(os => {
+      const medicoId = os.medico_id || 'sem_medico';
+      if (!porMedicoId[medicoId]) {
+        const med = medicos.find(m => m.id === medicoId);
+        const nomeMedico = med ? med.nome : obterNomeMedico(os);
+        const especialidade = med ? med.especialidade : '';
+        porMedicoId[medicoId] = { 
+          quantidade: 0, valor: 0, repasse: 0, medicoId, 
+          nome: nomeMedico, especialidade 
+        };
+      }
+      porMedicoId[medicoId].quantidade++;
+      porMedicoId[medicoId].valor += (os.valor_final || 0);
+      porMedicoId[medicoId].repasse += (os.valor_repasse_medico || 0);
+    });
+
+    // Manter porMedico agrupado por nome para gráficos gerais (compatibilidade)
     const porMedico = {};
     dadosFiltrados.forEach(os => {
       const nomeMedico = obterNomeMedico(os);
@@ -279,7 +297,8 @@ export default function Relatorios() {
       totalAtendimentos,
       porFormaPagamento,
       porCategoria,
-      porMedico
+      porMedico,
+      porMedicoId
     };
   }, [dadosFiltrados, categorias, medicos]);
 
