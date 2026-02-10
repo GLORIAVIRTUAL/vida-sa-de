@@ -189,13 +189,10 @@ Deno.serve(async (req) => {
       if (contato) {
         // Reativar conversa se estava finalizada
         if (contato.conversa_finalizada) {
-          console.log('🔄 Reativando conversa finalizada');
+          console.log('🔄 Reativando conversa finalizada - mantendo histórico anterior');
           await base44.asServiceRole.entities.Contato.update(contato.id, {
             conversa_finalizada: false,
-            historico_mensagens: [],
             mensagens_pendentes: [],
-            ultima_mensagem: null,
-            ultima_resposta: null,
             ultimo_timestamp_pendente: null,
             atendimento_humano: false,
             atendente_atual: null,
