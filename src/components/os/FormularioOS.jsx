@@ -333,13 +333,15 @@ export default function FormularioOS({
         // Se for valor fixo, usar diretamente
         repasseMedico = repasseFixo;
       } else if (percentual > 0) {
-        const bruto = valorTotal * (percentual / 100);
+        // Calcular repasse sobre o valor final da venda (com desconto/acréscimo)
+        const valorFinalVenda = valorTotal - descontoAgendamento + acrescimoAgendamento;
+        const bruto = valorFinalVenda * (percentual / 100);
         // NÃO aplicar imposto de 10% para Particular e Cartão Mais Vida
         repasseMedico = isentoImposto ? bruto : bruto * 0.90;
       }
-    }
+      }
 
-    if (agendamento.tipo_servico === 'Exame' && agendamento.exames_ids && exames) {
+      if (agendamento.tipo_servico === 'Exame' && agendamento.exames_ids && exames) {
       agendamento.exames_ids.forEach(exameId => {
         const exame = exames.find(e => e.id === exameId);
         if (exame && exame.percentual_repasse_laboratorio) {
