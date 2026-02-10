@@ -243,8 +243,29 @@ async function processarMensagemRecebida(base44, payload) {
                     return new Response(JSON.stringify({ message: "Atendimento humano", status: "salvo" }), { status: 200 });
                 } else {
                     // Modo IA: Encaminhar para webhookWhatsappChatbot via invoke (com autenticação)
-                    // Z-API NÃO pode chamar webhookWhatsappChatbot diretamente (precisa de auth Base44)
                     console.log('🤖 Contato em modo IA - encaminhando para webhookWhatsappChatbot...');
+                    
+                    // ANTI-DUPLICATA PERSISTENTE: Verificar no banco se esta mensagem já está sendo processada
+                    // O cache em memória não funciona entre instâncias serverless diferentes
+                    const historicoContato = contato.historico_mensagens || [];
+                    const msgJaNoHistorico = msgId && historicoContato.some(m => m.messageId === msgId);
+                    if (msgJaNoHistorico) {
+                        console.log('⏭️ MessageId já existe no histórico do contato - ignorando duplicata:', msgId);
+                        return new Response(JSON.stringify({ message: "Duplicata ignorada (banco)" }), { status: 200 });
+                    }
+                    
+                    // Verificar se mensagem idêntica foi enviada nos últimos 15 segundos (proteção extra)
+                    const agoraMs = Date.now();
+                    const conteudoMsg = mediaUrl ? `${textoMensagem}\n${mediaUrl}` : textoMensagem;
+                    const msgRecenteDuplicada = historicoContato.filter(m => m.role === 'user').slice(-3).some(m => {
+                        if (!m.timestamp) return false;
+                        const diffMs = agoraMs - new Date(m.timestamp).getTime();
+                        return diffMs < 15000 && m.content === conteudoMsg;
+                    });
+                    if (msgRecenteDuplicada) {
+                        console.log('⏭️ Mensagem idêntica recente no histórico (<15s) - ignorando duplicata');
+                        return new Response(JSON.stringify({ message: "Duplicata ignorada (conteúdo recente)" }), { status: 200 });
+                    }
                     
                     try {
                         const resultado = await base44.asServiceRole.functions.invoke('webhookWhatsappChatbot', payload);
