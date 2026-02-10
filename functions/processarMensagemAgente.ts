@@ -219,7 +219,7 @@ Deno.serve(async (req) => {
           paciente_id: pacienteId,
           origem: 'WhatsApp',
           status: 'Novo',
-          atendimento_humano: false,
+          atendimento_humano: true,
           ultima_mensagem: messageText,
           ultima_resposta: saudacaoFixa,
           historico_mensagens: histEntries,
