@@ -317,15 +317,17 @@ Deno.serve(async (req) => {
           mediaUrl: mediaUrl
         });
         
+        const meuTimestamp = agora;
+        
         await base44.asServiceRole.entities.Contato.update(contato.id, {
           mensagens_pendentes: mensagensPendentes,
-          ultimo_timestamp_pendente: agora,
+          ultimo_timestamp_pendente: meuTimestamp,
           ultima_interacao: agora,
           conversa_finalizada: false,
           nome: contato.nome || senderName
         });
         
-        console.log(`⏳ Mensagem adicionada ao buffer (${mensagensPendentes.length} pendentes). Aguardando 5s debounce...`);
+        console.log(`⏳ Mensagem adicionada ao buffer (${mensagensPendentes.length} pendentes). meuTimestamp=${meuTimestamp}. Aguardando 5s debounce...`);
         
         // Esperar 5 segundos para acumular mais mensagens
         await new Promise(resolve => setTimeout(resolve, 5000));
@@ -338,18 +340,25 @@ Deno.serve(async (req) => {
           return Response.json({ success: true, status: 'contato_nao_encontrado' });
         }
         
-        // Apenas a instância cuja mensagem é a ÚLTIMA no buffer deve processar
-        const pendentesAtuais = contatoAtualizado.mensagens_pendentes || [];
-        const ultimaPendente = pendentesAtuais[pendentesAtuais.length - 1];
+        // Verificar se o ultimo_timestamp_pendente ainda é o MEU
+        const timestampAtual = contatoAtualizado.ultimo_timestamp_pendente;
         
-        if (!ultimaPendente || ultimaPendente.messageId !== messageId) {
-          console.log('⏭️ Outra mensagem chegou depois - esta instância NÃO processa (delegando)');
+        if (timestampAtual !== meuTimestamp) {
+          console.log(`⏭️ Outra mensagem chegou depois (meu=${meuTimestamp}, atual=${timestampAtual}) - esta instância NÃO processa`);
           if (messageId) releaseLock(messageId);
           return Response.json({ success: true, status: 'delegado_proxima' });
         }
         
-        // Esta é a última mensagem - processar TODAS as pendentes como uma só
-        console.log(`✅ Última mensagem do buffer (${pendentesAtuais.length} msgs). Processando tudo junto...`);
+        // Buffer vazio = outra instância já processou
+        const pendentesAtuais = contatoAtualizado.mensagens_pendentes || [];
+        if (pendentesAtuais.length === 0) {
+          console.log('⏭️ Buffer já foi processado por outra instância');
+          if (messageId) releaseLock(messageId);
+          return Response.json({ success: true, status: 'ja_processado' });
+        }
+        
+        // Esta é a última instância - processar TODAS as pendentes como uma só
+        console.log(`✅ Sou a última instância (${pendentesAtuais.length} msgs no buffer). Processando tudo junto...`);
         
         // Juntar todas as mensagens pendentes em uma só
         messageText = pendentesAtuais.map(m => m.texto).join(' ');
