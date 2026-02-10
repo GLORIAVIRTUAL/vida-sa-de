@@ -118,30 +118,32 @@ Deno.serve(async (req) => {
     console.log('💬 Mensagem Z-API:', { phoneNumber, senderName, messageText, mediaType, mediaUrl });
 
     // Se tem mídia com URL, fazer upload permanente no storage do Base44
+    // Fazer UMA VEZ aqui para que a mesma URL permanente seja usada em todos os fluxos
+    let mediaUrlPermanente = mediaUrl;
     if (mediaUrl && mediaType !== 'text' && mediaType !== 'location') {
       try {
         console.log('📥 Baixando mídia do Z-API para upload permanente...');
         const mediaResponse = await fetch(mediaUrl);
         if (mediaResponse.ok) {
           const blob = await mediaResponse.blob();
-          // Determinar extensão
           const extMap = { image: 'jpg', document: 'pdf', audio: 'ogg', video: 'mp4', sticker: 'webp' };
           const ext = extMap[mediaType] || 'bin';
-          const fileName = `whatsapp_${Date.now()}.${ext}`;
+          const fileName = `whatsapp_${messageId || Date.now()}.${ext}`;
           const file = new File([blob], fileName, { type: blob.type });
           
           const uploadResult = await base44.asServiceRole.integrations.Core.UploadFile({ file });
           if (uploadResult?.file_url) {
             console.log('✅ Mídia salva permanentemente:', uploadResult.file_url);
-            mediaUrl = uploadResult.file_url;
+            mediaUrlPermanente = uploadResult.file_url;
           }
         } else {
           console.warn('⚠️ Não foi possível baixar mídia do Z-API:', mediaResponse.status);
         }
       } catch (uploadErr) {
         console.warn('⚠️ Erro ao salvar mídia permanentemente:', uploadErr.message);
-        // Continua com a URL temporária do Z-API
       }
+      // Usar a URL permanente daqui em diante
+      mediaUrl = mediaUrlPermanente;
     }
 
     // Normalizar telefone uma vez para reutilizar
