@@ -162,12 +162,15 @@ Deno.serve(async (req) => {
         // Se está em atendimento humano, salvar e sair
         if (contato.atendimento_humano) {
           const historicoAtual = contato.historico_mensagens || [];
-          historicoAtual.push({
+          const msgObj = {
             role: 'user',
             content: mediaUrl ? `${messageText}\n${mediaUrl}` : messageText,
             timestamp: agora,
-            mediaType, mediaUrl, messageId
-          });
+            messageId
+          };
+          if (mediaType && mediaType !== 'text') msgObj.mediaType = mediaType;
+          if (mediaUrl) msgObj.mediaUrl = mediaUrl;
+          historicoAtual.push(msgObj);
           await base44.asServiceRole.entities.Contato.update(contato.id, {
             historico_mensagens: historicoAtual.slice(-50),
             ultima_interacao: agora,
