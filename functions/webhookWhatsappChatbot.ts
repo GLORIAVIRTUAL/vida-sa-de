@@ -243,18 +243,29 @@ Deno.serve(async (req) => {
         });
         
       } else {
-        // Novo contato - criar em modo IA (sem mensagem no histórico - processarMensagemAgente salvará)
+        // Novo contato - criar em modo HUMANO
+        const msgObj = {
+          role: 'user',
+          content: mediaUrl ? `${messageText}\n${mediaUrl}` : messageText,
+          timestamp: agora,
+          messageId
+        };
+        if (mediaType && mediaType !== 'text') msgObj.mediaType = mediaType;
+        if (mediaUrl) msgObj.mediaUrl = mediaUrl;
+        
         await base44.asServiceRole.entities.Contato.create({
           nome: senderName,
           telefone: phoneNumber,
           origem: 'WhatsApp',
           status: 'Novo',
-          atendimento_humano: false,
-          historico_mensagens: [],
+          atendimento_humano: true,
+          historico_mensagens: [msgObj],
           mensagens_pendentes: [],
           ultima_interacao: agora
         });
-        console.log('🤖 Novo contato criado em modo IA');
+        console.log('👤 Novo contato criado em modo HUMANO - mensagem salva');
+        if (messageId) releaseLock(messageId);
+        return Response.json({ success: true, status: 'novo_contato_humano' });
       }
     } catch (e) {
       console.log('⚠️ Erro no processamento:', e.message);
