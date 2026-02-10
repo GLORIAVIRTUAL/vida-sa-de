@@ -28,8 +28,9 @@ function renderMensagemContent(content, isUser, msgData = {}) {
   if (!content) return null;
   
   // Se temos mediaUrl diretamente no objeto da mensagem, usar ela
-  const mediaUrlFromData = msgData.mediaUrl;
-  const mediaTypeFromData = msgData.mediaType;
+  // Tratar "undefined" (string) como null
+  const mediaUrlFromData = (msgData.mediaUrl && msgData.mediaUrl !== 'undefined') ? msgData.mediaUrl : null;
+  const mediaTypeFromData = (msgData.mediaType && msgData.mediaType !== 'undefined') ? msgData.mediaType : null;
   
   // Detectar URLs de mídia no conteúdo (incluindo URLs longas de storage com query params)
   // Também detecta URLs sem extensão visível mas com parâmetros de storage
