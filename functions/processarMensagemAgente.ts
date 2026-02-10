@@ -8,16 +8,49 @@ Deno.serve(async (req) => {
     
     console.log('📨 Processando:', { phoneNumber, messageText, mediaType, mediaUrl, messageId });
     
-    // Verificação anti-duplicata: se já processamos este messageId, ignorar
-    if (messageId) {
+    // Verificação anti-duplicata REFORÇADA: verificar tanto messageId quanto conteúdo recente
+    if (messageId || messageText) {
       try {
         const contatosVerif = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
         if (contatosVerif.length > 0) {
           const historicoVerif = contatosVerif[0].historico_mensagens || [];
-          const jaProcessado = historicoVerif.some(m => m.messageId === messageId && m.role === 'assistant');
-          if (jaProcessado) {
-            console.log('⏭️ MessageId já processado com resposta - ignorando duplicata:', messageId);
+          
+          // 1. Verificar se messageId já foi processado (tem resposta do assistant)
+          if (messageId) {
+            const jaProcessado = historicoVerif.some(m => m.messageId === messageId && m.role === 'assistant');
+            if (jaProcessado) {
+              console.log('⏭️ MessageId já processado com resposta - ignorando duplicata:', messageId);
+              return Response.json({ success: true, status: 'duplicata_ignorada', resposta: null });
+            }
+          }
+          
+          // 2. Verificar se a mesma mensagem de texto do user já existe nos últimos 30s
+          // (proteção contra webhooks duplicados com messageIds diferentes)
+          const agora = Date.now();
+          const ultimas5MsgsUser = historicoVerif.filter(m => m.role === 'user').slice(-5);
+          const msgDuplicadaRecente = ultimas5MsgsUser.some(m => {
+            if (!m.timestamp) return false;
+            const diffMs = agora - new Date(m.timestamp).getTime();
+            // Mesma mensagem nos últimos 30 segundos
+            return diffMs < 30000 && m.content === (mediaUrl ? `${messageText}\n${mediaUrl}` : messageText);
+          });
+          
+          if (msgDuplicadaRecente) {
+            console.log('⏭️ Mensagem idêntica recente detectada no histórico - ignorando duplicata');
             return Response.json({ success: true, status: 'duplicata_ignorada', resposta: null });
+          }
+          
+          // 3. Verificar se o assistant já respondeu à mesma pergunta recentemente (últimos 30s)
+          // Isso pega o caso onde o processamento já está em andamento por outra instância
+          const ultimaMsgUser = ultimas5MsgsUser[ultimas5MsgsUser.length - 1];
+          if (ultimaMsgUser && ultimaMsgUser.content === (mediaUrl ? `${messageText}\n${mediaUrl}` : messageText)) {
+            // A mensagem já está no histórico - verificar se já tem resposta
+            const indexUltimaUser = historicoVerif.lastIndexOf(ultimaMsgUser);
+            const temRespostaDepois = historicoVerif.slice(indexUltimaUser + 1).some(m => m.role === 'assistant');
+            if (temRespostaDepois) {
+              console.log('⏭️ Mensagem já tem resposta do assistant no histórico - ignorando');
+              return Response.json({ success: true, status: 'duplicata_ignorada', resposta: null });
+            }
           }
         }
       } catch (e) {
