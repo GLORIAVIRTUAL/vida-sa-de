@@ -35,7 +35,10 @@ Deno.serve(async (req) => {
       const historicoAtual = contato.historico_mensagens || [];
       const timestamp = new Date().toISOString();
       
-      historicoAtual.push({ role: 'user', content: messageText, timestamp });
+      const userMsg = { role: 'user', content: mediaUrl ? `${messageText}\n${mediaUrl}` : messageText, timestamp };
+      if (mediaType && mediaType !== 'text') userMsg.mediaType = mediaType;
+      if (mediaUrl) userMsg.mediaUrl = mediaUrl;
+      historicoAtual.push(userMsg);
       
       await base44.asServiceRole.entities.Contato.update(contato.id, {
         ultima_mensagem: messageText,
