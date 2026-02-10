@@ -1082,9 +1082,23 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
         return;
       }
 
-      // Filter existing appointments that conflict with the selected time
+      // Determinar IDs do grupo unificado (mesma lógica de carregarHorarios)
+      const isOdontologia = normalizeString(medicoSelecionado.especialidade) === 'ODONTOLOGIA';
+      const isRuben = normalizeString(medicoSelecionado.nome).includes('RUBEN');
+      const isMarco = normalizeString(medicoSelecionado.nome).includes('MARCO ANTONIO DELAZERI') || normalizeString(medicoSelecionado.nome).includes('MARCO ANTÔNIO DELAZERI');
+
+      let idsParaVerificar = [formData.medico_id];
+      if (isOdontologia) {
+        idsParaVerificar = medicos.filter(m => normalizeString(m.especialidade) === 'ODONTOLOGIA').map(m => m.id);
+      } else if (isRuben) {
+        idsParaVerificar = medicos.filter(m => normalizeString(m.nome).includes('RUBEN') && m.status === 'Ativo').map(m => m.id);
+      } else if (isMarco) {
+        idsParaVerificar = medicos.filter(m => (normalizeString(m.nome).includes('MARCO ANTONIO DELAZERI') || normalizeString(m.nome).includes('MARCO ANTÔNIO DELAZERI')) && m.status === 'Ativo').map(m => m.id);
+      }
+
+      // Filter existing appointments that conflict with the selected time across the unified group
       const agendamentosConflitantes = (todosAgendamentos || []).filter(a =>
-        a.medico_id === formData.medico_id &&
+        idsParaVerificar.includes(a.medico_id) &&
         a.data_agendamento === formData.data_agendamento &&
         a.horario === formData.horario &&
         a.status !== 'Cancelado' &&
