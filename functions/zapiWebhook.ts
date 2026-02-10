@@ -264,11 +264,10 @@ async function processarMensagemRecebida(base44, payload) {
                     console.log('👤 Contato em atendimento HUMANO (padrão) - mensagem salva, NÃO processando IA');
                     return new Response(JSON.stringify({ message: "Atendimento humano", status: "salvo" }), { status: 200 });
                 } else {
-                    // Modo IA: Encaminhar para webhookWhatsappChatbot via invoke (com autenticação)
-                    console.log('🤖 Contato em modo IA - encaminhando para webhookWhatsappChatbot...');
+                    // Modo IA: DEBOUNCE - Acumular mensagens por 5 segundos antes de processar
+                    console.log('🤖 Contato em modo IA - iniciando debounce...');
                     
-                    // ANTI-DUPLICATA PERSISTENTE: Verificar no banco se esta mensagem já está sendo processada
-                    // O cache em memória não funciona entre instâncias serverless diferentes
+                    // ANTI-DUPLICATA PERSISTENTE
                     const historicoContato = contato.historico_mensagens || [];
                     const msgJaNoHistorico = msgId && historicoContato.some(m => m.messageId === msgId);
                     if (msgJaNoHistorico) {
@@ -276,21 +275,85 @@ async function processarMensagemRecebida(base44, payload) {
                         return new Response(JSON.stringify({ message: "Duplicata ignorada (banco)" }), { status: 200 });
                     }
                     
-                    // Verificar se mensagem idêntica foi enviada nos últimos 15 segundos (proteção extra)
-                    const agoraMs = Date.now();
+                    // Salvar mensagem no buffer de pendentes
                     const conteudoMsg = mediaUrl ? `${textoMensagem}\n${mediaUrl}` : textoMensagem;
-                    const msgRecenteDuplicada = historicoContato.filter(m => m.role === 'user').slice(-3).some(m => {
-                        if (!m.timestamp) return false;
-                        const diffMs = agoraMs - new Date(m.timestamp).getTime();
-                        return diffMs < 15000 && m.content === conteudoMsg;
-                    });
-                    if (msgRecenteDuplicada) {
-                        console.log('⏭️ Mensagem idêntica recente no histórico (<15s) - ignorando duplicata');
-                        return new Response(JSON.stringify({ message: "Duplicata ignorada (conteúdo recente)" }), { status: 200 });
+                    const mensagensPendentes = contato.mensagens_pendentes || [];
+                    
+                    // Verificar se esta mensagem já está no buffer
+                    const jaNoBuffer = msgId && mensagensPendentes.some(m => m.messageId === msgId);
+                    if (jaNoBuffer) {
+                        console.log('⏭️ Mensagem já está no buffer de pendentes');
+                        return new Response(JSON.stringify({ message: "Já no buffer" }), { status: 200 });
                     }
                     
+                    mensagensPendentes.push({
+                        texto: conteudoMsg,
+                        timestamp: agora,
+                        messageId: msgId,
+                        mediaType: mediaType,
+                        mediaUrl: mediaUrl
+                    });
+                    
+                    await base44.asServiceRole.entities.Contato.update(contato.id, {
+                        mensagens_pendentes: mensagensPendentes,
+                        ultimo_timestamp_pendente: agora,
+                        ultima_interacao: agora,
+                        nome: contato.nome || senderName,
+                        conversa_finalizada: false
+                    });
+                    
+                    console.log(`⏳ Mensagem adicionada ao buffer (${mensagensPendentes.length} pendentes). Aguardando 5s...`);
+                    
+                    // Esperar 5 segundos para acumular mais mensagens
+                    await new Promise(resolve => setTimeout(resolve, 5000));
+                    
+                    // Recarregar contato para ver se mais mensagens chegaram
+                    let contatoAtualizado = null;
+                    for (const variante of variantes) {
+                        if (contatoAtualizado) break;
+                        const resultados = await base44.asServiceRole.entities.Contato.filter({ telefone: variante });
+                        if (resultados.length > 0) contatoAtualizado = resultados[0];
+                    }
+                    
+                    if (!contatoAtualizado) {
+                        console.log('⚠️ Contato não encontrado após delay');
+                        return new Response(JSON.stringify({ message: "Contato não encontrado" }), { status: 200 });
+                    }
+                    
+                    // Apenas a instância cuja mensagem é a ÚLTIMA no buffer deve processar
+                    const pendentesAtuais = contatoAtualizado.mensagens_pendentes || [];
+                    const ultimaPendente = pendentesAtuais[pendentesAtuais.length - 1];
+                    
+                    if (!ultimaPendente || ultimaPendente.messageId !== msgId) {
+                        console.log('⏭️ Outra mensagem chegou depois - esta instância NÃO processa');
+                        return new Response(JSON.stringify({ message: "Delegado para próxima instância" }), { status: 200 });
+                    }
+                    
+                    // Esta é a última mensagem - processar TODAS as pendentes como uma só
+                    console.log(`✅ Última mensagem do buffer (${pendentesAtuais.length} msgs). Processando tudo...`);
+                    
+                    // Juntar todas as mensagens pendentes
+                    const textosCombinados = pendentesAtuais.map(m => m.texto).join(' ');
+                    const ultimaComMidia = [...pendentesAtuais].reverse().find(m => m.mediaUrl);
+                    
+                    // Limpar buffer ANTES de processar
+                    await base44.asServiceRole.entities.Contato.update(contatoAtualizado.id, {
+                        mensagens_pendentes: [],
+                        ultimo_timestamp_pendente: null
+                    });
+                    
+                    // Montar payload combinado
+                    const payloadCombinado = {
+                        ...payload,
+                        text: { message: textosCombinados },
+                        body: textosCombinados
+                    };
+                    if (ultimaComMidia?.mediaType === 'image') payloadCombinado.image = { imageUrl: ultimaComMidia.mediaUrl, caption: textosCombinados };
+                    if (ultimaComMidia?.mediaType === 'document') payloadCombinado.document = { documentUrl: ultimaComMidia.mediaUrl };
+                    if (ultimaComMidia?.mediaType === 'audio') payloadCombinado.audio = { audioUrl: ultimaComMidia.mediaUrl };
+                    
                     try {
-                        const resultado = await base44.asServiceRole.functions.invoke('webhookWhatsappChatbot', payload);
+                        const resultado = await base44.asServiceRole.functions.invoke('webhookWhatsappChatbot', payloadCombinado);
                         console.log('✅ webhookWhatsappChatbot retornou:', JSON.stringify(resultado.data).substring(0, 200));
                         return new Response(JSON.stringify(resultado.data), { status: 200 });
                     } catch (invokeError) {
