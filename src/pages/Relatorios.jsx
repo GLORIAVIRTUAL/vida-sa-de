@@ -997,28 +997,34 @@ export default function Relatorios() {
             <TabsContent value="por-medico">
               <Card>
                 <CardHeader>
-                  <CardTitle>Resumo por Profissional</CardTitle>
+                  <CardTitle>Resumo por Profissional (Separado por Especialidade)</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Profissional</TableHead>
+                        <TableHead>Especialidade</TableHead>
                         <TableHead className="text-center">Atendimentos</TableHead>
                         <TableHead className="text-right">Faturado</TableHead>
                         <TableHead className="text-right">Repasse</TableHead>
+                        <TableHead className="text-right">Clínica</TableHead>
                         <TableHead className="text-right">% do Total</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {Object.entries(estatisticas.porMedico)
+                      {Object.entries(estatisticas.porMedicoId)
                         .sort((a, b) => b[1].valor - a[1].valor)
-                        .map(([nome, dados]) => (
-                          <TableRow key={nome}>
-                            <TableCell className="font-medium">{nome}</TableCell>
+                        .map(([id, dados]) => (
+                          <TableRow key={id}>
+                            <TableCell className="font-medium">{dados.nome}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="text-xs">{dados.especialidade || '-'}</Badge>
+                            </TableCell>
                             <TableCell className="text-center">{dados.quantidade}</TableCell>
                             <TableCell className="text-right">{formatCurrency(dados.valor)}</TableCell>
                             <TableCell className="text-right text-purple-600">{formatCurrency(dados.repasse)}</TableCell>
+                            <TableCell className="text-right text-green-600">{formatCurrency(dados.valor - dados.repasse)}</TableCell>
                             <TableCell className="text-right">
                               {estatisticas.totalVendido > 0 
                                 ? ((dados.valor / estatisticas.totalVendido) * 100).toFixed(1) + '%'
@@ -1078,12 +1084,15 @@ export default function Relatorios() {
             {/* Tab Relatório Detalhado por Médico */}
             <TabsContent value="relatorio-medico">
               <div className="space-y-6">
-                {Object.entries(estatisticas.porMedico)
-                  .sort((a, b) => a[0].localeCompare(b[0]))
-                  .map(([nomeMedico, dadosMedico]) => {
-                    // Filtrar OS deste médico
+                {Object.entries(estatisticas.porMedicoId)
+                  .sort((a, b) => a[1].nome.localeCompare(b[1].nome))
+                  .map(([medicoId, dadosMedico]) => {
+                    const nomeMedico = dadosMedico.especialidade 
+                      ? `${dadosMedico.nome} (${dadosMedico.especialidade})`
+                      : dadosMedico.nome;
+                    // Filtrar OS deste médico pelo ID real
                     const osMedico = dadosFiltrados.filter(os => {
-                      return obterNomeMedico(os) === nomeMedico;
+                      return (os.medico_id || 'sem_medico') === medicoId;
                     });
                     
                     // Agrupar por categoria
@@ -1109,7 +1118,7 @@ export default function Relatorios() {
                     });
                     
                     return (
-                      <Card key={nomeMedico}>
+                      <Card key={medicoId}>
                         <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50">
                           <div className="flex justify-between items-center">
                             <CardTitle className="flex items-center gap-2">
