@@ -156,6 +156,20 @@ async function processarMensagemRecebida(base44, payload) {
             if (!telNormalizado.startsWith('55') && telNormalizado.length >= 10) {
                 variantes.push('55' + telNormalizado); // com código país
             }
+            // Também tentar sem o 9 extra (celular BR): 55XX9XXXX -> 55XXXXXXXX
+            if (telNormalizado.startsWith('55') && telNormalizado.length === 13) {
+                const semNono = telNormalizado.slice(0, 4) + telNormalizado.slice(5);
+                variantes.push(semNono);
+                variantes.push(semNono.slice(2)); // sem 55
+            }
+            // E com o 9 extra adicionado
+            if (telNormalizado.startsWith('55') && telNormalizado.length === 12) {
+                const comNono = telNormalizado.slice(0, 4) + '9' + telNormalizado.slice(4);
+                variantes.push(comNono);
+                variantes.push(comNono.slice(2)); // sem 55
+            }
+            
+            console.log('🔍 Variantes de telefone para busca:', variantes);
             
             let contatos = [];
             for (const variante of variantes) {
@@ -163,16 +177,23 @@ async function processarMensagemRecebida(base44, payload) {
                 contatos = await base44.asServiceRole.entities.Contato.filter({ telefone: variante });
             }
             
-            // Se encontrou múltiplos contatos para o mesmo número, unificar
-            if (contatos.length <= 1) {
-                // Tentar busca mais ampla se não encontrou
-                if (contatos.length === 0) {
-                    const todosContatos = await base44.asServiceRole.entities.Contato.list('-created_date', 500);
-                    const ultimos8 = telNormalizado.slice(-8);
-                    contatos = todosContatos.filter(c => {
-                        const tel = (c.telefone || '').replace(/\D/g, '');
-                        return tel.slice(-8) === ultimos8;
+            // Se não encontrou, busca ampla por últimos 8 dígitos (pega qualquer formato)
+            if (contatos.length === 0) {
+                console.log('🔍 Busca exata falhou - tentando busca ampla por últimos 8 dígitos...');
+                const todosContatos = await base44.asServiceRole.entities.Contato.list('-created_date', 500);
+                const ultimos8 = telNormalizado.slice(-8);
+                contatos = todosContatos.filter(c => {
+                    const tel = (c.telefone || '').replace(/\D/g, '');
+                    return tel.length >= 8 && tel.slice(-8) === ultimos8;
+                });
+                if (contatos.length > 0) {
+                    console.log(`✅ Encontrado por últimos 8 dígitos: ${contatos[0].nome} (tel salvo: ${contatos[0].telefone})`);
+                    // Atualizar telefone do contato para o formato correto do Z-API
+                    await base44.asServiceRole.entities.Contato.update(contatos[0].id, {
+                        telefone: telefone
                     });
+                    console.log(`📱 Telefone do contato atualizado de ${contatos[0].telefone} para ${telefone}`);
+                    contatos[0].telefone = telefone;
                 }
             }
             
