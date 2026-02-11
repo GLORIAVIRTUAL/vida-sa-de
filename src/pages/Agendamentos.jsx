@@ -351,10 +351,10 @@ export default function Agendamentos() {
     agendamentosParaImpressao = agendamentosParaImpressao.
     filter((a) => a && a.status !== 'Cancelado').
     sort((a, b) => {
-      if (a.data_agendamento !== b.data_agendamento) {
-        return a.data_agendamento.localeCompare(b.data_agendamento);
+      if ((a.data_agendamento || '') !== (b.data_agendamento || '')) {
+        return (a.data_agendamento || '').localeCompare(b.data_agendamento || '');
       }
-      return a.horario.localeCompare(b.horario);
+      return (a.horario || '').localeCompare(b.horario || '');
     });
 
     console.log('📋 Imprimindo:', {
