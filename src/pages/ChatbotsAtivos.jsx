@@ -463,13 +463,26 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
               let textoParaProcessar = (ultimaMsgUser.content || '').split('\n')[0].trim();
               if (!textoParaProcessar) textoParaProcessar = 'oi';
 
-              // Chamar a função que processa E envia via WhatsApp (simula webhook)
-              await base44.functions.invoke('reativarGloria', {
+              // Chamar processarMensagemAgente que gera a resposta da IA
+              const resultado = await base44.functions.invoke('processarMensagemAgente', {
                 phoneNumber: contatoSelecionado.telefone,
                 messageText: textoParaProcessar,
                 senderName: contatoSelecionado.nome || 'Cliente',
-                contatoId: contatoSelecionado.id
+                pacienteId: contatoSelecionado.paciente_id || null,
+                mediaType: 'text',
+                mediaUrl: null,
+                messageId: null
               });
+
+              // Se a Glória gerou resposta, enviar via WhatsApp usando reativarGloria (backend com Z-API)
+              if (resultado.data?.resposta) {
+                await base44.functions.invoke('reativarGloria', {
+                  phoneNumber: contatoSelecionado.telefone,
+                  resposta: resultado.data.resposta,
+                  contatoId: contatoSelecionado.id,
+                  arquivoParaEnviar: resultado.data.arquivoParaEnviar || null
+                });
+              }
             } catch (err) {
               console.error('Erro ao reativar Glória:', err);
             }
