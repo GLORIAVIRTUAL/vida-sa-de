@@ -412,17 +412,30 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
     );
   }, [exames, buscaExame]);
 
+  // Helper: verificar se uma data está bloqueada (feriado) em QUALQUER médico
+  const isDataBloqueada = useCallback((date) => {
+    const dataFormatada = format(date, 'yyyy-MM-dd');
+    return medicos.some(m => 
+      (m.horarios_atendimento || []).some(h => 
+        h.data_especifica === dataFormatada && h.bloqueado === true
+      )
+    );
+  }, [medicos]);
+
   // Modificadores para o calendário
   const modifiers = useMemo(() => ({
     disponivel: (date) => {
+      if (isDataBloqueada(date)) return false;
       if (!formData.medico_id) return false;
       const medicoSelecionado = medicos.find(m => m.id === formData.medico_id);
       return medicoAtendeNaDataCalendario(date, medicoSelecionado);
-    }
-  }), [formData.medico_id, medicos, medicoAtendeNaDataCalendario]);
+    },
+    bloqueado: (date) => isDataBloqueada(date)
+  }), [formData.medico_id, medicos, medicoAtendeNaDataCalendario, isDataBloqueada]);
 
   const modifiersClassNames = {
     disponivel: "bg-green-100 text-green-900 font-bold",
+    bloqueado: "!bg-red-100 !text-red-400 line-through opacity-60",
   };
 
   // Estado para armazenar o horário original do agendamento sendo editado
