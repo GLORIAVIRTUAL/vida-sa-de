@@ -1141,8 +1141,12 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
     const clienteRespondeuComEspecialidade = iaPerguntoComoAjudar && especialidadeDetectada && !ehPerguntaInformativa && !ehPerguntaSobreCartao;
 
     // KEY: quando a IA perguntou "Gostaria de agendar?" e o cliente respondeu "quero", "sim", "por favor" etc.
+    // TAMBÉM detectar quando o cliente responde com perguntas sobre disponibilidade ("quando tem vaga?", "tem horário?")
     const iaPerguntoSeQuerAgendarConsulta = /gostaria de agendar|quer agendar|deseja agendar|posso agendar/i.test(ultimaMsgAssistente);
-    const clienteAceitouAgendar = iaPerguntoSeQuerAgendarConsulta && /^(quero|sim|s|ok|pode|claro|bora|vamos|isso|por favor|yes|vou|gostaria|please|quero\s*sim|sim\s*quero)$/i.test(messageText.trim().toLowerCase());
+    const clienteAceitouAgendar = iaPerguntoSeQuerAgendarConsulta && (
+      /^(quero|sim|s|ok|pode|claro|bora|vamos|isso|por favor|yes|vou|gostaria|please|quero\s*sim|sim\s*quero)$/i.test(messageText.trim().toLowerCase()) ||
+      /quando\s*(tem|tem\s*vaga|tem\s*hor[áa]rio|posso|d[áa]\s*pra)|tem\s*(vaga|hor[áa]rio)|pr[óo]ximo\s*(hor[áa]rio|dia|vaga)|qual\s*(hor[áa]rio|dia|vaga)/i.test(messageText)
+    );
 
     const ultimasMensagensUsuario = (historicoConversa || '').split('\n').filter(l => l.startsWith('CLIENTE:'));
     const ultimaMsgUsuario = ultimasMensagensUsuario.length > 0 ? ultimasMensagensUsuario[ultimasMensagensUsuario.length - 1] : '';
