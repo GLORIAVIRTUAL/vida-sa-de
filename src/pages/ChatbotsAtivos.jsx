@@ -1211,8 +1211,8 @@ function DashboardTab() {
           <CardHeader>
             <CardTitle className="text-sm">Agendamentos pela Glória</CardTitle>
           </CardHeader>
-          <CardContent>
-            {agendamentos.filter(a => a.agendado_por_tipo === 'chatbot').slice(0, 5).map((ag) => (
+          <CardContent className="max-h-96 overflow-y-auto">
+            {agendamentos.filter(a => a.agendado_por_tipo === 'chatbot').map((ag) => (
               <div key={ag.id} className="flex items-center justify-between py-2 border-b last:border-0">
                 <div>
                   <p className="font-medium text-sm">{ag.paciente_nome}</p>
