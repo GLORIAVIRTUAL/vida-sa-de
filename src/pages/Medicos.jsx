@@ -61,7 +61,7 @@ export default function Medicos() {
     setSyncing(true);
     try {
       console.log('🔄 Iniciando sincronização de preços...');
-      const response = await syncMedicoPrices();
+      const response = await base44.functions.invoke('syncMedicoPrices', {});
 
       console.log('📊 Resposta da sincronização:', response);
 
