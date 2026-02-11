@@ -36,6 +36,19 @@ Deno.serve(async (req) => {
       console.warn('⚠️ Erro ao buscar paciente:', e.message);
     }
 
+    // Primeiro, garantir que o contato está com atendimento_humano = false
+    // para que processarMensagemAgente não ignore a mensagem
+    if (contatoId) {
+      try {
+        await base44.asServiceRole.entities.Contato.update(contatoId, {
+          atendimento_humano: false
+        });
+        console.log('✅ Contato atualizado para modo IA');
+      } catch (e) {
+        console.warn('⚠️ Erro ao atualizar contato:', e.message);
+      }
+    }
+
     // Chamar processarMensagemAgente para gerar resposta da IA
     console.log('📞 Chamando processarMensagemAgente...');
     let resultado;
