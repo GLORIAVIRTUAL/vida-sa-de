@@ -622,50 +622,44 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agendamento?.id]);
 
+  // Ref para evitar loop infinito na auto-seleção de categoria
+  const lastAutoCategoriaPacienteRef = React.useRef('');
+
   // NOVO: useEffect para auto-selecionar categoria baseado no convênio do paciente
   useEffect(() => {
-    if (formData.paciente_id && !agendamento) { // Only for new appointments
-      // Buscar o paciente selecionado
-      const pacienteSelecionado = pacientesEncontrados.find(p => p.id === formData.paciente_id);
+    if (!formData.paciente_id || agendamento) return; // Only for new appointments
+    if (lastAutoCategoriaPacienteRef.current === formData.paciente_id) return; // Já processou este paciente
+    
+    const pacienteSelecionado = pacientesEncontrados.find(p => p.id === formData.paciente_id);
+    if (!pacienteSelecionado) return;
+    
+    lastAutoCategoriaPacienteRef.current = formData.paciente_id;
+    
+    if (pacienteSelecionado.convenio) {
+      const categoriaCorrespondente = categorias.find(c => 
+        normalizeString(c.nome) === normalizeString(pacienteSelecionado.convenio)
+      );
       
-      if (pacienteSelecionado && pacienteSelecionado.convenio) {
-        console.log('🔍 Paciente selecionado:', pacienteSelecionado.nome);
-        console.log('🏥 Convênio do paciente:', pacienteSelecionado.convenio);
-        
-        // Buscar categoria correspondente ao convênio
-        const categoriaCorrespondente = categorias.find(c => 
-          normalizeString(c.nome) === normalizeString(pacienteSelecionado.convenio)
-        );
-        
-        if (categoriaCorrespondente) {
-          console.log('✅ Categoria encontrada:', categoriaCorrespondente.nome);
-          handleChange('categoria_preco_id', categoriaCorrespondente.id);
-          
-          toast({
-            title: "Categoria Selecionada",
-            description: `Categoria "${categoriaCorrespondente.nome}" foi selecionada automaticamente baseado no convênio do paciente.`
-          });
-        } else {
-          console.log('⚠️ Categoria não encontrada para o convênio:', pacienteSelecionado.convenio);
-          // Se não encontrar, usar Particular como padrão
-          const particular = categorias.find(c => normalizeString(c.nome) === 'PARTICULAR');
-          if (particular) {
-            handleChange('categoria_preco_id', particular.id);
-            toast({
-              title: "Categoria Padrão",
-              description: `Categoria "Particular" foi selecionada, pois não encontramos uma categoria correspondente ao convênio "${pacienteSelecionado.convenio}".`
-            });
-          }
-        }
-      } else if (pacienteSelecionado && !pacienteSelecionado.convenio) {
-        console.log('⚠️ Paciente selecionado não possui convênio registrado. Definindo para Particular.');
+      if (categoriaCorrespondente) {
+        handleChange('categoria_preco_id', categoriaCorrespondente.id);
+        toast({
+          title: "Categoria Selecionada",
+          description: `Categoria "${categoriaCorrespondente.nome}" selecionada automaticamente.`
+        });
+      } else {
         const particular = categorias.find(c => normalizeString(c.nome) === 'PARTICULAR');
         if (particular) {
           handleChange('categoria_preco_id', particular.id);
         }
       }
+    } else {
+      const particular = categorias.find(c => normalizeString(c.nome) === 'PARTICULAR');
+      if (particular) {
+        handleChange('categoria_preco_id', particular.id);
+      }
     }
-  }, [formData.paciente_id, pacientesEncontrados, categorias, agendamento, toast]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.paciente_id]);
 
 
   // Função para carregar horários disponíveis baseado no médico e data
