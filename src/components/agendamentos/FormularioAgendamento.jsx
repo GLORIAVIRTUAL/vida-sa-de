@@ -1637,7 +1637,7 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
 
       // Salvar últimas configurações do usuário para acelerar próximos agendamentos
       try {
-        const currentUser = await UserEntity.me();
+        const currentUser = await base44.auth.me();
         const userId = currentUser?.id || currentUser?.email || 'default';
         const preConfig = {
           data_agendamento: formData.data_agendamento,
