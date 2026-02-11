@@ -398,7 +398,7 @@ export default function AssistenteIA() {
           }
         },
         mes_atual: {
-          mes: format(new Date(mesAtual + '-01'), "MMMM 'de' yyyy", { locale: ptBR }),
+          mes: mesAtual ? format(new Date(mesAtual + '-01'), "MMMM 'de' yyyy", { locale: ptBR }) : 'N/A',
           agendamentos: agendamentosMes.length,
           agendamentos_finalizados: finalizadosMes,
           agendamentos_pagos: pagosMes,
