@@ -444,6 +444,51 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
         ...(novoModo ? {} : { atendente_atual: null, atendente_id: null })
       });
       setModoHumano(novoModo);
+
+      // Se desativou modo humano (volta pra Glória), fazer a Glória processar a última mensagem do cliente
+      if (!novoModo) {
+        const mensagens = contatoSelecionado.historico_mensagens || [];
+        // Encontrar a última mensagem do usuário (cliente)
+        const ultimasMsgsUser = mensagens.filter(m => m.role === 'user');
+        const ultimaMsgUser = ultimasMsgsUser.length > 0 ? ultimasMsgsUser[ultimasMsgsUser.length - 1] : null;
+        
+        if (ultimaMsgUser) {
+          // Verificar se a Glória já respondeu a essa mensagem
+          const idxUltimaUser = mensagens.lastIndexOf(ultimaMsgUser);
+          const jaRespondeu = mensagens.slice(idxUltimaUser + 1).some(m => m.role === 'assistant' && !m.humano);
+          
+          if (!jaRespondeu) {
+            try {
+              // Limpar o conteúdo da mensagem (remover URLs de mídia coladas)
+              let textoParaProcessar = (ultimaMsgUser.content || '').split('\n')[0].trim();
+              if (!textoParaProcessar) textoParaProcessar = 'oi';
+
+              const resultado = await base44.functions.invoke('processarMensagemAgente', {
+                phoneNumber: contatoSelecionado.telefone,
+                messageText: textoParaProcessar,
+                senderName: contatoSelecionado.nome || 'Cliente',
+                pacienteId: contatoSelecionado.paciente_id || null,
+                mediaType: 'text',
+                mediaUrl: null,
+                messageId: null
+              });
+
+              // Se a Glória gerou resposta, enviar via WhatsApp
+              if (resultado.data?.resposta) {
+                const instanceId = null; // Enviar via função backend
+                await base44.functions.invoke('enviarMensagemHumano', {
+                  phoneNumber: contatoSelecionado.telefone,
+                  messageText: resultado.data.resposta,
+                  contatoId: contatoSelecionado.id
+                });
+              }
+            } catch (err) {
+              console.error('Erro ao reativar Glória:', err);
+            }
+          }
+        }
+      }
+
       await buscarContatos();
     } catch (error) {
       alert('Erro: ' + error.message);

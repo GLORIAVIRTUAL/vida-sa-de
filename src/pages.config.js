@@ -56,7 +56,6 @@ import AuditoriaSeguranca from './pages/AuditoriaSeguranca';
 import ChatbotDashboard from './pages/ChatbotDashboard';
 import ChatbotGerenciamento from './pages/ChatbotGerenciamento';
 import ChatbotPipeline from './pages/ChatbotPipeline';
-import ChatbotsAtivos from './pages/ChatbotsAtivos';
 import ConfiguracaoChatbot from './pages/ConfiguracaoChatbot';
 import Dashboard from './pages/Dashboard';
 import Debug from './pages/Debug';
@@ -85,6 +84,7 @@ import VendaCartao from './pages/VendaCartao';
 import VerificacaoAssinatura from './pages/VerificacaoAssinatura';
 import WebhookLogs from './pages/WebhookLogs';
 import ordemServico from './pages/ordem-servico';
+import ChatbotsAtivos from './pages/ChatbotsAtivos';
 import __Layout from './Layout.jsx';
 
 
@@ -98,7 +98,6 @@ export const PAGES = {
     "ChatbotDashboard": ChatbotDashboard,
     "ChatbotGerenciamento": ChatbotGerenciamento,
     "ChatbotPipeline": ChatbotPipeline,
-    "ChatbotsAtivos": ChatbotsAtivos,
     "ConfiguracaoChatbot": ConfiguracaoChatbot,
     "Dashboard": Dashboard,
     "Debug": Debug,
@@ -127,6 +126,7 @@ export const PAGES = {
     "VerificacaoAssinatura": VerificacaoAssinatura,
     "WebhookLogs": WebhookLogs,
     "ordem-servico": ordemServico,
+    "ChatbotsAtivos": ChatbotsAtivos,
 }
 
 export const pagesConfig = {
