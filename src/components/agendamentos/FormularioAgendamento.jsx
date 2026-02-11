@@ -446,8 +446,20 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
   // Estado para armazenar o horário original do agendamento sendo editado
   const [horarioOriginal, setHorarioOriginal] = useState('');
 
+  // Ref para controlar se já inicializou (evita re-execução infinita)
+  const inicializouRef = React.useRef(false);
+  const agendamentoIdRef = React.useRef(agendamento?.id || null);
+
   // useEffect para setar os dados iniciais do agendamento ou definir padrões
   useEffect(() => {
+    // Evitar re-inicialização se já foi feita para o mesmo agendamento
+    const currentAgendamentoId = agendamento?.id || null;
+    if (inicializouRef.current && agendamentoIdRef.current === currentAgendamentoId) {
+      return;
+    }
+    inicializouRef.current = true;
+    agendamentoIdRef.current = currentAgendamentoId;
+
     const initializeFormDataAndPatient = async () => {
       let initialFormData = {
         id: null,
@@ -549,21 +561,25 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
         initialFormData.lembrete_dias_antes = 1;
         setModoMultiplosServicos(false);
 
-        // Restaurar pré-configuração do último agendamento deste usuário
+        // Restaurar pré-configuração do último agendamento deste usuário (síncrono do localStorage)
         try {
-          const currentUser = await UserEntity.me();
-          const userId = currentUser?.id || currentUser?.email || 'default';
-          const savedConfig = localStorage.getItem(`agendamento_preconfig_${userId}`);
-          if (savedConfig) {
-            const preConfig = JSON.parse(savedConfig);
-            console.log('🔄 Restaurando pré-configuração do usuário:', preConfig);
-            if (preConfig.data_agendamento) initialFormData.data_agendamento = preConfig.data_agendamento;
-            if (preConfig.tipo_servico) initialFormData.tipo_servico = preConfig.tipo_servico;
-            if (preConfig.medico_id) {
-              // Verificar se o médico ainda existe
-              const medicoExiste = medicos.find(m => m.id === preConfig.medico_id);
-              if (medicoExiste) {
-                initialFormData.medico_id = preConfig.medico_id;
+          // Usar email do usuário se disponível, senão 'default'
+          // Não fazer await aqui para evitar re-renders - usar valor do localStorage diretamente
+          const allKeys = Object.keys(localStorage);
+          const preconfigKey = allKeys.find(k => k.startsWith('agendamento_preconfig_'));
+          if (preconfigKey) {
+            const savedConfig = localStorage.getItem(preconfigKey);
+            if (savedConfig) {
+              const preConfig = JSON.parse(savedConfig);
+              console.log('🔄 Restaurando pré-configuração do usuário:', preConfig);
+              if (preConfig.data_agendamento) initialFormData.data_agendamento = preConfig.data_agendamento;
+              if (preConfig.tipo_servico) initialFormData.tipo_servico = preConfig.tipo_servico;
+              if (preConfig.medico_id) {
+                // Verificar se o médico ainda existe
+                const medicoExiste = medicos.find(m => m.id === preConfig.medico_id);
+                if (medicoExiste) {
+                  initialFormData.medico_id = preConfig.medico_id;
+                }
               }
             }
           }
@@ -603,7 +619,8 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
     };
 
     initializeFormDataAndPatient();
-  }, [agendamento, categorias]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agendamento?.id]);
 
   // NOVO: useEffect para auto-selecionar categoria baseado no convênio do paciente
   useEffect(() => {
