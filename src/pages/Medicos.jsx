@@ -6,6 +6,7 @@ import { Plus, RefreshCw, CalendarOff, Loader2, X } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
+import { Badge } from "@/components/ui/badge";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
 import ListaMedicos from "../components/medicos/ListaMedicos";
@@ -185,6 +186,35 @@ export default function Medicos() {
     }
   };
 
+  // Extrair datas bloqueadas (feriados) de todos os médicos
+  const feriadosBloqueados = React.useMemo(() => {
+    const datasSet = new Set();
+    medicos.forEach(m => {
+      (m.horarios_atendimento || []).forEach(h => {
+        if (h.bloqueado && h.data_especifica) {
+          datasSet.add(h.data_especifica);
+        }
+      });
+    });
+    return Array.from(datasSet).sort();
+  }, [medicos]);
+
+  const handleDesbloquearFeriado = async (dataFeriado) => {
+    try {
+      for (const medico of medicos) {
+        const horarios = medico.horarios_atendimento || [];
+        const horariosAtualizados = horarios.filter(h => !(h.data_especifica === dataFeriado && h.bloqueado === true));
+        if (horariosAtualizados.length !== horarios.length) {
+          await Medico.update(medico.id, { horarios_atendimento: horariosAtualizados });
+        }
+      }
+      toast({ title: "✅ Feriado desbloqueado!", description: `A data ${new Date(dataFeriado + 'T12:00:00').toLocaleDateString('pt-BR')} foi desbloqueada.` });
+      await carregarDados();
+    } catch (error) {
+      toast({ title: "❌ Erro", description: error.message, variant: "destructive" });
+    }
+  };
+
   const medicosFiltrados = medicos.filter((medico) => {
     const buscaMatch = filtros.busca === "" ||
     medico.nome?.toLowerCase().includes(filtros.busca.toLowerCase()) ||
@@ -249,6 +279,25 @@ export default function Medicos() {
               </Button>
             </div>
           </div>
+
+          {feriadosBloqueados.length > 0 && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4 flex flex-wrap items-center gap-2">
+              <CalendarOff className="w-4 h-4 text-red-500 flex-shrink-0" />
+              <span className="text-sm font-medium text-red-700 mr-1">Feriados bloqueados:</span>
+              {feriadosBloqueados.map(data => (
+                <Badge key={data} variant="outline" className="border-red-300 bg-white text-red-700 gap-1 pr-1">
+                  {new Date(data + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                  <button
+                    onClick={() => handleDesbloquearFeriado(data)}
+                    className="ml-1 hover:bg-red-100 rounded-full p-0.5"
+                    title="Desbloquear"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </Badge>
+              ))}
+            </div>
+          )}
 
           <FiltrosMedicos
             filtros={filtros}
