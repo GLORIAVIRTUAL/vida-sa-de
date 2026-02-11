@@ -1407,6 +1407,11 @@ O cliente está ESCOLHENDO/RESPONDENDO. Ele disse: "${messageText}"
         // SEMPRE mostrar TODOS os médicos da especialidade escolhida (sem limite)
         const limitemedicos = medicosParaBuscar.length;
 
+        // CORREÇÃO FUSO HORÁRIO: Usar UTC para gerar datas consistentes
+        const hojeUTC = new Date();
+        const offsetBrasil = -3 * 60; // UTC-3
+        const agoraBrasil = new Date(hojeUTC.getTime() + (offsetBrasil + hojeUTC.getTimezoneOffset()) * 60000);
+
         for (const medico of medicosParaBuscar.slice(0, limitemedicos)) {
           const horariosAtendimento = medico.horarios_atendimento || [];
           if (horariosAtendimento.length === 0) continue;
@@ -1414,11 +1419,14 @@ O cliente está ESCOLHENDO/RESPONDENDO. Ele disse: "${messageText}"
           const disponibilidadesMedico = [];
 
           for (let i = 0; i < diasAfrente; i++) {
-            const dataConsulta = new Date();
-            dataConsulta.setHours(0, 0, 0, 0);
+            // CORREÇÃO: Usar data baseada no fuso de Brasil (UTC-3) para evitar erros de dia da semana
+            const dataConsulta = new Date(agoraBrasil);
             dataConsulta.setDate(dataConsulta.getDate() + i);
             
-            const dataFormatada = dataConsulta.toISOString().split('T')[0];
+            const ano = dataConsulta.getFullYear();
+            const mes = String(dataConsulta.getMonth() + 1).padStart(2, '0');
+            const dia = String(dataConsulta.getDate()).padStart(2, '0');
+            const dataFormatada = `${ano}-${mes}-${dia}`;
             const diaSemana = dataConsulta.getDay();
 
             // Verificar se há horários com data específica para este dia
