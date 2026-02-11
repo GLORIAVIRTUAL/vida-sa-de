@@ -275,7 +275,8 @@ export default function VisualizacaoDiaria({ agendamentos, medicos, pacientes, o
 
           <div className="space-y-3 max-h-[600px] overflow-y-auto">
               {agendamentos.
-            sort((a, b) => {
+            filter(a => a && a.data_agendamento).
+          sort((a, b) => {
               const dateA = new Date(`${a.data_agendamento}T${a.horario || '00:00'}`);
               const dateB = new Date(`${b.data_agendamento}T${b.horario || '00:00'}`);
               return dateA - dateB;
