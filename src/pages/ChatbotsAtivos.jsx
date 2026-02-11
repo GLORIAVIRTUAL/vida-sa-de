@@ -639,8 +639,8 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
                <div className="divide-y">
                  {contatosFiltrados.map((contato) => {
                    const ultimaIntercao = contato.ultima_interacao 
-                     ? format(new Date(contato.ultima_interacao), 'HH:mm', { locale: ptBR })
-                     : '-';
+                      ? format(new Date(contato.ultima_interacao), 'dd/MM HH:mm', { locale: ptBR })
+                      : '-';
                    const numMensagens = contato.historico_mensagens?.length || 0;
 
                    return (
