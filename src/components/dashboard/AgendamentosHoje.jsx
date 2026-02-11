@@ -145,7 +145,8 @@ export default function AgendamentosHoje({ agendamentos = [], medicos = [], paci
         ) : (
           <div className="space-y-3 max-h-96 overflow-y-auto">
             {agendamentos
-              .sort((a, b) => a.horario.localeCompare(b.horario))
+              .filter(a => a && a.horario)
+              .sort((a, b) => (a.horario || '').localeCompare(b.horario || ''))
               .map((agendamento) => (
                 <div key={agendamento.id} className="p-4 border rounded-lg hover:shadow-md transition-shadow">
                   <div className="flex justify-between items-start mb-2">
