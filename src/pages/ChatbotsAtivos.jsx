@@ -453,7 +453,7 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
         const ultimaMsgUser = ultimasMsgsUser.length > 0 ? ultimasMsgsUser[ultimasMsgsUser.length - 1] : null;
         
         if (ultimaMsgUser) {
-          // Verificar se a Glória já respondeu a essa mensagem
+          // Verificar se a Glória (IA, não humano) já respondeu após essa mensagem
           const idxUltimaUser = mensagens.lastIndexOf(ultimaMsgUser);
           const jaRespondeu = mensagens.slice(idxUltimaUser + 1).some(m => m.role === 'assistant' && !m.humano);
           
@@ -463,25 +463,13 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
               let textoParaProcessar = (ultimaMsgUser.content || '').split('\n')[0].trim();
               if (!textoParaProcessar) textoParaProcessar = 'oi';
 
-              const resultado = await base44.functions.invoke('processarMensagemAgente', {
+              // Chamar a função que processa E envia via WhatsApp (simula webhook)
+              await base44.functions.invoke('reativarGloria', {
                 phoneNumber: contatoSelecionado.telefone,
                 messageText: textoParaProcessar,
                 senderName: contatoSelecionado.nome || 'Cliente',
-                pacienteId: contatoSelecionado.paciente_id || null,
-                mediaType: 'text',
-                mediaUrl: null,
-                messageId: null
+                contatoId: contatoSelecionado.id
               });
-
-              // Se a Glória gerou resposta, enviar via WhatsApp
-              if (resultado.data?.resposta) {
-                const instanceId = null; // Enviar via função backend
-                await base44.functions.invoke('enviarMensagemHumano', {
-                  phoneNumber: contatoSelecionado.telefone,
-                  messageText: resultado.data.resposta,
-                  contatoId: contatoSelecionado.id
-                });
-              }
             } catch (err) {
               console.error('Erro ao reativar Glória:', err);
             }
