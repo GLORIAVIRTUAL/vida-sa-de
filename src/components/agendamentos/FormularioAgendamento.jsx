@@ -1590,7 +1590,7 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
               // Buscar usuário atual para saber quem criou o agendamento
               let nomeUsuarioCriador = 'Sistema';
               try {
-                const usuarioAtual = await UserEntity.me();
+                const usuarioAtual = await base44.auth.me();
                 nomeUsuarioCriador = usuarioAtual?.display_name || usuarioAtual?.full_name || 'Usuário';
               } catch (e) {
                 console.log('⚠️ Não foi possível obter usuário atual');
