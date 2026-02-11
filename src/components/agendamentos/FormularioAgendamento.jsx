@@ -12,10 +12,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon, Loader2, Search, Clock, X, Plus, User, Stethoscope, Save, FileScan, Printer, Repeat, AlertCircle, Trash2, Layers } from "lucide-react";
-import { Agendamento, Paciente, Notification, User as UserEntity } from "@/entities/all";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/components/ui/use-toast";
-import { base44 as base44Integrations } from "@/api/base44Client";
 import { base44 } from "@/api/base44Client";
 import { safeApiCall, clearCache } from "@/components/shared/apiThrottle";
 
