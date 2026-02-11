@@ -1122,7 +1122,15 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
     const ehPerguntaPreco = ehPerguntaPrecoEarly;
     const ehPerguntaInformativa = ehPerguntaInformativaEarly;
     
-    const querAgendarMensagem = !clienteRecusandoAgendar && !ehPerguntaPreco && !ehPerguntaInformativa && !ehPerguntaSobreCartao && !respostaCurtaEmContextoCartao && /agendar|marcar|consulta|atend|hor[áa]rio|dispon[íi]vel|vaga/i.test(messageText);
+    // TAMBÉM considerar como pedido de agendamento quando a IA perguntou "Gostaria de agendar?" e o cliente
+    // responde com perguntas sobre vagas/horários (ex: "quando tem vaga?", "tem horário?")
+    const clientePerguntouSobreVagaAposOferta = iaPerguntoSeQuerAgendarConsulta && 
+      /quando\s*(tem|tem\s*vaga|tem\s*hor[áa]rio|posso|d[áa]\s*pra)|tem\s*(vaga|hor[áa]rio)|pr[óo]ximo\s*(hor[áa]rio|dia|vaga)|qual\s*(hor[áa]rio|dia|vaga)/i.test(messageText);
+    
+    const querAgendarMensagem = !clienteRecusandoAgendar && !ehPerguntaPreco && !ehPerguntaInformativa && !ehPerguntaSobreCartao && !respostaCurtaEmContextoCartao && (
+      /agendar|marcar|consulta|atend|hor[áa]rio|dispon[íi]vel|vaga/i.test(messageText) ||
+      clientePerguntouSobreVagaAposOferta
+    );
 
     // Verificar se o cliente disse "sim" e a IA tinha perguntado algo
     const ultimasMensagensAssistente = (historicoConversa || '').split('\n').filter(l => l.startsWith('ASSISTENTE:'));
