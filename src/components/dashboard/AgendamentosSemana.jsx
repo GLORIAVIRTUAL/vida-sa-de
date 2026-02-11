@@ -111,7 +111,7 @@ export default function AgendamentosSemana({ agendamentos = [], medicos = [], pa
                 </h4>
                 <div className="space-y-2 ml-4">
                   {agendamentosPorDia[data]
-                    .sort((a, b) => a.horario.localeCompare(b.horario))
+                    .sort((a, b) => (a.horario || '').localeCompare(b.horario || ''))
                     .map((agendamento) => (
                       <div key={agendamento.id} className="flex items-center justify-between p-2 bg-white border rounded-lg text-sm">
                         <div className="flex-1">
