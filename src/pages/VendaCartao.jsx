@@ -269,9 +269,9 @@ export default function VendaCartaoPage() {
 
   const vendasFiltradas = vendas.filter(venda => {
     const termoBusca = busca.toLowerCase();
-    const matchTitular = venda.titular.nome.toLowerCase().includes(termoBusca) ||
-                      venda.titular.cpf.includes(busca) ||
-                      venda.numero_venda?.includes(busca);
+    const matchTitular = (venda.titular?.nome || '').toLowerCase().includes(termoBusca) ||
+                      (venda.titular?.cpf || '').includes(busca) ||
+                      (venda.numero_venda || '').includes(busca);
 
     const matchDependente = venda.dependentes?.some(dep => 
       dep.nome.toLowerCase().includes(termoBusca) || 
