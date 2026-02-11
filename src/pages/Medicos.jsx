@@ -13,7 +13,6 @@ import ListaMedicos from "../components/medicos/ListaMedicos";
 import FormularioMedico from "../components/medicos/FormularioMedico";
 import FiltrosMedicos from "../components/medicos/FiltrosMedicos";
 import ConfirmacaoExclusao from "../components/shared/ConfirmacaoExclusao";
-import { syncMedicoPrices } from "@/functions/syncMedicoPrices";
 
 export default function Medicos() {
   const [medicos, setMedicos] = useState([]);
