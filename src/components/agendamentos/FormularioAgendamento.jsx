@@ -471,6 +471,7 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
         data_agendamento: format(new Date(), 'yyyy-MM-dd'),
         horario: '',
         tipo_servico: 'Consulta',
+        itens_servico: [],
         is_encaixe: false,
         is_recorrente: false,
         recorrencia_tipo: '',
@@ -479,9 +480,14 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
         exames_ids: [],
         categoria_preco_id: '',
         valor_total: '0',
+        desconto_manual: '0',
+        acrescimo_manual: '0',
+        valor_final: '0',
         forma_pagamento: 'Dinheiro',
         status: 'Agendado',
-        observacoes: ''
+        observacoes: '',
+        lembrete_equipe: false,
+        lembrete_dias_antes: 1
       };
 
       if (agendamento) {
