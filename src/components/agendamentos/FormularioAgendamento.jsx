@@ -17,7 +17,7 @@ import { ptBR } from "date-fns/locale";
 import { useToast } from "@/components/ui/use-toast";
 import { UploadFile, ExtractDataFromUploadedFile } from "@/integrations/Core";
 import { base44 } from "@/api/base44Client";
-import { safeApiCall } from "@/components/shared/apiThrottle";
+import { safeApiCall, clearCache } from "@/components/shared/apiThrottle";
 
 const normalizeString = (str) => {
     if (!str) return '';
