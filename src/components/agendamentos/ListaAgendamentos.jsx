@@ -238,7 +238,7 @@ export default function ListaAgendamentos({
                           </p>
                           <p className="flex items-center gap-2 text-sm text-gray-600">
                             <Calendar className="w-4 h-4 text-gray-400" />
-                            {format(new Date(agendamento.data_agendamento), "dd/MM/yyyy", { locale: ptBR })}
+                            {agendamento.data_agendamento ? format(new Date(agendamento.data_agendamento + 'T00:00:00'), "dd/MM/yyyy", { locale: ptBR }) : "Data não definida"}
                           </p>
                           {agendamento.valor_total > 0 && (
                             <p className="text-sm font-semibold text-green-600">
