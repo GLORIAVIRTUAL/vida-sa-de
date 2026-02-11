@@ -343,6 +343,12 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
     const dataFormatada = format(date, 'yyyy-MM-dd');
     const diaSemana = date.getDay();
     
+    // 0. Verificar se a data está BLOQUEADA (feriado/clínica fechada)
+    const dataBloqueada = medicoSelecionado.horarios_atendimento.some(h => 
+      h.data_especifica === dataFormatada && h.bloqueado === true
+    );
+    if (dataBloqueada) return false;
+    
     // 1. Verificar se há horário com data específica para esta data (não bloqueado)
     const temDataEspecifica = medicoSelecionado.horarios_atendimento.some(h => 
       h.data_especifica === dataFormatada && !h.bloqueado
