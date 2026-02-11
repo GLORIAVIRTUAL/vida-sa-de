@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Medico, CategoriaPreco } from "@/entities/all";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
-import { Plus, RefreshCw, CalendarOff, Loader2 } from "lucide-react";
+import { Plus, RefreshCw, CalendarOff, Loader2, X } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
