@@ -438,6 +438,11 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
     bloqueado: "!bg-red-100 !text-red-400 line-through opacity-60",
   };
 
+  // Limpar cache de médicos ao abrir o formulário para garantir dados atualizados (ex: feriados)
+  useEffect(() => {
+    clearCache('medicos');
+  }, []);
+
   // Estado para armazenar o horário original do agendamento sendo editado
   const [horarioOriginal, setHorarioOriginal] = useState('');
 
