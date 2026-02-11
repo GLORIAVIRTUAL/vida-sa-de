@@ -1,9 +1,11 @@
-
 import React, { useState, useEffect } from "react";
 import { Medico, CategoriaPreco } from "@/entities/all";
+import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
-import { Plus, RefreshCw } from "lucide-react";
+import { Plus, RefreshCw, CalendarOff, Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Calendar } from "@/components/ui/calendar";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
 import ListaMedicos from "../components/medicos/ListaMedicos";
@@ -25,7 +27,10 @@ export default function Medicos() {
     especialidade: "todas",
     status: "todos"
   });
-  const { toast } = useToast(); // Initialize toast
+  const [showBlockHolidayModal, setShowBlockHolidayModal] = useState(false);
+  const [selectedHolidayDate, setSelectedHolidayDate] = useState(null);
+  const [blocking, setBlocking] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     carregarDados();
@@ -156,6 +161,30 @@ export default function Medicos() {
     carregarDados();
   };
 
+  const handleBloquearFeriado = async () => {
+    if (!selectedHolidayDate) return;
+    setBlocking(true);
+    try {
+      const dataFormatada = selectedHolidayDate.toISOString().split('T')[0];
+      const response = await base44.functions.invoke('blockHoliday', { data_feriado: dataFormatada });
+      toast({
+        title: "✅ Feriado Bloqueado!",
+        description: `${response.data.medicos_atualizados} de ${response.data.total_medicos} médico(s) tiveram a agenda bloqueada em ${selectedHolidayDate.toLocaleDateString('pt-BR')}.`
+      });
+      setShowBlockHolidayModal(false);
+      setSelectedHolidayDate(null);
+      await carregarDados();
+    } catch (error) {
+      toast({
+        title: "❌ Erro ao bloquear feriado",
+        description: error.message || "Não foi possível bloquear o feriado.",
+        variant: "destructive"
+      });
+    } finally {
+      setBlocking(false);
+    }
+  };
+
   const medicosFiltrados = medicos.filter((medico) => {
     const buscaMatch = filtros.busca === "" ||
     medico.nome?.toLowerCase().includes(filtros.busca.toLowerCase()) ||
@@ -181,7 +210,14 @@ export default function Medicos() {
                 Gerencie os profissionais da clínica
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
+              <Button
+                onClick={() => setShowBlockHolidayModal(true)}
+                variant="outline"
+                className="gap-2 border-red-300 text-red-600 hover:bg-red-50">
+                <CalendarOff className="w-4 h-4" />
+                Bloquear Feriado
+              </Button>
               <Button
                 onClick={handleSincronizarPrecos}
                 disabled={syncing}
@@ -234,6 +270,51 @@ export default function Medicos() {
             categorias={categorias} />
 
         </div>
+
+        <Dialog open={showBlockHolidayModal} onOpenChange={setShowBlockHolidayModal}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <CalendarOff className="w-5 h-5 text-red-500" />
+                Bloquear Feriado / Fechar Clínica
+              </DialogTitle>
+            </DialogHeader>
+            <p className="text-sm text-gray-500">
+              Selecione a data em que a clínica ficará fechada. Todas as agendas serão bloqueadas nesse dia.
+            </p>
+            <div className="flex justify-center py-2">
+              <Calendar
+                mode="single"
+                selected={selectedHolidayDate}
+                onSelect={setSelectedHolidayDate}
+                disabled={(date) => date < new Date(new Date().setHours(0,0,0,0))}
+              />
+            </div>
+            {selectedHolidayDate && (
+              <p className="text-center text-sm font-medium text-gray-700">
+                Data selecionada: <span className="text-red-600">{selectedHolidayDate.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
+              </p>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => { setShowBlockHolidayModal(false); setSelectedHolidayDate(null); }}>
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleBloquearFeriado}
+                disabled={!selectedHolidayDate || blocking}
+                className="bg-red-600 hover:bg-red-700 text-white">
+                {blocking ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Bloqueando...
+                  </>
+                ) : (
+                  'Confirmar Bloqueio'
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </ProtectedRoute>);
 
