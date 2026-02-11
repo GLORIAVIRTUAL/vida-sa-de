@@ -323,10 +323,7 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
         const bFinalizado = b.conversa_finalizada === true;
         if (aFinalizado && !bFinalizado) return 1;
         if (!aFinalizado && bFinalizado) return -1;
-        // Dentro do mesmo grupo, ordenar por data de criação (ordem de chegada)
-        const aDate = a.created_date || '';
-        const bDate = b.created_date || '';
-        return aDate > bDate ? -1 : aDate < bDate ? 1 : 0;
+        return 0;
       });
       setContatos(ordenados);
       // NUNCA seleciona automaticamente - apenas quando usuário clicar
