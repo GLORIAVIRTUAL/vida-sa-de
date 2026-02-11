@@ -542,7 +542,7 @@ export default function FormularioMedico({ medico, open, onClose, onUpdate }) {
                         <div>
                           <Label className="text-xs">Dia da Semana</Label>
                           <Select 
-                            value={horario.dia_semana.toString()} 
+                            value={(horario.dia_semana ?? 1).toString()} 
                             onValueChange={(value) => handleHorarioChange(index, 'dia_semana', value)}
                             disabled={!!horario.data_especifica}
                           >
