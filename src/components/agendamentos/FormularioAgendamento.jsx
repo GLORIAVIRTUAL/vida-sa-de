@@ -50,7 +50,7 @@ const uploadWithRetry = async (file, maxRetries = 3, delay = 2000) => {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       console.log(`🔄 Tentativa ${attempt}/${maxRetries} de upload...`);
-      const result = await UploadFile({ file });
+      const result = await base44Integrations.integrations.Core.UploadFile({ file });
       console.log(`✅ Upload bem-sucedido na tentativa ${attempt}`);
       return result;
     } catch (error) {
