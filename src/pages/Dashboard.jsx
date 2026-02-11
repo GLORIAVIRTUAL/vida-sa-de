@@ -5,7 +5,7 @@ import { ptBR } from "date-fns/locale";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Sparkles, Heart } from "lucide-react";
 import { safeApiCall } from "@/components/shared/apiThrottle";
-import { getDashboardStats } from "@/functions/getDashboardStats";
+import { base44 } from "@/api/base44Client";
 import { debounce } from "lodash";
 
 import AgendamentosHoje from "../components/dashboard/AgendamentosHoje";
