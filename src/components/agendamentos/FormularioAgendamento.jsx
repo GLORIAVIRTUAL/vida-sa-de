@@ -525,6 +525,28 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
         initialFormData.lembrete_dias_antes = 1;
         setModoMultiplosServicos(false);
 
+        // Restaurar pré-configuração do último agendamento deste usuário
+        try {
+          const currentUser = await UserEntity.me();
+          const userId = currentUser?.id || currentUser?.email || 'default';
+          const savedConfig = localStorage.getItem(`agendamento_preconfig_${userId}`);
+          if (savedConfig) {
+            const preConfig = JSON.parse(savedConfig);
+            console.log('🔄 Restaurando pré-configuração do usuário:', preConfig);
+            if (preConfig.data_agendamento) initialFormData.data_agendamento = preConfig.data_agendamento;
+            if (preConfig.tipo_servico) initialFormData.tipo_servico = preConfig.tipo_servico;
+            if (preConfig.medico_id) {
+              // Verificar se o médico ainda existe
+              const medicoExiste = medicos.find(m => m.id === preConfig.medico_id);
+              if (medicoExiste) {
+                initialFormData.medico_id = preConfig.medico_id;
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('⚠️ Erro ao restaurar pré-configuração:', e);
+        }
+
         // Handle dadosIniciais from navigation (e.g., from Chat or Dashboard)
         if (dadosIniciais) {
           if (dadosIniciais.paciente_id) {
@@ -1573,6 +1595,21 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
           }
           toast({ title: "Sucesso!", description: "Agendamento salvo!" }); // Specific toast for single create
         }
+      }
+
+      // Salvar últimas configurações do usuário para acelerar próximos agendamentos
+      try {
+        const currentUser = await UserEntity.me();
+        const userId = currentUser?.id || currentUser?.email || 'default';
+        const preConfig = {
+          data_agendamento: formData.data_agendamento,
+          tipo_servico: formData.tipo_servico,
+          medico_id: formData.medico_id || '',
+        };
+        localStorage.setItem(`agendamento_preconfig_${userId}`, JSON.stringify(preConfig));
+        console.log('💾 Pré-configuração salva para próximo agendamento:', preConfig);
+      } catch (e) {
+        console.warn('⚠️ Não foi possível salvar pré-configuração:', e);
       }
 
       await onSave();
