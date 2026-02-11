@@ -106,7 +106,7 @@ export default function Dashboard() {
 
       // 4. Carregar contagem total de pacientes em segundo plano (com delay)
       setTimeout(() => {
-        getDashboardStats().
+        base44.functions.invoke('getDashboardStats', {}).
         then((statsResponse) => {
           const totalPacientesReal = statsResponse?.data?.totalPacientes || 0;
           setTotalPacientesCount(totalPacientesReal);
