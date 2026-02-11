@@ -1497,6 +1497,7 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
       status: formData.status || 'Agendado',
       forma_pagamento: formData.forma_pagamento || 'Dinheiro',
       is_encaixe: formData.is_encaixe || false,
+      is_reserva: formData.paciente_id ? false : (agendamento?.is_reserva || false),
       is_recorrente: formData.is_recorrente || false,
       lembrete_equipe: formData.lembrete_equipe || false,
       lembrete_dias_antes: parseInt(formData.lembrete_dias_antes) || 0
