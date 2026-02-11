@@ -744,9 +744,9 @@ export default function Agendamentos() {
 
           }
 
-          {isFormOpen &&
+          {isFormOpen && categorias.length > 0 && tabelaPrecos.length > 0 &&
           <FormularioAgendamento
-            key={Date.now()}
+            key={selectedAgendamento?.id || 'new'}
             agendamento={selectedAgendamento}
             dadosIniciais={dadosIniciaisAgendamento}
             todosAgendamentos={agendamentos}
