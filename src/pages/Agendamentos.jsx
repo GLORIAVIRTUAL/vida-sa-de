@@ -746,6 +746,7 @@ export default function Agendamentos() {
 
           {isFormOpen &&
           <FormularioAgendamento
+            key={Date.now()}
             agendamento={selectedAgendamento}
             dadosIniciais={dadosIniciaisAgendamento}
             todosAgendamentos={agendamentos}
