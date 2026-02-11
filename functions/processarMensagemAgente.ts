@@ -1434,9 +1434,31 @@ O cliente está ESCOLHENDO/RESPONDENDO. Ele disse: "${messageText}"
             
             // Se houver horários com data específica, usar eles; senão, usar horários recorrentes
             // IMPORTANTE: converter dia_semana para inteiro pois pode vir como float (3.0)
+            // Também verificar recorrência do horário
             const horariosDoDia = horariosDataEspecifica.length > 0 
               ? horariosDataEspecifica.filter(h => !h.bloqueado)
-              : horariosAtendimento.filter(h => Math.floor(h.dia_semana) === diaSemana && !h.data_especifica && !h.bloqueado);
+              : horariosAtendimento.filter(h => {
+                  if (h.bloqueado) return false;
+                  if (h.data_especifica) return false;
+                  if (Math.floor(h.dia_semana) !== diaSemana) return false;
+                  
+                  // Verificar recorrência
+                  const recorrencia = h.recorrencia || 'Toda Semana';
+                  if (recorrencia === 'Toda Semana') return true;
+                  if (recorrencia === 'Apenas uma vez') return false;
+                  
+                  // Calcular semana do mês
+                  const primeiroDiaMes = new Date(dataConsulta.getFullYear(), dataConsulta.getMonth(), 1);
+                  const semanaMes = Math.ceil((dataConsulta.getDate() + primeiroDiaMes.getDay()) / 7);
+                  
+                  if (recorrencia === '1ª e 3ª Semana do Mês') return semanaMes === 1 || semanaMes === 3;
+                  if (recorrencia === '2ª e 4ª Semana do Mês') return semanaMes === 2 || semanaMes === 4;
+                  if (recorrencia === 'Apenas 1ª Semana do Mês') return semanaMes === 1;
+                  if (recorrencia === 'Apenas 2ª Semana do Mês') return semanaMes === 2;
+                  if (recorrencia === 'Apenas 3ª Semana do Mês') return semanaMes === 3;
+                  if (recorrencia === 'Apenas 4ª Semana do Mês') return semanaMes === 4;
+                  return true;
+                });
 
             if (horariosDoDia.length === 0) continue;
 
