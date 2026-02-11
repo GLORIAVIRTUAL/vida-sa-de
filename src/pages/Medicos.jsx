@@ -201,14 +201,11 @@ export default function Medicos() {
 
   const handleDesbloquearFeriado = async (dataFeriado) => {
     try {
-      for (const medico of medicos) {
-        const horarios = medico.horarios_atendimento || [];
-        const horariosAtualizados = horarios.filter(h => !(h.data_especifica === dataFeriado && h.bloqueado === true));
-        if (horariosAtualizados.length !== horarios.length) {
-          await Medico.update(medico.id, { horarios_atendimento: horariosAtualizados });
-        }
-      }
-      toast({ title: "✅ Feriado desbloqueado!", description: `A data ${new Date(dataFeriado + 'T12:00:00').toLocaleDateString('pt-BR')} foi desbloqueada.` });
+      const response = await base44.functions.invoke('unblockHoliday', { data_feriado: dataFeriado });
+      toast({
+        title: "✅ Feriado desbloqueado!",
+        description: `${response.data.medicos_atualizados} médico(s) tiveram a data ${new Date(dataFeriado + 'T12:00:00').toLocaleDateString('pt-BR')} desbloqueada.`
+      });
       await carregarDados();
     } catch (error) {
       toast({ title: "❌ Erro", description: error.message, variant: "destructive" });
