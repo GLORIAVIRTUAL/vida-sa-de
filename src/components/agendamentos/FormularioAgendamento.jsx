@@ -15,6 +15,11 @@ import { Calendar as CalendarIcon, Loader2, Search, Clock, X, Plus, User, Stetho
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/components/ui/use-toast";
 import { base44 } from "@/api/base44Client";
+
+// SDK entity shortcuts
+const Agendamento = base44.entities.Agendamento;
+const Paciente = base44.entities.Paciente;
+const Notification = base44.entities.Notification;
 import { safeApiCall, clearCache } from "@/components/shared/apiThrottle";
 
 const normalizeString = (str) => {
