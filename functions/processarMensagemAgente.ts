@@ -1424,11 +1424,15 @@ O cliente está ESCOLHENDO/RESPONDENDO. Ele disse: "${messageText}"
             // Verificar se há horários com data específica para este dia
             const horariosDataEspecifica = horariosAtendimento.filter(h => h.data_especifica === dataFormatada);
             
+            // Verificar se a data está BLOQUEADA (feriado/clínica fechada)
+            const dataBloqueada = horariosDataEspecifica.some(h => h.bloqueado === true);
+            if (dataBloqueada) continue; // Pular dia bloqueado
+            
             // Se houver horários com data específica, usar eles; senão, usar horários recorrentes
             // IMPORTANTE: converter dia_semana para inteiro pois pode vir como float (3.0)
             const horariosDoDia = horariosDataEspecifica.length > 0 
-              ? horariosDataEspecifica 
-              : horariosAtendimento.filter(h => Math.floor(h.dia_semana) === diaSemana && !h.data_especifica);
+              ? horariosDataEspecifica.filter(h => !h.bloqueado)
+              : horariosAtendimento.filter(h => Math.floor(h.dia_semana) === diaSemana && !h.data_especifica && !h.bloqueado);
 
             if (horariosDoDia.length === 0) continue;
 
@@ -1540,7 +1544,11 @@ O cliente está ESCOLHENDO/RESPONDENDO. Ele disse: "${messageText}"
               const diaSemana = dataConsulta.getDay();
 
               // Verificar recorrência do horário
+              const dataBloqueadaEst = horariosAtendimento.some(h => h.data_especifica === dataFormatada && h.bloqueado === true);
+              if (dataBloqueadaEst) continue; // Pular dia bloqueado
+              
               const horariosDoDia = horariosAtendimento.filter(h => {
+                if (h.bloqueado) return false; // Ignorar horários bloqueados
                 if (h.data_especifica === dataFormatada) return true;
                 if (h.data_especifica) return false;
                 if (Math.floor(h.dia_semana) !== diaSemana) return false;

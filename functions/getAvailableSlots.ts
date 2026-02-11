@@ -109,12 +109,23 @@ Deno.serve(async (req) => {
             // Verificar se há horários com data específica para este dia
             const horariosDataEspecifica = horariosAtendimento.filter(h => h.data_especifica === cleanData);
             
+            // Verificar se a data está BLOQUEADA (feriado/clínica fechada)
+            const dataBloqueada = horariosDataEspecifica.some(h => h.bloqueado === true);
+            if (dataBloqueada) {
+                return Response.json({ 
+                    available_slots: [],
+                    message: 'Clínica fechada nesta data (feriado/bloqueio)',
+                    bloqueado: true
+                });
+            }
+            
             // Se houver horários com data específica, usar eles; senão, usar horários recorrentes
             const horariosDoDia = horariosDataEspecifica.length > 0 
-                ? horariosDataEspecifica 
+                ? horariosDataEspecifica.filter(h => !h.bloqueado)
                 : horariosAtendimento.filter(h => 
                     h.dia_semana === diaSemana && 
                     !h.data_especifica && 
+                    !h.bloqueado &&
                     checkRecorrencia(h.recorrencia, dataObj)
                 );
             
