@@ -1898,7 +1898,7 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
 
       let resultadoIA;
       try {
-        resultadoIA = await ExtractDataFromUploadedFile({
+        resultadoIA = await base44Integrations.integrations.Core.ExtractDataFromUploadedFile({
           file_url: file_url,
           json_schema: schema
         });
