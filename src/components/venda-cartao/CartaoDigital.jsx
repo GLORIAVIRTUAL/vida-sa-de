@@ -169,9 +169,14 @@ export default function CartaoDigital({ venda, titular = true, dependente = null
             <div>
               <p className="text-[10px] text-white/70 uppercase tracking-wider mb-0.5">Validade</p>
               <p className="text-sm font-semibold">
-                {venda.validade_cartao 
-                  ? format(new Date(venda.validade_cartao + 'T00:00:00'), "MM/yy", { locale: ptBR })
-                  : 'N/A'}
+                {(() => {
+                  if (!venda.validade_cartao) return 'N/A';
+                  try {
+                    const d = new Date(venda.validade_cartao + 'T00:00:00');
+                    if (isNaN(d.getTime())) return 'N/A';
+                    return format(d, "MM/yy", { locale: ptBR });
+                  } catch { return 'N/A'; }
+                })()}
               </p>
             </div>
           </div>
