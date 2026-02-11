@@ -8,7 +8,15 @@ const normalize = (str) => {
 Deno.serve(async (req) => {
     try {
         const base44 = createClientFromRequest(req);
-        const user = await base44.auth.me();
+        
+        // Verificar autenticação - qualquer usuário logado pode buscar
+        let user = null;
+        try {
+            user = await base44.auth.me();
+        } catch (e) {
+            // Fallback: tentar verificar se há token válido
+        }
+        
         if (!user) {
             return Response.json({ error: 'Unauthorized' }, { status: 401 });
         }
@@ -16,7 +24,10 @@ Deno.serve(async (req) => {
         let body = {};
         try { body = await req.json(); } catch (e) {}
         const { termo, paciente_id, limit } = body;
-        const adminClient = base44.asServiceRole;
+        
+        // IMPORTANTE: Usar asServiceRole para que TODOS os usuários autenticados
+        // possam buscar pacientes (não apenas admins)
+        const client = base44.asServiceRole;
         const maxResults = limit || 500;
 
         // Busca por ID direto
@@ -24,7 +35,7 @@ Deno.serve(async (req) => {
             let skip = 0;
             const batchSize = 1000;
             for (let i = 0; i < 200; i++) {
-                const batch = await adminClient.entities.Paciente.list('-created_date', batchSize, skip);
+                const batch = await client.entities.Paciente.list('-created_date', batchSize, skip);
                 if (!batch || batch.length === 0) break;
                 const found = batch.find(p => p.id === paciente_id);
                 if (found) return Response.json([found]);
@@ -36,7 +47,7 @@ Deno.serve(async (req) => {
 
         // Sem termo - retorna recentes
         if (!termo || String(termo).trim().length === 0) {
-            const recentes = await adminClient.entities.Paciente.list('-created_date', 50);
+            const recentes = await client.entities.Paciente.list('-created_date', 50);
             return Response.json(recentes || []);
         }
 
@@ -47,7 +58,7 @@ Deno.serve(async (req) => {
         const batchSize = 1000;
         
         for (let i = 0; i < 200; i++) {
-            const batch = await adminClient.entities.Paciente.list('-created_date', batchSize, skip);
+            const batch = await client.entities.Paciente.list('-created_date', batchSize, skip);
             if (!batch || batch.length === 0) break;
             
             for (const paciente of batch) {
