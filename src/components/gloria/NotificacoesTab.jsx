@@ -447,6 +447,7 @@ export default function NotificacoesTab({ onAbrirChat }) {
                       </p>
                     </div>
                     <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                      <TipoBadge tipo={getTipoNotificacao(log)} />
                       <StatusBadge status={log.status_entrega} />
                       {ag && <ConfirmacaoBadge confirmado={confirmou} />}
                     </div>
