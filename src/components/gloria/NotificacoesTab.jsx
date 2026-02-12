@@ -47,6 +47,7 @@ export default function NotificacoesTab({ onAbrirChat }) {
   const [filtroData, setFiltroData] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [filtroStatus, setFiltroStatus] = useState('todos');
   const [filtroConfirmacao, setFiltroConfirmacao] = useState('todos');
+  const [filtroTipo, setFiltroTipo] = useState('todos');
   const [busca, setBusca] = useState('');
   const [notificacaoSelecionada, setNotificacaoSelecionada] = useState(null);
 
