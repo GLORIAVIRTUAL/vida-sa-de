@@ -1333,7 +1333,7 @@ export default function ChatbotsAtivos() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="chat" className="flex items-center gap-2">
               <MessageCircle className="w-4 h-4" />
               Conversas
@@ -1341,6 +1341,10 @@ export default function ChatbotsAtivos() {
             <TabsTrigger value="contatos" className="flex items-center gap-2">
               <Users className="w-4 h-4" />
               Contatos
+            </TabsTrigger>
+            <TabsTrigger value="notificacoes" className="flex items-center gap-2">
+              <Bell className="w-4 h-4" />
+              Notificações
             </TabsTrigger>
             <TabsTrigger value="pipeline" className="flex items-center gap-2">
               <TrendingUp className="w-4 h-4" />
