@@ -179,6 +179,7 @@ export default function NotificacoesTab({ onAbrirChat }) {
             <CardTitle className="text-base flex items-center justify-between">
               <span>Detalhes da Notificação</span>
               <div className="flex gap-2">
+                <TipoBadge tipo={getTipoNotificacao(log)} />
                 <StatusBadge status={log.status_entrega} />
                 <ConfirmacaoBadge confirmado={ag ? confirmou : null} />
               </div>
