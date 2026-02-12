@@ -237,15 +237,27 @@ export default function Relatorios() {
     const totalClinica = dadosFiltrados.reduce((acc, os) => acc + (os.valor_clinica || 0), 0);
     const totalAtendimentos = dadosFiltrados.length;
     
-    // Por forma de pagamento
+    // Por forma de pagamento (desmembrando "Múltiplas Formas")
     const porFormaPagamento = {};
     dadosFiltrados.forEach(os => {
-      const forma = os.forma_pagamento || 'Não informado';
-      if (!porFormaPagamento[forma]) {
-        porFormaPagamento[forma] = { quantidade: 0, valor: 0 };
+      if (os.forma_pagamento === 'Múltiplas Formas' && os.pagamentos_detalhados && os.pagamentos_detalhados.length > 0) {
+        // Desmembrar cada forma de pagamento detalhada
+        os.pagamentos_detalhados.forEach(pg => {
+          const forma = pg.forma || 'Não informado';
+          if (!porFormaPagamento[forma]) {
+            porFormaPagamento[forma] = { quantidade: 0, valor: 0 };
+          }
+          porFormaPagamento[forma].quantidade++;
+          porFormaPagamento[forma].valor += (pg.valor || 0);
+        });
+      } else {
+        const forma = os.forma_pagamento || 'Não informado';
+        if (!porFormaPagamento[forma]) {
+          porFormaPagamento[forma] = { quantidade: 0, valor: 0 };
+        }
+        porFormaPagamento[forma].quantidade++;
+        porFormaPagamento[forma].valor += (os.valor_final || 0);
       }
-      porFormaPagamento[forma].quantidade++;
-      porFormaPagamento[forma].valor += (os.valor_final || 0);
     });
     
     // Por categoria (convênio/particular)
