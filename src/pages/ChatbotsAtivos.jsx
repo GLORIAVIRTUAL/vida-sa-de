@@ -1365,9 +1365,26 @@ export default function ChatbotsAtivos() {
           </TabsContent>
 
           <TabsContent value="notificacoes" className="mt-4">
-            <NotificacoesTab onAbrirChat={(telefone, nome) => {
-              // Buscar contato na lista e abrir chat
-              setContatoParaConversa({ telefone, nome });
+            <NotificacoesTab onAbrirChat={async (telefone, nome) => {
+              // Buscar contato real pelo telefone para ter o histórico completo
+              try {
+                const contatos = await base44.entities.Contato.filter({ telefone });
+                if (contatos && contatos.length > 0) {
+                  setContatoParaConversa(contatos[0]);
+                } else {
+                  // Tentar sem formatação (telefone pode ter formatos diferentes)
+                  const telefoneLimpo = telefone.replace(/\D/g, '');
+                  const contatos2 = await base44.entities.Contato.filter({ telefone: telefoneLimpo });
+                  if (contatos2 && contatos2.length > 0) {
+                    setContatoParaConversa(contatos2[0]);
+                  } else {
+                    setContatoParaConversa({ telefone, nome, historico_mensagens: [] });
+                  }
+                }
+              } catch (err) {
+                console.error('Erro ao buscar contato:', err);
+                setContatoParaConversa({ telefone, nome, historico_mensagens: [] });
+              }
               setActiveTab('chat');
             }} />
           </TabsContent>
