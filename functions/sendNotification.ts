@@ -98,6 +98,37 @@ Deno.serve(async (req) => {
                     timestamp_envio: timestamp,
                     resposta_api: JSON.stringify(resultadoApi)
                 });
+
+                // Registrar no histórico do Contato para aparecer na conversa
+                try {
+                    const contatos = await base44.asServiceRole.entities.Contato.filter({ telefone: telefoneCompleto });
+                    let contato = contatos?.[0];
+                    // Tentar sem 55 se não encontrou
+                    if (!contato) {
+                        const telSem55 = telefoneCompleto.startsWith('55') ? telefoneCompleto.slice(2) : telefoneCompleto;
+                        const contatos2 = await base44.asServiceRole.entities.Contato.filter({ telefone: telSem55 });
+                        contato = contatos2?.[0];
+                    }
+                    if (contato) {
+                        const historico = contato.historico_mensagens || [];
+                        historico.push({
+                            role: 'assistant',
+                            content: `📢 [Notificação Manual]\n${mensagem}`,
+                            timestamp: timestamp,
+                            humano: true
+                        });
+                        await base44.asServiceRole.entities.Contato.update(contato.id, {
+                            historico_mensagens: historico,
+                            ultima_resposta: mensagem,
+                            ultima_interacao: timestamp
+                        });
+                        console.log(`✅ Mensagem registrada no histórico do contato ${contato.id}`);
+                    } else {
+                        console.log(`⚠️ Contato não encontrado para telefone ${telefoneCompleto}, notificação não registrada no chat`);
+                    }
+                } catch (histError) {
+                    console.error('⚠️ Erro ao registrar no histórico do contato (não crítico):', histError.message);
+                }
                 
                 return new Response(JSON.stringify({
                     sucesso: true,
