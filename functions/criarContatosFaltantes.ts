@@ -19,7 +19,7 @@ Deno.serve(async (req) => {
             if (batch.length < 100) break;
             skip += 100;
         }
-        console.log(`📊 Total de logs de notificação: ${todosLogs.length}`);
+        console.log(`Total de logs: ${todosLogs.length}`);
 
         // 2. Buscar todos os contatos existentes
         let todosContatos = [];
@@ -31,44 +31,45 @@ Deno.serve(async (req) => {
             if (batch.length < 100) break;
             skip += 100;
         }
-        console.log(`📊 Total de contatos existentes: ${todosContatos.length}`);
+        console.log(`Total de contatos: ${todosContatos.length}`);
 
-        // 3. Criar set de telefones normalizados dos contatos existentes
+        // 3. Set de telefones normalizados
         const telefonesExistentes = new Set();
         todosContatos.forEach(c => {
             const tel = (c.telefone || '').replace(/\D/g, '');
             if (tel) {
                 telefonesExistentes.add(tel);
-                // Adicionar variações
                 if (tel.startsWith('55')) telefonesExistentes.add(tel.slice(2));
                 else telefonesExistentes.add('55' + tel);
             }
         });
 
-        // 4. Agrupar logs por telefone (pegar o mais recente de cada)
+        // 4. Agrupar logs por telefone
         const logsPorTelefone = {};
+        const todosLogsPorTelefone = {};
+        
         todosLogs.forEach(log => {
             const tel = (log.telefone_destino || '').replace(/\D/g, '');
             if (!tel) return;
             
-            // Verificar se já existe contato
             const telSem55 = tel.startsWith('55') ? tel.slice(2) : tel;
             const telCom55 = tel.startsWith('55') ? tel : '55' + tel;
             
             if (telefonesExistentes.has(tel) || telefonesExistentes.has(telSem55) || telefonesExistentes.has(telCom55)) {
-                return; // Já tem contato
+                return;
             }
             
-            // Guardar o log mais recente para esse telefone
+            if (!todosLogsPorTelefone[tel]) todosLogsPorTelefone[tel] = [];
+            todosLogsPorTelefone[tel].push(log);
+            
             if (!logsPorTelefone[tel] || new Date(log.timestamp_envio || log.created_date) > new Date(logsPorTelefone[tel].timestamp_envio || logsPorTelefone[tel].created_date)) {
                 logsPorTelefone[tel] = log;
             }
         });
 
         const telefonesParaCriar = Object.keys(logsPorTelefone);
-        console.log(`📝 Contatos a criar: ${telefonesParaCriar.length}`);
+        console.log(`Contatos a criar: ${telefonesParaCriar.length}`);
 
-        // 5. Criar contatos faltantes
         let criados = 0;
         const resultados = [];
 
@@ -76,12 +77,10 @@ Deno.serve(async (req) => {
             const log = logsPorTelefone[tel];
             const timestamp = log.timestamp_envio || log.created_date || new Date().toISOString();
             
-            // Juntar todas as mensagens desse telefone para o histórico
-            const logsDesteTelefone = todosLogs
-                .filter(l => (l.telefone_destino || '').replace(/\D/g, '') === tel)
+            const logsOrdenados = (todosLogsPorTelefone[tel] || [])
                 .sort((a, b) => new Date(a.timestamp_envio || a.created_date) - new Date(b.timestamp_envio || b.created_date));
             
-            const historico = logsDesteTelefone.map(l => ({
+            const historico = logsOrdenados.map(l => ({
                 role: 'assistant',
                 content: `📢 [Notificação]\n${l.mensagem_enviada || ''}`,
                 timestamp: l.timestamp_envio || l.created_date || new Date().toISOString(),
@@ -90,7 +89,7 @@ Deno.serve(async (req) => {
 
             try {
                 await base44.asServiceRole.entities.Contato.create({
-                    nome: log.paciente_nome?.trim() || 'Cliente',
+                    nome: (log.paciente_nome || 'Cliente').trim(),
                     telefone: tel,
                     origem: 'Manual',
                     status: 'Cliente',
@@ -101,10 +100,8 @@ Deno.serve(async (req) => {
                 });
                 criados++;
                 resultados.push({ nome: log.paciente_nome, telefone: tel, status: 'criado' });
-                console.log(`✅ Contato criado: ${log.paciente_nome} (${tel})`);
             } catch (err) {
                 resultados.push({ nome: log.paciente_nome, telefone: tel, status: 'erro', erro: err.message });
-                console.error(`❌ Erro ao criar contato ${log.paciente_nome}: ${err.message}`);
             }
         }
 
@@ -117,7 +114,6 @@ Deno.serve(async (req) => {
         });
 
     } catch (error) {
-        console.error('❌ Erro geral:', error.message);
         return Response.json({ error: error.message }, { status: 500 });
     }
 });
