@@ -93,6 +93,13 @@ export default function NotificacoesTab({ onAbrirChat }) {
 
   useEffect(() => { carregarDados(); }, []);
 
+  // Determinar tipo de notificação
+  const getTipoNotificacao = (log) => {
+    const msg = (log.mensagem_enviada || '').toLowerCase();
+    if (msg.includes('[lembrete 24h]') || msg.includes('lembrar da sua consulta *amanhã')) return 'automatica';
+    return 'manual';
+  };
+
   // Filtrar logs
   const logsFiltrados = logs.filter(log => {
     // Filtro por data
@@ -103,6 +110,12 @@ export default function NotificacoesTab({ onAbrirChat }) {
 
     // Filtro por status de entrega
     if (filtroStatus !== 'todos' && log.status_entrega !== filtroStatus) return false;
+
+    // Filtro por tipo (manual/automática)
+    if (filtroTipo !== 'todos') {
+      const tipo = getTipoNotificacao(log);
+      if (filtroTipo !== tipo) return false;
+    }
 
     // Filtro por confirmação
     if (filtroConfirmacao !== 'todos') {
