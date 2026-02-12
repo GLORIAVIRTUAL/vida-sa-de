@@ -1364,6 +1364,14 @@ export default function ChatbotsAtivos() {
             <ContatosTab onIniciarConversa={handleIniciarConversa} />
           </TabsContent>
 
+          <TabsContent value="notificacoes" className="mt-4">
+            <NotificacoesTab onAbrirChat={(telefone, nome) => {
+              // Buscar contato na lista e abrir chat
+              setContatoParaConversa({ telefone, nome });
+              setActiveTab('chat');
+            }} />
+          </TabsContent>
+
           <TabsContent value="pipeline" className="mt-4">
             <PipelineTab />
           </TabsContent>
