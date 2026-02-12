@@ -266,15 +266,37 @@ export default function NotificacoesTab({ onAbrirChat }) {
   return (
     <div className="space-y-4">
       {/* Estatísticas */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
         <Card>
           <CardContent className="p-3 flex items-center justify-between">
             <div>
-              <p className="text-[10px] text-gray-500">Total Enviadas</p>
+              <p className="text-[10px] text-gray-500">Total</p>
               <p className="text-xl font-bold">{logs.length}</p>
             </div>
             <div className="bg-blue-100 p-2 rounded-lg">
               <Bell className="w-4 h-4 text-blue-600" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-3 flex items-center justify-between">
+            <div>
+              <p className="text-[10px] text-gray-500">Automáticas</p>
+              <p className="text-xl font-bold text-indigo-600">{totalAutomaticas}</p>
+            </div>
+            <div className="bg-indigo-100 p-2 rounded-lg">
+              <Bot className="w-4 h-4 text-indigo-600" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-3 flex items-center justify-between">
+            <div>
+              <p className="text-[10px] text-gray-500">Manuais</p>
+              <p className="text-xl font-bold text-amber-600">{totalManuais}</p>
+            </div>
+            <div className="bg-amber-100 p-2 rounded-lg">
+              <User className="w-4 h-4 text-amber-600" />
             </div>
           </CardContent>
         </Card>
