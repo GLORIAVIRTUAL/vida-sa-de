@@ -435,7 +435,7 @@ export default function NotificacoesTab({ onAbrirChat }) {
                 </button>
               ))}
             </div>
-            <Button variant="ghost" size="sm" onClick={carregarDados} className="h-8">
+            <Button variant="ghost" size="sm" onClick={() => carregarDados()} className="h-8">
               <RefreshCw className="w-3 h-3" />
             </Button>
             {filtroData && (
