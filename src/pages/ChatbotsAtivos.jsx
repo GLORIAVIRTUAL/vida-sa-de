@@ -20,6 +20,7 @@ import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import ContatosTab from '../components/gloria/ContatosTab';
+import NotificacoesTab from '../components/gloria/NotificacoesTab';
 import { UserPlus } from 'lucide-react';
 import CadastroRapidoPaciente from '../components/pacientes/CadastroRapidoPaciente';
 
