@@ -124,7 +124,24 @@ Deno.serve(async (req) => {
                         });
                         console.log(`✅ Mensagem registrada no histórico do contato ${contato.id}`);
                     } else {
-                        console.log(`⚠️ Contato não encontrado para telefone ${telefoneCompleto}, notificação não registrada no chat`);
+                        // Criar contato automaticamente se não existir
+                        console.log(`📝 Criando contato automaticamente para ${paciente_nome || 'Cliente'} (${telefoneCompleto})`);
+                        await base44.asServiceRole.entities.Contato.create({
+                            nome: paciente_nome || 'Cliente',
+                            telefone: telefoneCompleto,
+                            origem: 'Manual',
+                            status: 'Cliente',
+                            historico_mensagens: [{
+                                role: 'assistant',
+                                content: `📢 [Notificação Manual]\n${mensagem}`,
+                                timestamp: timestamp,
+                                humano: true
+                            }],
+                            ultima_resposta: mensagem,
+                            ultima_interacao: timestamp,
+                            total_mensagens: 1
+                        });
+                        console.log(`✅ Contato criado e mensagem registrada`);
                     }
                 } catch (histError) {
                     console.error('⚠️ Erro ao registrar no histórico do contato (não crítico):', histError.message);
