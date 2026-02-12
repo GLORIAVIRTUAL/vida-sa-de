@@ -111,14 +111,7 @@ export default function NotificacoesTab({ onAbrirChat }) {
     return 'manual';
   };
 
-  // Recarregar quando o filtro de data muda
-  const filtroDataRef = useRef(filtroData);
-  useEffect(() => {
-    if (filtroDataRef.current !== filtroData) {
-      filtroDataRef.current = filtroData;
-      carregarDados(filtroData);
-    }
-  }, [filtroData]);
+
 
   // Filtrar logs (data já filtrada no backend, apenas filtros locais)
   const logsFiltrados = logs.filter(log => {
