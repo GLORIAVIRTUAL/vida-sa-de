@@ -74,20 +74,24 @@ export default function NotificacoesTab({ onAbrirChat }) {
       }
       setLogs(todosLogs);
 
-      // Buscar agendamentos relacionados para checar confirmação
-      const agendamentoIds = [...new Set(todosLogs.map(l => l.agendamento_id).filter(Boolean))];
-      if (agendamentoIds.length > 0) {
+      // Buscar TODOS os agendamentos de uma vez (mais estável que buscar por ID individual)
+      const agendamentoIds = new Set(todosLogs.map(l => l.agendamento_id).filter(Boolean));
+      if (agendamentoIds.size > 0) {
         const agMap = {};
-        // Buscar em lotes de 50
-        for (let i = 0; i < agendamentoIds.length; i += 50) {
-          const lote = agendamentoIds.slice(i, i + 50);
-          const promises = lote.map(id => 
-            base44.entities.Agendamento.get(id).catch(() => null)
-          );
-          const resultados = await Promise.all(promises);
-          resultados.forEach(ag => {
-            if (ag) agMap[ag.id] = ag;
+        let agSkip = 0;
+        const agBatch = 100;
+        while (true) {
+          const batch = await base44.entities.Agendamento.list('-created_date', agBatch, agSkip);
+          if (!batch || batch.length === 0) break;
+          batch.forEach(ag => {
+            if (agendamentoIds.has(ag.id)) {
+              agMap[ag.id] = ag;
+            }
           });
+          // Se já encontramos todos, parar cedo
+          if (Object.keys(agMap).length >= agendamentoIds.size) break;
+          if (batch.length < agBatch) break;
+          agSkip += agBatch;
         }
         setAgendamentos(agMap);
       }
