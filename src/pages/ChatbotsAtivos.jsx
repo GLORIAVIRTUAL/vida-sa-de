@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   MessageCircle, Loader2, Send, RefreshCw, User, Phone, Calendar,
   TrendingUp, Clock, CheckCircle, XCircle, Activity, Users, Settings, Bot,
-  Image, Paperclip, Mic, Smile, Zap, Volume2, VolumeX, CalendarPlus, DollarSign
+  Image, Paperclip, Mic, Smile, Zap, Volume2, VolumeX, CalendarPlus, DollarSign, Bell
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
