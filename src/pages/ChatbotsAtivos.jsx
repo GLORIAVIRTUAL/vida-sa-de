@@ -363,19 +363,26 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
     return () => clearInterval(interval);
   }, []);
 
-  // Selecionar contato inicial quando vier da aba de contatos (apenas uma vez)
+  // Selecionar contato inicial quando vier da aba de contatos ou notificações
   useEffect(() => {
-    if (contatoInicial && !contatoSelecionado) {
-      // Buscar o contato na lista pelo telefone ou usar o que veio direto
-      const contatoExistente = contatos.find(c => c.telefone === contatoInicial.telefone);
-      if (contatoExistente) {
-        setContatoSelecionado(contatoExistente);
-      } else {
-        // Se não existe na lista de conversas, usar o contato passado para iniciar nova conversa
-        setContatoSelecionado(contatoInicial);
-      }
-      onContatoSelecionado && onContatoSelecionado();
+    if (!contatoInicial) return;
+    
+    // Buscar o contato na lista pelo telefone (com normalização)
+    const telInicial = (contatoInicial.telefone || '').replace(/\D/g, '');
+    const contatoExistente = contatos.find(c => {
+      const telC = (c.telefone || '').replace(/\D/g, '');
+      return telC === telInicial || telC === '55' + telInicial || '55' + telC === telInicial;
+    });
+    
+    if (contatoExistente) {
+      setContatoSelecionado(contatoExistente);
+    } else if (contatoInicial.id) {
+      // Se tem id, é um contato real vindo da busca
+      setContatoSelecionado(contatoInicial);
+    } else {
+      setContatoSelecionado(contatoInicial);
     }
+    onContatoSelecionado && onContatoSelecionado();
   }, [contatoInicial]); // Removido 'contatos' das dependências
 
   // Removido: useEffect que atualizava contato ao mudar lista de contatos
