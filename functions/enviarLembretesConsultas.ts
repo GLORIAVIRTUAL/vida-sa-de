@@ -150,6 +150,26 @@ Deno.serve(async (req) => {
                                 ultima_resposta: mensagem,
                                 ultima_interacao: timestampEnvio
                             });
+                        } else {
+                            // Criar contato automaticamente se não existir
+                            console.log(`📝 Criando contato para ${paciente.nome} (${telefone})`);
+                            await base44.asServiceRole.entities.Contato.create({
+                                nome: paciente.nome || 'Cliente',
+                                telefone: telefone,
+                                origem: 'Manual',
+                                status: 'Cliente',
+                                paciente_id: agendamento.paciente_id || null,
+                                historico_mensagens: [{
+                                    role: 'assistant',
+                                    content: `📢 [Lembrete Automático 24h]\n${mensagem}`,
+                                    timestamp: timestampEnvio,
+                                    humano: false
+                                }],
+                                ultima_resposta: mensagem,
+                                ultima_interacao: timestampEnvio,
+                                total_mensagens: 1
+                            });
+                            console.log(`✅ Contato criado automaticamente para ${paciente.nome}`);
                         }
                     } catch (histError) {
                         console.error(`⚠️ Erro ao registrar lembrete no histórico do contato:`, histError.message);
