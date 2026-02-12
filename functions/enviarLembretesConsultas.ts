@@ -86,8 +86,7 @@ Deno.serve(async (req) => {
                 `com ${nomeMedico}.\n\n` +
                 `📍 *Centro Vida Saúde*\n` +
                 `Tristão Monteiro, 580 – Bairro Zona Nova, Tramandaí/RS – CEP: 95590-000 (próximo ao fórum)\n\n` +
-                `📌 *Localização:* https://maps.app.goo.gl/YourLink\n` +
-                `https://www.google.com/maps/place/29%C2%B059'49.5%22S+50%C2%B008'34.3%22W/@-29.997081,-50.1454402,976m\n\n` +
+                `📌 *Localização:* https://www.google.com/maps/place/29%C2%B059'49.5%22S+50%C2%B008'34.3%22W/@-29.997081,-50.1428653\n\n` +
                 `Por favor, chegue com *10 minutos de antecedência*.\n\n` +
                 `Responda *SIM* para confirmar sua presença ou entre em contato caso precise reagendar.\n\n` +
                 `Até amanhã! 🙏`;
