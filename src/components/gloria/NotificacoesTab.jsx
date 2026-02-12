@@ -153,6 +153,8 @@ export default function NotificacoesTab({ onAbrirChat }) {
     return ag?.status === 'Confirmado';
   }).length;
   const totalFalhou = logs.filter(l => l.status_entrega === 'falhou').length;
+  const totalAutomaticas = logs.filter(l => getTipoNotificacao(l) === 'automatica').length;
+  const totalManuais = logs.length - totalAutomaticas;
 
   if (loading) {
     return (
