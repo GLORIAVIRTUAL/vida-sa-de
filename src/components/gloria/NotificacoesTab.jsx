@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { 
   Loader2, RefreshCw, Search, Bell, CheckCircle, Clock, 
-  XCircle, Eye, MessageCircle, Send, ChevronLeft
+  XCircle, Eye, MessageCircle, Send, ChevronLeft, Bot, User
 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { format } from 'date-fns';
