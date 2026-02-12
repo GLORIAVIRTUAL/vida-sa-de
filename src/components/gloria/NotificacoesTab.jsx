@@ -58,43 +58,42 @@ export default function NotificacoesTab({ onAbrirChat }) {
   const [busca, setBusca] = useState('');
   const [notificacaoSelecionada, setNotificacaoSelecionada] = useState(null);
 
-  const carregarDados = async () => {
+  const carregarDados = async (dataFiltro) => {
     setLoading(true);
     try {
-      // Buscar logs de notificação
+      const dataAlvo = dataFiltro || filtroData;
       let todosLogs = [];
-      let skip = 0;
-      const batchSize = 100;
-      while (true) {
-        const batch = await base44.entities.NotificationLog.list('-created_date', batchSize, skip);
-        if (!batch || batch.length === 0) break;
-        todosLogs = [...todosLogs, ...batch];
-        if (batch.length < batchSize) break;
-        skip += batchSize;
+
+      if (dataAlvo) {
+        // Buscar logs apenas da data selecionada (muito mais rápido)
+        todosLogs = await base44.entities.NotificationLog.filter(
+          { created_date: { $gte: `${dataAlvo}T00:00:00`, $lte: `${dataAlvo}T23:59:59` } },
+          '-created_date',
+          500
+        );
+      } else {
+        // Sem filtro de data: buscar os últimos 300 (limite seguro)
+        todosLogs = await base44.entities.NotificationLog.list('-created_date', 300);
       }
+
       setLogs(todosLogs);
 
-      // Buscar TODOS os agendamentos de uma vez (mais estável que buscar por ID individual)
-      const agendamentoIds = new Set(todosLogs.map(l => l.agendamento_id).filter(Boolean));
-      if (agendamentoIds.size > 0) {
-        const agMap = {};
-        let agSkip = 0;
-        const agBatch = 100;
-        while (true) {
-          const batch = await base44.entities.Agendamento.list('-created_date', agBatch, agSkip);
-          if (!batch || batch.length === 0) break;
-          batch.forEach(ag => {
-            if (agendamentoIds.has(ag.id)) {
-              agMap[ag.id] = ag;
-            }
-          });
-          // Se já encontramos todos, parar cedo
-          if (Object.keys(agMap).length >= agendamentoIds.size) break;
-          if (batch.length < agBatch) break;
-          agSkip += agBatch;
+      // Buscar apenas agendamentos referenciados nos logs carregados
+      const agendamentoIds = [...new Set(todosLogs.map(l => l.agendamento_id).filter(Boolean))];
+      const agMap = {};
+      if (agendamentoIds.length > 0) {
+        // Buscar em lotes de 50 IDs por vez
+        for (let i = 0; i < agendamentoIds.length; i += 50) {
+          const idsLote = agendamentoIds.slice(i, i + 50);
+          const lote = await base44.entities.Agendamento.filter(
+            { id: { $in: idsLote } },
+            '-created_date',
+            50
+          );
+          lote.forEach(ag => { agMap[ag.id] = ag; });
         }
-        setAgendamentos(agMap);
       }
+      setAgendamentos(agMap);
     } catch (error) {
       console.error('Erro ao carregar notificações:', error);
     } finally {
