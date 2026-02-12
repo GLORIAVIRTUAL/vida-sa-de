@@ -2695,8 +2695,8 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
                                if (medicoSelecionado && 
                                    normalizeString(medicoSelecionado.especialidade) === 'ODONTOLOGIA' && 
                                    medicosOdontologia.length > 1 &&
-                                   (formData.tipo_servico === 'Consulta' || formData.tipo_servico === 'Retorno')) {
-                                 return (
+                                   (formData.tipo_servico === 'Consulta' || formData.tipo_servico === 'Retorno' || formData.tipo_servico === 'Procedimento' || formData.tipo_servico === 'Exame')) {
+                                   return (
                                    <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                                      <Label htmlFor="dentista_especifico" className="text-blue-800 font-medium flex items-center gap-2">
                                        🦷 Selecione o Dentista para este agendamento
