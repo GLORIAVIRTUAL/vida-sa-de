@@ -139,6 +139,7 @@ export default function Exames() {
                 ) : (
                   exames
                     .filter(item => item.nome?.toLowerCase().includes(busca.toLowerCase()))
+                    .sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR'))
                     .map((item) => (
                     <TableRow key={item.id}>
                       <TableCell className="font-medium">{item.nome}</TableCell>
