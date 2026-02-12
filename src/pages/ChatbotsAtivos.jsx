@@ -1375,18 +1375,28 @@ export default function ChatbotsAtivos() {
             <NotificacoesTab onAbrirChat={async (telefone, nome) => {
               // Buscar contato real pelo telefone para ter o histórico completo
               try {
-                const contatos = await base44.entities.Contato.filter({ telefone });
-                if (contatos && contatos.length > 0) {
-                  setContatoParaConversa(contatos[0]);
-                } else {
-                  // Tentar sem formatação (telefone pode ter formatos diferentes)
-                  const telefoneLimpo = telefone.replace(/\D/g, '');
-                  const contatos2 = await base44.entities.Contato.filter({ telefone: telefoneLimpo });
-                  if (contatos2 && contatos2.length > 0) {
-                    setContatoParaConversa(contatos2[0]);
-                  } else {
-                    setContatoParaConversa({ telefone, nome, historico_mensagens: [] });
+                const telLimpo = (telefone || '').replace(/\D/g, '');
+                // Tentar várias variações do telefone
+                const variantes = [
+                  telLimpo,                                             // 5551999082553
+                  telLimpo.startsWith('55') ? telLimpo.slice(2) : telLimpo, // 51999082553
+                  !telLimpo.startsWith('55') ? '55' + telLimpo : telLimpo,  // 5551999082553
+                ];
+                
+                let contatoEncontrado = null;
+                for (const tel of variantes) {
+                  if (!tel) continue;
+                  const resultados = await base44.entities.Contato.filter({ telefone: tel });
+                  if (resultados && resultados.length > 0) {
+                    contatoEncontrado = resultados[0];
+                    break;
                   }
+                }
+                
+                if (contatoEncontrado) {
+                  setContatoParaConversa(contatoEncontrado);
+                } else {
+                  setContatoParaConversa({ telefone: telLimpo, nome, historico_mensagens: [] });
                 }
               } catch (err) {
                 console.error('Erro ao buscar contato:', err);
