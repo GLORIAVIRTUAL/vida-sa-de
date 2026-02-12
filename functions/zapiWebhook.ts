@@ -228,7 +228,7 @@ async function processarMensagemRecebida(base44, payload) {
                 
                 // Atualizar principal com histórico unificado
                 await base44.asServiceRole.entities.Contato.update(principal.id, {
-                    historico_mensagens: historicoUnificado.slice(-100),
+                    historico_mensagens: historicoUnificado.slice(-200),
                     telefone: telefone // Garantir que o telefone está no formato mais recente
                 });
                 
@@ -254,7 +254,7 @@ async function processarMensagemRecebida(base44, payload) {
                         messageId: msgId
                     });
                     await base44.asServiceRole.entities.Contato.update(contato.id, {
-                        historico_mensagens: historicoAtual.slice(-50),
+                        historico_mensagens: historicoAtual.slice(-200),
                         ultima_interacao: agora,
                         nome: contato.nome || senderName,
                         conversa_finalizada: false,
