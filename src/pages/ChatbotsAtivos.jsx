@@ -1384,6 +1384,8 @@ export default function ChatbotsAtivos() {
                 ];
                 
                 let contatoEncontrado = null;
+                
+                // 1) Tentar buscar por filter com cada variante
                 for (const tel of variantes) {
                   if (!tel) continue;
                   const resultados = await base44.entities.Contato.filter({ telefone: tel });
@@ -1391,6 +1393,16 @@ export default function ChatbotsAtivos() {
                     contatoEncontrado = resultados[0];
                     break;
                   }
+                }
+                
+                // 2) Se não achou com filter, buscar na lista geral com busca parcial
+                if (!contatoEncontrado) {
+                  const ultimos8 = telLimpo.slice(-8);
+                  const todosContatos = await base44.entities.Contato.list('-ultima_interacao', 500);
+                  contatoEncontrado = todosContatos.find(c => {
+                    const telC = (c.telefone || '').replace(/\D/g, '');
+                    return telC.includes(ultimos8);
+                  });
                 }
                 
                 if (contatoEncontrado) {
