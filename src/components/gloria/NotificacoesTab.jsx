@@ -375,6 +375,25 @@ export default function NotificacoesTab({ onAbrirChat }) {
                 </button>
               ))}
             </div>
+            <div className="flex gap-1">
+              {[
+                { value: 'todos', label: 'Todos' },
+                { value: 'manual', label: '👤 Manual' },
+                { value: 'automatica', label: '🤖 Automática' },
+              ].map(f => (
+                <button
+                  key={f.value}
+                  onClick={() => setFiltroTipo(f.value)}
+                  className={`text-[10px] px-2 py-1 rounded-full border transition ${
+                    filtroTipo === f.value
+                      ? 'bg-indigo-600 text-white border-indigo-600'
+                      : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-100'
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
             <Button variant="ghost" size="sm" onClick={carregarDados} className="h-8">
               <RefreshCw className="w-3 h-3" />
             </Button>
