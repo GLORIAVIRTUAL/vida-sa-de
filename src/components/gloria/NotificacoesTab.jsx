@@ -58,31 +58,19 @@ export default function NotificacoesTab({ onAbrirChat }) {
   const [busca, setBusca] = useState('');
   const [notificacaoSelecionada, setNotificacaoSelecionada] = useState(null);
 
-  const carregarDados = async (dataFiltro) => {
+  const [allLogs, setAllLogs] = useState([]);
+
+  const carregarDados = async () => {
     setLoading(true);
     try {
-      const dataAlvo = dataFiltro || filtroData;
-      let todosLogs = [];
+      // Buscar todos os logs (últimos 500)
+      const todosLogs = await base44.entities.NotificationLog.list('-created_date', 500);
+      setAllLogs(todosLogs);
 
-      if (dataAlvo) {
-        // Buscar logs apenas da data selecionada (muito mais rápido)
-        todosLogs = await base44.entities.NotificationLog.filter(
-          { created_date: { $gte: `${dataAlvo}T00:00:00`, $lte: `${dataAlvo}T23:59:59` } },
-          '-created_date',
-          500
-        );
-      } else {
-        // Sem filtro de data: buscar os últimos 300 (limite seguro)
-        todosLogs = await base44.entities.NotificationLog.list('-created_date', 300);
-      }
-
-      setLogs(todosLogs);
-
-      // Buscar apenas agendamentos referenciados nos logs carregados
+      // Buscar agendamentos referenciados
       const agendamentoIds = [...new Set(todosLogs.map(l => l.agendamento_id).filter(Boolean))];
       const agMap = {};
       if (agendamentoIds.length > 0) {
-        // Buscar em lotes de 50 IDs por vez
         for (let i = 0; i < agendamentoIds.length; i += 50) {
           const idsLote = agendamentoIds.slice(i, i + 50);
           const lote = await base44.entities.Agendamento.filter(
@@ -102,6 +90,19 @@ export default function NotificacoesTab({ onAbrirChat }) {
   };
 
   useEffect(() => { carregarDados(); }, []);
+
+  // Filtrar por data localmente (mais confiável)
+  useEffect(() => {
+    if (filtroData) {
+      const filtered = allLogs.filter(l => {
+        const dataLog = (l.timestamp_envio || l.created_date || '').substring(0, 10);
+        return dataLog === filtroData;
+      });
+      setLogs(filtered);
+    } else {
+      setLogs(allLogs);
+    }
+  }, [filtroData, allLogs]);
 
   // Determinar tipo de notificação
   const getTipoNotificacao = (log) => {
