@@ -113,6 +113,8 @@ Deno.serve(async (req) => {
                 const result = await response.json();
 
                 if (response.ok && (result.zapiMessageId || result.messageId || result.zaapId)) {
+                    const timestampEnvio = new Date().toISOString();
+                    
                     // Registrar envio no log
                     await base44.asServiceRole.entities.NotificationLog.create({
                         tipo_canal: 'whatsapp',
@@ -122,8 +124,35 @@ Deno.serve(async (req) => {
                         agendamento_id: agendamento.id,
                         paciente_nome: paciente.nome,
                         status_entrega: 'enviado',
-                        timestamp_envio: new Date().toISOString()
+                        timestamp_envio: timestampEnvio
                     });
+
+                    // Registrar no histórico do Contato para aparecer na conversa
+                    try {
+                        const contatos = await base44.asServiceRole.entities.Contato.filter({ telefone: telefone });
+                        let contato = contatos?.[0];
+                        if (!contato) {
+                            const telSem55 = telefone.startsWith('55') ? telefone.slice(2) : telefone;
+                            const contatos2 = await base44.asServiceRole.entities.Contato.filter({ telefone: telSem55 });
+                            contato = contatos2?.[0];
+                        }
+                        if (contato) {
+                            const historico = contato.historico_mensagens || [];
+                            historico.push({
+                                role: 'assistant',
+                                content: `📢 [Lembrete Automático 24h]\n${mensagem}`,
+                                timestamp: timestampEnvio,
+                                humano: false
+                            });
+                            await base44.asServiceRole.entities.Contato.update(contato.id, {
+                                historico_mensagens: historico,
+                                ultima_resposta: mensagem,
+                                ultima_interacao: timestampEnvio
+                            });
+                        }
+                    } catch (histError) {
+                        console.error(`⚠️ Erro ao registrar lembrete no histórico do contato:`, histError.message);
+                    }
 
                     enviados++;
                     resultados.push({ paciente: paciente.nome, status: 'enviado' });
