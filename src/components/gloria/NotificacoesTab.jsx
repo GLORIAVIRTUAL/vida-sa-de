@@ -110,14 +110,17 @@ export default function NotificacoesTab({ onAbrirChat }) {
     return 'manual';
   };
 
-  // Filtrar logs
-  const logsFiltrados = logs.filter(log => {
-    // Filtro por data
-    if (filtroData) {
-      const dataLog = log.created_date || log.timestamp_envio;
-      if (dataLog && dataLog.substring(0, 10) !== filtroData) return false;
+  // Recarregar quando o filtro de data muda
+  const filtroDataRef = useRef(filtroData);
+  useEffect(() => {
+    if (filtroDataRef.current !== filtroData) {
+      filtroDataRef.current = filtroData;
+      carregarDados(filtroData);
     }
+  }, [filtroData]);
 
+  // Filtrar logs (data já filtrada no backend, apenas filtros locais)
+  const logsFiltrados = logs.filter(log => {
     // Filtro por status de entrega
     if (filtroStatus !== 'todos' && log.status_entrega !== filtroStatus) return false;
 
