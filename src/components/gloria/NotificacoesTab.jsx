@@ -30,6 +30,13 @@ function StatusBadge({ status }) {
   );
 }
 
+function TipoBadge({ tipo }) {
+  if (tipo === 'automatica') {
+    return <Badge className="bg-indigo-100 text-indigo-700 text-[10px] gap-1"><Bot className="w-3 h-3" />Automática</Badge>;
+  }
+  return <Badge className="bg-amber-100 text-amber-700 text-[10px] gap-1"><User className="w-3 h-3" />Manual</Badge>;
+}
+
 function ConfirmacaoBadge({ confirmado }) {
   if (confirmado === true) {
     return <Badge className="bg-green-100 text-green-700 text-[10px] gap-1"><CheckCircle className="w-3 h-3" />Confirmou</Badge>;
