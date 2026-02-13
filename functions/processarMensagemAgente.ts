@@ -1141,7 +1141,7 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
     const clientePerguntouSobreVagaAposOferta = iaPerguntoSeQuerAgendarConsulta && 
       /quando\s*(tem|tem\s*vaga|tem\s*hor[áa]rio|posso|d[áa]\s*pra)|tem\s*(vaga|hor[áa]rio)|pr[óo]ximo\s*(hor[áa]rio|dia|vaga)|qual\s*(hor[áa]rio|dia|vaga)/i.test(messageText);
     
-    const querAgendarMensagem = !clienteRecusandoAgendar && !ehPreguntaPreco && !ehPerguntaInformativa && !ehPerguntaSobreCartao && !respostaCurtaEmContextoCartao && (
+    const querAgendarMensagem = !clienteRecusandoAgendar && !ehPerguntaPreco && !ehPerguntaInformativa && !ehPerguntaSobreCartao && !respostaCurtaEmContextoCartao && (
       /agendar|marcar|consulta|atend|hor[áa]rio|dispon[íi]vel|vaga/i.test(messageText) ||
       clientePerguntouSobreVagaAposOferta
     );
