@@ -8,56 +8,90 @@ Deno.serve(async (req) => {
     
     console.log('📨 Processando:', { phoneNumber, messageText, mediaType, mediaUrl, messageId });
     
-    // Verificação anti-duplicata REFORÇADA: verificar tanto messageId quanto conteúdo recente
-    // NOTA: MessageIds que começam com "buffer_" são gerados pelo zapiWebhook e NUNCA devem ser ignorados
+    // ============ ANTI-DUPLICATA COM LOCK DISTRIBUÍDO ============
+    // Problema: zapiWebhook e webhookWhatsappChatbot AMBOS chamam esta função para a mesma mensagem.
+    // Solução: Usar campo 'processando_ia_lock' no contato como mutex distribuído.
+    
     const isBufferMessage = messageId && messageId.startsWith('buffer_');
     
-    if (!isBufferMessage && (messageId || messageText)) {
+    // PASSO 1: Verificar se messageId já foi processado
+    if (!isBufferMessage && messageId) {
       try {
         const contatosVerif = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
         if (contatosVerif.length > 0) {
           const historicoVerif = contatosVerif[0].historico_mensagens || [];
           
-          // 1. Verificar se messageId já foi processado (tem resposta do assistant)
-          if (messageId) {
-            const jaProcessado = historicoVerif.some(m => m.messageId === messageId && m.role === 'assistant');
-            if (jaProcessado) {
-              console.log('⏭️ MessageId já processado com resposta - ignorando duplicata:', messageId);
-              return Response.json({ success: true, status: 'duplicata_ignorada', resposta: null });
-            }
+          // Se messageId já tem resposta do assistant no histórico = já processado
+          const jaProcessado = historicoVerif.some((m, idx) => {
+            if (m.messageId !== messageId || m.role !== 'user') return false;
+            // Verificar se existe resposta do assistant DEPOIS desta mensagem
+            return historicoVerif.slice(idx + 1).some(r => r.role === 'assistant');
+          });
+          if (jaProcessado) {
+            console.log('⏭️ MessageId já processado com resposta - duplicata:', messageId);
+            return Response.json({ success: true, status: 'duplicata_ignorada', resposta: null });
           }
           
-          // 2. Verificar se a mesma mensagem de texto do user já existe nos últimos 15s
-          // (proteção contra webhooks duplicados com messageIds diferentes)
+          // PASSO 2: LOCK DISTRIBUÍDO - Verificar se outra instância já está processando
+          const lockAtual = contatosVerif[0].processando_ia_lock || null;
           const agora = Date.now();
-          const ultimas5MsgsUser = historicoVerif.filter(m => m.role === 'user').slice(-5);
-          const msgDuplicadaRecente = ultimas5MsgsUser.some(m => {
-            if (!m.timestamp) return false;
-            const diffMs = agora - new Date(m.timestamp).getTime();
-            // Mesma mensagem nos últimos 15 segundos (reduzido de 30s)
-            return diffMs < 15000 && m.content === (mediaUrl ? `${messageText}\n${mediaUrl}` : messageText);
+          
+          if (lockAtual) {
+            const lockTimestamp = new Date(lockAtual).getTime();
+            const lockIdadeMs = agora - lockTimestamp;
+            
+            // Se lock tem menos de 30 segundos = outra instância está processando
+            if (lockIdadeMs < 30000) {
+              console.log(`🔒 Lock ativo (${Math.round(lockIdadeMs/1000)}s) - outra instância processando. Abortando.`);
+              return Response.json({ success: true, status: 'lock_ativo', resposta: null });
+            }
+            // Se lock tem mais de 30s = expirou (instância anterior falhou)
+            console.log(`🔓 Lock expirado (${Math.round(lockIdadeMs/1000)}s) - assumindo processamento`);
+          }
+          
+          // PASSO 3: Adquirir lock
+          const meuLock = new Date().toISOString();
+          await base44.asServiceRole.entities.Contato.update(contatosVerif[0].id, {
+            processando_ia_lock: meuLock
           });
           
-          if (msgDuplicadaRecente) {
-            // Verificar se já tem resposta do assistant para essa mensagem
-            const ultimaMsgUser = ultimas5MsgsUser[ultimas5MsgsUser.length - 1];
-            if (ultimaMsgUser && ultimaMsgUser.content === (mediaUrl ? `${messageText}\n${mediaUrl}` : messageText)) {
-              const indexUltimaUser = historicoVerif.lastIndexOf(ultimaMsgUser);
-              const temRespostaDepois = historicoVerif.slice(indexUltimaUser + 1).some(m => m.role === 'assistant');
-              if (temRespostaDepois) {
-                console.log('⏭️ Mensagem idêntica recente COM resposta - ignorando duplicata');
-                return Response.json({ success: true, status: 'duplicata_ignorada', resposta: null });
-              }
-            }
-            // Se NÃO tem resposta ainda, pode ser que o processamento falhou - deixar passar
-            console.log('⚠️ Mensagem idêntica recente SEM resposta - permitindo reprocessamento');
+          // Pequena espera para detectar race condition
+          await new Promise(resolve => setTimeout(resolve, 300));
+          
+          // Re-verificar se NOSSO lock ainda está ativo (outra instância pode ter sobrescrito)
+          const contatoRecheck = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
+          if (contatoRecheck.length > 0 && contatoRecheck[0].processando_ia_lock !== meuLock) {
+            console.log('🔒 Lock foi sobrescrito por outra instância - abortando');
+            return Response.json({ success: true, status: 'lock_perdido', resposta: null });
           }
+          
+          console.log('🔓 Lock adquirido com sucesso');
         }
       } catch (e) {
-        console.log('⚠️ Erro verificação duplicata:', e.message);
+        console.log('⚠️ Erro verificação duplicata/lock:', e.message);
       }
     } else if (isBufferMessage) {
-      console.log('🔄 Mensagem do buffer - pulando anti-duplicata');
+      console.log('🔄 Mensagem do buffer - lock simplificado');
+      // Para mensagens de buffer, ainda adquirir lock
+      try {
+        const contatosVerif = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
+        if (contatosVerif.length > 0) {
+          const lockAtual = contatosVerif[0].processando_ia_lock || null;
+          const agora = Date.now();
+          if (lockAtual) {
+            const lockIdadeMs = agora - new Date(lockAtual).getTime();
+            if (lockIdadeMs < 30000) {
+              console.log(`🔒 Buffer: Lock ativo (${Math.round(lockIdadeMs/1000)}s) - abortando`);
+              return Response.json({ success: true, status: 'lock_ativo_buffer', resposta: null });
+            }
+          }
+          await base44.asServiceRole.entities.Contato.update(contatosVerif[0].id, {
+            processando_ia_lock: new Date().toISOString()
+          });
+        }
+      } catch (e) {
+        console.log('⚠️ Erro lock buffer:', e.message);
+      }
     }
     
     // Verificar se o contato está em atendimento humano
