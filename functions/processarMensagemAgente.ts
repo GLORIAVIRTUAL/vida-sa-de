@@ -2498,7 +2498,7 @@ Retorne JSON.`;
     const promptCompleto = `${config.prompt_sistema}
 
     ---
-    ⏰ DATA E HORÁRIO ATUAL (Fuso: Recife/Brasil):
+    ⏰ DATA E HORÁRIO ATUAL (Fuso: Brasília/Brasil):
     - 📅 HOJE É: ${dataAtualCompleta}
     - 📅 DATA (ISO): ${dataAtualISO}
     - 🕐 Horário atual: ${horaAtual}
