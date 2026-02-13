@@ -120,6 +120,32 @@ Deno.serve(async (req) => {
       }
     }
     
+    // ANTI-DUPLICATA PÓS-AGENDAMENTO: Se a última resposta do assistente é uma confirmação de agendamento
+    // e a mensagem do cliente é a mesma que gerou essa confirmação, ignorar (é reprocessamento do outro webhook)
+    try {
+      const contatoPostAg = await buscarContatoPorTelefone(phoneNumber);
+      if (contatoPostAg) {
+        const hist = contatoPostAg.historico_mensagens || [];
+        if (hist.length >= 2) {
+          const ultimaMsg = hist[hist.length - 1];
+          const penultimaMsg = hist[hist.length - 2];
+          // Se a última é uma confirmação de agendamento do assistant e a penúltima é do user com o mesmo conteúdo
+          if (ultimaMsg.role === 'assistant' && /Agendamento confirmado|Te aguardamos/i.test(ultimaMsg.content) &&
+              penultimaMsg.role === 'user') {
+            const conteudoAtual = (mediaUrl ? `${messageText}\n${mediaUrl}` : messageText).trim();
+            const conteudoAnterior = (penultimaMsg.content || '').trim();
+            if (conteudoAtual === conteudoAnterior || messageText.trim() === conteudoAnterior) {
+              console.log('⏭️ Mensagem duplicada pós-agendamento - ignorando reprocessamento');
+              await liberarLock(base44, phoneNumber);
+              return Response.json({ success: true, status: 'duplicata_pos_agendamento', resposta: null });
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('⚠️ Erro verificação pós-agendamento:', e.message);
+    }
+
     // Verificar se o contato está em atendimento humano
     const contatosCheck = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
     if (contatosCheck.length > 0 && contatosCheck[0].atendimento_humano) {
