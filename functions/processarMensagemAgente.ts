@@ -239,7 +239,7 @@ Deno.serve(async (req) => {
     // Se é primeira mensagem, retornar saudação fixa IMEDIATAMENTE (não precisa de LLM)
     if (ehPrimeiraMensagemDefinitiva) {
       // Calcular saudação por horário
-      const horaNumeroSaudacao = parseInt(new Date().toLocaleTimeString('pt-BR', { timeZone: 'America/Recife', hour: '2-digit', hour12: false }));
+      const horaNumeroSaudacao = parseInt(new Date().toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', hour12: false }));
       let saudacao = 'Bom dia';
       if (horaNumeroSaudacao >= 12 && horaNumeroSaudacao < 18) {
         saudacao = 'Boa tarde';
