@@ -1,4 +1,3 @@
-// Analisa mensagens do chat para sugestões de prompt
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 Deno.serve(async (req) => {
@@ -9,6 +8,9 @@ Deno.serve(async (req) => {
         if (user?.role !== 'admin') {
             return Response.json({ error: 'Forbidden' }, { status: 403 });
         }
+
+        const body = await req.json().catch(() => ({}));
+        const parte = body.parte || 'sugestoes';
 
         let todosContatos = [];
         let skip = 0;
@@ -21,13 +23,11 @@ Deno.serve(async (req) => {
         }
 
         let todasPerguntas = [];
-        for (const contato of todosContatos) {
-            const hist = contato.historico_mensagens;
-            if (!hist || !Array.isArray(hist) || hist.length === 0) continue;
-            const msgs = hist
-                .filter(m => m.role === 'user' && m.content && m.content.trim().length > 2)
-                .map(m => m.content.trim());
-            todasPerguntas = [...todasPerguntas, ...msgs];
+        for (const c of todosContatos) {
+            const hist = c.historico_mensagens;
+            if (!hist || !Array.isArray(hist)) continue;
+            hist.filter(m => m.role === 'user' && m.content && m.content.trim().length > 2)
+                .forEach(m => todasPerguntas.push(m.content.trim()));
         }
 
         let amostra = todasPerguntas;
@@ -36,41 +36,42 @@ Deno.serve(async (req) => {
             amostra = amostra.filter((_, i) => i % step === 0).slice(0, 500);
         }
 
-        const texto = amostra.map((msg, i) => `${i + 1}. ${msg}`).join('\n');
+        const texto = amostra.map((m, i) => `${i + 1}. ${m}`).join('\n');
 
-        const parte1 = await base44.integrations.Core.InvokeLLM({
-            prompt: `Analise ${amostra.length} mensagens de clientes via WhatsApp do chatbot "Glória" da clínica Centro Vida Saúde (Tramandaí/RS).
+        if (parte === 'analise') {
+            const res = await base44.integrations.Core.InvokeLLM({
+                prompt: `Analise ${amostra.length} mensagens reais de clientes via WhatsApp do chatbot "Glória" (Centro Vida Saúde, Tramandaí/RS).
 
-Responda:
-1. DÚVIDAS DIFÍCEIS - 15+ perguntas que o chatbot provavelmente não soube responder, com exemplos reais.
-2. PADRÕES DE LINGUAGEM - Como clientes escrevem (abreviações, erros, gírias, etc).
-3. INTENÇÕES - Categorize TODAS as intenções com frequência e exemplos.
-4. INFORMAÇÕES MAIS PEDIDAS - Dados que devem estar no prompt.
+1. DÚVIDAS DIFÍCEIS (15+) - perguntas que o chatbot provavelmente não soube responder.
+2. PADRÕES DE LINGUAGEM - como clientes escrevem.
+3. INTENÇÕES IDENTIFICADAS - todas, com frequência e exemplos.
+4. INFORMAÇÕES MAIS PEDIDAS.
 
-MENSAGENS:
-${texto}`,
-            response_json_schema: {
-                type: "object",
-                properties: {
-                    duvidas_dificeis: { type: "array", items: { type: "string" } },
-                    padroes_linguagem: { type: "array", items: { type: "string" } },
-                    intencoes: { type: "array", items: { type: "object", properties: { intencao: { type: "string" }, frequencia: { type: "string" }, exemplos: { type: "array", items: { type: "string" } } } } },
-                    informacoes_mais_pedidas: { type: "array", items: { type: "string" } }
+MENSAGENS:\n${texto}`,
+                response_json_schema: {
+                    type: "object",
+                    properties: {
+                        duvidas_dificeis: { type: "array", items: { type: "string" } },
+                        padroes_linguagem: { type: "array", items: { type: "string" } },
+                        intencoes: { type: "array", items: { type: "object", properties: { intencao: { type: "string" }, frequencia: { type: "string" }, exemplos: { type: "array", items: { type: "string" } } } } },
+                        informacoes_mais_pedidas: { type: "array", items: { type: "string" } }
+                    }
                 }
-            }
-        });
+            });
+            return Response.json({ success: true, total: todasPerguntas.length, analisadas: amostra.length, resultado: res });
+        }
 
-        const parte2 = await base44.integrations.Core.InvokeLLM({
-            prompt: `Você é especialista em prompts para chatbots de clínicas médicas. O chatbot "Glória" atende pelo WhatsApp a clínica Centro Vida Saúde (Tramandaí/RS).
+        // Parte sugestões (padrão)
+        const res = await base44.integrations.Core.InvokeLLM({
+            prompt: `Você é especialista em prompts para chatbots de clínicas. O chatbot "Glória" atende via WhatsApp a clínica Centro Vida Saúde (Tramandaí/RS).
 
-Baseado nas ${amostra.length} mensagens REAIS abaixo, crie 15+ SUGESTÕES DETALHADAS para melhorar o prompt.
+Baseado em ${amostra.length} mensagens REAIS, crie 15+ SUGESTÕES DETALHADAS para melhorar o prompt.
 
-Para cada: PROBLEMA identificado, SUGESTÃO de melhoria, EXEMPLO de resposta ideal.
+Cada sugestão deve ter: PROBLEMA, SUGESTÃO, EXEMPLO DE RESPOSTA IDEAL.
 
-Foque em: perguntas sem resposta, preços/horários/especialidades/convênios/endereço, áudios/imagens, saudações vagas ("oi"), múltiplos serviços, fluxo de agendamento.
+Foque em: perguntas sem resposta, preços/horários/especialidades/convênios/endereço, áudios/imagens, saudações vagas, múltiplos serviços, fluxo de agendamento.
 
-MENSAGENS:
-${texto}`,
+MENSAGENS:\n${texto}`,
             response_json_schema: {
                 type: "object",
                 properties: {
@@ -79,14 +80,7 @@ ${texto}`,
                 }
             }
         });
-
-        return Response.json({
-            success: true,
-            total_mensagens: todasPerguntas.length,
-            analisadas: amostra.length,
-            analise: parte1,
-            sugestoes: parte2
-        });
+        return Response.json({ success: true, total: todasPerguntas.length, analisadas: amostra.length, resultado: res });
 
     } catch (error) {
         return Response.json({ error: error.message }, { status: 500 });
