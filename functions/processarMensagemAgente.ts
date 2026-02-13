@@ -2944,6 +2944,9 @@ INSTRUÇÕES GERAIS:
       }
     }
 
+    // Liberar lock antes de retornar
+    await liberarLock(base44, phoneNumber);
+
     return Response.json({ 
       success: true, 
       resposta: llmResponse,
@@ -2953,9 +2956,30 @@ INSTRUÇÕES GERAIS:
     
   } catch (error) {
     console.error('❌ Erro:', error);
+    // Tentar liberar lock mesmo em caso de erro
+    try {
+      const base44Err = createClientFromRequest(req);
+      const body = await req.json().catch(() => ({}));
+      if (body.phoneNumber) await liberarLock(base44Err, body.phoneNumber);
+    } catch (e) { /* ignore */ }
     return Response.json({ 
       error: error.message,
       stack: error.stack 
     }, { status: 500 });
   }
 });
+
+// Função auxiliar para liberar lock
+async function liberarLock(base44, phoneNumber) {
+  try {
+    const contatos = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
+    if (contatos.length > 0 && contatos[0].processando_ia_lock) {
+      await base44.asServiceRole.entities.Contato.update(contatos[0].id, {
+        processando_ia_lock: null
+      });
+      console.log('🔓 Lock liberado');
+    }
+  } catch (e) {
+    console.warn('⚠️ Erro ao liberar lock:', e.message);
+  }
+}
