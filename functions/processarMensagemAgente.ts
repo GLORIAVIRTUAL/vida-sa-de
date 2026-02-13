@@ -9,7 +9,10 @@ Deno.serve(async (req) => {
     console.log('📨 Processando:', { phoneNumber, messageText, mediaType, mediaUrl, messageId });
     
     // Verificação anti-duplicata REFORÇADA: verificar tanto messageId quanto conteúdo recente
-    if (messageId || messageText) {
+    // NOTA: MessageIds que começam com "buffer_" são gerados pelo zapiWebhook e NUNCA devem ser ignorados
+    const isBufferMessage = messageId && messageId.startsWith('buffer_');
+    
+    if (!isBufferMessage && (messageId || messageText)) {
       try {
         const contatosVerif = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
         if (contatosVerif.length > 0) {
@@ -24,38 +27,37 @@ Deno.serve(async (req) => {
             }
           }
           
-          // 2. Verificar se a mesma mensagem de texto do user já existe nos últimos 30s
+          // 2. Verificar se a mesma mensagem de texto do user já existe nos últimos 15s
           // (proteção contra webhooks duplicados com messageIds diferentes)
           const agora = Date.now();
           const ultimas5MsgsUser = historicoVerif.filter(m => m.role === 'user').slice(-5);
           const msgDuplicadaRecente = ultimas5MsgsUser.some(m => {
             if (!m.timestamp) return false;
             const diffMs = agora - new Date(m.timestamp).getTime();
-            // Mesma mensagem nos últimos 30 segundos
-            return diffMs < 30000 && m.content === (mediaUrl ? `${messageText}\n${mediaUrl}` : messageText);
+            // Mesma mensagem nos últimos 15 segundos (reduzido de 30s)
+            return diffMs < 15000 && m.content === (mediaUrl ? `${messageText}\n${mediaUrl}` : messageText);
           });
           
           if (msgDuplicadaRecente) {
-            console.log('⏭️ Mensagem idêntica recente detectada no histórico - ignorando duplicata');
-            return Response.json({ success: true, status: 'duplicata_ignorada', resposta: null });
-          }
-          
-          // 3. Verificar se o assistant já respondeu à mesma pergunta recentemente (últimos 30s)
-          // Isso pega o caso onde o processamento já está em andamento por outra instância
-          const ultimaMsgUser = ultimas5MsgsUser[ultimas5MsgsUser.length - 1];
-          if (ultimaMsgUser && ultimaMsgUser.content === (mediaUrl ? `${messageText}\n${mediaUrl}` : messageText)) {
-            // A mensagem já está no histórico - verificar se já tem resposta
-            const indexUltimaUser = historicoVerif.lastIndexOf(ultimaMsgUser);
-            const temRespostaDepois = historicoVerif.slice(indexUltimaUser + 1).some(m => m.role === 'assistant');
-            if (temRespostaDepois) {
-              console.log('⏭️ Mensagem já tem resposta do assistant no histórico - ignorando');
-              return Response.json({ success: true, status: 'duplicata_ignorada', resposta: null });
+            // Verificar se já tem resposta do assistant para essa mensagem
+            const ultimaMsgUser = ultimas5MsgsUser[ultimas5MsgsUser.length - 1];
+            if (ultimaMsgUser && ultimaMsgUser.content === (mediaUrl ? `${messageText}\n${mediaUrl}` : messageText)) {
+              const indexUltimaUser = historicoVerif.lastIndexOf(ultimaMsgUser);
+              const temRespostaDepois = historicoVerif.slice(indexUltimaUser + 1).some(m => m.role === 'assistant');
+              if (temRespostaDepois) {
+                console.log('⏭️ Mensagem idêntica recente COM resposta - ignorando duplicata');
+                return Response.json({ success: true, status: 'duplicata_ignorada', resposta: null });
+              }
             }
+            // Se NÃO tem resposta ainda, pode ser que o processamento falhou - deixar passar
+            console.log('⚠️ Mensagem idêntica recente SEM resposta - permitindo reprocessamento');
           }
         }
       } catch (e) {
         console.log('⚠️ Erro verificação duplicata:', e.message);
       }
+    } else if (isBufferMessage) {
+      console.log('🔄 Mensagem do buffer - pulando anti-duplicata');
     }
     
     // Verificar se o contato está em atendimento humano
