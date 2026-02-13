@@ -2813,7 +2813,7 @@ INSTRUÇÕES GERAIS:
           const mediaResponse = await fetch(mediaUrl);
           if (mediaResponse.ok) {
             const blob = await mediaResponse.blob();
-            const extMap = { image: 'jpg', document: 'pdf', video: 'mp4' };
+            const extMap = { image: 'jpg', document: 'pdf', video: 'mp4', audio: 'ogg' };
             const ext = extMap[mediaType] || 'bin';
             const fileName = `requisicao_${Date.now()}.${ext}`;
             const file = new File([blob], fileName, { type: blob.type });
