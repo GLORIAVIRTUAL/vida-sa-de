@@ -285,7 +285,7 @@ export default function NotificacoesTab({ onAbrirChat }) {
           <CardContent className="p-3 flex items-center justify-between">
             <div>
               <p className="text-[10px] text-gray-500">Total</p>
-              <p className="text-xl font-bold">{logs.length}</p>
+              <p className="text-xl font-bold">{stats.total}</p>
             </div>
             <div className="bg-blue-100 p-2 rounded-lg">
               <Bell className="w-4 h-4 text-blue-600" />
@@ -296,7 +296,7 @@ export default function NotificacoesTab({ onAbrirChat }) {
           <CardContent className="p-3 flex items-center justify-between">
             <div>
               <p className="text-[10px] text-gray-500">Automáticas</p>
-              <p className="text-xl font-bold text-indigo-600">{totalAutomaticas}</p>
+              <p className="text-xl font-bold text-indigo-600">{stats.automaticas}</p>
             </div>
             <div className="bg-indigo-100 p-2 rounded-lg">
               <Bot className="w-4 h-4 text-indigo-600" />
@@ -307,7 +307,7 @@ export default function NotificacoesTab({ onAbrirChat }) {
           <CardContent className="p-3 flex items-center justify-between">
             <div>
               <p className="text-[10px] text-gray-500">Manuais</p>
-              <p className="text-xl font-bold text-amber-600">{totalManuais}</p>
+              <p className="text-xl font-bold text-amber-600">{stats.manuais}</p>
             </div>
             <div className="bg-amber-100 p-2 rounded-lg">
               <User className="w-4 h-4 text-amber-600" />
@@ -318,7 +318,7 @@ export default function NotificacoesTab({ onAbrirChat }) {
           <CardContent className="p-3 flex items-center justify-between">
             <div>
               <p className="text-[10px] text-gray-500">Hoje</p>
-              <p className="text-xl font-bold">{totalHoje}</p>
+              <p className="text-xl font-bold">{stats.hoje}</p>
             </div>
             <div className="bg-purple-100 p-2 rounded-lg">
               <Send className="w-4 h-4 text-purple-600" />
@@ -329,7 +329,7 @@ export default function NotificacoesTab({ onAbrirChat }) {
           <CardContent className="p-3 flex items-center justify-between">
             <div>
               <p className="text-[10px] text-gray-500">Confirmados</p>
-              <p className="text-xl font-bold text-green-600">{totalConfirmados}</p>
+              <p className="text-xl font-bold text-green-600">{stats.confirmados}</p>
             </div>
             <div className="bg-green-100 p-2 rounded-lg">
               <CheckCircle className="w-4 h-4 text-green-600" />
@@ -340,7 +340,7 @@ export default function NotificacoesTab({ onAbrirChat }) {
           <CardContent className="p-3 flex items-center justify-between">
             <div>
               <p className="text-[10px] text-gray-500">Falhas</p>
-              <p className="text-xl font-bold text-red-600">{totalFalhou}</p>
+              <p className="text-xl font-bold text-red-600">{stats.falhou}</p>
             </div>
             <div className="bg-red-100 p-2 rounded-lg">
               <XCircle className="w-4 h-4 text-red-600" />
