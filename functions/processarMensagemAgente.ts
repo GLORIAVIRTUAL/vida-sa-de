@@ -246,7 +246,8 @@ Deno.serve(async (req) => {
           historico_mensagens: hist.slice(-50),
           ultima_interacao: timestamp,
           total_mensagens: 2,
-          conversa_finalizada: false
+          conversa_finalizada: false,
+          processando_ia_lock: null // Liberar lock
         });
       } else {
         // Contato novo - criar com histórico inicial
