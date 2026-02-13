@@ -2668,8 +2668,41 @@ INSTRUÇÕES GERAIS:
     
     // Se tiver mídia (imagem/documento/vídeo), enviar para análise visual
     if (mediaUrl && (mediaType === 'image' || mediaType === 'document' || mediaType === 'video')) {
-      llmParams.file_urls = [mediaUrl];
-      console.log('🖼️ Enviando mídia para análise:', mediaUrl);
+      // Garantir que a URL é permanente (não temporária do Z-API)
+      let urlParaLLM = mediaUrl;
+      
+      // Se a URL é do Z-API (temporária), fazer upload para storage permanente
+      if (mediaUrl.includes('z-api.io') || mediaUrl.includes('whatsapp') || mediaUrl.includes('mmg.whatsapp')) {
+        console.log('📥 URL temporária detectada - fazendo upload permanente para o LLM...');
+        try {
+          const mediaResponse = await fetch(mediaUrl);
+          if (mediaResponse.ok) {
+            const blob = await mediaResponse.blob();
+            const extMap = { image: 'jpg', document: 'pdf', video: 'mp4' };
+            const ext = extMap[mediaType] || 'bin';
+            const fileName = `requisicao_${Date.now()}.${ext}`;
+            const file = new File([blob], fileName, { type: blob.type });
+            
+            const uploadResult = await base44.asServiceRole.integrations.Core.UploadFile({ file });
+            if (uploadResult?.file_url) {
+              urlParaLLM = uploadResult.file_url;
+              console.log('✅ Mídia salva permanentemente para LLM:', urlParaLLM);
+            }
+          } else {
+            console.warn('⚠️ Não foi possível baixar mídia temporária:', mediaResponse.status);
+          }
+        } catch (uploadErr) {
+          console.warn('⚠️ Erro ao fazer upload permanente:', uploadErr.message);
+          // Tenta usar a URL original mesmo assim
+        }
+      }
+      
+      llmParams.file_urls = [urlParaLLM];
+      // FORÇAR contexto da internet para melhor análise de documentos
+      if (mediaType === 'document' || mediaType === 'image') {
+        llmParams.add_context_from_internet = false;
+      }
+      console.log('🖼️ Enviando mídia para análise LLM:', urlParaLLM);
     }
 
     // Chamar LLM com timeout
