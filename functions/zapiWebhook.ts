@@ -480,9 +480,15 @@ async function processarMensagemRecebida(base44, payload) {
                     messageId: msgId
                 }];
                 
+                // Garantir que telefone tenha prefixo 55
+                let telefoneComPrefixo = telefone.replace(/\D/g, '');
+                if (!telefoneComPrefixo.startsWith('55')) {
+                    telefoneComPrefixo = '55' + telefoneComPrefixo;
+                }
+                
                 await base44.asServiceRole.entities.Contato.create({
                     nome: senderName,
-                    telefone: telefone,
+                    telefone: telefoneComPrefixo,
                     origem: 'WhatsApp',
                     status: 'Novo',
                     atendimento_humano: true, // Começa em modo HUMANO
