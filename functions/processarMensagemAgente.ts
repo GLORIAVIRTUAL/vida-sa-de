@@ -3002,15 +3002,23 @@ INSTRUÇÕES GERAIS:
   }
 });
 
-// Função auxiliar para liberar lock
+// Função auxiliar para liberar lock (busca contato com variantes de telefone)
 async function liberarLock(base44, phoneNumber) {
   try {
-    const contatos = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
-    if (contatos.length > 0 && contatos[0].processando_ia_lock) {
-      await base44.asServiceRole.entities.Contato.update(contatos[0].id, {
-        processando_ia_lock: null
-      });
-      console.log('🔓 Lock liberado');
+    const telNorm = phoneNumber.replace(/\D/g, '');
+    const vars = [phoneNumber, telNorm];
+    if (telNorm.startsWith('55') && telNorm.length >= 12) vars.push(telNorm.slice(2));
+    if (!telNorm.startsWith('55') && telNorm.length >= 10) vars.push('55' + telNorm);
+    
+    for (const v of vars) {
+      const contatos = await base44.asServiceRole.entities.Contato.filter({ telefone: v });
+      if (contatos.length > 0 && contatos[0].processando_ia_lock) {
+        await base44.asServiceRole.entities.Contato.update(contatos[0].id, {
+          processando_ia_lock: null
+        });
+        console.log('🔓 Lock liberado');
+        return;
+      }
     }
   } catch (e) {
     console.warn('⚠️ Erro ao liberar lock:', e.message);
