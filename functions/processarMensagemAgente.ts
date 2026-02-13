@@ -115,7 +115,8 @@ Deno.serve(async (req) => {
         ultima_interacao: timestamp,
         total_mensagens: (contato.total_mensagens || 0) + 1,
         status: 'Lead',
-        conversa_finalizada: false // Reativa conversa
+        conversa_finalizada: false,
+        processando_ia_lock: null // Liberar lock
       });
       
       return Response.json({ 
