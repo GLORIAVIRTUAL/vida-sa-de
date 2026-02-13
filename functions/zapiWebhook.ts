@@ -361,12 +361,60 @@ async function processarMensagemRecebida(base44, payload) {
                     if (ultimaComMidia?.mediaType === 'document') payloadCombinado.document = { documentUrl: ultimaComMidia.mediaUrl };
                     if (ultimaComMidia?.mediaType === 'audio') payloadCombinado.audio = { audioUrl: ultimaComMidia.mediaUrl };
                     
+                    // Processar via processarMensagemAgente (mesma lógica do webhookWhatsappChatbot)
                     try {
-                        const resultado = await base44.asServiceRole.functions.invoke('webhookWhatsappChatbot', payloadCombinado);
-                        console.log('✅ webhookWhatsappChatbot retornou:', JSON.stringify(resultado.data).substring(0, 200));
-                        return new Response(JSON.stringify(resultado.data), { status: 200 });
+                        // Buscar ou criar paciente
+                        let pacienteId = null;
+                        try {
+                            const pacientes = await base44.asServiceRole.entities.Paciente.filter({ telefone: telefone });
+                            if (pacientes.length > 0) {
+                                pacienteId = pacientes[0].id;
+                            } else {
+                                const novoPaciente = await base44.asServiceRole.entities.Paciente.create({
+                                    nome: senderName,
+                                    telefone: telefone,
+                                    cpf: 'NÃO INFORMADO',
+                                    observacoes: 'Criado via WhatsApp'
+                                });
+                                pacienteId = novoPaciente.id;
+                            }
+                        } catch (pacErr) {
+                            console.error('⚠️ Erro paciente:', pacErr.message);
+                        }
+
+                        const resultado = await base44.asServiceRole.functions.invoke('processarMensagemAgente', {
+                            phoneNumber: telefone,
+                            messageText: textosCombinados,
+                            senderName: senderName,
+                            pacienteId: pacienteId,
+                            mediaType: ultimaComMidia?.mediaType || 'text',
+                            mediaUrl: ultimaComMidia?.mediaUrl || null,
+                            messageId: msgId
+                        });
+                        console.log('✅ processarMensagemAgente retornou:', JSON.stringify(resultado.data).substring(0, 200));
+                        
+                        const respostaIA = resultado.data?.resposta;
+                        
+                        if (respostaIA) {
+                            // Enviar resposta via Z-API
+                            await enviarMensagemZapi(telefone, respostaIA);
+                            console.log('✅ Resposta IA enviada via WhatsApp');
+                            
+                            // Se houver arquivo para enviar (resultado de exame)
+                            if (resultado.data?.arquivoParaEnviar) {
+                                const arquivo = resultado.data.arquivoParaEnviar;
+                                try {
+                                    await enviarDocumentoZapi(telefone, arquivo.url, arquivo.nome);
+                                    console.log('✅ Documento enviado:', arquivo.nome);
+                                } catch (docErr) {
+                                    console.error('❌ Erro ao enviar documento:', docErr.message);
+                                }
+                            }
+                        }
+                        
+                        return new Response(JSON.stringify({ success: true, resposta: respostaIA }), { status: 200 });
                     } catch (invokeError) {
-                        console.error('❌ Erro ao encaminhar para webhookWhatsappChatbot:', invokeError.message);
+                        console.error('❌ Erro ao processar mensagem IA:', invokeError.message);
                         return new Response(JSON.stringify({ error: invokeError.message }), { status: 500 });
                     }
                 }
