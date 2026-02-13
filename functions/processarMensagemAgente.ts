@@ -2485,10 +2485,18 @@ Retorne JSON.`;
 
     ⚠️ NUNCA peça dados pessoais para dar orçamento!`;
     } else if (mediaType === 'audio') {
-      instrucoesMidia = `\n\n🎤 MÍDIA RECEBIDA: O cliente enviou um ÁUDIO.
+      instrucoesMidia = `\n\n🎤 MÍDIA RECEBIDA: O cliente enviou um ÁUDIO (arquivo de voz do WhatsApp).
 
-    O áudio foi transcrito (se possível). Responda naturalmente ao conteúdo.
-    Se não conseguir entender, peça gentilmente para o cliente escrever a mensagem.`;
+    🚨 REGRAS CRÍTICAS PARA ÁUDIO:
+    1. O arquivo de áudio está anexado a esta mensagem. OUÇA/TRANSCREVA o conteúdo do áudio.
+    2. RESPONDA ao que o cliente DISSE no áudio, não ao texto "[Áudio recebido]".
+    3. O texto da mensagem pode ser apenas "[Áudio recebido]" - isso NÃO é o que o cliente disse. O conteúdo real está no ARQUIVO DE ÁUDIO anexado.
+    4. Se você conseguir entender o áudio, responda DIRETAMENTE ao pedido do cliente como se ele tivesse digitado.
+    5. Se NÃO conseguir ouvir/transcrever o áudio, diga: "Desculpe, não consegui entender o áudio. Poderia digitar sua mensagem, por favor? 😊"
+    6. NUNCA ignore o áudio e responda algo genérico ou sem relação.
+    7. NUNCA peça nome/data de nascimento se o cliente não pediu agendamento no áudio.
+    
+    ⚠️ IMPORTANTE: Trate o conteúdo do áudio como se fosse uma mensagem de texto normal do cliente.`;
     } else if (mediaType === 'video') {
       instrucoesMidia = `\n\n🎥 MÍDIA RECEBIDA: O cliente enviou um VÍDEO.
 
