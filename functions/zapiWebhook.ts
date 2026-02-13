@@ -709,7 +709,16 @@ async function enviarMensagemZapi(telefone, mensagem) {
     const token = Deno.env.get('ZAPI_TOKEN');
     const clientToken = Deno.env.get('ZAPI_CLIENT_TOKEN');
 
-    const telefoneFormatado = telefone.replace(/\D/g, '');
+    let telefoneFormatado = telefone.replace(/\D/g, '');
+    
+    // Garantir que celular brasileiro tenha o 9: 55XX9XXXXXXXX (13 dígitos)
+    // Se tem 12 dígitos (55 + DDD 2 dígitos + 8 dígitos), adicionar o 9 após DDD
+    if (telefoneFormatado.startsWith('55') && telefoneFormatado.length === 12) {
+        telefoneFormatado = telefoneFormatado.slice(0, 4) + '9' + telefoneFormatado.slice(4);
+        console.log('📱 Número corrigido com 9:', telefoneFormatado);
+    }
+    
+    console.log('📤 Enviando mensagem Z-API para:', telefoneFormatado);
     
     const response = await fetch(`https://api.z-api.io/instances/${instanceId}/token/${token}/send-text`, {
         method: 'POST',
@@ -723,7 +732,9 @@ async function enviarMensagemZapi(telefone, mensagem) {
         })
     });
 
-    return response.json();
+    const result = await response.json();
+    console.log('📨 Resposta Z-API:', JSON.stringify(result));
+    return result;
 }
 
 async function enviarDocumentoZapi(telefone, documentUrl, fileName) {
