@@ -63,8 +63,16 @@ export default function NotificacoesTab({ onAbrirChat }) {
   const carregarDados = async () => {
     setLoading(true);
     try {
-      // Buscar todos os logs (últimos 500)
-      const todosLogs = await base44.entities.NotificationLog.list('-created_date', 500);
+      // Buscar TODOS os logs paginando de 500 em 500 para garantir contagens precisas
+      let todosLogs = [];
+      let offset = 0;
+      const pageSize = 500;
+      while (true) {
+        const page = await base44.entities.NotificationLog.list('-created_date', pageSize, offset);
+        todosLogs = todosLogs.concat(page);
+        if (page.length < pageSize) break; // última página
+        offset += pageSize;
+      }
       setAllLogs(todosLogs);
 
       // Buscar agendamentos referenciados
