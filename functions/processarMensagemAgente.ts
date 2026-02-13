@@ -2198,13 +2198,15 @@ Retorne JSON.`;
             historico_mensagens: historicoAtual.slice(-50),
             ultima_interacao: timestamp,
             total_mensagens: (contato.total_mensagens || 0) + 2,
-            agendamentos_realizados: (contato.agendamentos_realizados || 0) + 1
+            agendamentos_realizados: (contato.agendamentos_realizados || 0) + 1,
+            processando_ia_lock: null // Liberar lock
           });
         }
       } catch (e) {
         console.error('⚠️ Erro ao salvar histórico:', e.message);
       }
       
+      await liberarLock(base44, phoneNumber);
       return Response.json({ 
         success: true, 
         resposta: mensagemAgendamento,
