@@ -401,8 +401,9 @@ async function processarMensagemRecebida(base44, payload) {
                         
                         if (respostaIA) {
                             // Enviar resposta via Z-API
-                            await enviarMensagemZapi(telefone, respostaIA);
-                            console.log('✅ Resposta IA enviada via WhatsApp');
+                            console.log('📤 Enviando resposta IA via Z-API para:', telefone, '| resposta:', respostaIA.substring(0, 80));
+                            const zapiResult = await enviarMensagemZapi(telefone, respostaIA);
+                            console.log('✅ Resposta IA enviada via WhatsApp. Z-API result:', JSON.stringify(zapiResult));
                             
                             // Se houver arquivo para enviar (resultado de exame)
                             if (resultado.data?.arquivoParaEnviar) {
