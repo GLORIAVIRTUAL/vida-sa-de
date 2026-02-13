@@ -2679,7 +2679,15 @@ INSTRUÇÕES GERAIS:
 2. Se houver múltiplos médicos, mostre TODOS com seus horários
 3. Responda de forma natural, seguindo o tom do prompt_sistema
 4. Seja preciso e nunca invente informações
-5. Se o cliente mencionou algo vago, faça UMA pergunta objetiva para clarificar`;
+5. Se o cliente mencionou algo vago, faça UMA pergunta objetiva para clarificar
+
+🚨 LEMBRETE FINAL SOBRE PREÇOS E SERVIÇOS:
+- A seção "BASE DE DADOS - PROCEDIMENTOS E EXAMES COM PREÇOS" acima contém TUDO que a clínica oferece.
+- LEIA A LISTA INTEIRA antes de dizer que não realizamos algo.
+- Se o cliente pergunta "quanto custa biópsia?" e "BIOPSIA" está na lista com preços, INFORME OS PREÇOS!
+- Se o cliente pergunta "vocês fazem X?" e X está na lista, diga SIM e informe os preços.
+- SEMPRE mostre preço Particular E preço Cartão Mais Vida quando ambos existirem.
+- A clínica realiza coleta de sangue TODOS OS DIAS sem agendamento.`;
 
     // Preparar parâmetros do LLM
     const llmParams = {
