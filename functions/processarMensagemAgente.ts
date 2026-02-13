@@ -2287,12 +2287,30 @@ Retorne JSON.`;
             }
           }
 
-          infoProcedimentosExames += `\n⚠️ REGRAS OBRIGATÓRIAS PARA USO DA BASE DE DADOS:
+          infoProcedimentosExames += `\n🚨🚨🚨 REGRAS ABSOLUTAS PARA USO DA BASE DE DADOS 🚨🚨🚨
 
-    📌 REGRA FUNDAMENTAL: Esta lista acima contém TODOS os serviços que a clínica oferece.
-    - Se o cliente perguntar "vocês fazem X?", "tem X?", "quanto custa X?", CONSULTE ESTA LISTA.
-    - Se o serviço ESTÁ na lista = SIM, oferecemos! Informe os preços.
-    - Se o serviço NÃO ESTÁ na lista = NÃO oferecemos no momento. Diga que não temos disponível.
+    📌 REGRA #1 - CONSULTE A LISTA ANTES DE RESPONDER:
+    A lista acima contém TODOS os procedimentos e exames que a clínica oferece COM SEUS PREÇOS.
+    
+    📌 REGRA #2 - BUSCA FLEXÍVEL:
+    Quando o cliente perguntar "vocês fazem X?", "tem X?", "quanto custa X?":
+    - PROCURE na lista acima usando sinônimos e variações do nome
+    - Exemplo: "biópsia" = "BIOPSIA", "eco" = "ECOCARDIOGRAMA", "sangue" = exames de sangue listados
+    - Se encontrar algo SIMILAR ou IGUAL na lista = SIM, oferecemos! Informe TODOS os preços (Particular E Cartão Mais Vida).
+    - SOMENTE diga "não realizamos" se REALMENTE não encontrar NADA parecido na lista acima.
+    
+    📌 REGRA #3 - NUNCA IGNORE A LISTA:
+    - Se "BIOPSIA" está na lista com preço Particular R$ 300,00 e Cartão Mais Vida R$ 270,00, e o cliente perguntar "quanto custa biópsia?", RESPONDA COM OS PREÇOS!
+    - Se "Anti-DNA" NÃO está na lista, aí sim diga que não realizamos.
+    - NUNCA diga "não realizamos" para algo que ESTÁ na lista!
+    - RELEIA a lista quantas vezes for necessário antes de dizer que não temos algo.
+    
+    📌 REGRA #4 - EXAMES DE SANGUE:
+    - A clínica realiza CENTENAS de exames de sangue (hemograma, TSH, T4, glicose, colesterol, etc.)
+    - Se o exame ESTÁ na lista = informe o preço
+    - Se o exame NÃO ESTÁ na lista = diga que precisa verificar e sugira ligar (51) 3661-5991
+    - NUNCA diga "não realizamos exames de sangue" - a clínica FAZ coleta todos os dias!
+    
     - NUNCA invente serviços ou preços que não estão na lista.
     - Esta lista é atualizada em tempo real - confie nela 100%.
 
