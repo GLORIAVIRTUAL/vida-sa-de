@@ -988,10 +988,14 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
 
     // Detectar conversa sobre Cartão Mais Vida / planos / benefícios (declarar ANTES de usar)
     const ehPerguntaPrecoEarly = /quanto\s*custa|qual\s*o?\s*(valor|pre[çc]o)|pre[çc]o\s*(da|do|de)|valor\s*(da|do|de)|custa\s*quanto/i.test(messageText);
+    // IMPORTANTE: Perguntas como "ai tem cardiologista?" são informativas MAS devemos buscar disponibilidades
+    // para poder responder se temos ou não. A flag ehPerguntaInformativa controla se mostramos horários ou
+    // apenas respondemos "sim, temos" - mas em ambos os casos precisamos buscar os médicos.
     const ehPerguntaInformativaEarly = /^(a[ií]\s+)?(voc[êe]s\s+)?(faz(em)?|tem|t[êe]m|realiza[m]?|oferece[m]?|atende[m]?|existe|trabalha[m]?\s+com)\s+/i.test(messageText) ||
       /faz(em)?\s+.+\?/i.test(messageText) ||
       /tem\s+.+\?/i.test(messageText) ||
-      /^a[ií]\s+faz\b/i.test(messageText);
+      /^a[ií]\s+faz\b/i.test(messageText) ||
+      /^a[ií]\s+tem\b/i.test(messageText);
     const ehPerguntaSobreCartao = /cart[aã]o\s*mais\s*(vida|sa[uú]de)|mais\s*vida|mais\s*sa[uú]de|planos?\s*(do|da|de)?\s*cart|benef[ií]cios?\s*(do|da)?\s*cart|cart[aã]o\s*da\s*cl[ií]nica|informa[çc][oõ]es?\s*sobre\s*o?\s*cart|planos?\s*(e\s*benef)?/i.test(messageText) ||
       (/plano|benef[ií]cio|cart[aã]o/i.test(messageText) && /cart[aã]o\s*mais|mais\s*vida|mais\s*sa[uú]de/i.test(historicoConversa || ''));
     const ehContextoCartaoNoHistorico = /cart[aã]o\s*mais\s*(vida|sa[uú]de)|mais\s*vida|planos?\s*(do|da)?\s*cart|benef[ií]cios/i.test(historicoConversa || '');
@@ -1093,9 +1097,10 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
 
     // REGRA ANTI-LOOP: Se acabou de concluir um agendamento no histórico recente, NÃO entrar em fluxo de agendamento novamente
     // Detectar se a última resposta do assistente é uma confirmação de agendamento
+    // IMPORTANTE: Verificar APENAS a última mensagem do assistente, não o histórico inteiro
     const todasMsgAssistente = (historicoConversa || '').split('\n').filter(l => l.startsWith('ASSISTENTE:'));
     const ultimaMsgAssistenteCheck = todasMsgAssistente.length > 0 ? todasMsgAssistente[todasMsgAssistente.length - 1] : '';
-    const agendamentoRecenteConcluido = historicoConversa && /Agendamento confirmado|Te aguardamos|Lembre-se de trazer documento/i.test(ultimaMsgAssistenteCheck);
+    const agendamentoRecenteConcluido = /Agendamento confirmado|Te aguardamos|Lembre-se de trazer documento/i.test(ultimaMsgAssistenteCheck);
     
     if (agendamentoRecenteConcluido) {
       console.log('✅ Agendamento recém concluído detectado no histórico - resetando detecção de especialidade/médico do histórico');
@@ -1211,7 +1216,8 @@ Informe ao cliente que:
     // 1. Quer agendar E tem especialidade/médico detectado
     // 2. Cliente confirmou que quer agendar ("sim") após ver preço E tem especialidade no histórico
     // 3. Está em fluxo e escolhendo horário com médico já identificado
-    const deveBuscarDisponibilidades = querAgendar && !ehPerguntaInformativa && (temEspecialidadeOuMedico || 
+    // 4. NOVO: Pergunta informativa ("ai tem X?") COM especialidade detectada - para verificar se temos profissional
+    const deveBuscarDisponibilidades = (querAgendar || (ehPerguntaInformativa && temEspecialidadeOuMedico)) && (temEspecialidadeOuMedico || 
       (clienteConfirmouAgendar && historicoTemEspecialidadeCheck) ||
       (jaEmFluxoAgendamento && temEspecialidadeOuMedico) ||
       (jaEmFluxoAgendamento && clienteEscolhendoHorario && /Dr\.|👨‍⚕️|médico.*horário/i.test(historicoConversa)));
