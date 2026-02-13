@@ -852,6 +852,7 @@ Deno.serve(async (req) => {
               console.error('⚠️ Erro ao salvar histórico cancelamento:', e.message);
             }
             
+            await liberarLock(base44, phoneNumber);
             return Response.json({ 
               success: true, 
               resposta: respostaCancelamento,
