@@ -67,9 +67,13 @@ export default function ContatosTab({ onIniciarConversa }) {
     }
     setSalvando(true);
     try {
+      let telLimpo = novoContato.telefone.replace(/\D/g, '');
+      if (!telLimpo.startsWith('55')) {
+        telLimpo = '55' + telLimpo;
+      }
       await base44.entities.Contato.create({
         nome: novoContato.nome,
-        telefone: novoContato.telefone.replace(/\D/g, ''),
+        telefone: telLimpo,
         data_nascimento: novoContato.data_nascimento || undefined,
         interesses: novoContato.motivo ? [novoContato.motivo] : [],
         origem: 'Manual',
