@@ -504,7 +504,7 @@ async function processarMensagemRecebida(base44, payload) {
         return new Response(JSON.stringify({ message: "OK" }), { status: 200 });
     }
     
-    console.log('✅ Confirmação detectada!');
+    console.log('✅ Confirmação de agendamento detectada (com lembrete recente)!');
 
     // Normalizar telefone
     const telefoneNormalizado = telefone.replace(/\D/g, '');
