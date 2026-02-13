@@ -151,28 +151,24 @@ export default function NotificacoesTab({ onAbrirChat }) {
     return true;
   });
 
-  // Estatísticas estáveis (useMemo para não recalcular a cada render)
+  // Estatísticas calculadas sobre TODOS os logs (não filtrados por data)
   const hojeStr = useRef(format(new Date(), 'yyyy-MM-dd')).current;
 
-  const { totalHoje, totalConfirmados, totalFalhou, totalAutomaticas, totalManuais } = useMemo(() => {
-    const hoje = logs.filter(l => {
-      const dataLog = l.created_date || l.timestamp_envio;
-      return dataLog && dataLog.substring(0, 10) === hojeStr;
+  const stats = useMemo(() => {
+    const total = allLogs.length;
+    const hoje = allLogs.filter(l => {
+      const dataLog = l.timestamp_envio || l.created_date || '';
+      return dataLog.substring(0, 10) === hojeStr;
     }).length;
-    const confirmados = logs.filter(l => {
+    const confirmados = allLogs.filter(l => {
       const ag = agendamentos[l.agendamento_id];
       return ag && ag.status === 'Confirmado';
     }).length;
-    const falhou = logs.filter(l => l.status_entrega === 'falhou').length;
-    const automaticas = logs.filter(l => getTipoNotificacao(l) === 'automatica').length;
-    return {
-      totalHoje: hoje,
-      totalConfirmados: confirmados,
-      totalFalhou: falhou,
-      totalAutomaticas: automaticas,
-      totalManuais: logs.length - automaticas
-    };
-  }, [logs, agendamentos]);
+    const falhou = allLogs.filter(l => l.status_entrega === 'falhou').length;
+    const automaticas = allLogs.filter(l => getTipoNotificacao(l) === 'automatica').length;
+    const manuais = total - automaticas;
+    return { total, hoje, confirmados, falhou, automaticas, manuais };
+  }, [allLogs, agendamentos]);
 
   if (loading) {
     return (
