@@ -360,9 +360,15 @@ Deno.serve(async (req) => {
         if (mediaType && mediaType !== 'text') msgObj.mediaType = mediaType;
         if (mediaUrl) msgObj.mediaUrl = mediaUrl;
         
+        // Garantir que telefone tenha prefixo 55
+        let telefoneComPrefixo = phoneNumber.replace(/\D/g, '');
+        if (!telefoneComPrefixo.startsWith('55')) {
+          telefoneComPrefixo = '55' + telefoneComPrefixo;
+        }
+
         await base44.asServiceRole.entities.Contato.create({
           nome: senderName,
-          telefone: phoneNumber,
+          telefone: telefoneComPrefixo,
           origem: 'WhatsApp',
           status: 'Novo',
           atendimento_humano: true,
