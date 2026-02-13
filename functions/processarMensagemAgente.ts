@@ -1122,16 +1122,6 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
     const ehPerguntaPreco = ehPerguntaPrecoEarly;
     const ehPerguntaInformativa = ehPerguntaInformativaEarly;
     
-    // TAMBÉM considerar como pedido de agendamento quando a IA perguntou "Gostaria de agendar?" e o cliente
-    // responde com perguntas sobre vagas/horários (ex: "quando tem vaga?", "tem horário?")
-    const clientePerguntouSobreVagaAposOferta = iaPerguntoSeQuerAgendarConsulta && 
-      /quando\s*(tem|tem\s*vaga|tem\s*hor[áa]rio|posso|d[áa]\s*pra)|tem\s*(vaga|hor[áa]rio)|pr[óo]ximo\s*(hor[áa]rio|dia|vaga)|qual\s*(hor[áa]rio|dia|vaga)/i.test(messageText);
-    
-    const querAgendarMensagem = !clienteRecusandoAgendar && !ehPerguntaPreco && !ehPerguntaInformativa && !ehPerguntaSobreCartao && !respostaCurtaEmContextoCartao && (
-      /agendar|marcar|consulta|atend|hor[áa]rio|dispon[íi]vel|vaga/i.test(messageText) ||
-      clientePerguntouSobreVagaAposOferta
-    );
-
     // Verificar se o cliente disse "sim" e a IA tinha perguntado algo
     const ultimasMensagensAssistente = (historicoConversa || '').split('\n').filter(l => l.startsWith('ASSISTENTE:'));
     const ultimaMsgAssistente = ultimasMensagensAssistente.length > 0 ? ultimasMensagensAssistente[ultimasMensagensAssistente.length - 1] : '';
@@ -1139,18 +1129,23 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
     const clienteConfirmouAgendar = iaPerguntoSeQuerAgendar && /^(sim|s|ok|quero|pode|claro|bora|vamos|isso|por favor|yes|vou|gostaria|please)$/i.test(messageText.trim().toLowerCase());
 
     // KEY: quando a IA perguntou "qual especialidade?" e o cliente responde "clinico geral", isso É um pedido de agendamento
-    // MAS: quando a IA perguntou "como posso te ajudar?" e o cliente responde com especialidade, é AMBÍGUO
-    // Pode ser pergunta informativa ("ai tem clinico geral?") ou pedido de agendamento
-    // REGRA: Só considerar como pedido de agendamento se a IA ESPECIFICAMENTE perguntou sobre especialidade para agendar
     const iaPerguntoComoAjudar = /qual especialidade|para qual especialidade/i.test(ultimaMsgAssistente);
     const iaPerguntoGenerico = /como posso te ajudar|como posso ajudar/i.test(ultimaMsgAssistente) && !iaPerguntoComoAjudar;
-    // Se a IA fez pergunta genérica ("como posso te ajudar?"), NÃO assumir que especialidade = agendamento
-    // O LLM deve responder naturalmente (pode ser pergunta informativa, orçamento, etc.)
     const clienteRespondeuComEspecialidade = iaPerguntoComoAjudar && especialidadeDetectada && !ehPerguntaInformativa && !ehPerguntaSobreCartao;
 
     // KEY: quando a IA perguntou "Gostaria de agendar?" e o cliente respondeu "quero", "sim", "por favor" etc.
-    // TAMBÉM detectar quando o cliente responde com perguntas sobre disponibilidade ("quando tem vaga?", "tem horário?")
     const iaPerguntoSeQuerAgendarConsulta = /gostaria de agendar|quer agendar|deseja agendar|posso agendar/i.test(ultimaMsgAssistente);
+
+    // TAMBÉM considerar como pedido de agendamento quando a IA perguntou "Gostaria de agendar?" e o cliente
+    // responde com perguntas sobre vagas/horários (ex: "quando tem vaga?", "tem horário?")
+    const clientePerguntouSobreVagaAposOferta = iaPerguntoSeQuerAgendarConsulta && 
+      /quando\s*(tem|tem\s*vaga|tem\s*hor[áa]rio|posso|d[áa]\s*pra)|tem\s*(vaga|hor[áa]rio)|pr[óo]ximo\s*(hor[áa]rio|dia|vaga)|qual\s*(hor[áa]rio|dia|vaga)/i.test(messageText);
+    
+    const querAgendarMensagem = !clienteRecusandoAgendar && !ehPreguntaPreco && !ehPerguntaInformativa && !ehPerguntaSobreCartao && !respostaCurtaEmContextoCartao && (
+      /agendar|marcar|consulta|atend|hor[áa]rio|dispon[íi]vel|vaga/i.test(messageText) ||
+      clientePerguntouSobreVagaAposOferta
+    );
+
     const clienteAceitouAgendar = iaPerguntoSeQuerAgendarConsulta && (
       /^(quero|sim|s|ok|pode|claro|bora|vamos|isso|por favor|yes|vou|gostaria|please|quero\s*sim|sim\s*quero)$/i.test(messageText.trim().toLowerCase()) ||
       /quando\s*(tem|tem\s*vaga|tem\s*hor[áa]rio|posso|d[áa]\s*pra)|tem\s*(vaga|hor[áa]rio)|pr[óo]ximo\s*(hor[áa]rio|dia|vaga)|qual\s*(hor[áa]rio|dia|vaga)/i.test(messageText)
