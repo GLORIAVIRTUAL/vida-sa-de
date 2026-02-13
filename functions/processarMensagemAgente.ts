@@ -446,6 +446,7 @@ Deno.serve(async (req) => {
           console.log('⚠️ Erro ao salvar histórico:', e.message);
         }
 
+        await liberarLock(base44, phoneNumber);
         return Response.json({ 
           success: true, 
           resposta: respostaPedirDados,
