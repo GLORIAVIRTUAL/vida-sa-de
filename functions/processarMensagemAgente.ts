@@ -410,6 +410,7 @@ Deno.serve(async (req) => {
           }
 
           // RETORNO IMEDIATO - NÃO CONTINUA PARA AGENDAMENTO
+          await liberarLock(base44, phoneNumber);
           return Response.json({ 
             success: true, 
             resposta: respostaVerificacao,
