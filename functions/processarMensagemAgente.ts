@@ -2801,8 +2801,8 @@ INSTRUÇÕES GERAIS:
       model: config.modelo_llm || 'gpt-4o-mini'
     };
     
-    // Se tiver mídia (imagem/documento/vídeo), enviar para análise visual
-    if (mediaUrl && (mediaType === 'image' || mediaType === 'document' || mediaType === 'video')) {
+    // Se tiver mídia (imagem/documento/vídeo/áudio), enviar para análise visual/transcrição
+    if (mediaUrl && (mediaType === 'image' || mediaType === 'document' || mediaType === 'video' || mediaType === 'audio')) {
       // Garantir que a URL é permanente (não temporária do Z-API)
       let urlParaLLM = mediaUrl;
       
