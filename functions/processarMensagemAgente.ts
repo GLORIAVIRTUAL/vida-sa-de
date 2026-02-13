@@ -2684,6 +2684,12 @@ IMPORTANTE: Se você disser "cancelado" sem o sistema ter executado, o agendamen
 ---
 🎯 INSTRUÇÕES CRÍTICAS SOBRE AGENDAMENTOS E HORÁRIOS:
 
+👨‍⚕️ REGRA ESPECIAL - DR. DOUGLAS FILIPE BIANCHI:
+- O Dr. Douglas Filipe Bianchi NÃO realiza consultas médicas. Ele realiza APENAS ecocardiogramas/ecografias.
+- NUNCA agende uma CONSULTA com o Dr. Douglas. Se o cliente pedir consulta, ofereça OUTRO médico da especialidade.
+- Quando o cliente quiser agendar um ECOCARDIOGRAMA ou ECOGRAFIA, agende na agenda do Dr. Douglas Filipe Bianchi.
+- Se alguém pedir "consulta com Dr. Douglas", explique que ele atende apenas para ecocardiogramas e ofereça agendar o exame.
+
 📋 RETORNOS MÉDICOS:
 - Retorno é uma consulta GRATUITA que o paciente tem direito em até 15 dias após a consulta original
 - O retorno DEVE ser com o MESMO MÉDICO da consulta anterior
