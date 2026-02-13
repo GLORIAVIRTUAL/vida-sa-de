@@ -12,8 +12,25 @@ Deno.serve(async (req) => {
         
         console.log('📨 Z-API Webhook recebido:', JSON.stringify(payload, null, 2));
 
+        // IGNORAR mensagens enviadas pela própria API (fromApi=true ou fromMe=true)
+        // Esses são callbacks da Z-API notificando que NOSSA mensagem foi enviada
+        if (payload.fromApi === true) {
+            console.log('⏭️ Ignorando callback de mensagem enviada pela API (fromApi=true)');
+            return new Response(JSON.stringify({ message: "Callback API ignorado" }), { status: 200 });
+        }
+        
+        if (payload.fromMe === true) {
+            // fromMe=true pode ser confirmação manual OU callback de envio
+            // Se tem status, é callback de status - tratar abaixo
+            // Se não, ignorar (é eco da nossa própria mensagem)
+            const temStatus = payload.status;
+            if (!temStatus) {
+                console.log('⏭️ Ignorando mensagem fromMe=true (eco da própria mensagem enviada)');
+                return new Response(JSON.stringify({ message: "Eco ignorado" }), { status: 200 });
+            }
+        }
+        
         // Verificar se é uma mensagem RECEBIDA (do paciente) - múltiplos formatos
-        // NOTA: Também aceita fromMe=true para casos de teste onde o mesmo número envia confirmação
         const temMensagemTexto = payload.text?.message || payload.body || payload.message;
         const temMidia = payload.image || payload.document || payload.audio || payload.video || payload.sticker;
         const temConteudo = temMensagemTexto || temMidia;
@@ -22,13 +39,13 @@ Deno.serve(async (req) => {
             (payload.event === 'message' && payload.fromMe === false) ||
             (payload.phone && temConteudo && !payload.fromMe);
         
-        // Verificar se é uma confirmação (SIM) - aceita mesmo de fromMe=true para testes
+        // Verificar se é uma confirmação (SIM) - apenas de mensagens RECEBIDAS (fromMe=false)
         const mensagemTexto = (temMensagemTexto || '').toLowerCase().trim();
         const palavrasConfirmacao = ['sim', 'confirmo', 'confirmar', 'confirmado', 'ok', 'vou', 'estarei', 'irei', 's', '1', 'yes'];
         const ehConfirmacao = palavrasConfirmacao.some(p => mensagemTexto === p || mensagemTexto.startsWith(p + ' '));
         
-        // Processar se for mensagem recebida OU se for confirmação (mesmo de fromMe=true)
-        if (isReceivedMessage || (payload.phone && ehConfirmacao && !payload.fromApi)) {
+        // Processar apenas mensagens recebidas do paciente
+        if (isReceivedMessage || (payload.phone && ehConfirmacao && !payload.fromMe && !payload.fromApi)) {
             console.log('✅ Mensagem recebida detectada - processando...', { fromMe: payload.fromMe, ehConfirmacao });
             return await processarMensagemRecebida(base44, payload);
         }
