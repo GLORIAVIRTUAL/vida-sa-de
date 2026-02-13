@@ -720,3 +720,27 @@ async function enviarMensagemZapi(telefone, mensagem) {
 
     return response.json();
 }
+
+async function enviarDocumentoZapi(telefone, documentUrl, fileName) {
+    const instanceId = Deno.env.get('ZAPI_INSTANCE_ID');
+    const token = Deno.env.get('ZAPI_TOKEN');
+    const clientToken = Deno.env.get('ZAPI_CLIENT_TOKEN');
+
+    const telefoneFormatado = telefone.replace(/\D/g, '');
+    const url = `https://api.z-api.io/instances/${instanceId}/token/${token}/send-document/${documentUrl.includes('.pdf') ? 'pdf' : 'doc'}`;
+
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Client-Token': clientToken
+        },
+        body: JSON.stringify({
+            phone: telefoneFormatado,
+            document: documentUrl,
+            fileName: fileName || 'Resultado_Exame.pdf'
+        })
+    });
+
+    return response.json();
+}
