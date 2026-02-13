@@ -382,6 +382,10 @@ async function processarMensagemRecebida(base44, payload) {
                             console.error('⚠️ Erro paciente:', pacErr.message);
                         }
 
+                        // Gerar um messageId único para mensagens combinadas do buffer
+                        // para evitar que a anti-duplicata do processarMensagemAgente rejeite
+                        const bufferMessageId = `buffer_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+                        
                         const resultado = await base44.asServiceRole.functions.invoke('processarMensagemAgente', {
                             phoneNumber: telefone,
                             messageText: textosCombinados,
@@ -389,7 +393,7 @@ async function processarMensagemRecebida(base44, payload) {
                             pacienteId: pacienteId,
                             mediaType: ultimaComMidia?.mediaType || 'text',
                             mediaUrl: ultimaComMidia?.mediaUrl || null,
-                            messageId: msgId
+                            messageId: bufferMessageId
                         });
                         console.log('✅ processarMensagemAgente retornou:', JSON.stringify(resultado.data).substring(0, 200));
                         
