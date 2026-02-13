@@ -4,33 +4,62 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     
-    const { phoneNumber, messageText, senderName, pacienteId, mediaType, mediaUrl, messageId } = await req.json();
+    let { phoneNumber, messageText, senderName, pacienteId, mediaType, mediaUrl, messageId } = await req.json();
     
     console.log('📨 Processando:', { phoneNumber, messageText, mediaType, mediaUrl, messageId });
-    
-    // ============ PRÉ-TRANSCRIÇÃO DE ÁUDIO ============
-    // O LLM tem dificuldade em processar áudio junto com prompt gigante.
-    // Solução: transcrever o áudio ANTES em uma chamada separada e usar o texto transcrito.
-    let audioTranscrito = null;
+
+    // ============ TRANSCRIÇÃO DE ÁUDIO ============
+    // Áudios do WhatsApp (OGG/opus) não são bem interpretados pelo LLM diretamente.
+    // Solução: Usar InvokeLLM com o arquivo para transcrever ANTES de processar a mensagem.
+    // O texto transcrito substitui o messageText para que toda a lógica funcione normalmente.
     if (mediaType === 'audio' && mediaUrl) {
-      console.log('🎤 Pré-transcrevendo áudio antes de processar...');
+      console.log('🎤 Áudio detectado - iniciando transcrição...');
       try {
-        const transcricao = await base44.asServiceRole.integrations.Core.InvokeLLM({
-          prompt: 'Transcreva o conteúdo deste áudio de voz do WhatsApp para texto em português. Retorne APENAS a transcrição exata do que a pessoa disse, sem comentários adicionais. Se não conseguir entender, retorne exatamente: "[áudio inaudível]"',
-          file_urls: [mediaUrl],
-          add_context_from_internet: false
-        });
-        
-        if (transcricao && typeof transcricao === 'string' && transcricao.trim().length > 0 && !transcricao.includes('[áudio inaudível]')) {
-          audioTranscrito = transcricao.trim();
-          // Substituir o messageText pelo texto transcrito para que todo o fluxo use o conteúdo real
-          messageText = audioTranscrito;
-          console.log('✅ Áudio transcrito com sucesso:', audioTranscrito.substring(0, 100));
-        } else {
-          console.log('⚠️ Não foi possível transcrever o áudio:', transcricao);
+        // Garantir URL permanente para o áudio
+        let audioUrlParaTranscricao = mediaUrl;
+        if (mediaUrl.includes('z-api.io') || mediaUrl.includes('whatsapp') || mediaUrl.includes('mmg.whatsapp')) {
+          try {
+            const audioResp = await fetch(mediaUrl);
+            if (audioResp.ok) {
+              const audioBlob = await audioResp.blob();
+              const audioFile = new File([audioBlob], `audio_${Date.now()}.ogg`, { type: audioBlob.type || 'audio/ogg' });
+              const uploadRes = await base44.asServiceRole.integrations.Core.UploadFile({ file: audioFile });
+              if (uploadRes?.file_url) {
+                audioUrlParaTranscricao = uploadRes.file_url;
+                mediaUrl = uploadRes.file_url; // Atualizar mediaUrl global também
+                console.log('✅ Áudio salvo permanentemente:', audioUrlParaTranscricao);
+              }
+            }
+          } catch (uploadErr) {
+            console.warn('⚠️ Erro upload áudio para transcrição:', uploadErr.message);
+          }
         }
-      } catch (transcricaoErr) {
-        console.warn('⚠️ Erro na transcrição do áudio:', transcricaoErr.message);
+
+        const transcricao = await Promise.race([
+          base44.asServiceRole.integrations.Core.InvokeLLM({
+            prompt: `Transcreva o áudio anexado para texto em português brasileiro. 
+Retorne APENAS a transcrição exata do que a pessoa disse, sem adicionar nada.
+Se não conseguir entender o áudio, retorne exatamente: "[ÁUDIO ININTELIGÍVEL]"
+NÃO adicione explicações, apenas o texto falado.`,
+            file_urls: [audioUrlParaTranscricao],
+            add_context_from_internet: false
+          }),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout transcrição')), 15000))
+        ]);
+
+        if (transcricao && typeof transcricao === 'string' && transcricao.trim().length > 0 && !transcricao.includes('[ÁUDIO ININTELIGÍVEL]')) {
+          const textoTranscrito = transcricao.trim();
+          console.log('✅ Áudio transcrito com sucesso:', textoTranscrito.substring(0, 100));
+          // Substituir messageText pelo texto transcrito para que toda a lógica funcione
+          messageText = textoTranscrito;
+          // Manter mediaType como audio para que o histórico registre corretamente
+        } else {
+          console.log('⚠️ Não foi possível transcrever o áudio, mantendo [Áudio recebido]');
+          // messageText permanece como "[Áudio recebido]" - o LLM vai pedir para digitar
+        }
+      } catch (transcErr) {
+        console.warn('⚠️ Erro na transcrição do áudio:', transcErr.message);
+        // Continua com messageText original
       }
     }
     
