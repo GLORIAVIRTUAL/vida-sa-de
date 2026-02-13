@@ -116,42 +116,37 @@ async function processarMensagemRecebida(base44, payload) {
     const palavrasConfirmacao = ['sim', 'confirmo', 'confirmar', 'confirmado', 'ok', 'vou', 'estarei', 'irei', 's', '1', 'yes'];
     const ehConfirmacao = palavrasConfirmacao.some(p => mensagem === p || mensagem.startsWith(p + ' '));
 
-    if (!ehConfirmacao) {
-        console.log('🤖 Mensagem não é confirmação - verificando modo de atendimento...');
-    } else {
-        // MESMO sendo confirmação, verificar se houve um LEMBRETE enviado recentemente (últimas 48h)
-        // Se não houve lembrete, NÃO confirmar agendamento - tratar como mensagem normal
+    // Se é confirmação, verificar se houve um LEMBRETE enviado recentemente (últimas 48h)
+    // Se não houve lembrete, NÃO confirmar agendamento - tratar como mensagem normal para a IA responder
+    let ehConfirmacaoReal = ehConfirmacao;
+    if (ehConfirmacao) {
         console.log('🔍 Possível confirmação detectada - verificando se houve lembrete recente...');
         const telefoneNorm = telefone.replace(/\D/g, '');
-        let houvaLembreteRecente = false;
         try {
-            const logsRecentes = await base44.asServiceRole.entities.NotificationLog.list('-created_date', 30);
+            const logsRecentes = await base44.asServiceRole.entities.NotificationLog.list('-created_date', 50);
             const agora48hAtras = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
-            houvaLembreteRecente = logsRecentes.some(log => {
+            const houvaLembreteRecente = logsRecentes.some(log => {
                 const telLog = (log.telefone_destino || '').replace(/\D/g, '');
                 const matchTel = telLog.slice(-8) === telefoneNorm.slice(-8);
                 const ehLembrete = (log.mensagem_enviada || '').toLowerCase().includes('lembr');
                 const recente = (log.timestamp_envio || log.created_date || '') >= agora48hAtras;
                 return matchTel && ehLembrete && recente;
             });
+            if (!houvaLembreteRecente) {
+                console.log('⏭️ Nenhum lembrete nas últimas 48h - NÃO é confirmação de agendamento, tratando como mensagem normal');
+                ehConfirmacaoReal = false;
+            } else {
+                console.log('✅ Lembrete recente encontrado - processando como confirmação de agendamento');
+            }
         } catch (e) {
             console.warn('⚠️ Erro ao verificar lembretes:', e.message);
-        }
-        
-        if (!houvaLembreteRecente) {
-            console.log('⏭️ Nenhum lembrete recente encontrado - NÃO é confirmação de agendamento, tratando como mensagem normal');
-            // Forçar reprocessamento como mensagem normal (não-confirmação)
+            // Em caso de erro, não confirmar para evitar falsos positivos
+            ehConfirmacaoReal = false;
         }
     }
-    
-    // Se NÃO é confirmação OU se não houve lembrete recente, tratar como mensagem normal
-    const deveProcessarComoMensagemNormal = !ehConfirmacao || (() => {
-        // Re-verificar se houve lembrete (usar resultado do bloco acima)
-        // Se chegou aqui com ehConfirmacao=true, precisamos re-checar
-        return false; // placeholder, será substituído pela lógica real abaixo
-    })();
-    
-    if (!ehConfirmacao) {
+
+    if (!ehConfirmacaoReal) {
+        console.log('🤖 Mensagem não é confirmação de agendamento - verificando modo de atendimento...');
         
         // Determinar o texto da mensagem baseado no tipo de mídia
         let textoMensagem = mensagem;
