@@ -2963,11 +2963,11 @@ INSTRUÇÕES GERAIS:
     
   } catch (error) {
     console.error('❌ Erro:', error);
-    // Tentar liberar lock mesmo em caso de erro
+    // Tentar liberar lock mesmo em caso de erro (phoneNumber pode ter sido extraído antes do erro)
     try {
-      const base44Err = createClientFromRequest(req);
-      const body = await req.json().catch(() => ({}));
-      if (body.phoneNumber) await liberarLock(base44Err, body.phoneNumber);
+      if (typeof phoneNumber !== 'undefined' && phoneNumber) {
+        await liberarLock(base44, phoneNumber);
+      }
     } catch (e) { /* ignore */ }
     return Response.json({ 
       error: error.message,
