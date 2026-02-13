@@ -323,8 +323,8 @@ async function processarMensagemRecebida(base44, payload) {
                     
                     console.log(`⏳ Mensagem adicionada ao buffer (${mensagensPendentes.length} pendentes). meuTimestamp=${meuTimestamp}. Aguardando 5s...`);
                     
-                    // Esperar 5 segundos para acumular mais mensagens
-                    await new Promise(resolve => setTimeout(resolve, 5000));
+                    // Esperar 3 segundos para acumular mais mensagens
+                    await new Promise(resolve => setTimeout(resolve, 3000));
                     
                     // Recarregar contato para ver se mais mensagens chegaram
                     let contatoAtualizado = null;
