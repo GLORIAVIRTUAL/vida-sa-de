@@ -2754,7 +2754,7 @@ INSTRUÇÕES GERAIS:
 - Se o cliente pergunta "quanto custa biópsia?" e "BIOPSIA" está na lista com preços, INFORME OS PREÇOS!
 - Se o cliente pergunta "vocês fazem X?" e X está na lista, diga SIM e informe os preços.
 - SEMPRE mostre preço Particular E preço Cartão Mais Vida quando ambos existirem.
-- A clínica realiza coleta de sangue TODOS OS DIAS sem agendamento.`;
+`;
 
     // Preparar parâmetros do LLM
     const llmParams = {
