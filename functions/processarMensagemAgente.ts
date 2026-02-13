@@ -8,6 +8,32 @@ Deno.serve(async (req) => {
     
     console.log('📨 Processando:', { phoneNumber, messageText, mediaType, mediaUrl, messageId });
     
+    // ============ PRÉ-TRANSCRIÇÃO DE ÁUDIO ============
+    // O LLM tem dificuldade em processar áudio junto com prompt gigante.
+    // Solução: transcrever o áudio ANTES em uma chamada separada e usar o texto transcrito.
+    let audioTranscrito = null;
+    if (mediaType === 'audio' && mediaUrl) {
+      console.log('🎤 Pré-transcrevendo áudio antes de processar...');
+      try {
+        const transcricao = await base44.asServiceRole.integrations.Core.InvokeLLM({
+          prompt: 'Transcreva o conteúdo deste áudio de voz do WhatsApp para texto em português. Retorne APENAS a transcrição exata do que a pessoa disse, sem comentários adicionais. Se não conseguir entender, retorne exatamente: "[áudio inaudível]"',
+          file_urls: [mediaUrl],
+          add_context_from_internet: false
+        });
+        
+        if (transcricao && typeof transcricao === 'string' && transcricao.trim().length > 0 && !transcricao.includes('[áudio inaudível]')) {
+          audioTranscrito = transcricao.trim();
+          // Substituir o messageText pelo texto transcrito para que todo o fluxo use o conteúdo real
+          messageText = audioTranscrito;
+          console.log('✅ Áudio transcrito com sucesso:', audioTranscrito.substring(0, 100));
+        } else {
+          console.log('⚠️ Não foi possível transcrever o áudio:', transcricao);
+        }
+      } catch (transcricaoErr) {
+        console.warn('⚠️ Erro na transcrição do áudio:', transcricaoErr.message);
+      }
+    }
+    
     // ============ ANTI-DUPLICATA COM LOCK DISTRIBUÍDO ============
     // Problema: zapiWebhook e webhookWhatsappChatbot AMBOS chamam esta função para a mesma mensagem.
     // Solução: Usar campo 'processando_ia_lock' no contato como mutex distribuído.
