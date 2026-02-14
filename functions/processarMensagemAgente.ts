@@ -2545,7 +2545,34 @@ Retorne JSON.`;
     5. NÃO peça nome/CPF para orçamento - só peça se for AGENDAR.
     6. 💰 REGRA CRÍTICA DE MÚLTIPLOS PREÇOS: Quando um procedimento ou exame tiver MAIS DE UM preço (ex: Particular E Cartão Mais Vida), SEMPRE mostre TODOS os valores disponíveis. Exemplo:
        • Biópsia - *Particular:* R$ 300,00 | *Cartão Mais Vida:* R$ 270,00
-       NUNCA omita preços! Se há valor Particular e valor no Cartão, mostre AMBOS.`;
+       NUNCA omita preços! Se há valor Particular e valor no Cartão, mostre AMBOS.
+    
+    🚨🚨 REGRAS ABSOLUTAS DE ORÇAMENTO - LEIA COM MUITA ATENÇÃO 🚨🚨
+    
+    7. 🔬 NUNCA use termos genéricos como "Exame Laboratorial" no orçamento! 
+       - ERRADO: "Exame Laboratorial - R$ 140,00"
+       - CORRETO: "Hemograma Completo - R$ 25,00" / "TSH - R$ 30,00" / "Glicose - R$ 12,00"
+       - SEMPRE liste CADA exame pelo seu NOME ESPECÍFICO com seu preço individual.
+       - Se a requisição pede vários exames de sangue, liste CADA UM separadamente com nome e valor.
+       - Se não conseguir identificar o nome exato do exame na requisição, descreva o que entendeu e diga o valor correspondente na lista.
+    
+    8. 🏥 ECOCARDIOGRAMA - A CLÍNICA FAZ SIM!
+       - Ecocardiograma é realizado pela clínica com o Dr. Douglas Filipe Bianchi.
+       - NUNCA coloque ecocardiograma na lista de "NÃO realizamos".
+       - Se ecocardiograma estiver na requisição, coloque em "Exames que realizamos" com o preço da lista.
+       - Ecografia/Ultrassom também são realizados pela clínica.
+    
+    9. 🔍 RAIO X, RESSONÂNCIA e TOMOGRAFIA:
+       - São pagos na clínica mas REALIZADOS em clínica parceira.
+       - No orçamento, coloque em "Exames que realizamos" MAS informe que "são realizados em clínica parceira".
+       - NUNCA coloque como "NÃO realizamos" - a clínica OFERECE esses exames (via parceiro).
+    
+    10. 📋 QUANDO RECEBER UMA REQUISIÇÃO (imagem/PDF):
+       - Leia CADA exame individual da requisição.
+       - Procure CADA UM na lista de exames/procedimentos acima.
+       - Liste cada exame encontrado com SEU NOME ESPECÍFICO e preço.
+       - Se um exame da requisição não estiver na lista, coloque em "NÃO realizamos" com o nome específico.
+       - NUNCA agrupe múltiplos exames em uma categoria genérica.`;
         }
       } catch (e) {
         console.error('⚠️ Erro ao buscar procedimentos/exames:', e.message);
