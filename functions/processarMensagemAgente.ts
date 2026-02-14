@@ -2978,8 +2978,9 @@ INSTRUÇÕES GERAIS:
       model: config.modelo_llm || 'gpt-4o-mini'
     };
     
-    // Se tiver mídia (imagem/documento/vídeo/áudio), enviar para análise visual/transcrição
-    if (mediaUrl && (mediaType === 'image' || mediaType === 'document' || mediaType === 'video' || mediaType === 'audio')) {
+    // Se tiver mídia (imagem/documento/vídeo), enviar para análise visual
+    // NOTA: Áudio NÃO é enviado ao LLM principal - já foi transcrito acima e o texto está em messageText
+    if (mediaUrl && (mediaType === 'image' || mediaType === 'document' || mediaType === 'video')) {
       // Garantir que a URL é permanente (não temporária do Z-API)
       let urlParaLLM = mediaUrl;
       
@@ -2990,7 +2991,7 @@ INSTRUÇÕES GERAIS:
           const mediaResponse = await fetch(mediaUrl);
           if (mediaResponse.ok) {
             const blob = await mediaResponse.blob();
-            const extMap = { image: 'jpg', document: 'pdf', video: 'mp4', audio: 'ogg' };
+            const extMap = { image: 'jpg', document: 'pdf', video: 'mp4' };
             const ext = extMap[mediaType] || 'bin';
             const fileName = `requisicao_${Date.now()}.${ext}`;
             const file = new File([blob], fileName, { type: blob.type });
@@ -3005,15 +3006,10 @@ INSTRUÇÕES GERAIS:
           }
         } catch (uploadErr) {
           console.warn('⚠️ Erro ao fazer upload permanente:', uploadErr.message);
-          // Tenta usar a URL original mesmo assim
         }
       }
       
       llmParams.file_urls = [urlParaLLM];
-      // FORÇAR contexto da internet para melhor análise de documentos
-      if (mediaType === 'document' || mediaType === 'image') {
-        llmParams.add_context_from_internet = false;
-      }
       console.log('🖼️ Enviando mídia para análise LLM:', urlParaLLM);
     }
 
