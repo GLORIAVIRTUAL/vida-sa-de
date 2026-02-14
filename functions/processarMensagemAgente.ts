@@ -34,107 +34,93 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ============ TRANSCRIÇÃO DE ÁUDIO ============
-    // Áudios do WhatsApp (OGG/opus) precisam ser transcritos ANTES de processar.
-    // O LLM principal com prompt gigante não consegue processar áudio bem.
-    // Solução: chamada dedicada de transcrição → texto substituído no messageText.
+    // ============ TRANSCRIÇÃO DE ÁUDIO VIA WHISPER (OpenAI) ============
+    // Áudios do WhatsApp (OGG/opus) são transcritos usando a API Whisper da OpenAI.
+    // Whisper suporta .ogg nativamente e é muito mais preciso que InvokeLLM para áudio.
     if (mediaType === 'audio' && mediaUrl) {
-      console.log('🎤 Áudio detectado - iniciando transcrição...');
+      console.log('🎤 Áudio detectado - iniciando transcrição via Whisper...');
       console.log('🔗 URL do áudio recebida:', mediaUrl);
       
-      let audioUrlParaTranscricao = mediaUrl;
+      let transcricaoSucesso = false;
       
-      // PASSO 1: Garantir URL permanente (URLs do Z-API/backblaze expiram rápido)
-      // TAMBÉM re-upload com extensão .mp3 se a URL já é permanente mas tem .ogg
-      // porque InvokeLLM NÃO suporta .ogg
-      const ehUrlTemporaria = mediaUrl.includes('z-api.io') || mediaUrl.includes('whatsapp') || 
-                               mediaUrl.includes('mmg.whatsapp') || mediaUrl.includes('backblazeb2.com') ||
-                               mediaUrl.includes('temp-file');
-      const ehOggPermanente = !ehUrlTemporaria && mediaUrl.toLowerCase().includes('.ogg');
-      
-      if (ehUrlTemporaria || ehOggPermanente) {
-        console.log(ehOggPermanente ? '📥 URL permanente .ogg detectada - re-upload como .mp3 para compatibilidade LLM...' : '📥 URL temporária detectada - fazendo upload permanente...');
-        try {
-          const audioResp = await fetch(mediaUrl, { redirect: 'follow' });
-          console.log('📥 Download do áudio: status=', audioResp.status, 'type=', audioResp.headers.get('content-type'));
-          if (audioResp.ok) {
-            const audioBlob = await audioResp.blob();
-            console.log('📥 Blob do áudio: size=', audioBlob.size, 'type=', audioBlob.type);
-            if (audioBlob.size > 0) {
-              // IMPORTANTE: Usar extensão .mp3 porque InvokeLLM NÃO suporta .ogg
-              const audioFile = new File([audioBlob], `audio_${Date.now()}.mp3`, { type: 'audio/mpeg' });
-              const uploadRes = await base44.asServiceRole.integrations.Core.UploadFile({ file: audioFile });
-              if (uploadRes?.file_url) {
-                audioUrlParaTranscricao = uploadRes.file_url;
-                mediaUrl = uploadRes.file_url;
-                console.log('✅ Áudio salvo permanentemente como .mp3:', audioUrlParaTranscricao);
-              }
+      // PASSO 1: Baixar o áudio
+      try {
+        console.log('📥 Baixando áudio para transcrição...');
+        const audioResp = await fetch(mediaUrl, { redirect: 'follow' });
+        console.log('📥 Download: status=', audioResp.status, 'type=', audioResp.headers.get('content-type'));
+        
+        if (audioResp.ok) {
+          const audioBlob = await audioResp.blob();
+          console.log('📥 Blob: size=', audioBlob.size, 'type=', audioBlob.type);
+          
+          if (audioBlob.size > 0) {
+            // PASSO 2: Enviar para Whisper API
+            const openaiKey = Deno.env.get('OPENAI_API_KEY');
+            if (!openaiKey) {
+              console.warn('⚠️ OPENAI_API_KEY não configurada - não é possível transcrever');
             } else {
-              console.warn('⚠️ Áudio com tamanho 0 - URL pode ter expirado');
+              for (let tentativa = 1; tentativa <= 2 && !transcricaoSucesso; tentativa++) {
+                try {
+                  console.log(`🎤 Whisper tentativa ${tentativa}...`);
+                  
+                  // Montar FormData com o arquivo de áudio
+                  const formData = new FormData();
+                  // Whisper aceita .ogg, .mp3, .m4a, .wav, .webm, .mp4, .mpeg, .mpga
+                  const audioFile = new File([audioBlob], `audio_${Date.now()}.ogg`, { type: 'audio/ogg' });
+                  formData.append('file', audioFile);
+                  formData.append('model', 'whisper-1');
+                  formData.append('language', 'pt');
+                  formData.append('response_format', 'text');
+                  
+                  const whisperResp = await Promise.race([
+                    fetch('https://api.openai.com/v1/audio/transcriptions', {
+                      method: 'POST',
+                      headers: {
+                        'Authorization': `Bearer ${openaiKey}`
+                      },
+                      body: formData
+                    }),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout Whisper')), 30000))
+                  ]);
+                  
+                  console.log('🎤 Whisper response status:', whisperResp.status);
+                  
+                  if (whisperResp.ok) {
+                    const textoTranscrito = await whisperResp.text();
+                    console.log('🎤 Whisper raw:', textoTranscrito.substring(0, 200));
+                    
+                    const textoLimpo = textoTranscrito.trim()
+                      .replace(/^["']|["']$/g, '')
+                      .trim();
+                    
+                    if (textoLimpo.length > 0 && textoLimpo.length < 5000) {
+                      messageText = textoLimpo;
+                      transcricaoSucesso = true;
+                      console.log('✅ Whisper transcreveu (tentativa ' + tentativa + '):', textoLimpo.substring(0, 100));
+                    } else {
+                      console.log('⚠️ Whisper retornou texto vazio ou muito longo');
+                    }
+                  } else {
+                    const errBody = await whisperResp.text();
+                    console.warn(`⚠️ Whisper erro (tentativa ${tentativa}): ${whisperResp.status} - ${errBody.substring(0, 200)}`);
+                  }
+                } catch (whisperErr) {
+                  console.warn(`⚠️ Whisper erro tentativa ${tentativa}:`, whisperErr.message);
+                }
+              }
             }
           } else {
-            console.warn('⚠️ Falha ao baixar áudio temporário: status', audioResp.status);
+            console.warn('⚠️ Áudio com tamanho 0 - URL pode ter expirado');
           }
-        } catch (uploadErr) {
-          console.warn('⚠️ Erro upload áudio:', uploadErr.message);
+        } else {
+          console.warn('⚠️ Falha ao baixar áudio: status', audioResp.status);
         }
-      }
-      
-      // PASSO 2: Transcrever o áudio com LLM dedicado (até 2 tentativas)
-      let transcricaoSucesso = false;
-      for (let tentativa = 1; tentativa <= 2 && !transcricaoSucesso; tentativa++) {
-        try {
-          console.log(`🎤 Tentativa ${tentativa} de transcrição com URL: ${audioUrlParaTranscricao.substring(0, 80)}...`);
-          
-          const transcricao = await Promise.race([
-            base44.asServiceRole.integrations.Core.InvokeLLM({
-              prompt: `Você recebeu um arquivo de áudio de voz do WhatsApp. Transcreva o conteúdo falado para texto em português brasileiro.
-
-REGRAS:
-- Retorne APENAS a transcrição exata do que a pessoa disse
-- NÃO adicione explicações, comentários ou formatação
-- Se o áudio estiver inaudível ou vazio, retorne exatamente: [INAUDÍVEL]
-- Se houver ruído mas conseguir entender parcialmente, transcreva o que entendeu
-- Mantenha gírias, sotaques e expressões como foram ditas`,
-              file_urls: [audioUrlParaTranscricao],
-              add_context_from_internet: false
-            }),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout transcrição')), 20000))
-          ]);
-
-          console.log('🎤 Resposta da transcrição:', JSON.stringify(transcricao).substring(0, 200));
-
-          if (transcricao && typeof transcricao === 'string') {
-            const textoLimpo = transcricao.trim()
-              .replace(/^["']|["']$/g, '') // Remover aspas
-              .replace(/^transcrição:\s*/i, '') // Remover prefixo
-              .replace(/^texto:\s*/i, '') // Remover prefixo
-              .trim();
-            
-            if (textoLimpo.length > 0 && 
-                !textoLimpo.includes('[INAUDÍVEL]') && 
-                !textoLimpo.includes('[ÁUDIO ININTELIGÍVEL]') &&
-                !textoLimpo.toLowerCase().includes('não consegui') &&
-                !textoLimpo.toLowerCase().includes('não foi possível') &&
-                !textoLimpo.toLowerCase().includes('audio file') &&
-                !textoLimpo.toLowerCase().includes('i cannot') &&
-                !textoLimpo.toLowerCase().includes('i\'m unable') &&
-                textoLimpo.length < 5000) { // Sanidade: transcrição não deveria ser enorme
-              
-              messageText = textoLimpo;
-              transcricaoSucesso = true;
-              console.log('✅ Áudio transcrito (tentativa ' + tentativa + '):', textoLimpo.substring(0, 100));
-            } else {
-              console.log('⚠️ Transcrição retornou texto inválido (tentativa ' + tentativa + '):', textoLimpo.substring(0, 80));
-            }
-          }
-        } catch (transcErr) {
-          console.warn(`⚠️ Erro transcrição tentativa ${tentativa}:`, transcErr.message);
-        }
+      } catch (downloadErr) {
+        console.warn('⚠️ Erro ao baixar áudio:', downloadErr.message);
       }
       
       if (!transcricaoSucesso) {
-        console.log('❌ Todas as tentativas de transcrição falharam - mantendo messageText original');
+        console.log('❌ Transcrição Whisper falhou - mantendo messageText original');
         // messageText permanece como "[Áudio recebido]"
       }
     }
