@@ -45,12 +45,15 @@ Deno.serve(async (req) => {
       let audioUrlParaTranscricao = mediaUrl;
       
       // PASSO 1: Garantir URL permanente (URLs do Z-API/backblaze expiram rápido)
+      // TAMBÉM re-upload com extensão .mp3 se a URL já é permanente mas tem .ogg
+      // porque InvokeLLM NÃO suporta .ogg
       const ehUrlTemporaria = mediaUrl.includes('z-api.io') || mediaUrl.includes('whatsapp') || 
                                mediaUrl.includes('mmg.whatsapp') || mediaUrl.includes('backblazeb2.com') ||
                                mediaUrl.includes('temp-file');
+      const ehOggPermanente = !ehUrlTemporaria && mediaUrl.toLowerCase().includes('.ogg');
       
-      if (ehUrlTemporaria) {
-        console.log('📥 URL temporária detectada - fazendo upload permanente...');
+      if (ehUrlTemporaria || ehOggPermanente) {
+        console.log(ehOggPermanente ? '📥 URL permanente .ogg detectada - re-upload como .mp3 para compatibilidade LLM...' : '📥 URL temporária detectada - fazendo upload permanente...');
         try {
           const audioResp = await fetch(mediaUrl, { redirect: 'follow' });
           console.log('📥 Download do áudio: status=', audioResp.status, 'type=', audioResp.headers.get('content-type'));
@@ -58,12 +61,13 @@ Deno.serve(async (req) => {
             const audioBlob = await audioResp.blob();
             console.log('📥 Blob do áudio: size=', audioBlob.size, 'type=', audioBlob.type);
             if (audioBlob.size > 0) {
-              const audioFile = new File([audioBlob], `audio_${Date.now()}.ogg`, { type: 'audio/ogg' });
+              // IMPORTANTE: Usar extensão .mp3 porque InvokeLLM NÃO suporta .ogg
+              const audioFile = new File([audioBlob], `audio_${Date.now()}.mp3`, { type: 'audio/mpeg' });
               const uploadRes = await base44.asServiceRole.integrations.Core.UploadFile({ file: audioFile });
               if (uploadRes?.file_url) {
                 audioUrlParaTranscricao = uploadRes.file_url;
                 mediaUrl = uploadRes.file_url;
-                console.log('✅ Áudio salvo permanentemente:', audioUrlParaTranscricao);
+                console.log('✅ Áudio salvo permanentemente como .mp3:', audioUrlParaTranscricao);
               }
             } else {
               console.warn('⚠️ Áudio com tamanho 0 - URL pode ter expirado');
