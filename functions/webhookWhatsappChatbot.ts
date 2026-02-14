@@ -245,6 +245,7 @@ Deno.serve(async (req) => {
         
         // Se está em atendimento humano (padrão: SEMPRE humano, só IA se explicitamente false)
         if (contato.atendimento_humano !== false) {
+          // Salvar mensagem no histórico SEM alterar o modo de atendimento
           const historicoAtual = contato.historico_mensagens || [];
           const msgObj = {
             role: 'user',
@@ -263,6 +264,16 @@ Deno.serve(async (req) => {
           console.log('👤 Contato em atendimento humano - mensagem salva');
           if (messageId) releaseLock(messageId);
           return Response.json({ success: true, status: 'atendimento_humano' });
+        }
+        
+        // MODO IA: Verificar se o zapiWebhook já está processando via buffer/debounce
+        // Se mensagens_pendentes não está vazio OU ultimo_timestamp_pendente está definido,
+        // o zapiWebhook já está no debounce - NÃO processar aqui para evitar duplicata
+        const temBufferAtivo = (contato.mensagens_pendentes?.length > 0) || contato.ultimo_timestamp_pendente;
+        if (temBufferAtivo) {
+          console.log('⏭️ zapiWebhook já tem buffer ativo - delegando processamento. NÃO alterando modo de atendimento.');
+          if (messageId) releaseLock(messageId);
+          return Response.json({ success: true, status: 'delegado_zapiWebhook' });
         }
         
         // MODO IA: DEBOUNCE - Acumular mensagens por 5 segundos antes de processar
