@@ -8,6 +8,42 @@ Deno.serve(async (req) => {
     
     console.log('📨 Processando:', { phoneNumber, messageText, mediaType, mediaUrl, messageId });
 
+    // ============ DETECÇÃO DE ÁUDIO EMBUTIDO NO TEXTO (BUFFER/DEBOUNCE) ============
+    // Quando mensagens passam pelo debounce, a URL do áudio é concatenada no messageText
+    // e mediaType/mediaUrl ficam como "text"/null. Precisamos detectar e restaurar.
+    if ((!mediaUrl || mediaType === 'text') && messageText) {
+      const audioUrlMatch = messageText.match(/(https?:\/\/[^\s]+\.ogg[^\s]*)/i);
+      if (!audioUrlMatch) {
+        // Tentar detectar URLs do backblaze/supabase que são áudios mesmo sem extensão .ogg
+        const backblazeAudioMatch = messageText.match(/(https?:\/\/f\d+\.backblazeb2\.com\/file\/temp-file-download\/[^\s]+)/i);
+        if (backblazeAudioMatch && (messageText.includes('[Áudio') || messageText.includes('[Audio'))) {
+          mediaType = 'audio';
+          mediaUrl = backblazeAudioMatch[1];
+          messageText = messageText.replace(backblazeAudioMatch[0], '').replace(/\[Áudio recebido\]/gi, '').replace(/\[Audio recebido\]/gi, '').trim();
+          if (!messageText) messageText = '[Áudio recebido]';
+          console.log('🎤 Áudio detectado no texto (backblaze):', mediaUrl.substring(0, 80));
+        }
+      } else {
+        mediaType = 'audio';
+        mediaUrl = audioUrlMatch[1];
+        messageText = messageText.replace(audioUrlMatch[0], '').replace(/\[Áudio recebido\]/gi, '').replace(/\[Audio recebido\]/gi, '').trim();
+        if (!messageText) messageText = '[Áudio recebido]';
+        console.log('🎤 Áudio detectado no texto (.ogg):', mediaUrl.substring(0, 80));
+      }
+      
+      // Também detectar áudios em URLs permanentes do supabase/base44
+      if (mediaType !== 'audio') {
+        const supabaseAudioMatch = messageText.match(/(https?:\/\/[^\s]*supabase[^\s]*\.ogg[^\s]*)/i);
+        if (supabaseAudioMatch) {
+          mediaType = 'audio';
+          mediaUrl = supabaseAudioMatch[1];
+          messageText = messageText.replace(supabaseAudioMatch[0], '').replace(/\[Áudio recebido\]/gi, '').trim();
+          if (!messageText) messageText = '[Áudio recebido]';
+          console.log('🎤 Áudio detectado no texto (supabase):', mediaUrl.substring(0, 80));
+        }
+      }
+    }
+
     // ============ TRANSCRIÇÃO DE ÁUDIO ============
     // Áudios do WhatsApp (OGG/opus) precisam ser transcritos ANTES de processar.
     // O LLM principal com prompt gigante não consegue processar áudio bem.
