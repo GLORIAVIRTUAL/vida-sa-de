@@ -192,6 +192,33 @@ async function processarMensagemRecebida(base44, payload) {
             mediaUrl = payload.video.videoUrl || payload.video.url;
         }
         
+        // UPLOAD PERMANENTE: Se tem mídia com URL temporária, fazer upload ANTES de salvar no buffer
+        // Isso garante que a URL não expire durante o debounce
+        if (mediaUrl && mediaType !== 'text') {
+            try {
+                console.log('📥 [zapiWebhook] Fazendo upload permanente da mídia antes do buffer...');
+                const mediaResponse = await fetch(mediaUrl, { redirect: 'follow' });
+                if (mediaResponse.ok) {
+                    const blob = await mediaResponse.blob();
+                    if (blob.size > 0) {
+                        const extMap = { image: 'jpg', document: 'pdf', audio: 'ogg', video: 'mp4' };
+                        const ext = extMap[mediaType] || 'bin';
+                        const fileName = `whatsapp_${msgId || Date.now()}.${ext}`;
+                        const file = new File([blob], fileName, { type: blob.type });
+                        const uploadResult = await base44.asServiceRole.integrations.Core.UploadFile({ file });
+                        if (uploadResult?.file_url) {
+                            console.log('✅ [zapiWebhook] Mídia salva permanentemente:', uploadResult.file_url);
+                            mediaUrl = uploadResult.file_url;
+                        }
+                    } else {
+                        console.warn('⚠️ [zapiWebhook] Mídia com tamanho 0 - URL pode ter expirado');
+                    }
+                }
+            } catch (uploadErr) {
+                console.warn('⚠️ [zapiWebhook] Erro upload mídia:', uploadErr.message);
+            }
+        }
+        
         try {
             // Normalizar telefone para busca - buscar com e sem código de país
             const telNormalizado = telefone.replace(/\D/g, '');
