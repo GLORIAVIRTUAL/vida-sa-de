@@ -228,12 +228,15 @@ Deno.serve(async (req) => {
             ? [...historicoExistente, separador] 
             : [];
           
+          // PRESERVAR o modo de atendimento atual (não forçar humano se estava em IA)
+          const modoAtendimentoAtual = contato.atendimento_humano;
+          
           await base44.asServiceRole.entities.Contato.update(contato.id, {
             conversa_finalizada: false,
             historico_mensagens: historicoComSeparador.slice(-200),
             mensagens_pendentes: [],
             ultimo_timestamp_pendente: null,
-            atendimento_humano: true,
+            atendimento_humano: modoAtendimentoAtual !== false ? true : false,
             atendente_atual: null,
             atendente_id: null
           });
