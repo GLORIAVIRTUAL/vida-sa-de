@@ -395,9 +395,62 @@ Deno.serve(async (req) => {
       '| conversaFinalizada:', conversaFinalizada,
       '| historicoMsgs:', historicoMsgs.length);
     
-    // Se é primeira mensagem, retornar saudação fixa IMEDIATAMENTE (não precisa de LLM)
+    // Se é primeira mensagem, verificar se está em modo humano
     if (ehPrimeiraMensagemDefinitiva) {
-      // Calcular saudação por horário
+      const timestamp = new Date().toISOString();
+      const userEntry = { role: 'user', content: mediaUrl ? `${messageText}\n${mediaUrl}` : messageText, timestamp, messageId };
+      if (mediaType && mediaType !== 'text') userEntry.mediaType = mediaType;
+      if (mediaUrl) userEntry.mediaUrl = mediaUrl;
+      
+      // Verificar se contato está em modo humano (padrão = humano)
+      const estaEmModoHumano = !contatoFresh || contatoFresh.atendimento_humano !== false;
+      
+      if (estaEmModoHumano) {
+        // MODO HUMANO: Apenas salvar mensagem, NÃO enviar saudação da IA
+        console.log('👤 PRIMEIRA MENSAGEM em modo HUMANO - apenas salvando, sem resposta IA');
+        
+        if (contatoFresh) {
+          const hist = contatoFresh.historico_mensagens || [];
+          hist.push(userEntry);
+          await base44.asServiceRole.entities.Contato.update(contatoFresh.id, {
+            ultima_mensagem: messageText,
+            historico_mensagens: hist.slice(-50),
+            ultima_interacao: timestamp,
+            total_mensagens: (contatoFresh.total_mensagens || 0) + 1,
+            conversa_finalizada: false,
+            processando_ia_lock: null
+          });
+        } else {
+          // Contato novo - criar em modo HUMANO sem resposta IA
+          let telefoneComPrefixo = phoneNumber.replace(/\D/g, '');
+          if (!telefoneComPrefixo.startsWith('55')) {
+            telefoneComPrefixo = '55' + telefoneComPrefixo;
+          }
+          await base44.asServiceRole.entities.Contato.create({
+            nome: senderName,
+            telefone: telefoneComPrefixo,
+            paciente_id: pacienteId,
+            origem: 'WhatsApp',
+            status: 'Novo',
+            atendimento_humano: true,
+            ultima_mensagem: messageText,
+            historico_mensagens: [userEntry],
+            ultima_interacao: timestamp,
+            total_mensagens: 1,
+            conversa_finalizada: false
+          });
+          console.log('🆕 Novo contato criado em modo HUMANO');
+        }
+        
+        return Response.json({ 
+          success: true, 
+          resposta: null,
+          atendimento_humano: true,
+          message: 'Primeira mensagem salva - atendimento humano ativo'
+        });
+      }
+      
+      // MODO IA: Enviar saudação fixa
       const horaNumeroSaudacao = parseInt(new Date().toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', hour12: false }));
       let saudacao = 'Bom dia';
       if (horaNumeroSaudacao >= 12 && horaNumeroSaudacao < 18) {
@@ -409,20 +462,14 @@ Deno.serve(async (req) => {
       const primeiroNome = (senderName || '').split(' ')[0] || 'cliente';
       const saudacaoFixa = `${saudacao}, ${primeiroNome}! 👋 Eu sou a Glória, atendente virtual do *Centro Vida Saúde*. Como posso te ajudar hoje? 😊`;
       
-      console.log('👋 PRIMEIRA MENSAGEM - retornando saudação fixa:', saudacaoFixa.substring(0, 60));
+      console.log('🤖 PRIMEIRA MENSAGEM em modo IA - retornando saudação fixa');
       
-      // Salvar no histórico
-      const timestamp = new Date().toISOString();
-      const userEntry = { role: 'user', content: mediaUrl ? `${messageText}\n${mediaUrl}` : messageText, timestamp, messageId };
-      if (mediaType && mediaType !== 'text') userEntry.mediaType = mediaType;
-      if (mediaUrl) userEntry.mediaUrl = mediaUrl;
       const histEntries = [
         userEntry,
         { role: 'assistant', content: saudacaoFixa, timestamp }
       ];
       
       if (contatoFresh) {
-        // Contato já existe - atualizar
         const hist = contatoFresh.historico_mensagens || [];
         hist.push(...histEntries);
         await base44.asServiceRole.entities.Contato.update(contatoFresh.id, {
@@ -432,25 +479,8 @@ Deno.serve(async (req) => {
           ultima_interacao: timestamp,
           total_mensagens: 2,
           conversa_finalizada: false,
-          processando_ia_lock: null // Liberar lock
+          processando_ia_lock: null
         });
-      } else {
-        // Contato novo - criar SEMPRE em modo HUMANO
-        await base44.asServiceRole.entities.Contato.create({
-          nome: senderName,
-          telefone: phoneNumber,
-          paciente_id: pacienteId,
-          origem: 'WhatsApp',
-          status: 'Novo',
-          atendimento_humano: true,
-          ultima_mensagem: messageText,
-          ultima_resposta: null,
-          historico_mensagens: [histEntries[0]], // Só salvar mensagem do user, sem saudação IA
-          ultima_interacao: timestamp,
-          total_mensagens: 1,
-          conversa_finalizada: false
-        });
-        console.log('🆕 Novo contato criado com saudação no histórico');
       }
       
       return Response.json({ 
