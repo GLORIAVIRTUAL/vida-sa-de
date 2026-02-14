@@ -12,35 +12,25 @@ Deno.serve(async (req) => {
     // Quando mensagens passam pelo debounce, a URL do áudio é concatenada no messageText
     // e mediaType/mediaUrl ficam como "text"/null. Precisamos detectar e restaurar.
     if ((!mediaUrl || mediaType === 'text') && messageText) {
-      const audioUrlMatch = messageText.match(/(https?:\/\/[^\s]+\.ogg[^\s]*)/i);
-      if (!audioUrlMatch) {
-        // Tentar detectar URLs do backblaze/supabase que são áudios mesmo sem extensão .ogg
-        const backblazeAudioMatch = messageText.match(/(https?:\/\/f\d+\.backblazeb2\.com\/file\/temp-file-download\/[^\s]+)/i);
-        if (backblazeAudioMatch && (messageText.includes('[Áudio') || messageText.includes('[Audio'))) {
-          mediaType = 'audio';
-          mediaUrl = backblazeAudioMatch[1];
-          messageText = messageText.replace(backblazeAudioMatch[0], '').replace(/\[Áudio recebido\]/gi, '').replace(/\[Audio recebido\]/gi, '').trim();
-          if (!messageText) messageText = '[Áudio recebido]';
-          console.log('🎤 Áudio detectado no texto (backblaze):', mediaUrl.substring(0, 80));
-        }
-      } else {
-        mediaType = 'audio';
-        mediaUrl = audioUrlMatch[1];
-        messageText = messageText.replace(audioUrlMatch[0], '').replace(/\[Áudio recebido\]/gi, '').replace(/\[Audio recebido\]/gi, '').trim();
-        if (!messageText) messageText = '[Áudio recebido]';
-        console.log('🎤 Áudio detectado no texto (.ogg):', mediaUrl.substring(0, 80));
-      }
+      // Detectar se o texto contém indicador de áudio + uma URL
+      const temIndicadorAudio = /\[(?:á|a)udio\s*(?:recebido)?\]/i.test(messageText);
+      // Capturar QUALQUER URL no texto (ogg, backblaze, supabase, base44, etc.)
+      const urlNoTexto = messageText.match(/(https?:\/\/[^\s]+)/i);
       
-      // Também detectar áudios em URLs permanentes do supabase/base44
-      if (mediaType !== 'audio') {
-        const supabaseAudioMatch = messageText.match(/(https?:\/\/[^\s]*supabase[^\s]*\.ogg[^\s]*)/i);
-        if (supabaseAudioMatch) {
-          mediaType = 'audio';
-          mediaUrl = supabaseAudioMatch[1];
-          messageText = messageText.replace(supabaseAudioMatch[0], '').replace(/\[Áudio recebido\]/gi, '').trim();
-          if (!messageText) messageText = '[Áudio recebido]';
-          console.log('🎤 Áudio detectado no texto (supabase):', mediaUrl.substring(0, 80));
-        }
+      if (temIndicadorAudio && urlNoTexto) {
+        // Se tem [Áudio recebido] + URL, é áudio do buffer
+        mediaType = 'audio';
+        mediaUrl = urlNoTexto[1];
+        messageText = messageText.replace(urlNoTexto[0], '').replace(/\[(?:á|a)udio\s*(?:recebido)?\]/gi, '').trim();
+        if (!messageText) messageText = '[Áudio recebido]';
+        console.log('🎤 Áudio detectado no texto (indicador+URL):', mediaUrl.substring(0, 80));
+      } else if (urlNoTexto && urlNoTexto[1].match(/\.ogg/i)) {
+        // URL com extensão .ogg mesmo sem [Áudio recebido]
+        mediaType = 'audio';
+        mediaUrl = urlNoTexto[1];
+        messageText = messageText.replace(urlNoTexto[0], '').trim();
+        if (!messageText) messageText = '[Áudio recebido]';
+        console.log('🎤 Áudio detectado no texto (.ogg URL):', mediaUrl.substring(0, 80));
       }
     }
 
