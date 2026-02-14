@@ -274,8 +274,11 @@ REGRAS:
     }
 
     // Verificar se o contato está em atendimento humano
+    // EXCEÇÃO: Mensagens vindas do buffer (messageId começa com "buffer_") já foram validadas
+    // pelo webhook chamador — o contato estava em modo IA quando entrou no debounce.
+    // Outra instância (ex: webhookWhatsappChatbot) pode ter revertido para humano durante o delay.
     const contatosCheck = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
-    if (contatosCheck.length > 0 && contatosCheck[0].atendimento_humano) {
+    if (contatosCheck.length > 0 && contatosCheck[0].atendimento_humano && !isBufferMessage) {
       console.log('⚠️ Contato em atendimento humano - ignorando IA');
       
       // Apenas salvar a mensagem no histórico sem responder com IA
@@ -303,6 +306,14 @@ REGRAS:
         resposta: null,
         atendimento_humano: true,
         message: 'Mensagem salva - atendimento humano ativo'
+      });
+    }
+    
+    // Se é mensagem de buffer mas contato foi revertido para humano, forçar modo IA de volta
+    if (isBufferMessage && contatosCheck.length > 0 && contatosCheck[0].atendimento_humano) {
+      console.log('🔄 Buffer: contato revertido para humano por outro webhook - forçando modo IA de volta');
+      await base44.asServiceRole.entities.Contato.update(contatosCheck[0].id, {
+        atendimento_humano: false
       });
     }
     
