@@ -435,7 +435,7 @@ Deno.serve(async (req) => {
           processando_ia_lock: null // Liberar lock
         });
       } else {
-        // Contato novo - criar com histórico inicial
+        // Contato novo - criar SEMPRE em modo HUMANO
         await base44.asServiceRole.entities.Contato.create({
           nome: senderName,
           telefone: phoneNumber,
@@ -444,10 +444,10 @@ Deno.serve(async (req) => {
           status: 'Novo',
           atendimento_humano: true,
           ultima_mensagem: messageText,
-          ultima_resposta: saudacaoFixa,
-          historico_mensagens: histEntries,
+          ultima_resposta: null,
+          historico_mensagens: [histEntries[0]], // Só salvar mensagem do user, sem saudação IA
           ultima_interacao: timestamp,
-          total_mensagens: 2,
+          total_mensagens: 1,
           conversa_finalizada: false
         });
         console.log('🆕 Novo contato criado com saudação no histórico');
