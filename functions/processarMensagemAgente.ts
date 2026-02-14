@@ -1089,9 +1089,9 @@ Deno.serve(async (req) => {
                                         (historicoConversa || '').includes('PDF está sendo enviado') ||
                                         (historicoConversa || '').includes('arquivo PDF');
     
-    const querResultado = !historicoJaEnviouResultado && (
-                          /resultado|exame pronto|pegar|buscar resultado|retirar|laudo|meu exame|meus exames|localizar|pegar resultado|resultado do exame/i.test(messageText) ||
-                          /resultado|exame pronto|localizar/i.test(historicoConversa || ''));
+    // PAUSADO TEMPORARIAMENTE: Entrega automática de resultados de exames
+    // Clientes devem ser orientados a entrar em contato na quarta-feira 18/02/2026
+    const querResultado = false;
     let infoResultadoExame = '';
     let arquivoParaEnviar = null;
     
