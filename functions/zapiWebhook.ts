@@ -314,7 +314,7 @@ async function processarMensagemRecebida(base44, payload) {
             if (contatos.length > 0) {
                 const contato = contatos[0];
                 
-                // LÓGICA: Padrão é SEMPRE modo humano. Só entra em modo IA se atendimento_humano for EXPLICITAMENTE false.
+                // LÓGICA: SEMPRE modo humano por padrão. Só entra em modo IA se atendimento_humano for EXPLICITAMENTE false.
                 const estaEmModoHumano = contato.atendimento_humano !== false;
                 
                 if (estaEmModoHumano) {
