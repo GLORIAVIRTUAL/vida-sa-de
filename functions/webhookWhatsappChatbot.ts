@@ -217,7 +217,7 @@ Deno.serve(async (req) => {
         // Reativar conversa se estava finalizada
         if (contato.conversa_finalizada) {
           console.log('🔄 Reativando conversa finalizada - PRESERVANDO histórico antigo');
-          
+
           // Adicionar marcador de separação no histórico para indicar nova conversa
           const historicoExistente = contato.historico_mensagens || [];
           const separador = {
@@ -229,16 +229,14 @@ Deno.serve(async (req) => {
           const historicoComSeparador = historicoExistente.length > 0 
             ? [...historicoExistente, separador] 
             : [];
-          
-          // PRESERVAR o modo de atendimento atual (não forçar humano se estava em IA)
-          const modoAtendimentoAtual = contato.atendimento_humano;
-          
+
+          // SEMPRE iniciar nova conversa em modo HUMANO - só mudar para IA manualmente
           await base44.asServiceRole.entities.Contato.update(contato.id, {
             conversa_finalizada: false,
             historico_mensagens: historicoComSeparador.slice(-200),
             mensagens_pendentes: [],
             ultimo_timestamp_pendente: null,
-            atendimento_humano: modoAtendimentoAtual !== false ? true : false,
+            atendimento_humano: true,
             atendente_atual: null,
             atendente_id: null
           });
