@@ -299,11 +299,16 @@ Deno.serve(async (req) => {
       });
     }
     
-    // Se é mensagem de buffer mas contato foi revertido para humano, forçar modo IA de volta
+    // Se é mensagem de buffer mas contato foi revertido para humano, RESPEITAR modo humano
+    // Não forçar modo IA - só mudar para IA manualmente
     if (isBufferMessage && contatosCheck.length > 0 && contatosCheck[0].atendimento_humano) {
-      console.log('🔄 Buffer: contato revertido para humano por outro webhook - forçando modo IA de volta');
-      await base44.asServiceRole.entities.Contato.update(contatosCheck[0].id, {
-        atendimento_humano: false
+      console.log('👤 Buffer: contato está em modo humano - respeitando. NÃO processando IA.');
+      await liberarLock(base44, phoneNumber);
+      return Response.json({ 
+        success: true, 
+        resposta: null,
+        atendimento_humano: true,
+        message: 'Buffer ignorado - atendimento humano ativo'
       });
     }
     
