@@ -364,7 +364,7 @@ Deno.serve(async (req) => {
         });
         
       } else {
-        // Novo contato - criar em modo HUMANO
+        // Novo contato - criar em modo IA (Glória atende automaticamente)
         const msgObj = {
           role: 'user',
           content: mediaUrl ? `${messageText}\n${mediaUrl}` : messageText,
@@ -373,7 +373,7 @@ Deno.serve(async (req) => {
         };
         if (mediaType && mediaType !== 'text') msgObj.mediaType = mediaType;
         if (mediaUrl) msgObj.mediaUrl = mediaUrl;
-        
+
         // Garantir que telefone tenha prefixo 55
         let telefoneComPrefixo = phoneNumber.replace(/\D/g, '');
         if (!telefoneComPrefixo.startsWith('55')) {
@@ -385,14 +385,13 @@ Deno.serve(async (req) => {
           telefone: telefoneComPrefixo,
           origem: 'WhatsApp',
           status: 'Novo',
-          atendimento_humano: true,
+          atendimento_humano: false,
           historico_mensagens: [msgObj],
           mensagens_pendentes: [],
           ultima_interacao: agora
         });
-        console.log('👤 Novo contato criado em modo HUMANO - mensagem salva');
-        if (messageId) releaseLock(messageId);
-        return Response.json({ success: true, status: 'novo_contato_humano' });
+        console.log('🤖 Novo contato criado em modo IA - Glória atende');
+        // Não retornar aqui - deixar o fluxo continuar para processar com a IA
       }
     } catch (e) {
       console.log('⚠️ Erro no processamento:', e.message);
