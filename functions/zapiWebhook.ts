@@ -520,14 +520,14 @@ async function processarMensagemRecebida(base44, payload) {
                     telefone: telefoneComPrefixo,
                     origem: 'WhatsApp',
                     status: 'Novo',
-                    atendimento_humano: true, // Começa em modo HUMANO
+                    atendimento_humano: false, // Começa em modo IA (Glória atende)
                     atendente_atual: null,
                     atendente_id: null,
                     historico_mensagens: historicoInicial,
                     ultima_interacao: agora
                 });
-                
-                console.log('👤 Novo contato criado em modo HUMANO');
+
+                console.log('🤖 Novo contato criado em modo IA (Glória)');
                 return new Response(JSON.stringify({ message: "Novo contato em modo humano", status: "salvo" }), { status: 200 });
             }
         } catch (contatoError) {
