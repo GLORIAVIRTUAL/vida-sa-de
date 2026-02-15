@@ -402,8 +402,8 @@ Deno.serve(async (req) => {
       if (mediaType && mediaType !== 'text') userEntry.mediaType = mediaType;
       if (mediaUrl) userEntry.mediaUrl = mediaUrl;
       
-      // Verificar se contato está em modo humano (padrão = humano)
-      const estaEmModoHumano = !contatoFresh || contatoFresh.atendimento_humano !== false;
+      // Verificar se contato está em modo humano (só humano se explicitamente true)
+      const estaEmModoHumano = contatoFresh && contatoFresh.atendimento_humano === true;
       
       if (estaEmModoHumano) {
         // MODO HUMANO: Apenas salvar mensagem, NÃO enviar saudação da IA
