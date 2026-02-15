@@ -314,8 +314,8 @@ async function processarMensagemRecebida(base44, payload) {
             if (contatos.length > 0) {
                 const contato = contatos[0];
                 
-                // LÓGICA: SEMPRE modo IA por padrão. Só entra em modo humano se atendimento_humano for EXPLICITAMENTE true.
-                const estaEmModoHumano = contato.atendimento_humano === true;
+                // LÓGICA: SEMPRE modo humano por padrão. Só entra em modo IA se atendimento_humano for EXPLICITAMENTE false.
+                const estaEmModoHumano = contato.atendimento_humano !== false;
                 
                 if (estaEmModoHumano) {
                     // Modo HUMANO: salvar mensagem no histórico aqui
@@ -520,14 +520,14 @@ async function processarMensagemRecebida(base44, payload) {
                     telefone: telefoneComPrefixo,
                     origem: 'WhatsApp',
                     status: 'Novo',
-                    atendimento_humano: false, // Começa em modo IA (Glória atende)
+                    atendimento_humano: true, // Começa em modo HUMANO
                     atendente_atual: null,
                     atendente_id: null,
                     historico_mensagens: historicoInicial,
                     ultima_interacao: agora
                 });
-
-                console.log('🤖 Novo contato criado em modo IA (Glória)');
+                
+                console.log('👤 Novo contato criado em modo HUMANO');
                 return new Response(JSON.stringify({ message: "Novo contato em modo humano", status: "salvo" }), { status: 200 });
             }
         } catch (contatoError) {

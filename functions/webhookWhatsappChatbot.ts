@@ -230,21 +230,21 @@ Deno.serve(async (req) => {
             ? [...historicoExistente, separador] 
             : [];
 
-          // Iniciar nova conversa em modo IA (Glória atende automaticamente)
+          // SEMPRE iniciar nova conversa em modo HUMANO - só mudar para IA manualmente
           await base44.asServiceRole.entities.Contato.update(contato.id, {
             conversa_finalizada: false,
             historico_mensagens: historicoComSeparador.slice(-200),
             mensagens_pendentes: [],
             ultimo_timestamp_pendente: null,
-            atendimento_humano: false,
+            atendimento_humano: true,
             atendente_atual: null,
             atendente_id: null
           });
           contato = await buscarContato();
         }
         
-        // Se está em atendimento humano (padrão: IA automática, humano só se explicitamente true)
-        if (contato.atendimento_humano === true) {
+        // Se está em atendimento humano (padrão: SEMPRE humano, só IA se explicitamente false)
+        if (contato.atendimento_humano !== false) {
           // Salvar mensagem no histórico SEM alterar o modo de atendimento
           const historicoAtual = contato.historico_mensagens || [];
           const msgObj = {
@@ -364,7 +364,7 @@ Deno.serve(async (req) => {
         });
         
       } else {
-        // Novo contato - criar em modo IA (Glória atende automaticamente)
+        // Novo contato - criar em modo HUMANO
         const msgObj = {
           role: 'user',
           content: mediaUrl ? `${messageText}\n${mediaUrl}` : messageText,
@@ -373,7 +373,7 @@ Deno.serve(async (req) => {
         };
         if (mediaType && mediaType !== 'text') msgObj.mediaType = mediaType;
         if (mediaUrl) msgObj.mediaUrl = mediaUrl;
-
+        
         // Garantir que telefone tenha prefixo 55
         let telefoneComPrefixo = phoneNumber.replace(/\D/g, '');
         if (!telefoneComPrefixo.startsWith('55')) {
@@ -385,13 +385,14 @@ Deno.serve(async (req) => {
           telefone: telefoneComPrefixo,
           origem: 'WhatsApp',
           status: 'Novo',
-          atendimento_humano: false,
+          atendimento_humano: true,
           historico_mensagens: [msgObj],
           mensagens_pendentes: [],
           ultima_interacao: agora
         });
-        console.log('🤖 Novo contato criado em modo IA - Glória atende');
-        // Não retornar aqui - deixar o fluxo continuar para processar com a IA
+        console.log('👤 Novo contato criado em modo HUMANO - mensagem salva');
+        if (messageId) releaseLock(messageId);
+        return Response.json({ success: true, status: 'novo_contato_humano' });
       }
     } catch (e) {
       console.log('⚠️ Erro no processamento:', e.message);
