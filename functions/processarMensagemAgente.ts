@@ -421,7 +421,7 @@ Deno.serve(async (req) => {
             processando_ia_lock: null
           });
         } else {
-          // Contato novo - criar em modo HUMANO sem resposta IA
+          // Contato novo - criar em modo IA (Glória atende)
           let telefoneComPrefixo = phoneNumber.replace(/\D/g, '');
           if (!telefoneComPrefixo.startsWith('55')) {
             telefoneComPrefixo = '55' + telefoneComPrefixo;
@@ -432,14 +432,14 @@ Deno.serve(async (req) => {
             paciente_id: pacienteId,
             origem: 'WhatsApp',
             status: 'Novo',
-            atendimento_humano: true,
+            atendimento_humano: false,
             ultima_mensagem: messageText,
             historico_mensagens: [userEntry],
             ultima_interacao: timestamp,
             total_mensagens: 1,
             conversa_finalizada: false
           });
-          console.log('🆕 Novo contato criado em modo HUMANO');
+          console.log('🤖 Novo contato criado em modo IA');
         }
         
         return Response.json({ 
