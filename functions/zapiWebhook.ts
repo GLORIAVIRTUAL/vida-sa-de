@@ -499,7 +499,7 @@ async function processarMensagemRecebida(base44, payload) {
                     }
                 }
             } else {
-                // Novo contato - criar em modo HUMANO
+                // Novo contato - criar em modo IA (automático)
                 const historicoInicial = [{
                     role: 'user',
                     content: mediaUrl ? `${textoMensagem}\n${mediaUrl}` : textoMensagem,
@@ -508,26 +508,26 @@ async function processarMensagemRecebida(base44, payload) {
                     mediaUrl: mediaUrl,
                     messageId: msgId
                 }];
-                
+
                 // Garantir que telefone tenha prefixo 55
                 let telefoneComPrefixo = telefone.replace(/\D/g, '');
                 if (!telefoneComPrefixo.startsWith('55')) {
                     telefoneComPrefixo = '55' + telefoneComPrefixo;
                 }
-                
+
                 await base44.asServiceRole.entities.Contato.create({
                     nome: senderName,
                     telefone: telefoneComPrefixo,
                     origem: 'WhatsApp',
                     status: 'Novo',
-                    atendimento_humano: true, // Começa em modo HUMANO
+                    atendimento_humano: false, // Começa em modo IA (automático)
                     atendente_atual: null,
                     atendente_id: null,
                     historico_mensagens: historicoInicial,
                     ultima_interacao: agora
                 });
-                
-                console.log('👤 Novo contato criado em modo HUMANO');
+
+                console.log('🤖 Novo contato criado em modo IA (automático)');
                 return new Response(JSON.stringify({ message: "Novo contato em modo humano", status: "salvo" }), { status: 200 });
             }
         } catch (contatoError) {
