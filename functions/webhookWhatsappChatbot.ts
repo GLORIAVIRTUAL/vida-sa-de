@@ -243,8 +243,8 @@ Deno.serve(async (req) => {
           contato = await buscarContato();
         }
         
-        // Se está em atendimento humano (padrão: SEMPRE humano, só IA se explicitamente false)
-        if (contato.atendimento_humano !== false) {
+        // Se está em atendimento humano (só humano se explicitamente true)
+        if (contato.atendimento_humano === true) {
           // Salvar mensagem no histórico SEM alterar o modo de atendimento
           const historicoAtual = contato.historico_mensagens || [];
           const msgObj = {
