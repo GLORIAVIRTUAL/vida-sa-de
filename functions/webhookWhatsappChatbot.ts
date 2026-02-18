@@ -151,9 +151,9 @@ Deno.serve(async (req) => {
         const mediaResponse = await fetch(mediaUrl);
         if (mediaResponse.ok) {
           const blob = await mediaResponse.blob();
-          const extMap = { image: 'jpg', document: 'pdf', audio: 'mp3', video: 'mp4', sticker: 'webp' };
+          const extMap = { image: 'jpg', document: 'pdf', audio: 'ogg', video: 'mp4', sticker: 'webp' };
           const ext = extMap[mediaType] || 'bin';
-          const mimeMap = { image: 'image/jpeg', document: 'application/pdf', audio: 'audio/mpeg', video: 'video/mp4', sticker: 'image/webp' };
+          const mimeMap = { image: 'image/jpeg', document: 'application/pdf', audio: 'audio/ogg', video: 'video/mp4', sticker: 'image/webp' };
           const mimeType = mimeMap[mediaType] || blob.type;
           const fileName = `whatsapp_${messageId || Date.now()}.${ext}`;
           const file = new File([blob], fileName, { type: mimeType });
