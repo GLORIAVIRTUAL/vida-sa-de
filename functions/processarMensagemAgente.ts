@@ -43,73 +43,80 @@ Deno.serve(async (req) => {
       
       let transcricaoSucesso = false;
       
-      // PASSO 1: Baixar o áudio - tentar URL original primeiro, depois variantes
+      // PASSO 1: Baixar o áudio
       let audioBlob = null;
       
-      const urlsParaTentar = [mediaUrl];
-      // Se a URL não parece ser permanente (supabase/base44), pode ser temporária do Z-API
-      // Nesse caso, não há muito o que fazer além de tentar
-      
-      for (const urlTentativa of urlsParaTentar) {
-        if (audioBlob && audioBlob.size > 0) break;
-        try {
-          console.log('📥 Tentando baixar áudio de:', urlTentativa.substring(0, 80));
-          const audioResp = await fetch(urlTentativa, { redirect: 'follow' });
-          console.log('📥 Download: status=', audioResp.status, 'type=', audioResp.headers.get('content-type'));
+      try {
+        console.log('📥 Baixando áudio de:', mediaUrl.substring(0, 100));
+        const audioResp = await fetch(mediaUrl, { redirect: 'follow' });
+        const contentType = audioResp.headers.get('content-type') || '';
+        console.log('📥 Download: status=', audioResp.status, 'content-type=', contentType);
+        
+        if (audioResp.ok) {
+          audioBlob = await audioResp.blob();
+          console.log('📥 Blob: size=', audioBlob.size, 'type=', audioBlob.type);
           
-          if (audioResp.ok) {
-            audioBlob = await audioResp.blob();
-            console.log('📥 Blob: size=', audioBlob.size, 'type=', audioBlob.type);
-            if (audioBlob.size === 0) {
-              console.warn('⚠️ Blob com tamanho 0 - tentando próxima URL');
-              audioBlob = null;
-            }
+          // Ler primeiros bytes para verificar formato real (magic bytes)
+          if (audioBlob.size > 4) {
+            const headerBytes = new Uint8Array(await audioBlob.slice(0, 4).arrayBuffer());
+            const hex = Array.from(headerBytes).map(b => b.toString(16).padStart(2, '0')).join('');
+            console.log('📥 Magic bytes (hex):', hex);
+            // OGG: 4f676753 = "OggS"
+            // MP3: fff3 ou fff2 ou 4944 (ID3)
+            // WAV: 52494646 = "RIFF"
+            // WEBM: 1a45dfa3
+            if (hex.startsWith('4f676753')) console.log('📥 Formato real: OGG ✅');
+            else if (hex.startsWith('fff') || hex.startsWith('4944')) console.log('📥 Formato real: MP3');
+            else if (hex.startsWith('52494646')) console.log('📥 Formato real: WAV');
+            else if (hex.startsWith('1a45dfa3')) console.log('📥 Formato real: WEBM');
+            else console.log('📥 Formato real: desconhecido');
           }
-        } catch (dlErr) {
-          console.warn('⚠️ Erro download:', dlErr.message);
+          
+          if (audioBlob.size === 0) {
+            console.warn('⚠️ Blob com tamanho 0');
+            audioBlob = null;
+          }
         }
+      } catch (dlErr) {
+        console.warn('⚠️ Erro download:', dlErr.message);
       }
       
       if (audioBlob && audioBlob.size > 0) {
         // PASSO 2: Enviar para Whisper API
-        // IMPORTANTE: O blob pode ter content-type errado (ex: image/png) se o upload permanente
-        // salvou com extensão incorreta. Whisper precisa de formato de áudio válido.
-        // Forçar sempre .ogg com tipo audio/ogg independente do que veio no blob.
+        // IMPORTANTE: Whisper é SENSÍVEL ao content-type e extensão do arquivo.
+        // Áudios do WhatsApp são SEMPRE OGG/Opus. Forçar extensão .ogg e tipo audio/ogg.
+        // Se o storage salvou com content-type errado (ex: image/png, application/octet-stream),
+        // isso NÃO importa - o que importa é o que enviamos ao Whisper.
         const openaiKey = Deno.env.get('OPENAI_API_KEY');
         if (!openaiKey) {
           console.warn('⚠️ OPENAI_API_KEY não configurada - não é possível transcrever');
         } else {
-          // Detectar extensão real pelo conteúdo ou URL
+          // Para áudios do WhatsApp, SEMPRE usar .ogg (formato nativo)
+          // Só usar outro formato se a URL explicitamente indicar outro tipo
           let audioExt = 'ogg';
           let audioMime = 'audio/ogg';
-          const blobType = (audioBlob.type || '').toLowerCase();
           const urlLower = (mediaUrl || '').toLowerCase();
           
-          if (blobType.includes('mp3') || blobType.includes('mpeg') || urlLower.includes('.mp3')) {
-            audioExt = 'mp3'; audioMime = 'audio/mpeg';
-          } else if (blobType.includes('mp4') || urlLower.includes('.mp4')) {
-            audioExt = 'mp4'; audioMime = 'audio/mp4';
-          } else if (blobType.includes('wav') || urlLower.includes('.wav')) {
-            audioExt = 'wav'; audioMime = 'audio/wav';
-          } else if (blobType.includes('webm') || urlLower.includes('.webm')) {
-            audioExt = 'webm'; audioMime = 'audio/webm';
-          } else if (blobType.includes('m4a') || urlLower.includes('.m4a')) {
-            audioExt = 'm4a'; audioMime = 'audio/m4a';
-          }
-          // Se o blob veio como image/* ou application/*, forçar .ogg (padrão WhatsApp)
-          if (blobType.startsWith('image/') || blobType.startsWith('text/') || blobType === 'application/octet-stream') {
-            console.log(`⚠️ Blob tipo "${blobType}" não é áudio - forçando .ogg`);
-            audioExt = 'ogg'; audioMime = 'audio/ogg';
-          }
+          if (urlLower.includes('.mp3')) { audioExt = 'mp3'; audioMime = 'audio/mpeg'; }
+          else if (urlLower.includes('.mp4') || urlLower.includes('.m4a')) { audioExt = 'mp4'; audioMime = 'audio/mp4'; }
+          else if (urlLower.includes('.wav')) { audioExt = 'wav'; audioMime = 'audio/wav'; }
+          else if (urlLower.includes('.webm')) { audioExt = 'webm'; audioMime = 'audio/webm'; }
+          // Padrão: .ogg (WhatsApp sempre envia OGG/Opus)
           
-          console.log(`🎤 Formato de áudio: ext=${audioExt}, mime=${audioMime}, blobType=${blobType}`);
+          console.log(`🎤 Enviando para Whisper: ext=${audioExt}, mime=${audioMime}, size=${audioBlob.size}`);
           
           for (let tentativa = 1; tentativa <= 2 && !transcricaoSucesso; tentativa++) {
             try {
               console.log(`🎤 Whisper tentativa ${tentativa}...`);
               
+              // CRÍTICO: Criar novo blob com tipo MIME correto antes de criar o File
+              // Isso garante que o FormData envie o content-type correto ao Whisper
+              const blobCorrigido = new Blob([audioBlob], { type: audioMime });
+              const audioFile = new File([blobCorrigido], `audio.${audioExt}`, { type: audioMime });
+              
+              console.log(`🎤 File criado: name=${audioFile.name}, type=${audioFile.type}, size=${audioFile.size}`);
+              
               const formData = new FormData();
-              const audioFile = new File([audioBlob], `audio_${Date.now()}.${audioExt}`, { type: audioMime });
               formData.append('file', audioFile);
               formData.append('model', 'whisper-1');
               formData.append('language', 'pt');
@@ -121,38 +128,45 @@ Deno.serve(async (req) => {
                   headers: { 'Authorization': `Bearer ${openaiKey}` },
                   body: formData
                 }),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout Whisper')), 30000))
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout Whisper 30s')), 30000))
               ]);
               
               console.log('🎤 Whisper response status:', whisperResp.status);
               
               if (whisperResp.ok) {
                 const textoTranscrito = await whisperResp.text();
-                console.log('🎤 Whisper raw:', textoTranscrito.substring(0, 200));
+                console.log('🎤 Whisper raw response:', textoTranscrito.substring(0, 300));
                 
                 const textoLimpo = textoTranscrito.trim().replace(/^["']|["']$/g, '').trim();
                 
                 if (textoLimpo.length > 0 && textoLimpo.length < 5000) {
                   messageText = textoLimpo;
                   transcricaoSucesso = true;
-                  console.log('✅ Whisper transcreveu (tentativa ' + tentativa + '):', textoLimpo.substring(0, 100));
+                  console.log('✅ Whisper transcreveu com sucesso (tentativa ' + tentativa + '):', textoLimpo.substring(0, 150));
                 } else {
-                  console.log('⚠️ Whisper retornou texto vazio ou muito longo');
+                  console.log('⚠️ Whisper retornou texto vazio ou muito longo, length:', textoLimpo.length);
                 }
               } else {
                 const errBody = await whisperResp.text();
-                console.warn(`⚠️ Whisper erro (tentativa ${tentativa}): ${whisperResp.status} - ${errBody.substring(0, 200)}`);
+                console.warn(`⚠️ Whisper erro HTTP ${whisperResp.status} (tentativa ${tentativa}):`, errBody.substring(0, 300));
+                
+                // Se erro 400 com extensão .ogg, tentar com .mp3 na segunda tentativa
+                if (whisperResp.status === 400 && tentativa === 1 && audioExt === 'ogg') {
+                  console.log('🔄 Tentando com extensão .mp3 na próxima tentativa...');
+                  audioExt = 'mp3';
+                  audioMime = 'audio/mpeg';
+                }
               }
             } catch (whisperErr) {
-              console.warn(`⚠️ Whisper erro tentativa ${tentativa}:`, whisperErr.message);
+              console.warn(`⚠️ Whisper exceção tentativa ${tentativa}:`, whisperErr.message);
             }
           }
         }
       } else {
-        console.warn('⚠️ Não foi possível baixar o áudio de nenhuma URL');
+        console.warn('⚠️ Não foi possível baixar o áudio');
       }
       
-      // FALLBACK: Se Whisper falhou, tentar via InvokeLLM com file_urls (suporta áudio)
+      // FALLBACK: Se Whisper falhou, tentar via InvokeLLM com file_urls
       if (!transcricaoSucesso && mediaUrl) {
         console.log('🔄 Whisper falhou - tentando transcrição via InvokeLLM (fallback)...');
         try {
@@ -167,12 +181,12 @@ Deno.serve(async (req) => {
           
           if (llmTranscricao && typeof llmTranscricao === 'string') {
             const textoLLM = llmTranscricao.trim();
-            console.log('🎤 LLM transcricao:', textoLLM.substring(0, 200));
+            console.log('🎤 LLM transcricao resultado:', textoLLM.substring(0, 200));
             
             if (textoLLM.length > 0 && !textoLLM.includes('[AUDIO_INCOMPREENSIVEL]') && textoLLM.length < 5000) {
               messageText = textoLLM;
               transcricaoSucesso = true;
-              console.log('✅ LLM transcreveu com sucesso (fallback):', textoLLM.substring(0, 100));
+              console.log('✅ LLM transcreveu com sucesso (fallback):', textoLLM.substring(0, 150));
             }
           }
         } catch (llmErr) {
@@ -181,7 +195,8 @@ Deno.serve(async (req) => {
       }
       
       if (!transcricaoSucesso) {
-        console.log('❌ Todas as tentativas de transcrição falharam - messageText permanece como está');
+        console.log('❌ Todas as tentativas de transcrição falharam');
+        // Manter messageText como "[Áudio recebido]" - o LLM principal vai pedir para digitar
       }
     }
     
