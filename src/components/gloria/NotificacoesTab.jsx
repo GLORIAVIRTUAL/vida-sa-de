@@ -159,9 +159,13 @@ export default function NotificacoesTab({ onAbrirChat }) {
       const dataLog = l.timestamp_envio || l.created_date || '';
       return dataLog.substring(0, 10) === hojeStr;
     }).length;
+    // Contar como "confirmado" agendamentos que foram confirmados pelo paciente
+    // Isso inclui status Confirmado, Pago, Em Atendimento e Finalizado
+    // (pois após confirmar, o agendamento avança no fluxo)
+    const statusConfirmados = ['Confirmado', 'Pago', 'Em Atendimento', 'Finalizado'];
     const confirmados = allLogs.filter(l => {
       const ag = agendamentos[l.agendamento_id];
-      return ag && ag.status === 'Confirmado';
+      return ag && statusConfirmados.includes(ag.status);
     }).length;
     const falhou = allLogs.filter(l => l.status_entrega === 'falhou').length;
     const automaticas = allLogs.filter(l => getTipoNotificacao(l) === 'automatica').length;
