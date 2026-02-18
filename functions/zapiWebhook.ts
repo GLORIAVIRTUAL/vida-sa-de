@@ -312,7 +312,37 @@ async function processarMensagemRecebida(base44, payload) {
             }
             
             if (contatos.length > 0) {
-                const contato = contatos[0];
+                let contato = contatos[0];
+                
+                // Se conversa estava finalizada, reativar em modo HUMANO
+                if (contato.conversa_finalizada) {
+                    console.log('🔄 [zapiWebhook] Reativando conversa finalizada em modo HUMANO');
+                    const historicoExistente = contato.historico_mensagens || [];
+                    const separador = {
+                        role: 'assistant',
+                        content: '── Conversa anterior finalizada ──',
+                        timestamp: agora,
+                        sistema: true
+                    };
+                    const historicoComSeparador = historicoExistente.length > 0 
+                        ? [...historicoExistente, separador] 
+                        : [];
+                    
+                    await base44.asServiceRole.entities.Contato.update(contato.id, {
+                        conversa_finalizada: false,
+                        historico_mensagens: historicoComSeparador.slice(-200),
+                        mensagens_pendentes: [],
+                        ultimo_timestamp_pendente: null,
+                        atendimento_humano: true,
+                        atendente_atual: null,
+                        atendente_id: null
+                    });
+                    // Recarregar contato atualizado
+                    for (const variante of variantes) {
+                        const resultados = await base44.asServiceRole.entities.Contato.filter({ telefone: variante });
+                        if (resultados.length > 0) { contato = resultados[0]; break; }
+                    }
+                }
                 
                 // LÓGICA: SEMPRE modo humano por padrão. Só entra em modo IA se atendimento_humano for EXPLICITAMENTE false.
                 const estaEmModoHumano = contato.atendimento_humano !== false;
