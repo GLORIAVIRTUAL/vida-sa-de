@@ -2441,9 +2441,9 @@ Retorne JSON.`;
       saudacaoHorario = 'Boa-noite';
     }
 
-    // NOTA: Primeira mensagem já foi tratada no início da função (retorno imediato com saudação fixa).
-    // Se chegamos aqui, NÃO é primeira mensagem - é sempre conversa em andamento.
-    const ehPrimeiraMensagem = false;
+    // Primeira mensagem agora NÃO retorna imediatamente - passa pelo LLM para resposta contextualizada.
+    // Usamos ehPrimeiraMensagemDefinitiva que já foi calculado acima.
+    const ehPrimeiraMensagem = ehPrimeiraMensagemDefinitiva;
 
     // NOTA: Detecção de primeira mensagem agora é feita no início da função (antes dos fluxos).
     // Este bloco foi removido para evitar duplicação.
