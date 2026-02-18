@@ -134,7 +134,8 @@ export default function NotificacoesTab({ onAbrirChat }) {
     // Filtro por confirmação
     if (filtroConfirmacao !== 'todos') {
       const ag = agendamentos[log.agendamento_id];
-      const confirmou = ag?.status === 'Confirmado';
+      const statusConfirmados = ['Confirmado', 'Pago', 'Em Atendimento', 'Finalizado'];
+      const confirmou = ag && statusConfirmados.includes(ag.status);
       if (filtroConfirmacao === 'confirmado' && !confirmou) return false;
       if (filtroConfirmacao === 'pendente' && confirmou) return false;
     }
