@@ -201,9 +201,9 @@ async function processarMensagemRecebida(base44, payload) {
                 if (mediaResponse.ok) {
                     const blob = await mediaResponse.blob();
                     if (blob.size > 0) {
-                        const extMap = { image: 'jpg', document: 'pdf', audio: 'mp3', video: 'mp4' };
+                        const extMap = { image: 'jpg', document: 'pdf', audio: 'ogg', video: 'mp4' };
                         const ext = extMap[mediaType] || 'bin';
-                        const mimeMap = { image: 'image/jpeg', document: 'application/pdf', audio: 'audio/mpeg', video: 'video/mp4' };
+                        const mimeMap = { image: 'image/jpeg', document: 'application/pdf', audio: 'audio/ogg', video: 'video/mp4' };
                         const mimeType = mimeMap[mediaType] || blob.type;
                         const fileName = `whatsapp_${msgId || Date.now()}.${ext}`;
                         const file = new File([blob], fileName, { type: mimeType });
