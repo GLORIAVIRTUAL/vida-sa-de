@@ -75,20 +75,41 @@ export default function NotificacoesTab({ onAbrirChat }) {
       }
       setAllLogs(todosLogs);
 
-      // Buscar agendamentos referenciados
+      // Buscar agendamentos referenciados - em lotes menores com paginação correta
       const agendamentoIds = [...new Set(todosLogs.map(l => l.agendamento_id).filter(Boolean))];
       const agMap = {};
       if (agendamentoIds.length > 0) {
-        for (let i = 0; i < agendamentoIds.length; i += 50) {
-          const idsLote = agendamentoIds.slice(i, i + 50);
-          const lote = await base44.entities.Agendamento.filter(
-            { id: { $in: idsLote } },
-            '-created_date',
-            50
-          );
-          lote.forEach(ag => { agMap[ag.id] = ag; });
+        // Buscar em lotes de 20 IDs para evitar problemas com $in
+        for (let i = 0; i < agendamentoIds.length; i += 20) {
+          const idsLote = agendamentoIds.slice(i, i + 20);
+          try {
+            const lote = await base44.entities.Agendamento.filter(
+              { id: { $in: idsLote } },
+              '-created_date',
+              100
+            );
+            lote.forEach(ag => { agMap[ag.id] = ag; });
+          } catch (e) {
+            console.warn('Erro ao buscar lote de agendamentos:', e.message);
+            // Fallback: buscar um por um
+            for (const id of idsLote) {
+              try {
+                const results = await base44.entities.Agendamento.filter({ id }, '-created_date', 1);
+                if (results.length > 0) agMap[results[0].id] = results[0];
+              } catch (e2) {
+                // ignorar
+              }
+            }
+          }
         }
       }
+      
+      console.log(`📊 NotificacoesTab: ${todosLogs.length} logs, ${agendamentoIds.length} agendamento IDs únicos, ${Object.keys(agMap).length} agendamentos encontrados`);
+      
+      // Contar confirmados para debug
+      const confirmadosCount = Object.values(agMap).filter(ag => ag.status === 'Confirmado').length;
+      console.log(`✅ Agendamentos com status 'Confirmado': ${confirmadosCount}`);
+      
       setAgendamentos(agMap);
     } catch (error) {
       console.error('Erro ao carregar notificações:', error);
