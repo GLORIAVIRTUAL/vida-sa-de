@@ -466,7 +466,8 @@ export default function NotificacoesTab({ onAbrirChat }) {
             <div className="divide-y max-h-[500px] overflow-y-auto">
               {logsFiltrados.map((log) => {
                 const ag = agendamentos[log.agendamento_id];
-                const confirmou = ag?.status === 'Confirmado';
+                const statusConf = ['Confirmado', 'Pago', 'Em Atendimento', 'Finalizado'];
+                const confirmou = ag && statusConf.includes(ag.status);
 
                 return (
                   <button
