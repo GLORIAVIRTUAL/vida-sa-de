@@ -528,62 +528,7 @@ async function processarMensagemRecebida(base44, payload) {
                 });
 
                 console.log('👤 Novo contato criado em modo HUMANO - aguardando atendente...');
-
-                // PROCESSAR A PRIMEIRA MENSAGEM PELA IA (antes retornava sem responder)
-                try {
-                    let pacienteId = null;
-                    try {
-                        const pacientes = await base44.asServiceRole.entities.Paciente.filter({ telefone: telefone });
-                        if (pacientes.length > 0) {
-                            pacienteId = pacientes[0].id;
-                        } else {
-                            const novoPaciente = await base44.asServiceRole.entities.Paciente.create({
-                                nome: senderName,
-                                telefone: telefoneComPrefixo,
-                                cpf: 'NÃO INFORMADO',
-                                observacoes: 'Criado via WhatsApp'
-                            });
-                            pacienteId = novoPaciente.id;
-                        }
-                    } catch (pacErr) {
-                        console.error('⚠️ Erro paciente:', pacErr.message);
-                    }
-
-                    const bufferMessageId = `new_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-                    const textoParaIA = textoMensagem || '[Mensagem inicial]';
-
-                    const resultado = await base44.asServiceRole.functions.invoke('processarMensagemAgente', {
-                        phoneNumber: telefoneComPrefixo,
-                        messageText: textoParaIA,
-                        senderName: senderName,
-                        pacienteId: pacienteId,
-                        mediaType: mediaType,
-                        mediaUrl: mediaUrl,
-                        messageId: bufferMessageId
-                    });
-                    console.log('✅ processarMensagemAgente retornou para novo contato:', JSON.stringify(resultado.data).substring(0, 200));
-
-                    const respostaIA = resultado.data?.resposta;
-                    if (respostaIA) {
-                        console.log('📤 Enviando resposta IA para novo contato:', telefoneComPrefixo);
-                        await enviarMensagemZapi(telefoneComPrefixo, respostaIA);
-                        console.log('✅ Resposta IA enviada para novo contato');
-
-                        if (resultado.data?.arquivoParaEnviar) {
-                            const arquivo = resultado.data.arquivoParaEnviar;
-                            try {
-                                await enviarDocumentoZapi(telefoneComPrefixo, arquivo.url, arquivo.nome);
-                            } catch (docErr) {
-                                console.error('❌ Erro doc:', docErr.message);
-                            }
-                        }
-                    }
-
-                    return new Response(JSON.stringify({ success: true, resposta: respostaIA }), { status: 200 });
-                } catch (iaError) {
-                    console.error('❌ Erro ao processar IA para novo contato:', iaError.message);
-                    return new Response(JSON.stringify({ message: "Novo contato criado, erro IA", error: iaError.message }), { status: 200 });
-                }
+                return new Response(JSON.stringify({ message: "Novo contato criado em modo humano", status: "humano" }), { status: 200 });
             }
         } catch (contatoError) {
             console.error('⚠️ Erro ao verificar/criar contato:', contatoError.message);

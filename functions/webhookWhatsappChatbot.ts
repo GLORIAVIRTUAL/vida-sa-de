@@ -230,13 +230,13 @@ Deno.serve(async (req) => {
             ? [...historicoExistente, separador] 
             : [];
 
-          // Iniciar nova conversa em modo IA (automático)
+          // Iniciar nova conversa em modo HUMANO
           await base44.asServiceRole.entities.Contato.update(contato.id, {
             conversa_finalizada: false,
             historico_mensagens: historicoComSeparador.slice(-200),
             mensagens_pendentes: [],
             ultimo_timestamp_pendente: null,
-            atendimento_humano: false,
+            atendimento_humano: true,
             atendente_atual: null,
             atendente_id: null
           });
