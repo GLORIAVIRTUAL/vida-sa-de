@@ -99,11 +99,15 @@ export default function NotificacoesTab({ onAbrirChat }) {
   useEffect(() => { carregarDados(); }, []);
 
   // Filtrar por data localmente (mais confiável)
+  // IMPORTANTE: timestamp_envio está em UTC. Converter para data local (BRT) antes de comparar.
   useEffect(() => {
     if (filtroData) {
       const filtered = allLogs.filter(l => {
-        const dataLog = (l.timestamp_envio || l.created_date || '').substring(0, 10);
-        return dataLog === filtroData;
+        const raw = l.timestamp_envio || l.created_date || '';
+        if (!raw) return false;
+        // Converter UTC para data local
+        const dataLocal = format(new Date(raw), 'yyyy-MM-dd');
+        return dataLocal === filtroData;
       });
       setLogs(filtered);
     } else {
