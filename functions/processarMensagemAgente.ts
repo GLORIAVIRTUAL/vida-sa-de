@@ -450,45 +450,30 @@ Deno.serve(async (req) => {
         });
       }
       
-      // MODO IA: Enviar saudação fixa
-      const horaNumeroSaudacao = parseInt(new Date().toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', hour12: false }));
-      let saudacao = 'Bom dia';
-      if (horaNumeroSaudacao >= 12 && horaNumeroSaudacao < 18) {
-        saudacao = 'Boa tarde';
-      } else if (horaNumeroSaudacao >= 18 || horaNumeroSaudacao < 5) {
-        saudacao = 'Boa noite';
-      }
+      // MODO IA: Primeira mensagem - NÃO retornar saudação fixa genérica.
+      // Em vez disso, salvar a mensagem do user no histórico e DEIXAR O FLUXO CONTINUAR
+      // para que o LLM processe a mensagem com contexto completo (disponibilidades, preços, etc.)
+      // Isso permite que a Glória responda ao que o cliente perguntou na primeira mensagem.
       
-      const primeiroNome = (senderName || '').split(' ')[0] || 'cliente';
-      const saudacaoFixa = `${saudacao}, ${primeiroNome}! 👋 Eu sou a Glória, atendente virtual do *Centro Vida Saúde*. Como posso te ajudar hoje? 😊`;
-      
-      console.log('🤖 PRIMEIRA MENSAGEM em modo IA - retornando saudação fixa');
-      
-      const histEntries = [
-        userEntry,
-        { role: 'assistant', content: saudacaoFixa, timestamp }
-      ];
+      console.log('🤖 PRIMEIRA MENSAGEM em modo IA - deixando LLM processar com contexto completo');
       
       if (contatoFresh) {
         const hist = contatoFresh.historico_mensagens || [];
-        hist.push(...histEntries);
+        // Só adicionar se ainda não está no histórico
+        const jaExisteUser = messageId && hist.some(m => m.messageId === messageId && m.role === 'user');
+        if (!jaExisteUser) {
+          hist.push(userEntry);
+        }
         await base44.asServiceRole.entities.Contato.update(contatoFresh.id, {
           ultima_mensagem: messageText,
-          ultima_resposta: saudacaoFixa,
           historico_mensagens: hist.slice(-50),
           ultima_interacao: timestamp,
-          total_mensagens: 2,
-          conversa_finalizada: false,
-          processando_ia_lock: null
+          conversa_finalizada: false
         });
       }
       
-      return Response.json({ 
-        success: true, 
-        resposta: saudacaoFixa,
-        conversationId: null,
-        primeira_mensagem: true
-      });
+      // NÃO retornar aqui - deixar o fluxo continuar para o LLM processar
+      // O LLM vai gerar uma resposta contextualizada que inclui saudação + resposta à pergunta
     }
 
     // Verificar se cliente quer verificar status do agendamento
