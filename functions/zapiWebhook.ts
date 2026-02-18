@@ -520,14 +520,14 @@ async function processarMensagemRecebida(base44, payload) {
                     telefone: telefoneComPrefixo,
                     origem: 'WhatsApp',
                     status: 'Novo',
-                    atendimento_humano: false, // Começa em modo IA (automático)
+                    atendimento_humano: true, // Começa em modo humano
                     atendente_atual: null,
                     atendente_id: null,
                     historico_mensagens: historicoInicial,
                     ultima_interacao: agora
                 });
 
-                console.log('🤖 Novo contato criado em modo IA (automático) - processando mensagem inicial pela IA...');
+                console.log('👤 Novo contato criado em modo HUMANO - aguardando atendente...');
 
                 // PROCESSAR A PRIMEIRA MENSAGEM PELA IA (antes retornava sem responder)
                 try {

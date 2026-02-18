@@ -385,13 +385,13 @@ Deno.serve(async (req) => {
           telefone: telefoneComPrefixo,
           origem: 'WhatsApp',
           status: 'Novo',
-          atendimento_humano: false,
+          atendimento_humano: true,
           historico_mensagens: [msgObj],
           mensagens_pendentes: [],
           ultima_interacao: agora
         });
-        console.log('🤖 Novo contato criado em modo IA (automático) - processando mensagem inicial pela IA...');
-        // NÃO retornar aqui - deixar o fluxo continuar para processar a mensagem pela IA
+        console.log('👤 Novo contato criado em modo HUMANO - aguardando atendente...');
+        return Response.json({ success: true, status: 'novo_contato_humano' });
       }
     } catch (e) {
       console.log('⚠️ Erro no processamento:', e.message);
