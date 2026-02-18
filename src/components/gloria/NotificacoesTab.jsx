@@ -186,7 +186,8 @@ export default function NotificacoesTab({ onAbrirChat }) {
   if (notificacaoSelecionada) {
     const log = notificacaoSelecionada;
     const ag = agendamentos[log.agendamento_id];
-    const confirmou = ag?.status === 'Confirmado';
+    const statusConf = ['Confirmado', 'Pago', 'Em Atendimento', 'Finalizado'];
+    const confirmou = ag && statusConf.includes(ag.status);
 
     return (
       <div className="space-y-4">
