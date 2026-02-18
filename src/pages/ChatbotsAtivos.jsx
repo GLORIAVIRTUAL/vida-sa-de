@@ -1266,11 +1266,11 @@ function DashboardTab() {
             <CardTitle className="text-sm">Agendamentos pela Glória</CardTitle>
           </CardHeader>
           <CardContent className="max-h-96 overflow-y-auto">
-            {agendamentos.filter(a => a.agendado_por_tipo === 'chatbot').map((ag) => (
+            {agendamentos.filter(a => a.agendado_por_tipo === 'chatbot').sort((a, b) => (b.data_agendamento || '').localeCompare(a.data_agendamento || '')).map((ag) => (
               <div key={ag.id} className="flex items-center justify-between py-2 border-b last:border-0">
                 <div>
                   <p className="font-medium text-sm">{ag.paciente_nome}</p>
-                  <p className="text-xs text-gray-500">{format(new Date(ag.data_agendamento), 'dd/MM')} às {ag.horario}</p>
+                  <p className="text-xs text-gray-500">{ag.data_agendamento ? format(new Date(ag.data_agendamento + 'T12:00:00'), 'dd/MM') : '--/--'} às {ag.horario}</p>
                 </div>
                 <Badge className="bg-purple-100 text-purple-700">🤖 Glória</Badge>
               </div>
