@@ -72,16 +72,44 @@ Deno.serve(async (req) => {
       
       if (audioBlob && audioBlob.size > 0) {
         // PASSO 2: Enviar para Whisper API
+        // IMPORTANTE: O blob pode ter content-type errado (ex: image/png) se o upload permanente
+        // salvou com extensão incorreta. Whisper precisa de formato de áudio válido.
+        // Forçar sempre .ogg com tipo audio/ogg independente do que veio no blob.
         const openaiKey = Deno.env.get('OPENAI_API_KEY');
         if (!openaiKey) {
           console.warn('⚠️ OPENAI_API_KEY não configurada - não é possível transcrever');
         } else {
+          // Detectar extensão real pelo conteúdo ou URL
+          let audioExt = 'ogg';
+          let audioMime = 'audio/ogg';
+          const blobType = (audioBlob.type || '').toLowerCase();
+          const urlLower = (mediaUrl || '').toLowerCase();
+          
+          if (blobType.includes('mp3') || blobType.includes('mpeg') || urlLower.includes('.mp3')) {
+            audioExt = 'mp3'; audioMime = 'audio/mpeg';
+          } else if (blobType.includes('mp4') || urlLower.includes('.mp4')) {
+            audioExt = 'mp4'; audioMime = 'audio/mp4';
+          } else if (blobType.includes('wav') || urlLower.includes('.wav')) {
+            audioExt = 'wav'; audioMime = 'audio/wav';
+          } else if (blobType.includes('webm') || urlLower.includes('.webm')) {
+            audioExt = 'webm'; audioMime = 'audio/webm';
+          } else if (blobType.includes('m4a') || urlLower.includes('.m4a')) {
+            audioExt = 'm4a'; audioMime = 'audio/m4a';
+          }
+          // Se o blob veio como image/* ou application/*, forçar .ogg (padrão WhatsApp)
+          if (blobType.startsWith('image/') || blobType.startsWith('text/') || blobType === 'application/octet-stream') {
+            console.log(`⚠️ Blob tipo "${blobType}" não é áudio - forçando .ogg`);
+            audioExt = 'ogg'; audioMime = 'audio/ogg';
+          }
+          
+          console.log(`🎤 Formato de áudio: ext=${audioExt}, mime=${audioMime}, blobType=${blobType}`);
+          
           for (let tentativa = 1; tentativa <= 2 && !transcricaoSucesso; tentativa++) {
             try {
               console.log(`🎤 Whisper tentativa ${tentativa}...`);
               
               const formData = new FormData();
-              const audioFile = new File([audioBlob], `audio_${Date.now()}.ogg`, { type: 'audio/ogg' });
+              const audioFile = new File([audioBlob], `audio_${Date.now()}.${audioExt}`, { type: audioMime });
               formData.append('file', audioFile);
               formData.append('model', 'whisper-1');
               formData.append('language', 'pt');
