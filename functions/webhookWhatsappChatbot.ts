@@ -390,9 +390,8 @@ Deno.serve(async (req) => {
           mensagens_pendentes: [],
           ultima_interacao: agora
         });
-        console.log('🤖 Novo contato criado em modo IA (automático) - mensagem salva');
-        if (messageId) releaseLock(messageId);
-        return Response.json({ success: true, status: 'novo_contato_humano' });
+        console.log('🤖 Novo contato criado em modo IA (automático) - processando mensagem inicial pela IA...');
+        // NÃO retornar aqui - deixar o fluxo continuar para processar a mensagem pela IA
       }
     } catch (e) {
       console.log('⚠️ Erro no processamento:', e.message);
