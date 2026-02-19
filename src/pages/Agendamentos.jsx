@@ -80,10 +80,11 @@ export default function Agendamentos() {
       console.log('🚀 Carregando dados com prioridades...');
 
       // PRIORIDADE ALTA - Dados essenciais em paralelo (3 requisições)
+      // Buscar TODOS os agendamentos sem limite para não perder registros antigos
       const [agendamentosData, medicosData, pacientesData] = await Promise.all([
-      cachedApiCall('agendamentos', () => Agendamento.list('-data_agendamento', 2000), []),
+      cachedApiCall('agendamentos', () => Agendamento.list('-data_agendamento', 10000), []),
       cachedApiCall('medicos', () => Medico.list(), []),
-      cachedApiCall('pacientes', () => Paciente.list('-created_date', 2000), [])]
+      cachedApiCall('pacientes', () => Paciente.list('-created_date', 5000), [])]
       );
 
       setAgendamentos(Array.isArray(agendamentosData) ? agendamentosData : []);
