@@ -249,16 +249,21 @@ export default function FormularioOS({
       }
     } else if (agendamento.tipo_servico === "Exame") {
       if (agendamento.exames_ids && exames) {
-        // Determinar se é Particular pela categoria_preco_id (NÃO por agendamento.convenio que não existe)
-        const categoriaNome = categorias?.find(c => c.id === agendamento.categoria_preco_id)?.nome || '';
-        const isParticular = normalizeString(categoriaNome) === 'PARTICULAR';
+        // Determinar se é Particular pela categoria_preco_id
+        const categoriaNomeExame = categorias?.find(c => c.id === agendamento.categoria_preco_id)?.nome || '';
+        const isParticularExame = normalizeString(categoriaNomeExame) === 'PARTICULAR';
+        
+        console.log('🧪 OS Exame - categoria:', categoriaNomeExame, '| isParticular:', isParticularExame);
+        console.log('🧪 Exames disponíveis para busca:', exames?.length, exames?.map(e => ({ id: e.id, nome: e.nome, vp: e.valor_particular, vc: e.valor_convenio })));
         
         agendamento.exames_ids.forEach(exameId => {
           const exame = exames.find(e => e.id === exameId);
           if (exame) {
-            const valor = isParticular
+            const valor = isParticularExame
               ? (exame.valor_particular || 0)
               : (exame.valor_convenio || exame.valor_particular || 0);
+            
+            console.log(`🧪 Exame ${exame.nome}: valor_particular=${exame.valor_particular}, valor_convenio=${exame.valor_convenio}, usado=${valor}`);
             
             valorTotal += valor;
             itensOS.push({
@@ -268,8 +273,33 @@ export default function FormularioOS({
               quantidade: 1,
               valor_total: valor
             });
+          } else {
+            console.warn(`⚠️ Exame ID ${exameId} NÃO encontrado na lista de exames (${exames?.length} disponíveis)`);
           }
         });
+        
+        console.log('🧪 TOTAL calculado OS:', valorTotal, '| valor_total do agendamento:', agendamento.valor_total);
+        
+        // Se o agendamento já tem valor_total calculado e é diferente do recalculado,
+        // usar o valor do agendamento pois ele foi calculado com a tabela de preços correta
+        if (agendamento.valor_total > 0 && Math.abs(agendamento.valor_total - valorTotal) > 0.01) {
+          console.log('⚠️ Divergência detectada! Usando valor_total do agendamento:', agendamento.valor_total);
+          // Recalcular proporcionalmente cada item para manter o detalhamento
+          const fator = agendamento.valor_total / valorTotal;
+          valorTotal = 0;
+          itensOS.forEach(item => {
+            item.valor_unitario = parseFloat((item.valor_unitario * fator).toFixed(2));
+            item.valor_total = item.valor_unitario;
+            valorTotal += item.valor_total;
+          });
+          // Ajustar centavos no último item
+          const diff = parseFloat(agendamento.valor_total) - valorTotal;
+          if (Math.abs(diff) > 0.001 && itensOS.length > 0) {
+            itensOS[itensOS.length - 1].valor_unitario += diff;
+            itensOS[itensOS.length - 1].valor_total += diff;
+            valorTotal += diff;
+          }
+        }
       }
     } else if (agendamento.tipo_servico === "Múltiplos Serviços") {
       // Fallback se não tem itens_servico mas é múltiplos serviços
