@@ -176,7 +176,7 @@ export default function Agendamentos() {
   }, []);
 
   const getAgendamentosPorPeriodo = () => {
-    const dataBase = diaSelecionado;
+    const dataBase = diaSelecionado instanceof Date && !isNaN(diaSelecionado) ? diaSelecionado : new Date();
     let dataInicio, dataFim;
 
     switch (filtros.periodo) {
