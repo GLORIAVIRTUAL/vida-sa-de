@@ -249,10 +249,14 @@ export default function FormularioOS({
       }
     } else if (agendamento.tipo_servico === "Exame") {
       if (agendamento.exames_ids && exames) {
+        // Determinar se é Particular pela categoria_preco_id (NÃO por agendamento.convenio que não existe)
+        const categoriaNome = categorias?.find(c => c.id === agendamento.categoria_preco_id)?.nome || '';
+        const isParticular = normalizeString(categoriaNome) === 'PARTICULAR';
+        
         agendamento.exames_ids.forEach(exameId => {
           const exame = exames.find(e => e.id === exameId);
           if (exame) {
-            const valor = agendamento.convenio === 'Particular' 
+            const valor = isParticular
               ? (exame.valor_particular || 0)
               : (exame.valor_convenio || exame.valor_particular || 0);
             
