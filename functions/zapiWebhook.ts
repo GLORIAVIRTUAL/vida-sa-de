@@ -255,7 +255,17 @@ async function processarMensagemRecebida(base44, payload) {
             // Se não encontrou, busca ampla por últimos 8 dígitos (pega qualquer formato)
             if (contatos.length === 0) {
                 console.log('🔍 Busca exata falhou - tentando busca ampla por últimos 8 dígitos...');
-                const todosContatos = await base44.asServiceRole.entities.Contato.list('-created_date', 500);
+                // Buscar TODOS os contatos para garantir que não crie duplicata
+                let todosContatos = [];
+                let skip = 0;
+                const batchSize = 500;
+                while (true) {
+                    const batch = await base44.asServiceRole.entities.Contato.list('-created_date', batchSize, skip);
+                    todosContatos = todosContatos.concat(batch);
+                    if (batch.length < batchSize) break;
+                    skip += batchSize;
+                }
+                console.log(`🔍 Total de contatos carregados para busca ampla: ${todosContatos.length}`);
                 const ultimos8 = telNormalizado.slice(-8);
                 contatos = todosContatos.filter(c => {
                     const tel = (c.telefone || '').replace(/\D/g, '');
@@ -263,12 +273,14 @@ async function processarMensagemRecebida(base44, payload) {
                 });
                 if (contatos.length > 0) {
                     console.log(`✅ Encontrado por últimos 8 dígitos: ${contatos[0].nome} (tel salvo: ${contatos[0].telefone})`);
-                    // Atualizar telefone do contato para o formato correto do Z-API
+                    // Atualizar telefone do contato para o formato normalizado com 55
+                    let telAtualizado = telNormalizado;
+                    if (!telAtualizado.startsWith('55')) telAtualizado = '55' + telAtualizado;
                     await base44.asServiceRole.entities.Contato.update(contatos[0].id, {
-                        telefone: telefone
+                        telefone: telAtualizado
                     });
-                    console.log(`📱 Telefone do contato atualizado de ${contatos[0].telefone} para ${telefone}`);
-                    contatos[0].telefone = telefone;
+                    console.log(`📱 Telefone do contato atualizado de ${contatos[0].telefone} para ${telAtualizado}`);
+                    contatos[0].telefone = telAtualizado;
                 }
             }
             
