@@ -60,16 +60,30 @@ export default function ContatosTab({ onIniciarConversa }) {
     carregarContatos();
   }, []);
 
+  const [erroDuplicado, setErroDuplicado] = useState(null);
+
   const handleAdicionarContato = async () => {
     if (!novoContato.nome || !novoContato.telefone) {
       alert('Por favor, preencha nome e telefone');
       return;
     }
+    setErroDuplicado(null);
     setSalvando(true);
     try {
       let telLimpo = novoContato.telefone.replace(/\D/g, '');
       if (!telLimpo.startsWith('55')) {
         telLimpo = '55' + telLimpo;
+      }
+      // Verificar se já existe contato com este telefone
+      const ultimos8 = telLimpo.slice(-8);
+      const contatoExistente = contatos.find(c => {
+        const tel = (c.telefone || '').replace(/\D/g, '');
+        return tel.length >= 8 && tel.slice(-8) === ultimos8;
+      });
+      if (contatoExistente) {
+        setErroDuplicado(`Já existe um contato com este telefone: "${contatoExistente.nome}"`);
+        setSalvando(false);
+        return;
       }
       await base44.entities.Contato.create({
         nome: novoContato.nome,
@@ -83,6 +97,7 @@ export default function ContatosTab({ onIniciarConversa }) {
       });
       setModalAberto(false);
       setNovoContato({ nome: '', telefone: '', data_nascimento: '', motivo: '' });
+      setErroDuplicado(null);
       carregarContatos();
     } catch (error) {
       console.error('Erro ao adicionar contato:', error);
