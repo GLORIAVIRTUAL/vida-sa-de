@@ -384,7 +384,50 @@ Deno.serve(async (req) => {
         });
         
       } else {
-        // Novo contato - criar em modo IA (automático)
+        // VERIFICAÇÃO EXTRA antes de criar: buscar TODOS os contatos por últimos 8 dígitos
+        console.log('🔍 Verificação extra antes de criar novo contato...');
+        let todosExtra = [];
+        let skipExtra = 0;
+        while (true) {
+          const batchExtra = await base44.asServiceRole.entities.Contato.list('-created_date', 500, skipExtra);
+          todosExtra = todosExtra.concat(batchExtra);
+          if (batchExtra.length < 500) break;
+          skipExtra += 500;
+        }
+        const ult8Check = telNorm.slice(-8);
+        const contatoExistente = todosExtra.find(c => {
+          const tel = (c.telefone || '').replace(/\D/g, '');
+          return tel.length >= 8 && tel.slice(-8) === ult8Check;
+        });
+        
+        if (contatoExistente) {
+          // Contato JÁ existe! Usar o existente
+          console.log(`✅ Contato existente encontrado na verificação extra: ${contatoExistente.nome} (${contatoExistente.telefone}) - NÃO criando duplicata`);
+          let telAtualizado = telNorm;
+          if (!telAtualizado.startsWith('55')) telAtualizado = '55' + telAtualizado;
+          const historicoAtual = contatoExistente.historico_mensagens || [];
+          const msgObj = {
+            role: 'user',
+            content: mediaUrl ? `${messageText}\n${mediaUrl}` : messageText,
+            timestamp: agora,
+            messageId
+          };
+          if (mediaType && mediaType !== 'text') msgObj.mediaType = mediaType;
+          if (mediaUrl) msgObj.mediaUrl = mediaUrl;
+          historicoAtual.push(msgObj);
+          await base44.asServiceRole.entities.Contato.update(contatoExistente.id, {
+            historico_mensagens: historicoAtual.slice(-200),
+            ultima_interacao: agora,
+            telefone: telAtualizado,
+            nome: contatoExistente.nome || senderName,
+            conversa_finalizada: false,
+            atendimento_humano: true
+          });
+          if (messageId) releaseLock(messageId);
+          return Response.json({ success: true, status: 'contato_existente_encontrado' });
+        }
+        
+        // Realmente novo contato - criar
         const msgObj = {
           role: 'user',
           content: mediaUrl ? `${messageText}\n${mediaUrl}` : messageText,
