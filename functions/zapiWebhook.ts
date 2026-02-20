@@ -541,7 +541,49 @@ async function processarMensagemRecebida(base44, payload) {
                     }
                 }
             } else {
-                // Novo contato - criar em modo IA (automático)
+                // VERIFICAÇÃO EXTRA antes de criar: buscar por últimos 8 dígitos em TODOS os contatos
+                console.log('🔍 Verificação extra antes de criar novo contato...');
+                let todosParaVerificar = [];
+                let skipV = 0;
+                while (true) {
+                    const batchV = await base44.asServiceRole.entities.Contato.list('-created_date', 500, skipV);
+                    todosParaVerificar = todosParaVerificar.concat(batchV);
+                    if (batchV.length < 500) break;
+                    skipV += 500;
+                }
+                const telBusca = telefone.replace(/\D/g, '');
+                const ult8 = telBusca.slice(-8);
+                const contatoExistente = todosParaVerificar.find(c => {
+                    const tel = (c.telefone || '').replace(/\D/g, '');
+                    return tel.length >= 8 && tel.slice(-8) === ult8;
+                });
+                
+                if (contatoExistente) {
+                    // Contato JÁ existe! Usar o existente ao invés de criar novo
+                    console.log(`✅ Contato existente encontrado na verificação extra: ${contatoExistente.nome} (${contatoExistente.telefone}) - NÃO criando duplicata`);
+                    let telAtualizado = telBusca;
+                    if (!telAtualizado.startsWith('55')) telAtualizado = '55' + telAtualizado;
+                    const historicoAtual = contatoExistente.historico_mensagens || [];
+                    historicoAtual.push({
+                        role: 'user',
+                        content: mediaUrl ? `${textoMensagem}\n${mediaUrl}` : textoMensagem,
+                        timestamp: agora,
+                        mediaType: mediaType,
+                        mediaUrl: mediaUrl,
+                        messageId: msgId
+                    });
+                    await base44.asServiceRole.entities.Contato.update(contatoExistente.id, {
+                        historico_mensagens: historicoAtual.slice(-200),
+                        ultima_interacao: agora,
+                        telefone: telAtualizado,
+                        nome: contatoExistente.nome || senderName,
+                        conversa_finalizada: false,
+                        atendimento_humano: true
+                    });
+                    return new Response(JSON.stringify({ message: "Contato existente encontrado", status: "humano" }), { status: 200 });
+                }
+                
+                // Realmente novo contato - criar
                 const historicoInicial = [{
                     role: 'user',
                     content: mediaUrl ? `${textoMensagem}\n${mediaUrl}` : textoMensagem,
@@ -562,7 +604,7 @@ async function processarMensagemRecebida(base44, payload) {
                     telefone: telefoneComPrefixo,
                     origem: 'WhatsApp',
                     status: 'Novo',
-                    atendimento_humano: true, // Começa em modo humano
+                    atendimento_humano: true,
                     atendente_atual: null,
                     atendente_id: null,
                     historico_mensagens: historicoInicial,
