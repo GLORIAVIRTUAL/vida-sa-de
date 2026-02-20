@@ -138,19 +138,25 @@ Deno.serve(async (req) => {
 
         // Normalizar telefones de contatos sem duplicatas (também em lote)
         let normalizados = 0;
-        const solos = Object.entries(grupos).filter(([, l]) => l.length === 1).slice(0, 300);
-        for (const [, lista] of solos) {
-            const contato = lista[0];
-            const telNorm = normalizarTelefone(contato.telefone);
-            if (telNorm !== contato.telefone) {
-                try {
-                    await base44.asServiceRole.entities.Contato.update(contato.id, { telefone: telNorm });
-                    normalizados++;
-                    await sleep(200);
-                } catch (e) {
-                    // Ignorar erros de normalização individual
+        const todosParaNormalizar = [];
+        for (const [, lista] of Object.entries(grupos)) {
+            if (lista.length === 1) {
+                const contato = lista[0];
+                const telNorm = normalizarTelefone(contato.telefone);
+                if (telNorm !== contato.telefone) {
+                    todosParaNormalizar.push({ id: contato.id, telefone: telNorm });
                 }
             }
+        }
+        // Processar em lotes de 5 com delay entre cada
+        const normBatch = todosParaNormalizar.slice(0, 50);
+        for (let i = 0; i < normBatch.length; i += 5) {
+            const batch = normBatch.slice(i, i + 5);
+            await Promise.all(batch.map(c =>
+                base44.asServiceRole.entities.Contato.update(c.id, { telefone: c.telefone }).catch(() => {})
+            ));
+            normalizados += batch.length;
+            await sleep(1000);
         }
 
         const restantes = totalGrupos - lote.length;
