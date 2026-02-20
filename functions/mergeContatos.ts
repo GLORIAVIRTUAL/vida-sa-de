@@ -138,7 +138,7 @@ Deno.serve(async (req) => {
 
         // Normalizar telefones de contatos sem duplicatas (também em lote)
         let normalizados = 0;
-        const solos = Object.entries(grupos).filter(([, l]) => l.length === 1).slice(0, 100);
+        const solos = Object.entries(grupos).filter(([, l]) => l.length === 1).slice(0, 300);
         for (const [, lista] of solos) {
             const contato = lista[0];
             const telNorm = normalizarTelefone(contato.telefone);
