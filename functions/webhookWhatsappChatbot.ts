@@ -185,10 +185,30 @@ Deno.serve(async (req) => {
         const results = await base44.asServiceRole.entities.Contato.filter({ telefone: v });
         if (results.length > 0) return results[0];
       }
-      // Busca ampla como fallback
-      const todos = await base44.asServiceRole.entities.Contato.list('-created_date', 200);
+      // Busca ampla como fallback - carregar TODOS os contatos para não criar duplicata
+      let todos = [];
+      let skipCount = 0;
+      const bSize = 500;
+      while (true) {
+        const batch = await base44.asServiceRole.entities.Contato.list('-created_date', bSize, skipCount);
+        todos = todos.concat(batch);
+        if (batch.length < bSize) break;
+        skipCount += bSize;
+      }
+      console.log(`🔍 Busca ampla: ${todos.length} contatos carregados`);
       const ultimos8 = telNorm.slice(-8);
-      return todos.find(c => (c.telefone || '').replace(/\D/g, '').slice(-8) === ultimos8) || null;
+      const encontrado = todos.find(c => (c.telefone || '').replace(/\D/g, '').slice(-8) === ultimos8) || null;
+      if (encontrado) {
+        // Atualizar telefone para formato normalizado
+        let telAtualizado = telNorm;
+        if (!telAtualizado.startsWith('55')) telAtualizado = '55' + telAtualizado;
+        if (encontrado.telefone !== telAtualizado) {
+          await base44.asServiceRole.entities.Contato.update(encontrado.id, { telefone: telAtualizado });
+          console.log(`📱 Telefone atualizado de ${encontrado.telefone} para ${telAtualizado}`);
+          encontrado.telefone = telAtualizado;
+        }
+      }
+      return encontrado;
     }
 
     const DEBOUNCE_SECONDS = 3;
