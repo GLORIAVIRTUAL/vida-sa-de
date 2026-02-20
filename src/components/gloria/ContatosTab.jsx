@@ -580,8 +580,17 @@ export default function ContatosTab({ onIniciarConversa }) {
                 id="telefone"
                 placeholder="(00) 00000-0000"
                 value={novoContato.telefone}
-                onChange={(e) => setNovoContato({...novoContato, telefone: e.target.value})}
+                onChange={(e) => {
+                  setNovoContato({...novoContato, telefone: e.target.value});
+                  setErroDuplicado(null);
+                }}
               />
+              {erroDuplicado && (
+                <div className="flex items-center gap-2 text-red-600 text-sm bg-red-50 p-2 rounded-md border border-red-200">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  <span>{erroDuplicado}</span>
+                </div>
+              )}
             </div>
             
             <div className="space-y-2">
