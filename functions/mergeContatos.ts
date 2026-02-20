@@ -148,15 +148,15 @@ Deno.serve(async (req) => {
                 }
             }
         }
-        // Processar em lotes de 5 com delay entre cada
-        const normBatch = todosParaNormalizar.slice(0, 50);
-        for (let i = 0; i < normBatch.length; i += 5) {
-            const batch = normBatch.slice(i, i + 5);
+        // Processar em lotes de 3 com delay generoso entre cada
+        const normBatch = todosParaNormalizar.slice(0, 30);
+        for (let i = 0; i < normBatch.length; i += 3) {
+            const batch = normBatch.slice(i, i + 3);
             await Promise.all(batch.map(c =>
                 base44.asServiceRole.entities.Contato.update(c.id, { telefone: c.telefone }).catch(() => {})
             ));
             normalizados += batch.length;
-            await sleep(1000);
+            await sleep(2000);
         }
 
         const restantes = totalGrupos - lote.length;
