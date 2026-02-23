@@ -727,6 +727,8 @@ export default function Relatorios() {
                       <SelectItem value="Cartão Crédito">Cartão Crédito</SelectItem>
                       <SelectItem value="PIX">PIX</SelectItem>
                       <SelectItem value="Transferência">Transferência</SelectItem>
+                      <SelectItem value="Convênio">Convênio</SelectItem>
+                      <SelectItem value="Múltiplas Formas">Múltiplas Formas</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
