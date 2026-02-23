@@ -398,22 +398,30 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
   const enviarMensagem = async (textoCustom, skipRefresh = false) => {
     const texto = textoCustom || inputMsg;
     if (!texto.trim() || !contatoSelecionado) return;
-    setEnviando(true);
     if (!textoCustom) setInputMsg('');
-    try {
-      // SEMPRE enviar via WhatsApp para o cliente receber a mensagem
-      await base44.functions.invoke('enviarMensagemHumano', {
-        phoneNumber: contatoSelecionado.telefone,
-        messageText: texto,
-        contatoId: contatoSelecionado.id
-      });
-      if (!skipRefresh) await buscarContatos();
-    } catch (error) {
-      alert('Erro: ' + error.message);
-      if (!textoCustom) setInputMsg(texto);
-    } finally {
-      setEnviando(false);
-    }
+
+    // Optimistic update: adicionar mensagem localmente de imediato
+    const nomeUsuario = currentUser?.display_name || currentUser?.full_name || 'Recepção';
+    const novaMensagem = {
+      role: 'assistant',
+      content: `[👤 ${nomeUsuario}]: ${texto}`,
+      timestamp: new Date().toISOString(),
+      humano: true
+    };
+    setContatoSelecionado(prev => {
+      if (!prev) return prev;
+      const historicoAtual = prev.historico_mensagens || [];
+      return { ...prev, historico_mensagens: [...historicoAtual, novaMensagem] };
+    });
+
+    // Enviar em background sem bloquear a UI
+    base44.functions.invoke('enviarMensagemHumano', {
+      phoneNumber: contatoSelecionado.telefone,
+      messageText: texto,
+      contatoId: contatoSelecionado.id
+    }).catch(error => {
+      console.error('Erro ao enviar:', error.message);
+    });
   };
 
   const finalizarConversa = async () => {
