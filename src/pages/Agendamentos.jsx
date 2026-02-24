@@ -743,6 +743,35 @@ export default function Agendamentos() {
 
           }
 
+          {/* Barra de seleção Lidiane / Ramão quando filtro é Odontologia */}
+          {(visualizacao === "lista" || visualizacao === "kanban") && filtroEhOdontologia && (() => {
+            const dentistasOdonto = medicos.filter(m => medicosOdontologia.includes(m.id));
+            return (
+              <div className="mb-4 flex items-center gap-2 bg-teal-50 border border-teal-200 rounded-lg p-3">
+                <span className="text-sm font-medium text-teal-800 mr-2">🦷 Agenda de:</span>
+                <div className="flex bg-white rounded-lg p-1 border border-teal-200">
+                  <Button
+                    variant={filtroDentistaOdonto === "todos" ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setFiltroDentistaOdonto("todos")}
+                    className={filtroDentistaOdonto === "todos" ? "bg-teal-600 hover:bg-teal-700 text-white" : "text-teal-700"}>
+                    Todos
+                  </Button>
+                  {dentistasOdonto.map(d => (
+                    <Button
+                      key={d.id}
+                      variant={filtroDentistaOdonto === d.id ? "default" : "ghost"}
+                      size="sm"
+                      onClick={() => setFiltroDentistaOdonto(d.id)}
+                      className={filtroDentistaOdonto === d.id ? "bg-teal-600 hover:bg-teal-700 text-white" : "text-teal-700"}>
+                      {d.nome}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+
           {visualizacao === "lista" ?
           <VisualizacaoDiaria
             agendamentos={Array.isArray(agendamentosFiltrados) ? agendamentosFiltrados : []}
