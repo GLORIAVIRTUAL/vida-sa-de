@@ -146,6 +146,8 @@ export default function Relatorios() {
     if (!agendamento) return null;
     
     const obsTexto = agendamento.observacoes || '';
+    if (!obsTexto) return null;
+    
     // Procurar padrão "Dentista: Dra. Nome" ou "Dentista: Dr. Nome" nas observações
     const matchDentista = obsTexto.match(/Dentista:\s*(Dr[a]?\.\s*.+?)(?:\n|$)/i);
     if (matchDentista) {
@@ -157,6 +159,16 @@ export default function Relatorios() {
         return nNorm === dNorm || nNorm.includes(dNorm) || dNorm.includes(nNorm);
       });
       if (medEncontrado) return medEncontrado;
+      
+      // Fallback: buscar apenas pelo sobrenome principal (ex: "Goldani" ou "Souza")
+      const palavrasDentista = nomeDentista.toLowerCase().replace(/^dr[a]?\.\s*/i, '').trim().split(/\s+/);
+      if (palavrasDentista.length > 0) {
+        const sobrenomeDentista = palavrasDentista[palavrasDentista.length - 1];
+        const medPorSobrenome = medicos.find(m => {
+          return m.nome.toLowerCase().includes(sobrenomeDentista) && sobrenomeDentista.length > 3;
+        });
+        if (medPorSobrenome) return medPorSobrenome;
+      }
     }
     return null;
   };
