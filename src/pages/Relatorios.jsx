@@ -1387,7 +1387,7 @@ export default function Relatorios() {
                         {Object.entries(estatisticas.porMedicoId)
                           .sort((a, b) => b[1].repasse - a[1].repasse)
                           .map(([medicoId, dados]) => {
-                            const osMedico = dadosFiltrados.filter(os => (os.medico_id || 'sem_medico') === medicoId);
+                            const osMedico = dadosFiltrados.filter(os => obterMedicoIdReal(os) === medicoId);
                             const emAberto = osMedico
                               .filter(os => !os.repasse_realizado)
                               .reduce((acc, os) => acc + (os.valor_repasse_medico || 0), 0);
