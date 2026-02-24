@@ -192,7 +192,12 @@ export default function Relatorios() {
   // Obter o ID real do médico da OS (considerando agendas unificadas)
   const obterMedicoIdReal = (os) => {
     const medicoReal = obterMedicoRealDaOS(os);
-    if (medicoReal) return medicoReal.id;
+    if (medicoReal) {
+      if (medicoReal.id !== os.medico_id) {
+        console.log(`[Relatórios] OS ${os.id} (${os.paciente_nome}): medico_id original=${os.medico_id}, real=${medicoReal.id} (${medicoReal.nome}), agendamento=${os.agendamento_id}`);
+      }
+      return medicoReal.id;
+    }
     return os.medico_id || 'sem_medico';
   };
 
