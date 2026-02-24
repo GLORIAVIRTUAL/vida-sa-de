@@ -276,7 +276,7 @@ export default function Relatorios() {
       }
       return 0;
     });
-  }, [ordensServico, filtros, medicos]);
+  }, [ordensServico, filtros, medicos, agendamentosMap]);
 
   // Calcular estatísticas
   const estatisticas = useMemo(() => {
