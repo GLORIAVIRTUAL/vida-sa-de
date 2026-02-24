@@ -84,10 +84,27 @@ export default function Relatorios() {
       ]);
       
       console.log('Ordens de Serviço carregadas:', osData?.length || 0);
+      console.log('Agendamentos carregados:', agendamentosData?.length || 0);
       
       // Criar mapa de agendamentos por ID para cruzamento rápido
       const agMap = {};
       (agendamentosData || []).forEach(ag => { agMap[ag.id] = ag; });
+      
+      // Debug: verificar se agendamentos com observação "Dentista" estão no mapa
+      const agComDentista = (agendamentosData || []).filter(ag => ag.observacoes && ag.observacoes.toLowerCase().includes('dentista'));
+      console.log('Agendamentos com "Dentista" nas observações:', agComDentista.length, agComDentista.map(a => ({ id: a.id, obs: a.observacoes?.substring(0, 50), medico_id: a.medico_id })));
+      
+      // Debug: verificar se OS com medico Ramão tem agendamento no mapa
+      const ramaoId = '6967d7f6de081dae6837a4b9';
+      const osRamao = (osData || []).filter(os => os.medico_id === ramaoId);
+      console.log('OS do Ramão:', osRamao.length, 'com agendamento_id no mapa:', osRamao.filter(os => agMap[os.agendamento_id]).length);
+      osRamao.forEach(os => {
+        const ag = agMap[os.agendamento_id];
+        if (ag && ag.observacoes) {
+          console.log(`  OS ${os.id} (${os.paciente_nome}) -> agendamento ${os.agendamento_id} obs: "${ag.observacoes?.substring(0, 60)}"`);
+        }
+      });
+      
       setAgendamentosMap(agMap);
       
       setOrdensServico(osData || []);
