@@ -186,6 +186,14 @@ export default function Relatorios() {
 
   // Função auxiliar para verificar se OS pertence ao médico selecionado
   const osPertenceAoMedico = (os, medicoIdFiltro) => {
+    // Verificar médico real (considerando observações do agendamento)
+    const medicoIdReal = obterMedicoIdReal(os);
+    if (medicoIdReal === medicoIdFiltro) return true;
+    
+    // Se o médico real é diferente do medico_id original, e o filtro é o original, NÃO incluir
+    // Ex: OS com medico_id=Ramão mas observações dizem "Dentista: Lidiane" → não pertence ao Ramão
+    if (medicoIdReal !== (os.medico_id || 'sem_medico') && os.medico_id === medicoIdFiltro) return false;
+    
     // Primeiro verifica pelo ID direto
     if (os.medico_id === medicoIdFiltro) return true;
     
