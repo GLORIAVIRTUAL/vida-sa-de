@@ -393,12 +393,92 @@ export default function Agendamentos() {
       return (a.horario || '').localeCompare(b.horario || '');
     });
 
+    // Função para gerar HTML de uma linha de agendamento
+    const gerarLinhaAgendamento = (ag) => {
+      const paciente = pacientes.find((p) => p.id === ag.paciente_id);
+      const categoria = categorias.find((c) => c.id === ag.categoria_preco_id);
+      const nomePaciente = paciente?.nome || ag.paciente_nome || 'N/A';
+      const cpfPaciente = paciente?.cpf || '';
+      const telefonePaciente = paciente?.telefone || '';
+      const convenioPaciente = paciente?.convenio || '';
+      const tipoServico = ag.tipo_servico || '';
+      let tipoLabel = tipoServico;
+      let tipoStyle = '';
+      if (tipoServico === 'Retorno') { tipoLabel = '↩ Retorno'; tipoStyle = 'color: #7c3aed; font-weight: bold;'; }
+      else if (tipoServico === 'Consulta') { tipoLabel = 'Consulta'; tipoStyle = 'color: #2563eb; font-weight: bold;'; }
+      else if (tipoServico === 'Procedimento') { tipoLabel = 'Proced.'; tipoStyle = 'color: #d97706;'; }
+      else if (tipoServico === 'Exame') { tipoLabel = 'Exame'; tipoStyle = 'color: #059669;'; }
+      let obsLimpa = ag.observacoes || '';
+      if (obsLimpa) {
+        obsLimpa = obsLimpa.split('\n').filter(linha => {
+          const lu = linha.toUpperCase();
+          return !lu.includes('CONVÊNIO:') && !lu.includes('CATEGORIA') && !lu.includes('CARTÃO') && !lu.includes('DENTISTA:') && !lu.includes('ESPECIALIDADE:');
+        }).join(' | ').trim();
+      }
+      return `<tr>
+        <td>${format(new Date(ag.data_agendamento + 'T00:00:00'), 'dd/MM/yyyy')}</td>
+        <td><strong>${ag.horario}</strong></td>
+        <td style="${tipoStyle}">${tipoLabel}</td>
+        <td>${cpfPaciente ? cpfPaciente + ' - ' : ''}${nomePaciente}</td>
+        <td>${convenioPaciente}</td>
+        <td>${telefonePaciente}</td>
+        <td>${categoria?.nome || ''}</td>
+        <td>${obsLimpa}</td>
+        <td>${ag.created_by?.split('@')[0]?.toUpperCase() || ''}</td>
+      </tr>`;
+    };
+
+    // Verificar se é odontologia para separar por dentista
+    const ehOdontologia = medicoParaImpressao && medicosOdontologia.includes(medicoParaImpressao.id);
+    
+    let corpoTabelas = '';
+    if (ehOdontologia && filtroDentistaOdonto === "todos") {
+      // Separar agendamentos por dentista real
+      const dentistasOdonto = medicos.filter(m => medicosOdontologia.includes(m.id));
+      dentistasOdonto.forEach(dentista => {
+        const agsDentista = agendamentosParaImpressao.filter(ag => obterDentistaReal(ag) === dentista.id);
+        if (agsDentista.length === 0) return;
+        corpoTabelas += `
+          <div class="profissional" style="margin-top: 8px; background: #e0f2f1; border-left: 3px solid #009688;">
+            🦷 ${dentista.nome.toUpperCase()} (${agsDentista.length} agendamentos)
+          </div>
+          <table>
+            <thead><tr>
+              <th style="width: 55px;">Data</th><th style="width: 35px;">Hora</th><th style="width: 45px;">Tipo</th>
+              <th>Descrição</th><th style="width: 65px;">Conv. Paciente</th><th style="width: 70px;">Celular</th>
+              <th style="width: 80px;">Categoria</th><th style="width: 60px;">Observação</th><th style="width: 50px;">Atendente</th>
+            </tr></thead>
+            <tbody>${agsDentista.map(gerarLinhaAgendamento).join('')}</tbody>
+          </table>`;
+      });
+    } else {
+      // Impressão normal (não odontologia, ou dentista específico selecionado)
+      const nomeProfissional = (ehOdontologia && filtroDentistaOdonto !== "todos") 
+        ? medicos.find(m => m.id === filtroDentistaOdonto)?.nome 
+        : medicoParaImpressao?.nome;
+      
+      if (nomeProfissional) {
+        corpoTabelas += `<div class="profissional">Profissional: ${nomeProfissional.toUpperCase()}</div>`;
+      }
+      corpoTabelas += `
+        <table>
+          <thead><tr>
+            <th style="width: 55px;">Data</th><th style="width: 35px;">Hora</th><th style="width: 45px;">Tipo</th>
+            <th>Descrição</th><th style="width: 65px;">Conv. Paciente</th><th style="width: 70px;">Celular</th>
+            <th style="width: 80px;">Categoria</th><th style="width: 60px;">Observação</th><th style="width: 50px;">Atendente</th>
+          </tr></thead>
+          <tbody>${agendamentosParaImpressao.length === 0 ? `<tr><td colspan="9" style="text-align: center; padding: 20px;">Nenhum agendamento</td></tr>` : agendamentosParaImpressao.map(gerarLinhaAgendamento).join('')}</tbody>
+        </table>`;
+    }
+
     console.log('📋 Imprimindo:', {
       modo: visualizacao,
       dia: visualizacao === "calendario" ? format(diaSelecionado, 'yyyy-MM-dd') : 'N/A',
       total: agendamentosParaImpressao.length,
       medico: medicoParaImpressao?.nome || 'Todos',
-      periodo: tituloPeriodo
+      periodo: tituloPeriodo,
+      ehOdontologia,
+      filtroDentista: filtroDentistaOdonto
     });
 
     const conteudoImpressao = `
@@ -407,174 +487,27 @@ export default function Agendamentos() {
         <title>Agendamentos - ${tituloPeriodo}</title>
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { 
-            font-family: Arial, sans-serif; 
-            padding: 5px;
-            font-size: 7px;
-            line-height: 1;
-          }
-          .header {
-            margin-bottom: 4px;
-            padding-bottom: 2px;
-            border-bottom: 1px solid #000;
-          }
-          .header h1 { 
-            font-size: 11px;
-            font-weight: bold;
-            margin-bottom: 0;
-            line-height: 1.2;
-          }
-          .header .subtitle {
-            font-size: 9px;
-            margin-bottom: 0;
-            line-height: 1.2;
-          }
-          .info-line {
-            font-size: 8px;
-            margin: 0;
-            line-height: 1.2;
-          }
-          .profissional {
-            font-weight: bold;
-            margin: 3px 0 2px 0;
-            font-size: 9px;
-            background: #f5f5f5;
-            padding: 1px 2px;
-            line-height: 1.2;
-          }
-          table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            margin-top: 1px;
-            font-size: 7px;
-          }
-          th, td { 
-            border: 1px solid #ccc;
-            padding: 1px 2px;
-            text-align: left;
-            line-height: 1;
-            vertical-align: top;
-          }
-          th { 
-            background-color: #e0e0e0;
-            font-weight: bold;
-            font-size: 7px;
-            padding: 1px 2px;
-          }
-          .footer {
-            margin-top: 4px;
-            font-size: 6px;
-            text-align: right;
-            color: #666;
-            line-height: 1.2;
-          }
-          @media print {
-            body { padding: 3px; }
-            @page { 
-              margin: 6mm;
-              size: A4;
-            }
-          }
+          body { font-family: Arial, sans-serif; padding: 5px; font-size: 7px; line-height: 1; }
+          .header { margin-bottom: 4px; padding-bottom: 2px; border-bottom: 1px solid #000; }
+          .header h1 { font-size: 11px; font-weight: bold; margin-bottom: 0; line-height: 1.2; }
+          .header .subtitle { font-size: 9px; margin-bottom: 0; line-height: 1.2; }
+          .info-line { font-size: 8px; margin: 0; line-height: 1.2; }
+          .profissional { font-weight: bold; margin: 3px 0 2px 0; font-size: 9px; background: #f5f5f5; padding: 1px 2px; line-height: 1.2; }
+          table { width: 100%; border-collapse: collapse; margin-top: 1px; font-size: 7px; }
+          th, td { border: 1px solid #ccc; padding: 1px 2px; text-align: left; line-height: 1; vertical-align: top; }
+          th { background-color: #e0e0e0; font-weight: bold; font-size: 7px; padding: 1px 2px; }
+          .footer { margin-top: 4px; font-size: 6px; text-align: right; color: #666; line-height: 1.2; }
+          @media print { body { padding: 3px; } @page { margin: 6mm; size: A4; } }
         </style>
       </head>
       <body>
         <div class="header">
           <h1>Centro Vida Saúde</h1>
           <div class="subtitle">Agendamentos</div>
-          <div class="info-line">Entre ${visualizacao === "lista" ? getTituloPeriodo() : format(diaSelecionado, "dd/MM/yyyy", { locale: ptBR })}</div>
-          <div class="info-line">Página 1 de 1</div>
+          <div class="info-line">${visualizacao === "lista" ? getTituloPeriodo() : format(diaSelecionado, "dd/MM/yyyy", { locale: ptBR })}</div>
         </div>
         
-        ${medicoParaImpressao ? `
-        <div class="profissional">
-          Profissional: ${medicoParaImpressao.nome.toUpperCase()}
-        </div>
-        ` : ''}
-        
-        <table>
-          <thead>
-            <tr>
-              <th style="width: 55px;">Data</th>
-              <th style="width: 35px;">Hora</th>
-              <th style="width: 45px;">Tipo</th>
-              <th>Descrição</th>
-              <th style="width: 65px;">Conv. Paciente</th>
-              <th style="width: 70px;">Celular</th>
-              <th style="width: 80px;">Categoria</th>
-              <th style="width: 60px;">Observação</th>
-              <th style="width: 50px;">Atendente</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${agendamentosParaImpressao.length === 0 ? `
-              <tr>
-                <td colspan="9" style="text-align: center; padding: 20px;">
-                  Nenhum agendamento
-                </td>
-              </tr>
-            ` : agendamentosParaImpressao.map((ag) => {
-      const paciente = pacientes.find((p) => p.id === ag.paciente_id);
-      const medico = medicos.find((m) => m.id === ag.medico_id);
-      const categoria = categorias.find((c) => c.id === ag.categoria_preco_id);
-      const proc = procedimentos.find((p) => p.id === ag.procedimento_id);
-      
-      // Usar nome do paciente encontrado OU o nome salvo no agendamento
-      const nomePaciente = paciente?.nome || ag.paciente_nome || 'N/A';
-      const cpfPaciente = paciente?.cpf || '';
-      const telefonePaciente = paciente?.telefone || '';
-      const convenioPaciente = paciente?.convenio || '';
-
-      // Tipo de serviço com estilo visual
-      const tipoServico = ag.tipo_servico || '';
-      let tipoLabel = tipoServico;
-      let tipoStyle = '';
-      if (tipoServico === 'Retorno') {
-        tipoLabel = '↩ Retorno';
-        tipoStyle = 'color: #7c3aed; font-weight: bold;';
-      } else if (tipoServico === 'Consulta') {
-        tipoLabel = 'Consulta';
-        tipoStyle = 'color: #2563eb; font-weight: bold;';
-      } else if (tipoServico === 'Procedimento') {
-        tipoLabel = 'Proced.';
-        tipoStyle = 'color: #d97706;';
-      } else if (tipoServico === 'Exame') {
-        tipoLabel = 'Exame';
-        tipoStyle = 'color: #059669;';
-      }
-
-      // Limpar observações removendo info duplicada
-      let obsLimpa = ag.observacoes || '';
-      if (obsLimpa) {
-        obsLimpa = obsLimpa
-          .split('\n')
-          .filter(linha => {
-            const linhaUpper = linha.toUpperCase();
-            return !linhaUpper.includes('CONVÊNIO:') && 
-                   !linhaUpper.includes('CATEGORIA') && 
-                   !linhaUpper.includes('CARTÃO') &&
-                   !linhaUpper.includes('DENTISTA:') &&
-                   !linhaUpper.includes('ESPECIALIDADE:');
-          })
-          .join(' | ')
-          .trim();
-      }
-
-      return `
-                <tr>
-                  <td>${format(new Date(ag.data_agendamento + 'T00:00:00'), 'dd/MM/yyyy')}</td>
-                  <td><strong>${ag.horario}</strong></td>
-                  <td style="${tipoStyle}">${tipoLabel}</td>
-                  <td>${cpfPaciente ? cpfPaciente + ' - ' : ''}${nomePaciente}</td>
-                  <td>${convenioPaciente}</td>
-                  <td>${telefonePaciente}</td>
-                  <td>${categoria?.nome || ''}</td>
-                  <td>${obsLimpa}</td>
-                  <td>${ag.created_by?.split('@')[0]?.toUpperCase() || ''}</td>
-                </tr>
-              `;
-    }).join('')}
-          </tbody>
-        </table>
+        ${corpoTabelas}
         
         <div class="footer">
           Impresso em ${format(new Date(), "dd/MM/yyyy HH:mm", { locale: ptBR })}
