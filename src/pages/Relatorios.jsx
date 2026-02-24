@@ -1152,9 +1152,9 @@ export default function Relatorios() {
                     const nomeMedico = dadosMedico.especialidade 
                       ? `${dadosMedico.nome} (${dadosMedico.especialidade})`
                       : dadosMedico.nome;
-                    // Filtrar OS deste médico pelo ID real
+                    // Filtrar OS deste médico pelo ID real (considerando agendas unificadas)
                     const osMedico = dadosFiltrados.filter(os => {
-                      return (os.medico_id || 'sem_medico') === medicoId;
+                      return obterMedicoIdReal(os) === medicoId;
                     });
                     
                     // Agrupar por categoria
