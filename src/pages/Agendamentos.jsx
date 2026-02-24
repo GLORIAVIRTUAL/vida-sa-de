@@ -268,6 +268,12 @@ export default function Agendamentos() {
     } else if (medicosOdontologia.includes(filtros.medico)) {
       // Se o filtro é um dentista, mostrar agendamentos de TODOS os dentistas
       filtroMedico = medicosOdontologia.includes(agendamento.medico_id);
+      
+      // Sub-filtro por dentista específico (Lidiane/Ramão)
+      if (filtroMedico && filtroDentistaOdonto !== "todos") {
+        const dentistaReal = obterDentistaReal(agendamento);
+        filtroMedico = dentistaReal === filtroDentistaOdonto;
+      }
     } else if (medicosRuben.includes(filtros.medico)) {
       // Se o filtro é um "Ruben", mostrar agendamentos de TODOS os "Rubens"
       filtroMedico = medicosRuben.includes(agendamento.medico_id);
