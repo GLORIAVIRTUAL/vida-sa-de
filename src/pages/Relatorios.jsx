@@ -185,6 +185,15 @@ export default function Relatorios() {
         if (medPorSobrenome) return medPorSobrenome;
       }
     }
+    
+    // Fallback: verificar se o agendamento.medico_id aponta para um médico diferente do OS
+    // Isto cobre o caso de agendamentos antigos onde o medico_id no agendamento era da Lidiane
+    // mas a OS foi criada com o medico_id do Ramão
+    if (agendamento.medico_id && agendamento.medico_id !== os.medico_id) {
+      const medDoAgendamento = medicos.find(m => m.id === agendamento.medico_id);
+      if (medDoAgendamento) return medDoAgendamento;
+    }
+    
     return null;
   };
 
