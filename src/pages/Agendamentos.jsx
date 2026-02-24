@@ -225,6 +225,34 @@ export default function Agendamentos() {
     return medicos.filter(m => normalizeString(m.especialidade) === 'ODONTOLOGIA').map(m => m.id);
   }, [medicos]);
 
+  // Verificar se o filtro atual é odontologia
+  const filtroEhOdontologia = useMemo(() => {
+    return filtros.medico !== "todos" && medicosOdontologia.includes(filtros.medico);
+  }, [filtros.medico, medicosOdontologia]);
+
+  // Resetar filtro de dentista quando mudar o filtro de médico
+  useEffect(() => {
+    if (!filtroEhOdontologia) {
+      setFiltroDentistaOdonto("todos");
+    }
+  }, [filtroEhOdontologia]);
+
+  // Função para detectar dentista real de um agendamento (Lidiane nas observações)
+  const obterDentistaReal = useCallback((ag) => {
+    const obs = ag.observacoes || '';
+    const matchDentista = obs.match(/Dentista:\s*(Dr[a]?\.\s*.+?)(?:\n|$)/i);
+    if (matchDentista) {
+      const nomeDentista = matchDentista[1].trim().toLowerCase();
+      const medEncontrado = medicos.find(m => {
+        const nNorm = m.nome.toLowerCase().replace(/^dr[a]?\.\s*/i, '').trim();
+        const dNorm = nomeDentista.replace(/^dr[a]?\.\s*/i, '').trim();
+        return nNorm === dNorm || nNorm.includes(dNorm) || dNorm.includes(nNorm);
+      });
+      if (medEncontrado) return medEncontrado.id;
+    }
+    return ag.medico_id;
+  }, [medicos]);
+
   // Identificar médicos "Dr. Ruben" (múltiplas especialidades)
   const medicosRuben = useMemo(() => {
     return medicos.filter(m => normalizeString(m.nome).includes('RUBEN')).map(m => m.id);
