@@ -360,7 +360,7 @@ export default function Relatorios() {
       porMedico,
       porMedicoId
     };
-  }, [dadosFiltrados, categorias, medicos]);
+  }, [dadosFiltrados, categorias, medicos, agendamentosMap]);
 
   // Dados para gráficos
   const dadosGraficoFormaPagamento = useMemo(() => {
