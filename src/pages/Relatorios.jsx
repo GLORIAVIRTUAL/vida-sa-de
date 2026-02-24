@@ -320,14 +320,14 @@ export default function Relatorios() {
       porCategoria[nomeCategoria].repasse += (os.valor_repasse_medico || 0);
     });
     
-    // Por médico - separar por medico_id real (agendas unificadas ficam separadas)
+    // Por médico - separar por medico_id real (considerando agendas unificadas)
     const porMedicoId = {};
     dadosFiltrados.forEach(os => {
-      const medicoId = os.medico_id || 'sem_medico';
+      const medicoId = obterMedicoIdReal(os);
       if (!porMedicoId[medicoId]) {
         const med = medicos.find(m => m.id === medicoId);
         const nomeMedico = med ? med.nome : obterNomeMedico(os);
-        const especialidade = med ? med.especialidade : '';
+        const especialidade = med ? (med.especialidade || '') : '';
         porMedicoId[medicoId] = { 
           quantidade: 0, valor: 0, repasse: 0, medicoId, 
           nome: nomeMedico, especialidade 
