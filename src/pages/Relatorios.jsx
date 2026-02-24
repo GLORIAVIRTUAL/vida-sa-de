@@ -75,12 +75,27 @@ export default function Relatorios() {
   const carregarDados = async () => {
     setLoading(true);
     try {
+      // Carregar agendamentos paginando para garantir que todos sejam buscados
+      const carregarTodosAgendamentos = async () => {
+        let todos = [];
+        let skip = 0;
+        const batchSize = 500;
+        while (true) {
+          const batch = await Agendamento.list('-data_agendamento', batchSize, skip);
+          if (!batch || batch.length === 0) break;
+          todos = [...todos, ...batch];
+          if (batch.length < batchSize) break;
+          skip += batchSize;
+        }
+        return todos;
+      };
+      
       const [osData, medicosData, categoriasData, pacientesData, agendamentosData] = await Promise.all([
         OrdemServico.list('-data_execucao', 5000),
         Medico.list(),
         CategoriaPreco.list(),
         Paciente.list('nome', 5000),
-        Agendamento.list('-data_agendamento', 5000)
+        carregarTodosAgendamentos()
       ]);
       
       console.log('Ordens de Serviço carregadas:', osData?.length || 0);
