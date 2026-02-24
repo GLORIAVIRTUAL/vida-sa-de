@@ -138,8 +138,35 @@ export default function Relatorios() {
     return null;
   };
 
+  // Função para detectar médico real a partir das observações do agendamento vinculado
+  // Resolve o caso de agendas unificadas (ex: Odontologia com Ramão e Lidiane)
+  const obterMedicoRealDaOS = (os) => {
+    if (!os.agendamento_id) return null;
+    const agendamento = agendamentosMap[os.agendamento_id];
+    if (!agendamento) return null;
+    
+    const obs = (agendamento.observacoes || '').toLowerCase();
+    // Procurar padrão "Dentista: Dra. Nome" ou "Dentista: Dr. Nome" nas observações
+    const matchDentista = (agendamento.observacoes || '').match(/Dentista:\s*(Dr[a]?\.\s*.+?)(?:\n|$)/i);
+    if (matchDentista) {
+      const nomeDentista = matchDentista[1].trim();
+      // Tentar encontrar o médico correspondente na lista de médicos
+      const medEncontrado = medicos.find(m => {
+        const nNorm = m.nome.toLowerCase().replace(/^dr[a]?\.\s*/i, '').trim();
+        const dNorm = nomeDentista.toLowerCase().replace(/^dr[a]?\.\s*/i, '').trim();
+        return nNorm === dNorm || nNorm.includes(dNorm) || dNorm.includes(nNorm);
+      });
+      if (medEncontrado) return medEncontrado;
+    }
+    return null;
+  };
+
   // Função para obter nome do médico (ID ou fallback de itens)
   const obterNomeMedico = (os) => {
+    // Primeiro verificar se existe médico real diferente nas observações do agendamento
+    const medicoReal = obterMedicoRealDaOS(os);
+    if (medicoReal) return medicoReal.nome;
+    
     const med = medicos.find(m => m.id === os.medico_id);
     if (med) return med.nome;
     
@@ -148,6 +175,13 @@ export default function Relatorios() {
     if (nomeDeItens) return nomeDeItens;
     
     return 'Não informado';
+  };
+
+  // Obter o ID real do médico da OS (considerando agendas unificadas)
+  const obterMedicoIdReal = (os) => {
+    const medicoReal = obterMedicoRealDaOS(os);
+    if (medicoReal) return medicoReal.id;
+    return os.medico_id || 'sem_medico';
   };
 
   // Função auxiliar para verificar se OS pertence ao médico selecionado
