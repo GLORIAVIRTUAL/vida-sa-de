@@ -47,6 +47,7 @@ export default function Agendamentos() {
     tipo: "todos"
   });
   const [filtroMedicoCalendario, setFiltroMedicoCalendario] = useState("todos"); // New state for calendar doctor filter
+  const [filtroDentistaOdonto, setFiltroDentistaOdonto] = useState("todos"); // Filtro Lidiane/Ramão
   const [corrigindo, setCorrigindo] = useState(false); // Novo estado para correção
 
   const { toast } = useToast(); // Initialize useToast
