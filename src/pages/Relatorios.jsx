@@ -145,9 +145,9 @@ export default function Relatorios() {
     const agendamento = agendamentosMap[os.agendamento_id];
     if (!agendamento) return null;
     
-    const obs = (agendamento.observacoes || '').toLowerCase();
+    const obsTexto = agendamento.observacoes || '';
     // Procurar padrão "Dentista: Dra. Nome" ou "Dentista: Dr. Nome" nas observações
-    const matchDentista = (agendamento.observacoes || '').match(/Dentista:\s*(Dr[a]?\.\s*.+?)(?:\n|$)/i);
+    const matchDentista = obsTexto.match(/Dentista:\s*(Dr[a]?\.\s*.+?)(?:\n|$)/i);
     if (matchDentista) {
       const nomeDentista = matchDentista[1].trim();
       // Tentar encontrar o médico correspondente na lista de médicos
