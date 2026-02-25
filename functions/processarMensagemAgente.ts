@@ -1319,16 +1319,12 @@ Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
     // IMPORTANTE: Primeiro buscar ESPECIALIDADE na MENSAGEM, depois médico na mensagem, depois histórico
     // Isso evita que um médico do histórico sobrescreva a especialidade que o cliente pediu AGORA
 
-    // Carregar médicos ativos (com timeout)
+    // Carregar médicos ativos (com timeout) - excluir fictícios
     let todosMedicosParaDeteccao = [];
     try {
-      todosMedicosParaDeteccao = await Promise.race([
-        base44.asServiceRole.entities.Medico.filter({ status: 'Ativo' }),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout Medicos')), 3000))
-      ]);
-    } catch (e) {
-      console.warn('⚠️ Timeout ao buscar médicos:', e.message);
-    }
+      const _raw = await Promise.race([base44.asServiceRole.entities.Medico.filter({ status: 'Ativo' }), new Promise((_, r) => setTimeout(() => r(new Error('Timeout')), 3000))]);
+      todosMedicosParaDeteccao = _raw.filter(m => !/(cart[aã]o\s*mais\s*vida|dr\.?\s*exame\b)/i.test(m.nome || ''));
+    } catch (e) { console.warn('⚠️ Timeout médicos:', e.message); }
 
     // ======= PASSO 1: Buscar ESPECIALIDADE na MENSAGEM do cliente (prioridade máxima) =======
     for (const esp of especialidades) {
