@@ -109,6 +109,7 @@ export default function ResultadosExames() {
       setModalAberto(false);
       setNovoResultado({ paciente_nome: '', paciente_cpf: '', descricao: '', data_exame: '' });
       setArquivoSelecionado(null);
+      setBuscaPaciente('');
       await carregarResultados();
     } catch (error) {
       alert('Erro ao salvar: ' + error.message);
