@@ -24,6 +24,42 @@ export default function ResultadosExames() {
     data_exame: ''
   });
   const [arquivoSelecionado, setArquivoSelecionado] = useState(null);
+  const [pacientes, setPacientes] = useState([]);
+  const [buscaPaciente, setBuscaPaciente] = useState('');
+  const [mostrarSugestoes, setMostrarSugestoes] = useState(false);
+  const [carregandoPacientes, setCarregandoPacientes] = useState(false);
+
+  // Buscar pacientes ao digitar
+  useEffect(() => {
+    if (buscaPaciente.length < 2) {
+      setPacientes([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setCarregandoPacientes(true);
+      try {
+        const todos = await base44.entities.Paciente.list('-created_date', 500);
+        const termo = buscaPaciente.toLowerCase();
+        const filtrados = todos.filter(p => p.nome?.toLowerCase().includes(termo));
+        setPacientes(filtrados.slice(0, 10));
+      } catch (e) {
+        console.error('Erro ao buscar pacientes:', e);
+      } finally {
+        setCarregandoPacientes(false);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [buscaPaciente]);
+
+  const selecionarPaciente = (paciente) => {
+    setNovoResultado({
+      ...novoResultado,
+      paciente_nome: paciente.nome,
+      paciente_cpf: formatarCPF(paciente.cpf || '')
+    });
+    setBuscaPaciente(paciente.nome);
+    setMostrarSugestoes(false);
+  };
 
   const carregarResultados = async () => {
     setLoading(true);
