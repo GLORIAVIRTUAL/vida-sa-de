@@ -1853,17 +1853,17 @@ O cliente está ESCOLHENDO/RESPONDENDO. Ele disse: "${messageText}"
         }
 
         if (disponibilidadesEncontradas.length > 0) {
-          infoDisponibilidade = '\n\n📅 DISPONIBILIDADES ENCONTRADAS:\n';
+        infoDisponibilidade = '\n\n📅 DISPONIBILIDADES ENCONTRADAS:\n';
 
-          // SEMPRE mostrar TODOS os médicos da especialidade
-          for (const medico of disponibilidadesEncontradas) {
-            infoDisponibilidade += `\n👨‍⚕️ ${medico.medico_nome} (${medico.especialidade}):\n`;
-            infoDisponibilidade += `   ID do médico: ${medico.medico_id}\n`;
+        // SEMPRE mostrar TODOS os médicos da especialidade
+        for (const medico of disponibilidadesEncontradas) {
+          infoDisponibilidade += `\n👨‍⚕️ ${medico.medico_nome} (${medico.especialidade}):\n`;
+          infoDisponibilidade += `   ID do médico: ${medico.medico_id}\n`;
 
-            // Mostrar primeiro horário de cada dia disponível
-            for (const dia of medico.disponibilidades.slice(0, 5)) {
-              infoDisponibilidade += `   • ${dia.data_formatada}: ${dia.horarios[0]}\n`;
-            }
+          // Mostrar TODOS os horários disponíveis de cada dia
+          for (const dia of medico.disponibilidades.slice(0, 5)) {
+            infoDisponibilidade += `   • ${dia.data_formatada}: ${dia.horarios.join(', ')}\n`;
+          }
           }
 
           if (disponibilidadesEncontradas.length > 1) {
