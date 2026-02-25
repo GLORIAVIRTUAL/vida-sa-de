@@ -268,11 +268,9 @@ export default function Relatorios() {
     const palavrasFiltro = nomeFiltroNorm.split(' ').filter(p => p.length > 2 && !ignorar.includes(p));
     const palavrasOS = nomeOSNorm.split(' ').filter(p => p.length > 2 && !ignorar.includes(p));
     
-    // Primeiro nome deve bater para considerar match
-    const primeiroNomeFiltro = palavrasFiltro[0];
-    const primeiroNomeOS = palavrasOS[0];
-    
-    if (primeiroNomeFiltro && primeiroNomeOS && primeiroNomeFiltro === primeiroNomeOS) {
+    // Exigir pelo menos 2 palavras significativas em comum (não apenas primeiro nome)
+    const palavrasComuns = palavrasFiltro.filter(p => palavrasOS.includes(p));
+    if (palavrasComuns.length >= 2) {
       return true;
     }
     
