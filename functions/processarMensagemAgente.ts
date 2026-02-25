@@ -1835,7 +1835,7 @@ O cliente está ESCOLHENDO/RESPONDENDO. Ele disse: "${messageText}"
                   day: '2-digit', 
                   month: '2-digit'
                 }),
-                horarios: horariosDisponiveis.sort().slice(0, 1)
+                horarios: horariosDisponiveis.sort().slice(0, 5)
               });
 
               if (disponibilidadesMedico.length >= 5) break;
