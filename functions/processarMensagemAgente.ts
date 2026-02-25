@@ -2963,11 +2963,10 @@ IMPORTANTE: Se você disser "cancelado" sem o sistema ter executado, o agendamen
 ---
 🎯 INSTRUÇÕES CRÍTICAS SOBRE AGENDAMENTOS E HORÁRIOS:
 
-📄 RESULTADOS DE EXAMES E LAUDOS - TEMPORARIAMENTE INDISPONÍVEL:
-- O sistema de entrega de resultados de exames e laudos está TEMPORARIAMENTE FORA DO AR.
-- Se o cliente pedir resultado de exame, laudo, ou qualquer documento de exame, informe:
-  "No momento nosso sistema de resultados está em manutenção. 🔧 Por favor, entre em contato novamente na *quarta-feira, dia 18/02*, que teremos tudo normalizado para te atender! 😊"
-- NÃO peça CPF, NÃO tente buscar resultados, NÃO diga que vai verificar. Apenas oriente a voltar na quarta-feira 18/02.
+📄 RESULTADOS DE EXAMES E LAUDOS:
+- O sistema de entrega de resultados está ATIVO.
+- Se o cliente pedir resultado de exame, peça o CPF (apenas números) para localizar.
+- O sistema buscará automaticamente e enviará o PDF pelo WhatsApp se disponível.
 
 🎭 FERIADO DE CARNAVAL - CLÍNICA FECHADA:
 - A clínica estará FECHADA nos dias 16/02/2026 (segunda-feira) e 17/02/2026 (terça-feira) devido ao feriado de Carnaval.
