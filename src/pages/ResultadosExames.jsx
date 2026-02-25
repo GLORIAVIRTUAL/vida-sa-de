@@ -160,13 +160,57 @@ export default function ResultadosExames() {
                 <DialogTitle>Adicionar Resultado de Exame</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 py-4">
-                <div>
+                <div className="relative">
                   <Label>Nome do Paciente *</Label>
-                  <Input
-                    placeholder="Nome completo"
-                    value={novoResultado.paciente_nome}
-                    onChange={(e) => setNovoResultado({...novoResultado, paciente_nome: e.target.value})}
-                  />
+                  <div className="relative">
+                    <Input
+                      placeholder="Digite para buscar paciente..."
+                      value={buscaPaciente || novoResultado.paciente_nome}
+                      onChange={(e) => {
+                        setBuscaPaciente(e.target.value);
+                        setNovoResultado({...novoResultado, paciente_nome: e.target.value});
+                        setMostrarSugestoes(true);
+                      }}
+                      onFocus={() => buscaPaciente.length >= 2 && setMostrarSugestoes(true)}
+                    />
+                    {novoResultado.paciente_nome && (
+                      <button
+                        type="button"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        onClick={() => {
+                          setNovoResultado({...novoResultado, paciente_nome: '', paciente_cpf: ''});
+                          setBuscaPaciente('');
+                        }}
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                  {mostrarSugestoes && buscaPaciente.length >= 2 && (
+                    <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                      {carregandoPacientes ? (
+                        <div className="flex items-center gap-2 p-3 text-sm text-gray-500">
+                          <Loader2 className="w-3 h-3 animate-spin" /> Buscando...
+                        </div>
+                      ) : pacientes.length > 0 ? (
+                        pacientes.map(p => (
+                          <button
+                            key={p.id}
+                            type="button"
+                            className="w-full text-left px-3 py-2 hover:bg-blue-50 text-sm border-b last:border-0"
+                            onClick={() => selecionarPaciente(p)}
+                          >
+                            <span className="font-medium">{p.nome}</span>
+                            {p.cpf && p.cpf !== 'NÃO INFORMADO' && (
+                              <span className="text-gray-500 ml-2">CPF: {formatarCPF(p.cpf)}</span>
+                            )}
+                          </button>
+                        ))
+                      ) : (
+                        <div className="p-3 text-sm text-gray-500">Nenhum paciente encontrado</div>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <Label>CPF do Paciente *</Label>
