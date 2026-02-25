@@ -2698,37 +2698,24 @@ Retorne JSON.`;
 
     // Instruções especiais para mídia
     let instrucoesMidia = '';
-    if (mediaType === 'image') {
-      instrucoesMidia = `\n\n📷 MÍDIA RECEBIDA: O cliente enviou uma IMAGEM.
+    if (mediaType === 'image' || mediaType === 'document') {
+      const tipoMidia = mediaType === 'image' ? '📷 IMAGEM' : '📄 DOCUMENTO (PDF)';
+      instrucoesMidia = `\n\n${tipoMidia} RECEBIDA:
 
-    🚨 AÇÃO IMEDIATA - ANALISE A IMAGEM AGORA:
-
-    Se for uma REQUISIÇÃO/PEDIDO MÉDICO de exames:
-    1. ✅ Identifique TODOS os exames solicitados na requisição
-    2. ✅ Monte o orçamento IMEDIATAMENTE usando a lista de exames acima
-    3. ✅ NÃO peça nome, CPF ou qualquer dado pessoal
-    4. ✅ Mostre o orçamento completo com valor total
-    5. ✅ Pergunte se deseja agendar
-
-    Se for um RESULTADO DE EXAME: descreva o que observa
-    Se for uma FOTO de algo relacionado à saúde: descreva e oriente
-
-    ⚠️ NUNCA peça dados pessoais para dar orçamento!`;
-    } else if (mediaType === 'document') {
-      instrucoesMidia = `\n\n📄 MÍDIA RECEBIDA: O cliente enviou um DOCUMENTO (PDF).
-
-    🚨 AÇÃO IMEDIATA - ANALISE O DOCUMENTO AGORA:
-
-    Se for uma REQUISIÇÃO/PEDIDO MÉDICO de exames:
-    1. ✅ Identifique TODOS os exames solicitados na requisição
-    2. ✅ Monte o orçamento IMEDIATAMENTE usando a lista de exames acima
-    3. ✅ NÃO peça nome, CPF ou qualquer dado pessoal
-    4. ✅ Mostre o orçamento completo com valor total
-    5. ✅ Pergunte se deseja agendar
-
-    Se for um LAUDO/RESULTADO: descreva as informações relevantes
-
-    ⚠️ NUNCA peça dados pessoais para dar orçamento!`;
+    🚨🚨🚨 REGRAS ABSOLUTAS PARA ANÁLISE DE REQUISIÇÃO MÉDICA 🚨🚨🚨
+    
+    1. LEIA a requisição LINHA POR LINHA - identifique CADA exame individualmente
+    2. LISTE APENAS os exames que ESTÃO na requisição - NÃO invente exames extras!
+    3. NÃO adicione Eletrocardiograma, TSH, Tomografia, Ressonância etc se NÃO foram pedidos!
+    4. Se a requisição tem 17 exames, o orçamento deve ter ~17 itens, NÃO 5!
+    5. NÃO agrupe exames em categorias genéricas como "Exame Laboratorial"
+    6. Use o nome ESPECÍFICO de cada exame com seu preço INDIVIDUAL da lista acima
+    7. "AST e ALT" = 2 exames separados (TGO e TGP)
+    8. "Colesterol total e frações" pode incluir: Colesterol Total, HDL, LDL, VLDL
+    9. Calcule o VALOR TOTAL correto somando TODOS os itens
+    10. Mostre preço Particular E Cartão Mais Vida quando disponíveis
+    11. NÃO peça nome, CPF ou dados pessoais para orçamento!
+    12. Se for resultado/laudo: descreva as informações relevantes`;
     } else if (mediaType === 'audio') {
       instrucoesMidia = `\n\n🎤 MÍDIA RECEBIDA: O cliente enviou um ÁUDIO (arquivo de voz do WhatsApp).
 
