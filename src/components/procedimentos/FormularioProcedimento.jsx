@@ -12,7 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 const especialidades = [
   "Cardiologia", "Clínico Geral", "Dermatologia", "Eletrocardiograma", "Endocrinologia", "Fisioterapeuta",
   "Gastroenterologia", "Geral", "Geriatria", "Ginecologia", "Hidroginástica", "Hidroterapia",
-  "Massoterapia", "Neurologia", "Neuropediatra", "Nutricionista", "Odontologia", "Oftalmologia",
+  "Massoterapia", "Natação", "Neurologia", "Neuropediatra", "Nutricionista", "Odontologia", "Oftalmologia",
   "Optometrista", "Ortopedia", "Otorrinolaringologia", "Pediatria", "Pilates", "Pneumologia",
   "Psicologia", "Psicopedagoga", "Psiquiatria", "Quiropraxia", "Traumatologia", "Urologia"
 ];
