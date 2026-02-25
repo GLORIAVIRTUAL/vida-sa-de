@@ -444,6 +444,7 @@ export default function FormularioMedico({ medico, open, onClose, onUpdate }) {
                   <SelectItem value="Quiropraxia">Quiropraxia</SelectItem>
                   <SelectItem value="Traumatologia">Traumatologia</SelectItem>
                   <SelectItem value="Urologia">Urologia</SelectItem>
+                  <SelectItem value="Vendas Cartão">Vendas Cartão</SelectItem>
                 </SelectContent>
               </Select>
             </div>
