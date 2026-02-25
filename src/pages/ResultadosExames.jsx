@@ -29,7 +29,7 @@ export default function ResultadosExames() {
   const [mostrarSugestoes, setMostrarSugestoes] = useState(false);
   const [carregandoPacientes, setCarregandoPacientes] = useState(false);
 
-  // Buscar pacientes ao digitar
+  // Buscar pacientes ao digitar (usa função backend que varre TODOS os pacientes)
   useEffect(() => {
     if (buscaPaciente.length < 2) {
       setPacientes([]);
@@ -38,10 +38,8 @@ export default function ResultadosExames() {
     const timer = setTimeout(async () => {
       setCarregandoPacientes(true);
       try {
-        const todos = await base44.entities.Paciente.list('-created_date', 500);
-        const termo = buscaPaciente.toLowerCase();
-        const filtrados = todos.filter(p => p.nome?.toLowerCase().includes(termo));
-        setPacientes(filtrados.slice(0, 10));
+        const response = await base44.functions.invoke('searchPatients', { termo: buscaPaciente, limit: 10 });
+        setPacientes(response.data || []);
       } catch (e) {
         console.error('Erro ao buscar pacientes:', e);
       } finally {
