@@ -1585,17 +1585,12 @@ O cliente está ESCOLHENDO/RESPONDENDO. Ele disse: "${messageText}"
            medicosParaBuscar = [medicoEspecificoDetectado];
            console.log(`🎯 Usando médico específico: ${medicoEspecificoDetectado.nome}`);
          } else {
-           // Buscar todos os médicos ativos
-           let todosMedicos = [];
-           try {
-             todosMedicos = await Promise.race([
-               base44.asServiceRole.entities.Medico.filter({ status: 'Ativo' }),
-               new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout Medicos')), 3000))
-             ]);
-           } catch (e) {
-             console.warn('⚠️ Timeout ao buscar médicos:', e.message);
-             todosMedicos = [];
-           }
+           // Buscar todos os médicos ativos (excluir fictícios)
+            let todosMedicos = [];
+            try {
+              const _rawM = await Promise.race([base44.asServiceRole.entities.Medico.filter({ status: 'Ativo' }), new Promise((_, r) => setTimeout(() => r(new Error('Timeout')), 3000))]);
+              todosMedicos = _rawM.filter(m => !/(cart[aã]o\s*mais\s*vida|dr\.?\s*exame\b)/i.test(m.nome || ''));
+            } catch (e) { todosMedicos = []; }
         
           if (especialidadeDetectada) {
           const especialidadeLower = especialidadeDetectada.toLowerCase();
