@@ -2666,30 +2666,17 @@ Retorne JSON.`;
     
     🚨🚨 REGRAS ABSOLUTAS DE ORÇAMENTO - LEIA COM MUITA ATENÇÃO 🚨🚨
     
-    7. 🔬 NUNCA use termos genéricos como "Exame Laboratorial" no orçamento! 
-       - ERRADO: "Exame Laboratorial - R$ 140,00"
-       - CORRETO: "Hemograma Completo - R$ 25,00" / "TSH - R$ 30,00" / "Glicose - R$ 12,00"
-       - SEMPRE liste CADA exame pelo seu NOME ESPECÍFICO com seu preço individual.
-       - Se a requisição pede vários exames de sangue, liste CADA UM separadamente com nome e valor.
-       - Se não conseguir identificar o nome exato do exame na requisição, descreva o que entendeu e diga o valor correspondente na lista.
+    7. 🔬 NUNCA use "Exame Laboratorial" genérico! Liste CADA exame com nome específico e preço individual.
+    8. 🏥 Ecocardiograma/Ecografia: a clínica FAZ SIM (Dr. Douglas). NUNCA coloque como "NÃO realizamos".
+    9. 🔍 Raio X, Ressonância, Tomografia: pagos na clínica, realizados em parceiro. Coloque como "realizamos (parceiro)".
+    10. 📋 REQUISIÇÃO: Leia CADA exame, procure na lista, liste com nome específico e preço.
     
-    8. 🏥 ECOCARDIOGRAMA - A CLÍNICA FAZ SIM!
-       - Ecocardiograma é realizado pela clínica com o Dr. Douglas Filipe Bianchi.
-       - NUNCA coloque ecocardiograma na lista de "NÃO realizamos".
-       - Se ecocardiograma estiver na requisição, coloque em "Exames que realizamos" com o preço da lista.
-       - Ecografia/Ultrassom também são realizados pela clínica.
-    
-    9. 🔍 RAIO X, RESSONÂNCIA e TOMOGRAFIA:
-       - São pagos na clínica mas REALIZADOS em clínica parceira.
-       - No orçamento, coloque em "Exames que realizamos" MAS informe que "são realizados em clínica parceira".
-       - NUNCA coloque como "NÃO realizamos" - a clínica OFERECE esses exames (via parceiro).
-    
-    10. 📋 QUANDO RECEBER UMA REQUISIÇÃO (imagem/PDF):
-       - Leia CADA exame individual da requisição.
-       - Procure CADA UM na lista de exames/procedimentos acima.
-       - Liste cada exame encontrado com SEU NOME ESPECÍFICO e preço.
-       - Se um exame da requisição não estiver na lista, coloque em "NÃO realizamos" com o nome específico.
-       - NUNCA agrupe múltiplos exames em uma categoria genérica.`;
+    🚨🚨 REGRA CRÍTICA - FIDELIDADE À REQUISIÇÃO 🚨🚨
+       - LISTE SOMENTE os exames que ESTÃO na requisição do cliente!
+       - NÃO INVENTE exames extras (ex: NÃO adicione Eletrocardiograma, Tomografia, Ressonância se NÃO foram pedidos!)
+       - Se a requisição tem 17 exames, o orçamento DEVE ter ~17 itens, NÃO 5!
+       - TRANSCREVA mentalmente TODOS os exames da requisição ANTES de montar o orçamento
+       - CONFIRA que cada item do orçamento corresponde a um exame REAL da requisição`;
         }
       } catch (e) {
         console.error('⚠️ Erro ao buscar procedimentos/exames:', e.message);
