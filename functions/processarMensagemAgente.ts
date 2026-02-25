@@ -1139,15 +1139,14 @@ Deno.serve(async (req) => {
     }
 
     // Verificar se cliente quer resultado de exame
-    // ANTI-DUPLICATA: Se no histórico já tem uma resposta do assistente com "encontrei o resultado" ou "PDF está sendo enviado",
-    // NÃO buscar resultado novamente
     const historicoJaEnviouResultado = (historicoConversa || '').includes('encontrei o resultado') || 
                                         (historicoConversa || '').includes('PDF está sendo enviado') ||
                                         (historicoConversa || '').includes('arquivo PDF');
     
-    // PAUSADO TEMPORARIAMENTE: Entrega automática de resultados de exames
-    // Clientes devem ser orientados a entrar em contato na quarta-feira 18/02/2026
-    const querResultado = false;
+    const querResultado = !historicoJaEnviouResultado && (
+      /resultado|laudo|exame pronto|meu exame|buscar exame|retirar exame|pegar exame/i.test(messageText) ||
+      (/resultado|laudo|exame/i.test(historicoConversa || '') && /cpf|^\d{11}$|\d{3}\.\d{3}\.\d{3}/i.test(messageText))
+    );
     let infoResultadoExame = '';
     let arquivoParaEnviar = null;
     
