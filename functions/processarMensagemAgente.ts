@@ -1844,18 +1844,16 @@ O cliente está ESCOLHENDO/RESPONDENDO. Ele disse: "${messageText}"
         }
 
         if (disponibilidadesEncontradas.length > 0) {
-        infoDisponibilidade = '\n\n📅 DISPONIBILIDADES ENCONTRADAS:\n';
+        infoDisponibilidade = '\n\n📅 DISPONIBILIDADES ENCONTRADAS (próximo horário por médico):\n';
 
-        // SEMPRE mostrar TODOS os médicos da especialidade
+        // Listar TODOS os médicos da especialidade, mostrando apenas o PRÓXIMO horário disponível de cada um
         for (const medico of disponibilidadesEncontradas) {
-          infoDisponibilidade += `\n👨‍⚕️ ${medico.medico_nome} (${medico.especialidade}):\n`;
+          let primeiroDia = null; let primeiroHorario = null;
+          for (const d of medico.disponibilidades) { if (d.horarios && d.horarios.length > 0) { primeiroDia = d; primeiroHorario = d.horarios[0]; break; } }
+          if (!primeiroDia || !primeiroHorario) continue;
+          infoDisponibilidade += `\n👨‍⚕️ ${medico.medico_nome} (${medico.especialidade}) — ${primeiroDia.data_formatada} às ${primeiroHorario}\n`;
           infoDisponibilidade += `   ID do médico: ${medico.medico_id}\n`;
-
-          // Mostrar TODOS os horários disponíveis de cada dia
-          for (const dia of medico.disponibilidades.slice(0, 5)) {
-            infoDisponibilidade += `   • ${dia.data_formatada}: ${dia.horarios.join(', ')}\n`;
-          }
-          }
+        }
 
           if (disponibilidadesEncontradas.length > 1) {
             infoDisponibilidade += '\n⚠️ Há múltiplos profissionais disponíveis. MOSTRE TODOS ao cliente e pergunte qual médico e horário ele prefere.';
@@ -2958,7 +2956,7 @@ ${infoDisponibilidade ? '✅ As disponibilidades acima são REAIS e vêm diretam
 
 2. 📅 HORÁRIOS DISPONÍVEIS: Os horários listados acima são os ÚNICOS disponíveis. NUNCA sugira horários que não estejam na lista.
 
-3. 👨‍⚕️ MÚLTIPLOS PROFISSIONAIS: Se houver mais de um médico da mesma especialidade na lista, APRESENTE TODOS eles com seus respectivos horários ao cliente. Deixe o cliente escolher.
+3. 👨‍⚕️ MÚLTIPLOS PROFISSIONAIS: Se houver mais de um médico da mesma especialidade na lista, APRESENTE TODOS eles com APENAS O PRÓXIMO HORÁRIO de cada profissional. Deixe o cliente escolher.
 
 4. 🎯 PRECISÃO TOTAL: JAMAIS invente, sugira ou ofereça datas/horários que não aparecem na seção "DISPONIBILIDADES ENCONTRADAS" acima.
 
