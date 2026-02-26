@@ -130,6 +130,8 @@ export default function FormularioOS({
   useEffect(() => {
     if (!agendamento) return;
 
+    const medicoAtual = medicos.find(m => m.id === medicoSelecionadoId) || medico;
+
     let valorTotal = 0;
     let itensOS = [];
     
@@ -203,10 +205,10 @@ export default function FormularioOS({
         valorTotal = parseFloat(agendamento.valor_total);
       }
 
-      if (medico) {
+      if (medicoAtual) {
         const tipoServico = agendamento.tipo_servico === "Retorno" ? "Retorno" : "Consulta";
         itensOS.push({
-          descricao: `${tipoServico} ${medico.especialidade} - Dr(a). ${medico.nome}`,
+          descricao: `${tipoServico} ${medicoAtual.especialidade || ''} - Dr(a). ${medicoAtual.nome}`,
           tipo: agendamento.tipo_servico,
           valor_unitario: valorTotal,
           quantidade: 1,
