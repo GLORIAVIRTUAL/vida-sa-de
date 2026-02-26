@@ -4,10 +4,10 @@ Deno.serve(async (req) => {
     try {
         const base44 = createClientFromRequest(req);
         
-        // Find all agendamentos with "Lidiane" in observacoes
-        const limit = 1000;
+        // Find all agendamentos for Ramão
+        const ramãoId = '6967d7f6de081dae6837a4b9';
         const agendamentos = await base44.asServiceRole.entities.Agendamento.filter({
-            limit: limit
+            medico_id: ramãoId
         });
         
         const agendamentosLidiane = agendamentos.filter(a => 
@@ -55,6 +55,8 @@ Deno.serve(async (req) => {
                 }
             }
         }
+        
+        // Also let's check if there are any OS that were created for Lidiane directly? No, the report was "Detalhamento - 18 registros"
         
         return Response.json({ 
             success: true, 
