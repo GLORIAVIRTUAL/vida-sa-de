@@ -210,7 +210,7 @@ export default function FormularioProcedimento({ procedimento, categorias, preco
               </div>
               <div className="space-y-1">
                 <Label>Repasse Médico</Label>
-                <div className="flex gap-2">
+                <div className="flex w-full gap-2">
                   <Select name="tipo_repasse" value={formData.tipo_repasse} onValueChange={(v) => setFormData(p => ({...p, tipo_repasse: v}))}>
                     <SelectTrigger className="w-[120px]">
                       <SelectValue placeholder="Tipo" />
