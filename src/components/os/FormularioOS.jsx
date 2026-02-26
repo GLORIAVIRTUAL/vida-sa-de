@@ -232,8 +232,8 @@ export default function FormularioOS({
 
       // Buscar nome do médico vinculado ao agendamento
       let medicoNomeProcedimento = '';
-      if (agendamento.medico_id) {
-        const medicoProc = medicos.find(m => m.id === agendamento.medico_id);
+      if (medicoSelecionadoId) {
+        const medicoProc = medicos.find(m => m.id === medicoSelecionadoId);
         medicoNomeProcedimento = medicoProc ? medicoProc.nome : '';
       }
 
@@ -316,7 +316,7 @@ export default function FormularioOS({
     let repasseMedico = 0;
     let repasseLab = 0;
 
-    if (medico && valorTotal > 0) {
+    if (medicoAtual && valorTotal > 0) {
       const categoriaNome = categorias?.find(c => c.id === agendamento.categoria_preco_id)?.nome || '';
       const categoriaNormalizada = normalizeString(categoriaNome);
 
@@ -330,7 +330,7 @@ export default function FormularioOS({
       let repasseFixo = 0;
       
       // Verificar tipo de repasse do médico (valor_fixo ou percentual)
-      const tipoRepasse = medico.tipo_repasse || 'percentual';
+      const tipoRepasse = medicoAtual.tipo_repasse || 'percentual';
 
       // Lógica diferenciada para Procedimentos vs Consultas
       if (agendamento.tipo_servico === 'Procedimento' && procedimento) {
@@ -341,25 +341,25 @@ export default function FormularioOS({
         // 2. Fallback: Configuração do Médico para Procedimentos
         else if (tipoRepasse === 'valor_fixo') {
           repasseFixo = isParticular
-            ? (medico.valor_repasse_fixo_procedimento || medico.valor_repasse_fixo || 0)
-            : (medico.valor_repasse_fixo_procedimento_convenio || medico.valor_repasse_fixo_convenio || 0);
+            ? (medicoAtual.valor_repasse_fixo_procedimento || medicoAtual.valor_repasse_fixo || 0)
+            : (medicoAtual.valor_repasse_fixo_procedimento_convenio || medicoAtual.valor_repasse_fixo_convenio || 0);
         } else {
           percentual = isParticular
-            ? (medico.percentual_repasse_procedimento || medico.percentual_repasse || 0)
-            : (medico.percentual_repasse_procedimento_convenio || medico.percentual_repasse_convenio || 0);
+            ? (medicoAtual.percentual_repasse_procedimento || medicoAtual.percentual_repasse || 0)
+            : (medicoAtual.percentual_repasse_procedimento_convenio || medicoAtual.percentual_repasse_convenio || 0);
         }
       } else {
         // Lógica para Consultas
         if (tipoRepasse === 'valor_fixo') {
           // Médico configurado com valor fixo
           repasseFixo = isParticular
-            ? (medico.valor_repasse_fixo || 0)
-            : (medico.valor_repasse_fixo_convenio || 0);
+            ? (medicoAtual.valor_repasse_fixo || 0)
+            : (medicoAtual.valor_repasse_fixo_convenio || 0);
         } else {
           // Médico configurado com percentual
           percentual = isParticular
-            ? (medico.percentual_repasse || 0)
-            : (medico.percentual_repasse_convenio || medico.percentual_repasse || 0);
+            ? (medicoAtual.percentual_repasse || 0)
+            : (medicoAtual.percentual_repasse_convenio || medicoAtual.percentual_repasse || 0);
         }
       }
 
