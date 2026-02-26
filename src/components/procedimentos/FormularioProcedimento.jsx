@@ -221,9 +221,9 @@ export default function FormularioProcedimento({ procedimento, categorias, preco
                     </SelectContent>
                   </Select>
                   {formData.tipo_repasse === 'valor_fixo' ? (
-                    <Input type="number" id="valor_repasse_medico" name="valor_repasse_medico" value={formData.valor_repasse_medico} onChange={handleChange} placeholder="0.00" className="flex-1" />
+                    <Input type="number" id="valor_repasse_medico" name="valor_repasse_medico" value={formData.valor_repasse_medico} onChange={handleChange} placeholder="0.00" className="flex-1 min-w-[80px]" />
                   ) : (
-                    <Input type="number" id="percentual_repasse_medico" name="percentual_repasse_medico" value={formData.percentual_repasse_medico} onChange={handleChange} placeholder="0 a 100" min="0" max="100" className="flex-1" />
+                    <Input type="number" id="percentual_repasse_medico" name="percentual_repasse_medico" value={formData.percentual_repasse_medico} onChange={handleChange} placeholder="0 a 100" min="0" max="100" className="flex-1 min-w-[80px]" />
                   )}
                 </div>
               </div>
