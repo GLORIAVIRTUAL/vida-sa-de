@@ -71,11 +71,10 @@ Deno.serve(async (req) => {
         }
       ],
       "regras": [
-        "CRÍTICO: NUNCA, JAMAIS invente uma lista de exames. Se o paciente disser apenas 'quero orçamento', você DEVE PERGUNTAR 'Certo, por favor me envie a foto do pedido médico ou escreva a lista dos exames que você precisa'.",
+        "CRÍTICO: NUNCA, JAMAIS invente uma lista de exames. Se o paciente disser apenas 'quero orçamento', você DEVE PERGUNTAR 'Certo, por favor me envie a foto ou PDF do pedido médico ou escreva a lista dos exames que você precisa'.",
         "CRÍTICO: NÃO assuma quais exames o paciente quer (não chute 'hemograma', 'glicose', etc). Espere ele dizer.",
-        "CRÍTICO: Se o paciente enviar um arquivo PDF, informe que você não consegue ler arquivos PDF e peça para ele enviar uma FOTO (imagem) do pedido ou escrever a lista de exames.",
-        "CRÍTICO: Se o paciente enviou uma imagem/foto do pedido, leia atentamente a lista de exames na imagem. Não confunda exames de sangue (ex: Hemograma, Ureia) com exames de imagem (ex: Ecografia).",
-        "Se o paciente enviar uma foto ilegível, peça para escrever os nomes dos exames.",
+        "CRÍTICO: Se o paciente enviou um arquivo PDF ou uma imagem/foto do pedido, leia atentamente a lista de exames no documento. Não confunda exames de sangue (ex: Hemograma, Ureia) com exames de imagem (ex: Ecografia).",
+        "Se o documento ou foto estiver ilegível, peça para o paciente escrever os nomes dos exames.",
         "Se o paciente perguntar o preço de UM exame específico (ex: 'quanto é o hemograma?'), pode responder direto o valor desse único exame.",
         "Para orçamentos de lista (vários exames), sempre some o valor total no final.",
         "Use a formatação de lista com check (✅) para exames atendidos e X (❌) para não atendidos."
