@@ -405,7 +405,7 @@ export default function FormularioOS({
       valor_repasse_laboratorio: repasseLab,
       valor_clinica: valorClinicaAjustado > 0 ? valorClinicaAjustado : valorFinalCalculado - repasseMedico - repasseLab
     }));
-  }, [agendamento, medico, procedimento, exames, categorias]);
+  }, [agendamento, medico, procedimento, exames, categorias, medicoSelecionadoId, medicos]);
 
   useEffect(() => {
     let valorComDesconto = dados.valor_total - dados.desconto;
@@ -485,7 +485,7 @@ export default function FormularioOS({
         agendamento_id: agendamento.id,
         paciente_id: agendamento.paciente_id,
         paciente_nome: nomePaciente,
-        medico_id: agendamento.medico_id || null,
+        medico_id: medicoSelecionadoId || null,
         data_execucao: agendamento.data_agendamento,
         tipo_servico: agendamento.tipo_servico,
         categoria_preco_id: categoriaId, // FORÇAR INCLUSÃO
@@ -598,7 +598,7 @@ export default function FormularioOS({
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6"> {/* Wrapped content in form, added padding and spacing */}
           <Card>
             <CardContent className="p-4">
-              <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                 <div>
                   <Label className="text-xs text-gray-500">Paciente</Label>
                   <p className="font-semibold">{paciente?.nome || agendamento?.paciente_nome || 'Nome não disponível'}</p>
@@ -606,6 +606,23 @@ export default function FormularioOS({
                 <div>
                   <Label className="text-xs text-gray-500">CPF</Label>
                   <p className="font-semibold">{paciente?.cpf || 'Não informado'}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-gray-500 mb-1 block">Profissional</Label>
+                  <Select 
+                    value={medicoSelecionadoId || "nenhum"} 
+                    onValueChange={(v) => setMedicoSelecionadoId(v === "nenhum" ? null : v)}
+                  >
+                    <SelectTrigger className="h-8 text-sm font-semibold border-gray-300">
+                      <SelectValue placeholder="Selecione..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="nenhum">Nenhum</SelectItem>
+                      {medicos.map(m => (
+                        <SelectItem key={m.id} value={m.id}>{m.nome}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <Label className="text-xs text-gray-500">Convênio</Label>
@@ -618,7 +635,7 @@ export default function FormularioOS({
                   <Label className="text-xs text-gray-500">Tipo de Serviço</Label>
                   <p className="font-semibold">{agendamento.tipo_servico}</p>
                 </div>
-                <div className="col-span-2 p-2 bg-blue-50 rounded">
+                <div className="col-span-2 md:col-span-1 p-2 bg-blue-50 rounded">
                   <Label className="text-xs text-gray-500">Categoria (DEBUG)</Label>
                   <p className="font-semibold text-blue-600">
                     {agendamento.categoria_preco_id 
