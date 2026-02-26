@@ -43,7 +43,9 @@ export default function FormularioProcedimento({ procedimento, categorias, preco
         codigo: procedimento.codigo || '',
         especialidade: procedimento.especialidade || '',
         duracao_minutos: procedimento.duracao_minutos !== null ? String(procedimento.duracao_minutos) : '',
+        tipo_repasse: procedimento.tipo_repasse || 'valor_fixo',
         valor_repasse_medico: procedimento.valor_repasse_medico !== null ? String(procedimento.valor_repasse_medico) : '',
+        percentual_repasse_medico: procedimento.percentual_repasse_medico !== null ? String(procedimento.percentual_repasse_medico) : '',
         descricao: procedimento.descricao || '',
         status: procedimento.status || 'Ativo',
         is_pacote: procedimento.is_pacote || false,
@@ -118,7 +120,9 @@ export default function FormularioProcedimento({ procedimento, categorias, preco
       const dataToSave = {
         ...formData,
         duracao_minutos: formData.duracao_minutos ? Number(formData.duracao_minutos) : null,
-        valor_repasse_medico: formData.valor_repasse_medico ? Number(formData.valor_repasse_medico) : null,
+        tipo_repasse: formData.tipo_repasse,
+        valor_repasse_medico: formData.tipo_repasse === 'valor_fixo' && formData.valor_repasse_medico ? Number(formData.valor_repasse_medico) : null,
+        percentual_repasse_medico: formData.tipo_repasse === 'percentual' && formData.percentual_repasse_medico ? Number(formData.percentual_repasse_medico) : null,
         desconto_pacote: formData.desconto_pacote ? Number(formData.desconto_pacote) : null,
         itens_pacote: formData.is_pacote ? formData.itens_pacote : [],
       };
@@ -204,9 +208,24 @@ export default function FormularioProcedimento({ procedimento, categorias, preco
                 <Label htmlFor="duracao_minutos">Duração (min)</Label>
                 <Input type="number" id="duracao_minutos" name="duracao_minutos" value={formData.duracao_minutos} onChange={handleChange} />
               </div>
-              <div>
-                <Label htmlFor="valor_repasse_medico">Repasse Médico (R$)</Label>
-                <Input type="number" id="valor_repasse_medico" name="valor_repasse_medico" value={formData.valor_repasse_medico} onChange={handleChange} placeholder="0.00" />
+              <div className="space-y-1">
+                <Label>Repasse Médico</Label>
+                <div className="flex gap-2">
+                  <Select name="tipo_repasse" value={formData.tipo_repasse} onValueChange={(v) => setFormData(p => ({...p, tipo_repasse: v}))}>
+                    <SelectTrigger className="w-[120px]">
+                      <SelectValue placeholder="Tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="valor_fixo">Fixo (R$)</SelectItem>
+                      <SelectItem value="percentual">Percent (%)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {formData.tipo_repasse === 'valor_fixo' ? (
+                    <Input type="number" id="valor_repasse_medico" name="valor_repasse_medico" value={formData.valor_repasse_medico} onChange={handleChange} placeholder="0.00" className="flex-1" />
+                  ) : (
+                    <Input type="number" id="percentual_repasse_medico" name="percentual_repasse_medico" value={formData.percentual_repasse_medico} onChange={handleChange} placeholder="0 a 100" min="0" max="100" className="flex-1" />
+                  )}
+                </div>
               </div>
             </div>
              <div>
