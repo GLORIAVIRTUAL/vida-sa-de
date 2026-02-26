@@ -60,6 +60,17 @@ export default function FormularioOS({
   onSalvar,
   onCancelar
 }) {
+  const [medicoSelecionadoId, setMedicoSelecionadoId] = useState(agendamento?.medico_id || medico?.id || null);
+
+  // Se agendamento mudar, atualizar o medico selecionado
+  useEffect(() => {
+    if (agendamento?.medico_id) {
+      setMedicoSelecionadoId(agendamento.medico_id);
+    } else if (medico?.id) {
+      setMedicoSelecionadoId(medico.id);
+    }
+  }, [agendamento, medico]);
+
   const [dados, setDados] = useState({
     valor_total: 0,
     desconto: 0,
