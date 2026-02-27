@@ -60,51 +60,29 @@ export default function FormularioOS({
   onSalvar,
   onCancelar
 }) {
-  // Função auxiliar para encontrar o médico correto considerando observações de dentista
-  const resolverMedicoCorreto = (ag, listaMedicos) => {
-    if (!ag) return medico?.id || null;
-    
-    // 1. Verificar se há "Dentista: ..." nas observações
-    if (ag.observacoes) {
-      const match = ag.observacoes.match(/Dentista:\s*(.+?)(\n|$)/);
-      if (match) {
-        const nomeDentista = match[1].trim();
-        const nomeNorm = normalizeString(nomeDentista);
-        // Buscar médico pelo nome nas observações
-        const medicoObs = listaMedicos.find(m => {
-          const nomeM = normalizeString(m.nome);
-          return nomeNorm.includes(normalizeString(m.nome.replace(/^(Dr\.|Dra\.|Dr\(a\)\.)\s*/i, ''))) || 
-                 nomeM.includes(nomeNorm.replace(/^(DR\.|DRA\.|DR\(A\)\.)\s*/i, ''));
-        });
-        if (medicoObs) {
-          console.log('🦷 Médico correto encontrado via observações:', medicoObs.nome, medicoObs.id);
-          return medicoObs.id;
-        }
-      }
-    }
-    
-    // 2. Verificar itens_servico
-    if (ag.itens_servico?.length > 0 && ag.itens_servico[0].medico_id) {
-      return ag.itens_servico[0].medico_id;
-    }
-    
-    // 3. Usar medico_id do agendamento
-    if (ag.medico_id) return ag.medico_id;
-    
-    return medico?.id || null;
-  };
-
+  // CORREÇÃO: Priorizar SEMPRE o medico_id do agendamento
   const [medicoSelecionadoId, setMedicoSelecionadoId] = useState(() => {
-    return resolverMedicoCorreto(agendamento, medicos);
+    // Na inicialização, priorizar o médico do agendamento
+    // Verifica primeiro o medico_id principal
+    if (agendamento?.medico_id) return agendamento.medico_id;
+    // Se for procedimento/exame e tiver itens de serviço com médico
+    if (agendamento?.itens_servico?.length > 0 && agendamento.itens_servico[0].medico_id) {
+      return agendamento.itens_servico[0].medico_id;
+    }
+    return medico?.id || null;
   });
 
   // Se agendamento mudar, atualizar o medico selecionado
   useEffect(() => {
-    const medicoCorretoId = resolverMedicoCorreto(agendamento, medicos);
-    if (medicoCorretoId) {
-      setMedicoSelecionadoId(medicoCorretoId);
+    // SEMPRE usar o médico do agendamento se existir
+    if (agendamento?.medico_id) {
+      setMedicoSelecionadoId(agendamento.medico_id);
+    } else if (agendamento?.itens_servico && agendamento.itens_servico.length > 0 && agendamento.itens_servico[0].medico_id) {
+      setMedicoSelecionadoId(agendamento.itens_servico[0].medico_id);
+    } else if (medico?.id) {
+      setMedicoSelecionadoId(medico.id);
     }
-  }, [agendamento, medico, medicos]);
+  }, [agendamento, medico]);
 
   const [dados, setDados] = useState({
     valor_total: 0,
@@ -649,12 +627,21 @@ export default function FormularioOS({
                 </div>
                 <div>
                   <Label className="text-xs text-gray-500">Profissional</Label>
-                  <p className="font-semibold">
-                    {medicoSelecionadoId 
-                      ? medicos.find(m => m.id === medicoSelecionadoId)?.nome || 'Profissional não encontrado'
-                      : 'Sem profissional'
-                    }
-                  </p>
+                  <Select 
+                    value={medicoSelecionadoId} 
+                    onValueChange={(val) => setMedicoSelecionadoId(val)}
+                  >
+                    <SelectTrigger className="h-8 mt-1">
+                      <SelectValue placeholder="Selecione o médico" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {medicos.map(m => (
+                        <SelectItem key={m.id} value={m.id}>
+                          {m.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <Label className="text-xs text-gray-500">Convênio</Label>
