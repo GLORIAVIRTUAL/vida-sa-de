@@ -1271,9 +1271,9 @@ Deno.serve(async (req) => {
     // REGRA ANTI-LOOP: Se acabou de concluir um agendamento no histórico recente, NÃO entrar em fluxo de agendamento novamente
     // Detectar se a última resposta do assistente é uma confirmação de agendamento
     // IMPORTANTE: Verificar APENAS a última mensagem do assistente, não o histórico inteiro
-    const todasMsgAssistente = (historicoConversa || '').split('\n').filter(l => l.startsWith('ASSISTENTE:'));
-    const ultimaMsgAssistenteCheck = todasMsgAssistente.length > 0 ? todasMsgAssistente[todasMsgAssistente.length - 1] : '';
-    const agendamentoRecenteConcluido = /Agendamento confirmado|Te aguardamos|Lembre-se de trazer documento/i.test(ultimaMsgAssistenteCheck);
+    const ultimasRespostasAssistenteObj = historicoMensagensRaw.filter(m => m.role === 'assistant');
+    const ultimaMsgAssistenteFull = ultimasRespostasAssistenteObj.length > 0 ? ultimasRespostasAssistenteObj[ultimasRespostasAssistenteObj.length - 1].content : '';
+    const agendamentoRecenteConcluido = /Agendamento confirmado|Te aguardamos|Lembre-se de trazer documento/i.test(ultimaMsgAssistenteFull);
     
     if (agendamentoRecenteConcluido) {
       console.log('✅ Agendamento recém concluído detectado no histórico - resetando detecção de especialidade/médico do histórico');
