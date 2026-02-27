@@ -42,79 +42,53 @@ Deno.serve(async (req) => {
                 userContent.push({ type: 'image_url', image_url: { url: urlFinal } });
                 console.log('🖼️ Imagem incluída');
             } else if (mediaType === 'document') {
-                // PDF: GPT-4o NÃO suporta PDF via image_url com data:application/pdf
-                // Estratégia: Extrair texto do PDF via Base44 e enviar como texto ao LLM
+                // PDF: Extrair texto via AMBOS os métodos em paralelo para velocidade
                 let pdfTextoExtraido = null;
+                console.log('📄 Extraindo texto do PDF...');
                 
-                // PASSO 1: Tentar extrair texto via ExtractDataFromUploadedFile
-                try {
-                    console.log('📄 Extraindo texto do PDF via ExtractDataFromUploadedFile...');
-                    const extractResult = await Promise.race([
+                // Executar AMBOS em paralelo — usar o primeiro que retornar
+                const [extractResult, llmResult] = await Promise.allSettled([
+                    Promise.race([
                         base44.asServiceRole.integrations.Core.ExtractDataFromUploadedFile({
                             file_url: urlFinal,
                             json_schema: {
                                 type: "object",
                                 properties: {
                                     texto_completo: { type: "string", description: "Todo o texto visível no documento, linha por linha" },
-                                    itens_listados: { type: "array", items: { type: "string" }, description: "Lista de cada item/exame/procedimento mencionado no documento" },
-                                    paciente_nome: { type: "string", description: "Nome do paciente se visível" },
-                                    medico_nome: { type: "string", description: "Nome do médico se visível" },
-                                    data_documento: { type: "string", description: "Data do documento se visível" }
+                                    itens_listados: { type: "array", items: { type: "string" }, description: "Lista de cada item/exame/procedimento mencionado" }
                                 }
                             }
                         }),
-                        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout Extract 20s')), 20000))
-                    ]);
-                    
-                    console.log('📄 ExtractData resultado:', JSON.stringify(extractResult).substring(0, 500));
-                    
-                    if (extractResult?.status === 'success' && extractResult?.output) {
-                        const out = extractResult.output;
-                        let partes = [];
-                        if (out.paciente_nome) partes.push(`Paciente: ${out.paciente_nome}`);
-                        if (out.medico_nome) partes.push(`Médico: ${out.medico_nome}`);
-                        if (out.data_documento) partes.push(`Data: ${out.data_documento}`);
-                        if (out.itens_listados?.length > 0) {
-                            partes.push(`\nItens/Exames listados no documento:\n${out.itens_listados.map((item, i) => `${i+1}. ${item}`).join('\n')}`);
-                        }
-                        if (out.texto_completo) partes.push(`\nTexto completo do documento:\n${out.texto_completo}`);
-                        pdfTextoExtraido = partes.join('\n');
-                        console.log('✅ Texto extraído do PDF com sucesso, length:', pdfTextoExtraido.length);
-                    }
-                } catch (extractErr) {
-                    console.warn('⚠️ ExtractData falhou:', extractErr.message);
+                        new Promise((_, r) => setTimeout(() => r(new Error('Timeout')), 25000))
+                    ]),
+                    Promise.race([
+                        base44.asServiceRole.integrations.Core.InvokeLLM({
+                            prompt: `Extraia TODO o conteúdo deste PDF. Liste CADA exame/procedimento um por linha. Retorne APENAS o texto extraído.`,
+                            file_urls: [urlFinal]
+                        }),
+                        new Promise((_, r) => setTimeout(() => r(new Error('Timeout')), 25000))
+                    ])
+                ]);
+                
+                // Usar ExtractData se funcionou
+                if (extractResult.status === 'fulfilled' && extractResult.value?.status === 'success' && extractResult.value?.output) {
+                    const out = extractResult.value.output;
+                    let partes = [];
+                    if (out.itens_listados?.length > 0) partes.push(`Itens/Exames:\n${out.itens_listados.map((item, i) => `${i+1}. ${item}`).join('\n')}`);
+                    if (out.texto_completo) partes.push(`Texto completo:\n${out.texto_completo}`);
+                    if (partes.length > 0) { pdfTextoExtraido = partes.join('\n'); console.log('✅ ExtractData OK, length:', pdfTextoExtraido.length); }
+                }
+                // Fallback: InvokeLLM
+                if (!pdfTextoExtraido && llmResult.status === 'fulfilled' && typeof llmResult.value === 'string' && llmResult.value.trim().length > 10) {
+                    pdfTextoExtraido = llmResult.value.trim();
+                    console.log('✅ InvokeLLM OK, length:', pdfTextoExtraido.length);
                 }
                 
-                // PASSO 2: Se ExtractData falhou, tentar InvokeLLM com file_urls (suporta PDF nativamente)
-                if (!pdfTextoExtraido) {
-                    try {
-                        console.log('📄 Fallback: Extraindo texto via InvokeLLM com file_urls...');
-                        const llmExtract = await Promise.race([
-                            base44.asServiceRole.integrations.Core.InvokeLLM({
-                                prompt: `Analise este documento PDF e extraia TODO o conteúdo textual visível. Liste CADA item/exame/procedimento que aparecer, um por linha. Inclua nome do paciente, médico, data se visíveis. Retorne APENAS o texto extraído, sem explicações.`,
-                                file_urls: [urlFinal],
-                                add_context_from_internet: false
-                            }),
-                            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout InvokeLLM Extract 25s')), 25000))
-                        ]);
-                        
-                        if (llmExtract && typeof llmExtract === 'string' && llmExtract.trim().length > 10) {
-                            pdfTextoExtraido = llmExtract.trim();
-                            console.log('✅ InvokeLLM extraiu texto do PDF, length:', pdfTextoExtraido.length);
-                        }
-                    } catch (llmErr) {
-                        console.warn('⚠️ InvokeLLM fallback falhou:', llmErr.message);
-                    }
-                }
-                
-                // PASSO 3: Adicionar texto extraído ao conteúdo da mensagem
                 if (pdfTextoExtraido) {
-                    userContent[0].text += `\n\n📄 CONTEÚDO EXTRAÍDO DO DOCUMENTO PDF ENVIADO PELO CLIENTE:\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n${pdfTextoExtraido}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n🚨 IMPORTANTE: O conteúdo acima foi extraído do PDF enviado pelo cliente. Use TODOS os itens/exames listados acima para montar o orçamento. NÃO invente exames que não estão listados acima. NÃO omita exames que ESTÃO listados acima.`;
-                    console.log('📄 Texto do PDF adicionado ao prompt');
+                    userContent[0].text += `\n\n📄 CONTEÚDO DO PDF ENVIADO PELO CLIENTE:\n━━━━━━━━━━━━━━━━━━━━\n${pdfTextoExtraido}\n━━━━━━━━━━━━━━━━━━━━\n\n🚨 Use TODOS os itens acima para montar o orçamento. NÃO invente nem omita exames.`;
                 } else {
-                    // Último recurso: informar que não conseguiu ler
-                    userContent[0].text += `\n\n⚠️ O cliente enviou um documento PDF mas não foi possível extrair o conteúdo. Peça ao cliente para enviar uma FOTO/IMAGEM da requisição em vez de PDF, pois assim conseguimos ler melhor.`;
-                    console.warn('❌ Não foi possível extrair texto do PDF por nenhum método');
+                    console.warn('❌ PDF: nenhum método extraiu texto');
+                    userContent[0].text += `\n\n⚠️ O cliente enviou um PDF mas não foi possível extrair o conteúdo. Peça para enviar uma FOTO/IMAGEM da requisição.`;
                 }
             }
         }
