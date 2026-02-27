@@ -2534,7 +2534,7 @@ Retorne JSON.`;
     
     1. LEIA a requisição LINHA POR LINHA - identifique CADA exame individualmente
     2. LISTE APENAS os exames que ESTÃO na requisição - NÃO invente exames extras!
-    3. NÃO adicione Eletrocardiograma, TSH, Tomografia, Ressonância etc se NÃO foram pedidos!
+    3. NUNCA adicione exames que NÃO ESTÃO ESCRITOS na requisição (ex: não adicione TSH ou Vitamina se não estiver escrito).
     4. Se a requisição tem 17 exames, o orçamento deve ter ~17 itens, NÃO 5!
     5. NÃO agrupe exames em categorias genéricas como "Exame Laboratorial"
     6. Use o nome ESPECÍFICO de cada exame com seu preço INDIVIDUAL da lista acima
