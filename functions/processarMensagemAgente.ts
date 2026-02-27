@@ -24,13 +24,13 @@ Deno.serve(async (req) => {
         messageText = messageText.replace(urlNoTexto[0], '').replace(/\[(?:á|a)udio\s*(?:recebido)?\]/gi, '').trim();
         if (!messageText) messageText = '[Áudio recebido]';
         console.log('🎤 Áudio detectado no texto (indicador+URL):', mediaUrl.substring(0, 80));
-      } else if (urlNoTexto && urlNoTexto[1].match(/\.ogg/i)) {
-        // URL com extensão .ogg mesmo sem [Áudio recebido]
-        mediaType = 'audio';
-        mediaUrl = urlNoTexto[1];
-        messageText = messageText.replace(urlNoTexto[0], '').trim();
-        if (!messageText) messageText = '[Áudio recebido]';
-        console.log('🎤 Áudio detectado no texto (.ogg URL):', mediaUrl.substring(0, 80));
+      } else if (urlNoTexto && /\.ogg/i.test(urlNoTexto[1])) {
+        mediaType = 'audio'; mediaUrl = urlNoTexto[1];
+        messageText = messageText.replace(urlNoTexto[0], '').trim() || '[Áudio recebido]';
+      } else if (urlNoTexto && /\.pdf/i.test(urlNoTexto[1])) {
+        mediaType = 'document'; mediaUrl = urlNoTexto[1];
+        messageText = messageText.replace(urlNoTexto[0], '').trim() || '[Documento recebido]';
+        console.log('📄 PDF restaurado do texto buffer:', mediaUrl.substring(0, 80));
       }
     }
 
