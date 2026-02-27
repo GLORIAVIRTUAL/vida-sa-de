@@ -42,29 +42,32 @@ Deno.serve(async (req) => {
                 userContent.push({ type: 'image_url', image_url: { url: urlFinal } });
                 console.log('🖼️ Imagem incluída');
             } else if (mediaType === 'document') {
-                // PDF: Usar InvokeLLM para processar o PDF diretamente com Vision
-                // A API direta da OpenAI não aceita PDFs, então usamos a integração que converte e processa
-                console.log('📄 PDF detectado - Enviando para InvokeLLM com Vision...');
-                
+                // PDF: Converte PDF para imagens PNG e envia como image_url para o OpenAI Vision
+                console.log('🔄 Convertendo PDF em imagens para OpenAI Vision...');
                 try {
-                    // Combinar prompt do sistema e mensagem do usuário
-                    const fullPrompt = `${prompt}\n\nMENSAGEM DO USUÁRIO:\n${messageText || '(apenas documento enviado)'}`;
+                    // Usar parseMidiaBuffer para converter PDF → Imagens PNG
+                    const parsedResult = await base44.asServiceRole.functions.invoke('parseMidiaBuffer', {
+                        mediaUrl: urlFinal,
+                        mediaType: 'document',
+                        converterPdfParaImagens: true
+                    });
                     
-                    const llmResult = await Promise.race([
-                        base44.asServiceRole.integrations.Core.InvokeLLM({
-                            prompt: fullPrompt,
-                            file_urls: [urlFinal]
-                        }),
-                        new Promise((_, r) => setTimeout(() => r(new Error('Timeout')), 60000))
-                    ]);
-                    
-                    if (typeof llmResult === 'string') {
-                        console.log('✅ InvokeLLM processou PDF com sucesso. Resposta length:', llmResult.length);
-                        return Response.json({ resposta: llmResult, tokens: null });
+                    if (parsedResult?.data?.imagens && parsedResult.data.imagens.length > 0) {
+                        console.log(`✅ PDF convertido em ${parsedResult.data.imagens.length} imagens PNG`);
+                        
+                        // Adicionar TODAS as imagens do PDF ao userContent para o OpenAI ler
+                        for (const imgUrl of parsedResult.data.imagens) {
+                            userContent.push({ type: 'image_url', image_url: { url: imgUrl } });
+                        }
+                        
+                        userContent[0].text = `📄 O cliente enviou um PDF de requisição médica. Analise as imagens abaixo (páginas do PDF convertidas) e extraia TODOS os exames solicitados. Monte o orçamento com base na lista de procedimentos/exames disponíveis.\n\n${userContent[0].text}`;
+                    } else {
+                        console.warn('❌ Falha ao converter PDF em imagens');
+                        userContent[0].text += `\n\n⚠️ Não foi possível processar o PDF. Peça ao cliente para enviar uma FOTO da requisição.`;
                     }
-                } catch (e) {
-                    console.error('❌ Erro ao processar PDF com InvokeLLM:', e.message);
-                    return Response.json({ error: e.message }, { status: 500 });
+                } catch (convError) {
+                    console.error('❌ Erro ao converter PDF:', convError.message);
+                    userContent[0].text += `\n\n⚠️ Não foi possível processar o PDF. Peça ao cliente para enviar uma FOTO da requisição.`;
                 }
             }
         }
