@@ -125,7 +125,12 @@ export default function FormularioOS({
     console.log('🔍 DEBUG FormularioOS - DADOS RECEBIDOS');
     console.log('═══════════════════════════════════════');
     console.log('Agendamento completo:', agendamento);
+    console.log('medico_id do agendamento:', agendamento?.medico_id);
+    console.log('itens_servico do agendamento:', agendamento?.itens_servico);
+    console.log('Médico do primeiro item_servico:', agendamento?.itens_servico?.[0]?.medico_id);
     console.log('categoria_preco_id do agendamento:', agendamento?.categoria_preco_id);
+    console.log('Médico prop passado:', medico);
+    console.log('medicoSelecionadoId atual:', medicoSelecionadoId);
     console.log('Categorias disponíveis:', categorias);
     console.log('═══════════════════════════════════════\n');
 
