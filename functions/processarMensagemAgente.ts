@@ -2907,19 +2907,14 @@ INSTRUÇÕES GERAIS:
         const historicoCompleto = historicoAtual.filter(m => m.role === 'assistant');
         const ultimasRespostasAssistente = historicoCompleto.slice(-5);
 
-        // Deduplicação: apenas para orçamentos repetidos
-        const jaEnviouMsgOrcamento = ultimasRespostasAssistente.some(m => 
-          m.content && /já enviei o orçamento/i.test(m.content)
-        );
-
-        if (jaEnviouMsgOrcamento && llmResponse && /já enviei o orçamento/i.test(llmResponse)) {
-          console.log('⚠️ Mensagem "já enviei orçamento" duplicada - NÃO enviando');
-          return Response.json({ 
-            success: true, 
-            resposta: null,
-            duplicado: true,
-            message: 'Mensagem duplicada'
-          });
+        // Deduplicação: respostas idênticas ou orçamento duplicado
+        const ultimaResposta = ultimasRespostasAssistente[ultimasRespostasAssistente.length - 1];
+        const respostaIdentica = ultimaResposta?.content && llmResponse && ultimaResposta.content.trim() === (llmResponse||'').trim();
+        const jaEnviouMsgOrcamento = ultimasRespostasAssistente.some(m => m.content && /já enviei o orçamento/i.test(m.content));
+        if (respostaIdentica || (jaEnviouMsgOrcamento && llmResponse && /já enviei o orçamento/i.test(llmResponse))) {
+          console.log('⚠️ Resposta duplicada bloqueada');
+          await liberarLock(base44, phoneNumber);
+          return Response.json({ success: true, resposta: null, duplicado: true });
         }
 
         // Incluir URL da mídia no conteúdo se houver
