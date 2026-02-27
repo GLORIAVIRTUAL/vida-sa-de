@@ -34,10 +34,20 @@ export default function RepasseMedicos({ ordensServico, medicos, pacientes, onRe
     ordensDoDia.forEach(os => {
       if (!os.medico_id) return;
 
-      if (!grupos[os.medico_id]) {
-        const medico = medicos.find(m => m.id === os.medico_id);
-        grupos[os.medico_id] = {
+      // SEPARAÇÃO RAMÃO/LIDIANE: usar gerado_por para separar repasses de odonto
+      const medico = medicos.find(m => m.id === os.medico_id);
+      
+      // Se é odonto (Ramão ou Lidiane) E tem gerado_por, usar gerado_por como chave
+      // Senão, usar medico_id normal
+      let chaveGrupo = os.medico_id;
+      if (medico && medico.especialidade === 'Odontologia' && os.gerado_por) {
+        chaveGrupo = `${os.medico_id}_${os.gerado_por}`;
+      }
+
+      if (!grupos[chaveGrupo]) {
+        grupos[chaveGrupo] = {
           medico,
+          gerado_por: os.gerado_por || null,
           ordens: [],
           total_bruto: 0,
           total_repasse: 0,
@@ -46,11 +56,11 @@ export default function RepasseMedicos({ ordensServico, medicos, pacientes, onRe
         };
       }
 
-      grupos[os.medico_id].ordens.push(os);
-      grupos[os.medico_id].total_bruto += os.valor_final || 0;
-      grupos[os.medico_id].total_repasse += os.valor_repasse_medico || 0;
-      grupos[os.medico_id].total_clinica += os.valor_clinica || 0;
-      grupos[os.medico_id].quantidade += 1;
+      grupos[chaveGrupo].ordens.push(os);
+      grupos[chaveGrupo].total_bruto += os.valor_final || 0;
+      grupos[chaveGrupo].total_repasse += os.valor_repasse_medico || 0;
+      grupos[chaveGrupo].total_clinica += os.valor_clinica || 0;
+      grupos[chaveGrupo].quantidade += 1;
     });
 
     return Object.values(grupos);
@@ -384,6 +394,11 @@ export default function RepasseMedicos({ ordensServico, medicos, pacientes, onRe
                       <div className="flex-1">
                         <h3 className="text-xl font-bold text-gray-900">
                           Dr(a). {grupo.medico.nome}
+                          {grupo.gerado_por && (
+                            <span className="text-sm font-normal text-blue-600 ml-2">
+                              (OS geradas por {grupo.gerado_por})
+                            </span>
+                          )}
                         </h3>
                         <p className="text-sm text-gray-600">{grupo.medico.especialidade} - CRM: {grupo.medico.crm}</p>
 
