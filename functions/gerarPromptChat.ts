@@ -168,8 +168,11 @@ Deno.serve(async (req) => {
     - "lendo o documento..."
     - "vou conferir os exames"
     - "vou analisar a requisição"
+    - "Vou ler os exames contidos na requisição"
+    - "Vou montar o orçamento para você"
+    - "Vou analisar a imagem"
 
-    Apenas apresente as informações (horários ou orçamentos) DIRETAMENTE na sua resposta!
+    Apenas apresente as informações (horários ou orçamentos) DIRETAMENTE na sua resposta, sem frases de transição indicando que vai fazer algo!
 
     INSTRUÇÕES GERAIS:
     1. Apresente as opções de forma clara, organizada e amigável
