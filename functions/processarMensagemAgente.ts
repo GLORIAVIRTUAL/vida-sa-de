@@ -1369,10 +1369,7 @@ Informe ao cliente que:
       (jaEmFluxoAgendamento && temEspecialidadeOuMedico) ||
       (jaEmFluxoAgendamento && clienteEscolhendoHorario && /Dr\.|👨‍⚕️|médico.*horário/i.test(historicoConversa)));
 
-    console.log('📋 Detecção agendamento:', { querAgendar, especialidadeDetectada, medicoEspecificoDetectado: !!medicoEspecificoDetectado, deveBuscarDisponibilidades, clienteRecusandoAgendar });
-    
-    // REMOVIDO: Bloco de resposta automática para agendamento
-    // Agora deixamos o LLM responder naturalmente e AGUARDAR o cliente dizer o que deseja
+    console.log('📋 Detecção agendamento:', { querAgendar, ehPerguntaDisponibilidadeMedico, especialidadeDetectada, medicoEspecificoDetectado: !!medicoEspecificoDetectado, deveBuscarDisponibilidades });
     
     if (deveBuscarDisponibilidades) {
       // Verificar se já mostramos disponibilidades recentemente
