@@ -1139,117 +1139,41 @@ Deno.serve(async (req) => {
     }
 
     // Verificar se cliente quer resultado de exame
-    const historicoJaEnviouResultado = (historicoConversa || '').includes('encontrei o resultado') || 
-                                        (historicoConversa || '').includes('PDF está sendo enviado') ||
-                                        (historicoConversa || '').includes('arquivo PDF');
-    
+    const historicoJaEnviouResultado = /encontrei o resultado|PDF está sendo enviado|arquivo PDF/i.test(historicoConversa || '');
+    const historicoTemFluxoResultado = /seu nome completo|seu cpf|para localizar.*resultado/i.test(historicoConversa || '');
     const querResultado = !historicoJaEnviouResultado && (
       /resultado|laudo|exame pronto|meu exame|buscar exame|retirar exame|pegar exame/i.test(messageText) ||
-      (/resultado|laudo|exame/i.test(historicoConversa || '') && /cpf|^\d{11}$|\d{3}\.\d{3}\.\d{3}/i.test(messageText))
+      (historicoTemFluxoResultado && (/\d{3}/.test(messageText) || /[A-Za-zÀ-ÿ]{2,}\s+[A-Za-zÀ-ÿ]{2,}/.test(messageText)))
     );
     let infoResultadoExame = '';
     let arquivoParaEnviar = null;
-    
     if (querResultado) {
       console.log('📄 Cliente quer resultado de exame...');
-      
-      // Verificar se temos CPF na mensagem ou no histórico - aceita vários formatos
       const cpfMatch = messageText.match(/(\d{11}|\d{3}\.?\d{3}\.?\d{3}[-.]?\d{2})/);
       let cpfCliente = cpfMatch ? cpfMatch[0].replace(/\D/g, '') : null;
-      
-      // Se não achou na mensagem, procurar no histórico
       if (!cpfCliente && historicoConversa) {
-        const cpfHistorico = historicoConversa.match(/(\d{11}|\d{3}\.?\d{3}\.?\d{3}[-.]?\d{2})/);
-        if (cpfHistorico) {
-          cpfCliente = cpfHistorico[0].replace(/\D/g, '');
-        }
+        const cpfH = historicoConversa.match(/(\d{11}|\d{3}\.?\d{3}\.?\d{3}[-.]?\d{2})/);
+        if (cpfH) cpfCliente = cpfH[0].replace(/\D/g, '');
       }
-      
       console.log('🔍 CPF detectado:', cpfCliente);
-      
       if (cpfCliente && cpfCliente.length === 11) {
-        // Buscar resultado pelo CPF (com timeout e cache)
         try {
-          console.log('🔎 Buscando resultados para CPF:', cpfCliente);
-          const resultados = await Promise.race([
-            base44.asServiceRole.entities.ResultadoExame.list(),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout ResultadoExame')), 4000))
-          ]);
-          console.log('📊 Total de resultados no sistema:', resultados.length);
-          
-          // Filtrar pelo CPF (comparar sem formatação)
-          const resultadosFiltrados = resultados.filter(r => {
-            const cpfResultado = (r.paciente_cpf || '').replace(/\D/g, '');
-            return cpfResultado === cpfCliente;
-          });
-          
-          console.log('📊 Resultados encontrados para o CPF:', resultadosFiltrados.length);
-          
-          if (resultadosFiltrados.length > 0) {
-            // Pegar o resultado mais recente
-            const resultadoMaisRecente = resultadosFiltrados.sort((a, b) => 
-              new Date(b.created_date) - new Date(a.created_date)
-            )[0];
-            
-            arquivoParaEnviar = {
-              url: resultadoMaisRecente.arquivo_url,
-              nome: resultadoMaisRecente.nome_arquivo || 'Resultado_Exame.pdf',
-              paciente: resultadoMaisRecente.paciente_nome,
-              descricao: resultadoMaisRecente.descricao,
-              data: resultadoMaisRecente.data_exame
-            };
-            
-            infoResultadoExame = `\n\n✅ RESULTADO DE EXAME ENCONTRADO!
-Paciente: ${resultadoMaisRecente.paciente_nome}
-Exame: ${resultadoMaisRecente.descricao || 'Resultado de exame'}
-Data: ${resultadoMaisRecente.data_exame || 'N/A'}
-Arquivo: ${resultadoMaisRecente.nome_arquivo}
-
-📎 O ARQUIVO PDF SERÁ ENVIADO AUTOMATICAMENTE JUNTO COM ESTA MENSAGEM.
-
-IMPORTANTE: Confirme ao cliente:
-1. Que encontrou o resultado do exame dele
-2. Que o arquivo PDF está sendo enviado AGORA MESMO pelo WhatsApp
-3. Diga: "Estou enviando o arquivo PDF agora mesmo! 📄"
-
-NÃO diga para buscar na clínica - o arquivo já está sendo enviado!`;
-            
-            console.log('✅ Resultado encontrado! Arquivo para enviar:', JSON.stringify(arquivoParaEnviar));
+          const resultados = await Promise.race([base44.asServiceRole.entities.ResultadoExame.list(), new Promise((_, r) => setTimeout(() => r(new Error('Timeout')), 4000))]);
+          const filtrados = resultados.filter(r => (r.paciente_cpf || '').replace(/\D/g, '') === cpfCliente);
+          if (filtrados.length > 0) {
+            const rec = filtrados.sort((a, b) => new Date(b.created_date) - new Date(a.created_date))[0];
+            arquivoParaEnviar = { url: rec.arquivo_url, nome: rec.nome_arquivo || 'Resultado_Exame.pdf', paciente: rec.paciente_nome, descricao: rec.descricao, data: rec.data_exame };
+            infoResultadoExame = `\n\n✅ RESULTADO ENCONTRADO! Paciente: ${rec.paciente_nome} | Exame: ${rec.descricao || 'Resultado'} | Arquivo: ${rec.nome_arquivo}\n📎 ARQUIVO PDF SERÁ ENVIADO. Diga ao cliente: "Encontrei seu resultado! Estou enviando o arquivo PDF agora! 📄" NÃO diga para buscar na clínica.`;
+            console.log('✅ Resultado encontrado:', JSON.stringify(arquivoParaEnviar));
           } else {
-            infoResultadoExame = `\n\n⏳ RESULTADO AINDA NÃO DISPONÍVEL
-CPF informado: ${cpfCliente}
-
-O resultado do exame ainda não está pronto no sistema.
-
-RESPONDA AO CLIENTE de forma gentil:
-- Informe que o resultado ainda não está disponível
-- Diga que assim que ficar pronto, ele poderá solicitar novamente
-- Sugira que entre em contato novamente em alguns dias
-- Se preferir, pode ligar na clínica (51) 3661-5991 para mais informações
-
-Exemplo de resposta:
-"Verifiquei aqui e seu resultado ainda não está disponível no sistema. 📋 Assim que ficar pronto, você pode me chamar novamente que envio para você! Se preferir, pode também ligar na clínica: (51) 3661-5991. 😊"`;
+            infoResultadoExame = `\n\n⏳ RESULTADO NÃO DISPONÍVEL para CPF ${cpfCliente}. Informe gentilmente que não está pronto e sugira ligar (51) 3661-5991.`;
           }
         } catch (e) {
-          console.error('⚠️ Erro ao buscar resultado:', e.message);
-          infoResultadoExame = `\n\n⚠️ Erro ao buscar resultado. Peça desculpas e solicite que o cliente entre em contato pelo telefone.`;
+          infoResultadoExame = `\n\n⚠️ Erro ao buscar resultado. Peça desculpas e indique o telefone.`;
         }
       } else {
-        // Não temos CPF ainda - instruir IA a pedir
-        infoResultadoExame = `\n\n📋 CLIENTE QUER RESULTADO DE EXAME
-
-Para localizar o resultado, você PRECISA do CPF do paciente.
-
-PEÇA ao cliente:
-1. Nome completo
-2. CPF (apenas números, exemplo: 04252828481)
-
-Exemplo de resposta:
-"Para localizar seu resultado, preciso de algumas informações:
-📝 Seu nome completo
-📝 Seu CPF (apenas números)
-
-Com esses dados, consigo verificar se o resultado já está disponível! 😊"`;
+        // Sem CPF - pedir nome E CPF
+        infoResultadoExame = `\n\n📋 CLIENTE QUER RESULTADO DE EXAME\n\n🚨 REGRA OBRIGATÓRIA: Para localizar o resultado você PRECISA do NOME COMPLETO E CPF do paciente.\n\nPEÇA OBRIGATORIAMENTE:\n1. Nome completo do paciente\n2. CPF (apenas números)\n\nResposta EXATA a usar:\n"Para localizar seu resultado, preciso de:\n📝 Seu nome completo\n📝 Seu CPF (apenas números, ex: 04252828481)\n\nCom esses dados localizo na hora! 😊"\n\n🚨 NÃO tente localizar sem CPF. NÃO diga para comparecer à clínica para pegar resultado.`;
       }
     }
 
