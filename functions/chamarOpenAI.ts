@@ -49,21 +49,28 @@ Deno.serve(async (req) => {
                 // O modelo InvokeLLM com um prompt focado extrai o texto com 100% de precisão.
                 // E depois passamos esse texto pro GPT-4o criar o orçamento.
                 
-                console.log('📄 PDF detectado - Extraindo texto para passar ao GPT...');
+                console.log('📄 PDF detectado - Extraindo texto via InvokeLLM...');
+                console.log('📄 URL do PDF para extração:', urlFinal);
                 let pdfTextoExtraido = null;
                 
                 try {
+                    console.log('📄 Chamando InvokeLLM com file_urls...');
                     const llmResult = await Promise.race([
                         base44.asServiceRole.integrations.Core.InvokeLLM({
                             prompt: `Por favor, leia cuidadosamente a imagem/documento anexo e extraia a lista exata e completa de exames médicos solicitados. Liste EXATAMENTE o que está escrito no documento, um por linha, sem inventar absolutamente nada. Se não houver exames legíveis, retorne "VAZIO".`,
                             file_urls: [urlFinal]
                         }),
-                        new Promise((_, r) => setTimeout(() => r(new Error('Timeout')), 35000))
+                        new Promise((_, r) => setTimeout(() => r(new Error('Timeout InvokeLLM 35s')), 35000))
                     ]);
+                    
+                    console.log('📄 InvokeLLM resultado tipo:', typeof llmResult, '| tamanho:', (llmResult || '').length);
+                    console.log('📄 InvokeLLM resultado (primeiros 300 chars):', String(llmResult).substring(0, 300));
                     
                     if (typeof llmResult === 'string' && llmResult.trim().length > 5 && !llmResult.includes('VAZIO')) {
                         pdfTextoExtraido = llmResult.trim();
                         console.log('✅ Texto extraído do PDF com precisão:\n', pdfTextoExtraido);
+                    } else {
+                        console.warn('⚠️ InvokeLLM retornou resultado insuficiente:', String(llmResult).substring(0, 100));
                     }
                 } catch (e) {
                     console.warn('⚠️ Falha ao extrair texto do PDF:', e.message);
