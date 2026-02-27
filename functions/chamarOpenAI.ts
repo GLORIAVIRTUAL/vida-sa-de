@@ -80,9 +80,11 @@ Deno.serve(async (req) => {
                         const pdfFile = new File([pdfBlob], 'requisicao.pdf', { type: 'application/pdf' });
                         
                         // Usar parseMidiaBuffer para converter PDF → Imagens PNG
+                        // IMPORTANTE: Passar URL, não objeto File (que não serializa)
                         const parsedResult = await base44.asServiceRole.functions.invoke('parseMidiaBuffer', {
-                            file: pdfFile,
-                            tipoMidia: 'document'
+                            mediaUrl: urlFinal,
+                            mediaType: 'document',
+                            converterPdfParaImagens: true
                         });
                         
                         if (parsedResult?.data?.imagens && parsedResult.data.imagens.length > 0) {
