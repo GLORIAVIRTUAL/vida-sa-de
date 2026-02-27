@@ -2493,31 +2493,20 @@ Retorne JSON.`;
     📍 *Endereço:* Tristão Monteiro, 580 – Zona Nova, Tramandaí/RS
     📞 *Telefone:* (51) 3661-5991
 
-    Gostaria de agendar a coleta? 😊
+    A coleta é realizada de segunda a sábado, das 7h às 10h. Basta comparecer em jejum! 😊
 
     ⚠️ REGRAS:
     1. NUNCA INVENTE PREÇOS! Use APENAS os valores da lista acima.
     2. Se o exame NÃO estiver na lista, coloque em "NÃO realizamos".
     3. SEMPRE calcule e mostre o VALOR TOTAL.
-    4. Ao final, pergunte se deseja agendar.
-    5. NÃO peça nome/CPF para orçamento - só peça se for AGENDAR.
-    6. 💰 REGRA CRÍTICA DE MÚLTIPLOS PREÇOS: Quando um procedimento ou exame tiver MAIS DE UM preço (ex: Particular E Cartão Mais Vida), SEMPRE mostre TODOS os valores disponíveis. Exemplo:
-       • Biópsia - *Particular:* R$ 300,00 | *Cartão Mais Vida:* R$ 270,00
-       NUNCA omita preços! Se há valor Particular e valor no Cartão, mostre AMBOS.
+    4. NÃO peça nome/CPF para orçamento - só peça se for AGENDAR.
+    5. 🚫 NUNCA pergunte "Gostaria de agendar a coleta?" - coleta NÃO é agendada.
+    6. 💰 Mostre TODOS os preços disponíveis (Particular E Cartão Mais Vida).
+    7. 🔬 NUNCA use "Exame Laboratorial" genérico! Liste CADA exame individualmente.
+    8. 🏥 Ecografia: a clínica FAZ SIM. NUNCA coloque como "NÃO realizamos".
+    9. 🔍 Raio X, Ressonância, Tomografia: realizados em parceiro.
     
-    🚨🚨 REGRAS ABSOLUTAS DE ORÇAMENTO - LEIA COM MUITA ATENÇÃO 🚨🚨
-    
-    7. 🔬 NUNCA use "Exame Laboratorial" genérico! Liste CADA exame com nome específico e preço individual.
-    8. 🏥 Ecocardiograma/Ecografia: a clínica FAZ SIM (Dr. Douglas). NUNCA coloque como "NÃO realizamos".
-    9. 🔍 Raio X, Ressonância, Tomografia: pagos na clínica, realizados em parceiro. Coloque como "realizamos (parceiro)".
-    10. 📋 REQUISIÇÃO: Leia CADA exame, procure na lista, liste com nome específico e preço.
-    
-    🚨🚨 REGRA CRÍTICA - FIDELIDADE À REQUISIÇÃO 🚨🚨
-       - O texto extraído do PDF está em "CONTEÚDO DO PDF ENVIADO PELO CLIENTE".
-       - LISTE APENAS OS EXAMES ESCRITOS LÁ!
-       - É ESTRITAMENTE PROIBIDO adicionar exames que não estão no texto extraído.
-       - Se a requisição tem 17 exames, o orçamento DEVE ter ~17 itens.
-       - CONFIRA se cada item do orçamento corresponde a um exame REAL da requisição`;
+    🚨 FIDELIDADE À REQUISIÇÃO: Liste SOMENTE exames do texto extraído. NÃO adicione extras. Match por nome (AST=TGO, ALT=TGP). ~17 exames na requisição = ~17 itens no orçamento.`;
         }
       } catch (e) {
         console.error('⚠️ Erro ao buscar procedimentos/exames:', e.message);
