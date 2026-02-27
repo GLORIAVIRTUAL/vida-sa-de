@@ -63,7 +63,13 @@ export default function FormularioOS({
   // CORREÇÃO: Priorizar SEMPRE o medico_id do agendamento
   const [medicoSelecionadoId, setMedicoSelecionadoId] = useState(() => {
     // Na inicialização, priorizar o médico do agendamento
-    return agendamento?.medico_id || medico?.id || null;
+    // Verifica primeiro o medico_id principal
+    if (agendamento?.medico_id) return agendamento.medico_id;
+    // Se for procedimento/exame e tiver itens de serviço com médico
+    if (agendamento?.itens_servico?.length > 0 && agendamento.itens_servico[0].medico_id) {
+      return agendamento.itens_servico[0].medico_id;
+    }
+    return medico?.id || null;
   });
 
   // Se agendamento mudar, atualizar o medico selecionado
@@ -71,10 +77,12 @@ export default function FormularioOS({
     // SEMPRE usar o médico do agendamento se existir
     if (agendamento?.medico_id) {
       setMedicoSelecionadoId(agendamento.medico_id);
+    } else if (agendamento?.itens_servico?.length > 0 && agendamento.itens_servico[0].medico_id) {
+      setMedicoSelecionadoId(agendamento.itens_servico[0].medico_id);
     } else if (medico?.id) {
       setMedicoSelecionadoId(medico.id);
     }
-  }, [agendamento?.medico_id, medico?.id]);
+  }, [agendamento?.medico_id, agendamento?.itens_servico, medico?.id]);
 
   const [dados, setDados] = useState({
     valor_total: 0,
