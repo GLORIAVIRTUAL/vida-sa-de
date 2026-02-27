@@ -613,21 +613,13 @@ export default function FormularioOS({
                   <p className="font-semibold">{paciente?.cpf || 'Não informado'}</p>
                 </div>
                 <div>
-                  <Label className="text-xs text-gray-500 mb-1 block">Profissional</Label>
-                  <Select 
-                    value={medicoSelecionadoId || "nenhum"} 
-                    onValueChange={(v) => setMedicoSelecionadoId(v === "nenhum" ? null : v)}
-                  >
-                    <SelectTrigger className="h-8 text-sm font-semibold border-gray-300">
-                      <SelectValue placeholder="Selecione..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="nenhum">Nenhum</SelectItem>
-                      {medicos.map(m => (
-                        <SelectItem key={m.id} value={m.id}>{m.nome}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label className="text-xs text-gray-500">Profissional</Label>
+                  <p className="font-semibold">
+                    {medicoSelecionadoId 
+                      ? medicos.find(m => m.id === medicoSelecionadoId)?.nome || 'Dr. Ramão de Souza'
+                      : 'Sem profissional'
+                    }
+                  </p>
                 </div>
                 <div>
                   <Label className="text-xs text-gray-500">Convênio</Label>
