@@ -62,6 +62,10 @@ Deno.serve(async (req) => {
 
     ${infoDisponibilidade || ''}
 
+    ${infoCancelamento || ''}
+
+    ${infoResultadoExame || ''}
+
     ${infoProcedimentosExames || ''}
 
     ⚠️ REGRAS DE CONVERSAÇÃO NATURAL - MUITO IMPORTANTE:
