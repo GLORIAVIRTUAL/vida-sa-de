@@ -59,7 +59,7 @@ Deno.serve(async (req) => {
                     detalhes.push({
                         numero_os: os.numero_os || os.id,
                         medico_anterior: os.medico_id,
-                        medico_corrigido: agendamento.medico_id,
+                        medico_corrigido: medicoCorretoId,
                         paciente: os.paciente_nome
                     });
                 }
