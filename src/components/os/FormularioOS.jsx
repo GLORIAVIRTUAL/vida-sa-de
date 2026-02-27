@@ -616,7 +616,7 @@ export default function FormularioOS({
                   <Label className="text-xs text-gray-500">Profissional</Label>
                   <p className="font-semibold">
                     {medicoSelecionadoId 
-                      ? medicos.find(m => m.id === medicoSelecionadoId)?.nome || 'Dr. Ramão de Souza'
+                      ? medicos.find(m => m.id === medicoSelecionadoId)?.nome || 'Profissional não encontrado'
                       : 'Sem profissional'
                     }
                   </p>
