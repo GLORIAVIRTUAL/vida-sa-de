@@ -42,34 +42,66 @@ Deno.serve(async (req) => {
                 userContent.push({ type: 'image_url', image_url: { url: urlFinal } });
                 console.log('🖼️ Imagem incluída');
             } else if (mediaType === 'document') {
-                // PDF: Extrair texto via AMBOS os métodos em paralelo para velocidade
+                // PDF: Extrair texto via InvokeLLM OU enviar como file_url diretamente para o OpenAI Vision
                 let pdfTextoExtraido = null;
-                console.log('📄 Extraindo texto do PDF...');
+                console.log('📄 Tentando ler PDF com InvokeLLM...');
                 
-                // Executar InvokeLLM (converte PDF em imagens e lê com precisão - funciona bem para PDFs escaneados)
-                const llmResult = await Promise.race([
-                    base44.asServiceRole.integrations.Core.InvokeLLM({
-                        prompt: `Você é um especialista em transcrição médica. Extraia TODO o conteúdo legível deste arquivo PDF (pode ser uma imagem escaneada). Liste CADA exame, procedimento ou medicamento solicitado, um por linha. Seja extremamente fiel ao documento original. Retorne APENAS o texto extraído. Se não houver exames ou procedimentos legíveis, retorne "NENHUM CONTEÚDO MÉDICO ENCONTRADO".`,
-                        file_urls: [urlFinal]
-                    }),
-                    new Promise((_, r) => setTimeout(() => r(new Error('Timeout')), 35000))
-                ]).catch(e => { console.warn('⚠️ Erro InvokeLLM PDF:', e.message); return null; });
-                
-                if (typeof llmResult === 'string' && llmResult.trim().length > 5) {
-                    const textoExtraido = llmResult.trim();
-                    if (!textoExtraido.includes('NENHUM CONTEÚDO MÉDICO ENCONTRADO')) {
-                        pdfTextoExtraido = textoExtraido;
-                        console.log('✅ InvokeLLM PDF OK, length:', pdfTextoExtraido.length);
-                    } else {
-                        console.log('⚠️ InvokeLLM indicou nenhum conteúdo médico no PDF.');
+                // Tentar extrair via InvokeLLM (converte PDF para imagens internamente e lê com precisão)
+                try {
+                    const llmResult = await Promise.race([
+                        base44.asServiceRole.integrations.Core.InvokeLLM({
+                            prompt: `Extraia TODO o conteúdo legível deste PDF de requisição médica. Liste CADA exame/procedimento solicitado, um por linha. Seja extremamente fiel ao documento. Retorne APENAS o texto extraído. Se não houver conteúdo legível, retorne "VAZIO".`,
+                            file_urls: [urlFinal]
+                        }),
+                        new Promise((_, r) => setTimeout(() => r(new Error('Timeout')), 35000))
+                    ]);
+                    
+                    if (typeof llmResult === 'string' && llmResult.trim().length > 5 && !llmResult.includes('VAZIO')) {
+                        pdfTextoExtraido = llmResult.trim();
+                        console.log('✅ InvokeLLM extraiu PDF OK, length:', pdfTextoExtraido.length);
                     }
+                } catch (e) {
+                    console.warn('⚠️ InvokeLLM PDF falhou:', e.message);
                 }
                 
                 if (pdfTextoExtraido) {
+                    // Texto extraído com sucesso
                     userContent[0].text += `\n\n📄 CONTEÚDO DO PDF ENVIADO PELO CLIENTE:\n━━━━━━━━━━━━━━━━━━━━\n${pdfTextoExtraido}\n━━━━━━━━━━━━━━━━━━━━\n\n🚨 Use TODOS os itens acima para montar o orçamento. NÃO invente nem omita exames.`;
                 } else {
-                    console.warn('❌ PDF: nenhum método extraiu texto');
-                    userContent[0].text += `\n\n⚠️ O cliente enviou um PDF mas não foi possível extrair o conteúdo. Peça para enviar uma FOTO/IMAGEM da requisição.`;
+                    // FALLBACK: Converte PDF para imagens PNG e envia como image_url para o OpenAI
+                    console.log('🔄 Convertendo PDF em imagens para OpenAI Vision...');
+                    try {
+                        // Baixar PDF
+                        const pdfResp = await fetch(urlFinal);
+                        if (!pdfResp.ok) throw new Error('Falha ao baixar PDF');
+                        
+                        const pdfBytes = await pdfResp.arrayBuffer();
+                        const pdfBlob = new Blob([pdfBytes], { type: 'application/pdf' });
+                        const pdfFile = new File([pdfBlob], 'requisicao.pdf', { type: 'application/pdf' });
+                        
+                        // Usar parseMidiaBuffer para converter PDF → Imagens PNG
+                        const parsedResult = await base44.asServiceRole.functions.invoke('parseMidiaBuffer', {
+                            file: pdfFile,
+                            tipoMidia: 'document'
+                        });
+                        
+                        if (parsedResult?.data?.imagens && parsedResult.data.imagens.length > 0) {
+                            console.log(`✅ PDF convertido em ${parsedResult.data.imagens.length} imagens PNG`);
+                            
+                            // Adicionar TODAS as imagens do PDF ao userContent para o OpenAI ler
+                            for (const imgUrl of parsedResult.data.imagens) {
+                                userContent.push({ type: 'image_url', image_url: { url: imgUrl } });
+                            }
+                            
+                            userContent[0].text = `📄 O cliente enviou um PDF de requisição médica. Analise as imagens abaixo (páginas do PDF convertidas) e extraia TODOS os exames solicitados. Monte o orçamento com base na lista de procedimentos/exames disponíveis.\n\n${userContent[0].text}`;
+                        } else {
+                            console.warn('❌ Falha ao converter PDF em imagens');
+                            userContent[0].text += `\n\n⚠️ Não foi possível processar o PDF. Peça ao cliente para enviar uma FOTO da requisição.`;
+                        }
+                    } catch (convError) {
+                        console.error('❌ Erro ao converter PDF:', convError.message);
+                        userContent[0].text += `\n\n⚠️ Não foi possível processar o PDF. Peça ao cliente para enviar uma FOTO da requisição.`;
+                    }
                 }
             }
         }
