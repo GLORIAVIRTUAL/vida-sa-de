@@ -2513,11 +2513,11 @@ Retorne JSON.`;
     10. 📋 REQUISIÇÃO: Leia CADA exame, procure na lista, liste com nome específico e preço.
     
     🚨🚨 REGRA CRÍTICA - FIDELIDADE À REQUISIÇÃO 🚨🚨
-       - LISTE SOMENTE os exames que ESTÃO na requisição do cliente!
-       - NÃO INVENTE exames extras (ex: NÃO adicione Eletrocardiograma, Tomografia, Ressonância se NÃO foram pedidos!)
-       - Se a requisição tem 17 exames, o orçamento DEVE ter ~17 itens, NÃO 5!
-       - TRANSCREVA mentalmente TODOS os exames da requisição ANTES de montar o orçamento
-       - CONFIRA que cada item do orçamento corresponde a um exame REAL da requisição`;
+       - O texto extraído do PDF está em "CONTEÚDO DO PDF ENVIADO PELO CLIENTE".
+       - LISTE APENAS OS EXAMES ESCRITOS LÁ!
+       - É ESTRITAMENTE PROIBIDO adicionar exames que não estão no texto extraído.
+       - Se a requisição tem 17 exames, o orçamento DEVE ter ~17 itens.
+       - CONFIRA se cada item do orçamento corresponde a um exame REAL da requisição`;
         }
       } catch (e) {
         console.error('⚠️ Erro ao buscar procedimentos/exames:', e.message);
