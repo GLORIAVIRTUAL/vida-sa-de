@@ -559,7 +559,7 @@ export default function Agendamentos() {
                       <Calendar
                       mode="single"
                       selected={diaSelecionado}
-                      onSelect={setDiaSelecionado}
+                      onSelect={handleDiaSelecionado}
                       initialFocus
                       locale={ptBR} />
 
