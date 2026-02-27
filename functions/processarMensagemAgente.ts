@@ -237,7 +237,7 @@ Deno.serve(async (req) => {
           });
           
           // Espera mais longa para detectar race condition entre webhooks concorrentes
-          await new Promise(resolve => setTimeout(resolve, 800));
+          await new Promise(resolve => setTimeout(resolve, 1500));
           
           // Re-verificar se NOSSO lock ainda está ativo (outra instância pode ter sobrescrito)
           const contatoRecheck = await buscarContatoPorTelefone(phoneNumber);
