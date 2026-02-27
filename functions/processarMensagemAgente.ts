@@ -2056,25 +2056,12 @@ REGRAS CRÍTICAS:
 
 Retorne JSON.`;
 
-        const extracao = await Promise.race([
-          base44.asServiceRole.integrations.Core.InvokeLLM({
-            prompt: promptExtracao,
-            add_context_from_internet: false,
-            response_json_schema: {
-              type: "object",
-              properties: {
-                dados_completos: { type: "boolean" },
-                nome_paciente: { type: ["string", "null"] },
-                data_nascimento: { type: ["string", "null"] },
-                medico_nome: { type: ["string", "null"] },
-                medico_id: { type: ["string", "null"] },
-                data_agendamento: { type: ["string", "null"] },
-                horario: { type: ["string", "null"] }
-              }
-            }
-          }),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout LLM Extracao')), 8000))
-        ]);
+        let extracao = { dados_completos: false, nome_paciente: null, data_nascimento: null, medico_nome: null, medico_id: null, data_agendamento: null, horario: null };
+        try {
+          const _extR = await Promise.race([fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{'Authorization':`Bearer ${Deno.env.get('OPENAI_API_KEY')}`,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-4o-mini',messages:[{role:'user',content:promptExtracao+'\n\nRetorne APENAS JSON válido.'}],max_tokens:500,temperature:0,response_format:{type:'json_object'}})}), new Promise((_,r)=>setTimeout(()=>r(new Error('Timeout')),15000))]);
+          if (_extR.ok) { const _ed=await _extR.json(); try { extracao=JSON.parse(_ed.choices?.[0]?.message?.content||'{}'); } catch(e){} }
+          else console.warn('⚠️ OpenAI extração HTTP:', _extR.status);
+        } catch(_ee){ console.warn('⚠️ Erro extração OpenAI:', _ee.message); }
 
         console.log('📊 Extração de dados:', JSON.stringify(extracao));
 
