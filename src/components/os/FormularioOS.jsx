@@ -77,12 +77,12 @@ export default function FormularioOS({
     // SEMPRE usar o médico do agendamento se existir
     if (agendamento?.medico_id) {
       setMedicoSelecionadoId(agendamento.medico_id);
-    } else if (agendamento?.itens_servico?.length > 0 && agendamento.itens_servico[0].medico_id) {
+    } else if (agendamento?.itens_servico && agendamento.itens_servico.length > 0 && agendamento.itens_servico[0].medico_id) {
       setMedicoSelecionadoId(agendamento.itens_servico[0].medico_id);
     } else if (medico?.id) {
       setMedicoSelecionadoId(medico.id);
     }
-  }, [agendamento?.medico_id, agendamento?.itens_servico, medico?.id]);
+  }, [agendamento, medico]);
 
   const [dados, setDados] = useState({
     valor_total: 0,
