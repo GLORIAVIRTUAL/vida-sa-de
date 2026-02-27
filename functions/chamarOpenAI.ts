@@ -53,27 +53,25 @@ Deno.serve(async (req) => {
                 console.log('📄 URL do PDF para extração:', urlFinal);
                 let pdfTextoExtraido = null;
                 
-                try {
-                    console.log('📄 Chamando InvokeLLM com file_urls...');
+                // Tentar até 2 vezes com InvokeLLM
+                for (let tentativa = 1; tentativa <= 2 && !pdfTextoExtraido; tentativa++) {
+                  try {
+                    console.log(`📄 InvokeLLM tentativa ${tentativa}...`);
                     const llmResult = await Promise.race([
                         base44.asServiceRole.integrations.Core.InvokeLLM({
-                            prompt: `Por favor, leia cuidadosamente a imagem/documento anexo e extraia a lista exata e completa de exames médicos solicitados. Liste EXATAMENTE o que está escrito no documento, um por linha, sem inventar absolutamente nada. Se não houver exames legíveis, retorne "VAZIO".`,
+                            prompt: `Leia o documento/imagem anexo e extraia a lista exata de exames médicos. Liste um por linha. Se não houver exames, retorne "VAZIO".`,
                             file_urls: [urlFinal]
                         }),
-                        new Promise((_, r) => setTimeout(() => r(new Error('Timeout InvokeLLM 35s')), 35000))
+                        new Promise((_, r) => setTimeout(() => r(new Error('Timeout InvokeLLM')), 30000))
                     ]);
-                    
-                    console.log('📄 InvokeLLM resultado tipo:', typeof llmResult, '| tamanho:', (llmResult || '').length);
-                    console.log('📄 InvokeLLM resultado (primeiros 300 chars):', String(llmResult).substring(0, 300));
-                    
+                    console.log(`📄 InvokeLLM resultado (tent ${tentativa}):`, String(llmResult).substring(0, 200));
                     if (typeof llmResult === 'string' && llmResult.trim().length > 5 && !llmResult.includes('VAZIO')) {
                         pdfTextoExtraido = llmResult.trim();
-                        console.log('✅ Texto extraído do PDF com precisão:\n', pdfTextoExtraido);
-                    } else {
-                        console.warn('⚠️ InvokeLLM retornou resultado insuficiente:', String(llmResult).substring(0, 100));
+                        console.log('✅ Texto extraído do PDF:\n', pdfTextoExtraido);
                     }
-                } catch (e) {
-                    console.warn('⚠️ Falha ao extrair texto do PDF:', e.message);
+                  } catch (e) {
+                    console.warn(`⚠️ InvokeLLM tentativa ${tentativa} falhou:`, e.message);
+                  }
                 }
                 
                 if (pdfTextoExtraido) {
