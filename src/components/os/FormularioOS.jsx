@@ -60,16 +60,21 @@ export default function FormularioOS({
   onSalvar,
   onCancelar
 }) {
-  const [medicoSelecionadoId, setMedicoSelecionadoId] = useState(agendamento?.medico_id || medico?.id || null);
+  // CORREÇÃO: Priorizar SEMPRE o medico_id do agendamento
+  const [medicoSelecionadoId, setMedicoSelecionadoId] = useState(() => {
+    // Na inicialização, priorizar o médico do agendamento
+    return agendamento?.medico_id || medico?.id || null;
+  });
 
   // Se agendamento mudar, atualizar o medico selecionado
   useEffect(() => {
+    // SEMPRE usar o médico do agendamento se existir
     if (agendamento?.medico_id) {
       setMedicoSelecionadoId(agendamento.medico_id);
     } else if (medico?.id) {
       setMedicoSelecionadoId(medico.id);
     }
-  }, [agendamento, medico]);
+  }, [agendamento?.medico_id, medico?.id]);
 
   const [dados, setDados] = useState({
     valor_total: 0,
