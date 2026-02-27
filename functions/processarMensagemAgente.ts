@@ -1298,41 +1298,27 @@ Deno.serve(async (req) => {
     // Detectar se o histórico já tem uma especialidade mencionada
     const historicoTemEspecialidadeCheck = historicoConversa && /clínico|clinico|cardiolog|dermatolog|ginecolog|nutrici|psicolog|ortoped|urolog|geriatr|gastro|reumato|psiquiatr|fisioterap|oftalmolog|otorrino|pediatr|pneumolog|neurolog|quiroprax|massoterap|optometr|hidro|pilates|odontolog|dentist|endocrinolog|Dr\.|👨‍⚕️/i.test(historicoConversa);
 
-    // Verificar se quer agendar na mensagem ATUAL (reusa variáveis declaradas acima)
     const ehPerguntaPreco = ehPerguntaPrecoEarly;
     const ehPerguntaInformativa = ehPerguntaInformativaEarly;
-    
-    // Verificar se o cliente disse "sim" e a IA tinha perguntado algo
+    const temEspecialidadeOuMedico = especialidadeDetectada || medicoEspecificoDetectado;
     const iaPerguntoSeQuerAgendar = /gostaria de agendar|quer agendar|deseja agendar|posso agendar|agendar.*\?|como posso te ajudar|qual especialidade|para qual especialidade/i.test(ultimaMsgAssistenteFull);
-    const clienteConfirmouAgendar = iaPerguntoSeQuerAgendar && /^(sim|s|ok|quero|pode|claro|bora|vamos|isso|por favor|yes|vou|gostaria|please)$/i.test(messageText.trim().toLowerCase());
-
-    // KEY: quando a IA perguntou "qual especialidade?" e o cliente responde "clinico geral", isso É um pedido de agendamento
+    const msgTrimLower = messageText.trim().toLowerCase();
+    const clienteConfirmouAgendar = iaPerguntoSeQuerAgendar && /^(sim|s|ok|quero|pode|claro|bora|vamos|isso|por favor|yes|vou|gostaria|please)$/.test(msgTrimLower);
     const iaPerguntoComoAjudar = /qual especialidade|para qual especialidade/i.test(ultimaMsgAssistenteFull);
-    const iaPerguntoGenerico = /como posso te ajudar|como posso ajudar/i.test(ultimaMsgAssistenteFull) && !iaPerguntoComoAjudar;
     const clienteRespondeuComEspecialidade = iaPerguntoComoAjudar && especialidadeDetectada && !ehPerguntaInformativa && !ehPerguntaSobreCartao;
-
-    // KEY: quando a IA perguntou "Gostaria de agendar?" e o cliente respondeu "quero", "sim", "por favor" etc.
     const iaPerguntoSeQuerAgendarConsulta = /gostaria de agendar|quer agendar|deseja agendar|posso agendar/i.test(ultimaMsgAssistenteFull);
-
-    // TAMBÉM considerar como pedido de agendamento quando a IA perguntou "Gostaria de agendar?" e o cliente
-    // responde com perguntas sobre vagas/horários (ex: "quando tem vaga?", "tem horário?")
-    const clientePerguntouSobreVagaAposOferta = iaPerguntoSeQuerAgendarConsulta && 
-      /quando\s*(tem|tem\s*vaga|tem\s*hor[áa]rio|posso|d[áa]\s*pra)|tem\s*(vaga|hor[áa]rio)|pr[óo]ximo\s*(hor[áa]rio|dia|vaga)|qual\s*(hor[áa]rio|dia|vaga)/i.test(messageText);
-    
-    const querAgendarMensagem = !clienteRecusandoAgendar && !ehPerguntaPreco && !ehPerguntaInformativa && !ehPerguntaSobreCartao && !respostaCurtaEmContextoCartao && (
-      /agendar|marcar|consulta|atend|hor[áa]rio|dispon[íi]vel|vaga/i.test(messageText) ||
-      clientePerguntouSobreVagaAposOferta
-    );
-
-    const clienteAceitouAgendar = iaPerguntoSeQuerAgendarConsulta && (
-      /^(quero|sim|s|ok|pode|claro|bora|vamos|isso|por favor|yes|vou|gostaria|please|quero\s*sim|sim\s*quero)$/i.test(messageText.trim().toLowerCase()) ||
-      /quando\s*(tem|tem\s*vaga|tem\s*hor[áa]rio|posso|d[áa]\s*pra)|tem\s*(vaga|hor[áa]rio)|pr[óo]ximo\s*(hor[áa]rio|dia|vaga)|qual\s*(hor[áa]rio|dia|vaga)/i.test(messageText)
-    );
-
+    const perguntaVagaOuHorario = /quando\s*(tem|tem\s*vaga|tem\s*hor[áa]rio|posso|d[áa]\s*pra)|tem\s*(vaga|hor[áa]rio)|pr[óo]ximo\s*(hor[áa]rio|dia|vaga)|qual\s*(hor[áa]rio|dia|vaga)/i.test(messageText);
+    const clientePerguntouSobreVagaAposOferta = iaPerguntoSeQuerAgendarConsulta && perguntaVagaOuHorario;
+    // Perguntas sobre se o médico vai atender em certo dia (ex: "segunda que vem doutor altamiro vai atender?")
+    const ehPerguntaDisponibilidadeMedico = temEspecialidadeOuMedico && (
+      /vai\s+atender|atende\b|est[áa]\s+atendendo|quando\s+atende|tem\s+(?:hor[áa]rio|vaga|agenda)/i.test(messageText) ||
+      /(?:segunda|ter[çc]a|quarta|quinta|sexta|s[áa]bado|domingo|hoje|amanh[ãa]|semana\s+que\s+vem|pr[óo]xim[ao]).*(?:atend|consult)/i.test(messageText));
+    const querAgendarMensagem = !clienteRecusandoAgendar && !ehPerguntaPreco && !ehPerguntaSobreCartao && !respostaCurtaEmContextoCartao && (
+      /agendar|marcar|consulta|hor[áa]rio|dispon[íi]vel|vaga/i.test(messageText) || clientePerguntouSobreVagaAposOferta || ehPerguntaDisponibilidadeMedico);
+    const clienteAceitouAgendar = iaPerguntoSeQuerAgendarConsulta && (/^(quero|sim|s|ok|pode|claro|bora|vamos|isso|por favor|yes|vou|gostaria|please|quero\s*sim|sim\s*quero)$/.test(msgTrimLower) || perguntaVagaOuHorario);
     const ultimasMensagensUsuarioObj = historicoMensagensRaw.filter(m => m.role === 'user');
     const ultimaMsgUsuarioFull = ultimasMensagensUsuarioObj.length > 0 ? ultimasMensagensUsuarioObj[ultimasMensagensUsuarioObj.length - 1].content : '';
     const jaEmFluxoAgendamento = !clienteRecusandoAgendar && !agendamentoRecenteConcluido && ultimaMsgUsuarioFull && /agendar|marcar|consulta|vamos agendar|seguir com o agendamento/i.test(ultimaMsgUsuarioFull);
-    // Se está em contexto de Cartão Mais Vida, NÃO entrar em fluxo de agendamento
     const querAgendar = !querCancelar && !agendamentoRecenteConcluido && !ehPerguntaSobreCartao && !respostaCurtaEmContextoCartao && (querAgendarMensagem || jaEmFluxoAgendamento || clienteConfirmouAgendar || clienteRespondeuComEspecialidade || clienteAceitouAgendar);
     
     // Se cliente está em fluxo de VERIFICAÇÃO, NÃO entrar em fluxo de AGENDAMENTO
