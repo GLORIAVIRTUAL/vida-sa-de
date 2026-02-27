@@ -1363,17 +1363,7 @@ Informe ao cliente que:
       }
     }
     
-    // Só buscar disponibilidades se:
-    // 1. Detectou médico específico OU especialidade específica, OU
-    // 2. Já está em fluxo de agendamento com dados parciais no histórico E o cliente está escolhendo horário/data
-    // NUNCA buscar quando o cliente apenas diz "quero agendar" sem especificar especialidade
-    const temEspecialidadeOuMedico = especialidadeDetectada || medicoEspecificoDetectado;
     const clienteEscolhendoHorario = /hoje|\d{1,2}[h:]?\s*(?:horas?)?|\d{1,2}:\d{2}|amanhã|segunda|terça|quarta|quinta|sexta|sábado/i.test(messageText);
-    // Buscar disponibilidades quando:
-    // 1. Quer agendar E tem especialidade/médico detectado
-    // 2. Cliente confirmou que quer agendar ("sim") após ver preço E tem especialidade no histórico
-    // 3. Está em fluxo e escolhendo horário com médico já identificado
-    // 4. NOVO: Pergunta informativa ("ai tem X?") COM especialidade detectada - para verificar se temos profissional
     const deveBuscarDisponibilidades = (querAgendar || (ehPerguntaInformativa && temEspecialidadeOuMedico)) && (temEspecialidadeOuMedico || 
       (clienteConfirmouAgendar && historicoTemEspecialidadeCheck) ||
       (jaEmFluxoAgendamento && temEspecialidadeOuMedico) ||
