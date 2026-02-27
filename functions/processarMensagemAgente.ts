@@ -1712,22 +1712,21 @@ O cliente está ESCOLHENDO/RESPONDENDO. Ele disse: "${messageText}"
         }
 
         if (disponibilidadesEncontradas.length > 0) {
-        infoDisponibilidade = '\n\n📅 DISPONIBILIDADES ENCONTRADAS (próximo horário por médico):\n';
-
-        // Listar TODOS os médicos da especialidade, mostrando apenas o PRÓXIMO horário disponível de cada um
+        infoDisponibilidade = '\n\n📅 DISPONIBILIDADES ENCONTRADAS:\n';
         for (const medico of disponibilidadesEncontradas) {
-          let primeiroDia = null; let primeiroHorario = null;
-          for (const d of medico.disponibilidades) { if (d.horarios && d.horarios.length > 0) { primeiroDia = d; primeiroHorario = d.horarios[0]; break; } }
-          if (!primeiroDia || !primeiroHorario) continue;
-          infoDisponibilidade += `\n👨‍⚕️ ${medico.medico_nome} (${medico.especialidade}) — ${primeiroDia.data_formatada} às ${primeiroHorario}\n`;
-          infoDisponibilidade += `   ID do médico: ${medico.medico_id}\n`;
-        }
-
-          if (disponibilidadesEncontradas.length > 1) {
-            infoDisponibilidade += '\n⚠️ Há múltiplos profissionais disponíveis. MOSTRE TODOS ao cliente e pergunte qual médico e horário ele prefere.';
+          infoDisponibilidade += `\n👨‍⚕️ *${medico.medico_nome}* (${medico.especialidade}) [ID: ${medico.medico_id}]\n`;
+          let diasM = 0;
+          for (const d of medico.disponibilidades) {
+            if (diasM >= 3 || !d.horarios?.length) continue;
+            infoDisponibilidade += `   📅 ${d.data_formatada}: ${d.horarios.slice(0, 4).join(', ')}\n`;
+            diasM++;
           }
-          infoDisponibilidade += '\n⚠️ Para confirmar agendamento, preciso: nome completo e data de nascimento do paciente.';
-          console.log('✅ Disponibilidades encontradas:', disponibilidadesEncontradas.length, 'médicos');
+        }
+          infoDisponibilidade += disponibilidadesEncontradas.length > 1
+            ? '\n⚠️ MOSTRE TODOS os médicos e horários acima ao cliente. Pergunte qual médico, dia e horário prefere.'
+            : '\n⚠️ MOSTRE TODOS os horários acima ao cliente. Pergunte qual dia e horário prefere.';
+          infoDisponibilidade += '\n⚠️ Para confirmar: preciso nome completo e data de nascimento.';
+          console.log('✅ Disponibilidades:', disponibilidadesEncontradas.length, 'médicos');
         } else if (medicosParaBuscar.length > 0 && disponibilidadesEncontradas.length === 0) {
           // Médicos da especialidade existem mas não têm horários nos próximos 15 dias
           // Buscar o PRIMEIRO horário disponível mesmo que seja além dos 15 dias (até 60 dias)
