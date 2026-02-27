@@ -1227,67 +1227,34 @@ Deno.serve(async (req) => {
       todosMedicosParaDeteccao = _raw.filter(m => !/(cart[aã]o\s*mais\s*vida|dr\.?\s*exame\b)/i.test(m.nome || ''));
     } catch (e) { console.warn('⚠️ Timeout médicos:', e.message); }
 
-    // ======= PASSO 1: Buscar ESPECIALIDADE na MENSAGEM do cliente (prioridade máxima) =======
+    // ======= PASSO 1: Buscar ESPECIALIDADE na MENSAGEM do cliente =======
     for (const esp of especialidades) {
-      const espNorm = normalizarTexto(esp);
-      if (msgLower.includes(espNorm)) {
-        especialidadeDetectada = esp;
-        console.log(`🎯 Especialidade detectada NA MENSAGEM: ${esp}`);
-        break;
-      }
+      if (msgLower.includes(normalizarTexto(esp))) { especialidadeDetectada = esp; console.log(`🎯 Especialidade detectada: ${esp}`); break; }
     }
-
-    // ======= PASSO 2: Se NÃO detectou especialidade na mensagem, buscar MÉDICO ESPECÍFICO na mensagem =======
+    // PASSO 2: Se NÃO detectou especialidade, buscar MÉDICO ESPECÍFICO na mensagem
+    // IMPORTANTE: Se já tem especialidade, NÃO setar medicoEspecificoDetectado para mostrar TODOS os médicos
     if (!especialidadeDetectada) {
       for (const medico of todosMedicosParaDeteccao) {
-        const nomeMedicoLower = medico.nome.toLowerCase();
-        const partesNome = nomeMedicoLower.split(' ').filter(p => p.length > 3);
-        
-        for (const parte of partesNome) {
-          if (msgLower.includes(parte)) {
-            medicoEspecificoDetectado = medico;
-            especialidadeDetectada = medico.especialidade;
-            console.log(`🎯 Médico específico detectado NA MENSAGEM: ${medico.nome} (${medico.especialidade})`);
-            break;
-          }
+        const partesNome = medico.nome.toLowerCase().split(' ').filter(p => p.length > 3);
+        if (partesNome.some(p => msgLower.includes(p))) {
+          medicoEspecificoDetectado = medico; especialidadeDetectada = medico.especialidade;
+          console.log(`🎯 Médico específico: ${medico.nome} (${medico.especialidade})`); break;
         }
-        if (medicoEspecificoDetectado) break;
       }
     }
-    
-    // ======= PASSO 3: Se NÃO encontrou nada na mensagem, buscar no HISTÓRICO =======
+    // PASSO 3: Se nada na mensagem, buscar no HISTÓRICO
     if (!especialidadeDetectada && !medicoEspecificoDetectado) {
-      // 3a. Buscar especialidade nas mensagens do CLIENTE no histórico
-      const historicoClienteOnly = (historicoConversa || '').split('\n')
-        .filter(l => l.startsWith('CLIENTE:'))
-        .map(l => l.replace('CLIENTE:', '').trim())
-        .join(' ');
-      const historicoClienteLower = normalizarTexto(historicoClienteOnly);
-      
+      const historicoClienteLower = normalizarTexto((historicoConversa || '').split('\n').filter(l => l.startsWith('CLIENTE:')).map(l => l.replace('CLIENTE:', '')).join(' '));
       for (const esp of especialidades) {
-        const espNorm = normalizarTexto(esp);
-        if (historicoClienteLower.includes(espNorm)) {
-          especialidadeDetectada = esp;
-          console.log(`🎯 Especialidade detectada NO HISTÓRICO DO CLIENTE: ${esp}`);
-          break;
-        }
+        if (historicoClienteLower.includes(normalizarTexto(esp))) { especialidadeDetectada = esp; console.log(`🎯 Esp. histórico: ${esp}`); break; }
       }
-      
-      // 3b. Se não encontrou especialidade, buscar médico específico no histórico
       if (!especialidadeDetectada) {
         for (const medico of todosMedicosParaDeteccao) {
-          const nomeMedicoLower = medico.nome.toLowerCase();
-          const partesNome = nomeMedicoLower.split(' ').filter(p => p.length > 3);
-          
-          for (const parte of partesNome) {
-            if (historicoLower.includes(parte)) {
-              medicoEspecificoDetectado = medico;
-              especialidadeDetectada = medico.especialidade;
-              console.log(`🎯 Médico específico detectado NO HISTÓRICO: ${medico.nome} (${medico.especialidade})`);
-              break;
-            }
+          const partesNome = medico.nome.toLowerCase().split(' ').filter(p => p.length > 3);
+          if (partesNome.some(p => historicoLower.includes(p))) {
+            medicoEspecificoDetectado = medico; especialidadeDetectada = medico.especialidade;
+            console.log(`🎯 Médico histórico: ${medico.nome}`); break;
           }
-          if (medicoEspecificoDetectado) break;
         }
       }
     }
