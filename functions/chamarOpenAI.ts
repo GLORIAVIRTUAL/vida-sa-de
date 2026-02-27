@@ -70,7 +70,20 @@ Deno.serve(async (req) => {
                 }
                 
                 if (pdfTextoExtraido) {
-                    userContent[0].text += `\n\n📄 CONTEÚDO DO PDF ENVIADO PELO CLIENTE (LISTA DE EXAMES):\n━━━━━━━━━━━━━━━━━━━━\n${pdfTextoExtraido}\n━━━━━━━━━━━━━━━━━━━━\n\n🚨 Crie o orçamento com base ESTRITAMENTE nos exames listados acima cruzando com a nossa tabela de preços do menu Exames. NÃO INVENTE EXAMES QUE NÃO ESTÃO NA LISTA.`;
+                    userContent[0].text += `\n\n🚨🚨🚨 ATENÇÃO MÁXIMA - CONTEÚDO EXATO DO PDF ENVIADO PELO CLIENTE 🚨🚨🚨
+━━━━━━━━━━━━━━━━━━━━
+${pdfTextoExtraido}
+━━━━━━━━━━━━━━━━━━━━
+
+🚨 REGRAS ABSOLUTAS E INVIOLÁVEIS PARA ESTE ORÇAMENTO:
+1. O texto acima foi extraído DIRETAMENTE do documento do cliente. Ele contém a LISTA EXATA de exames solicitados.
+2. LISTE NO ORÇAMENTO **APENAS** os exames que aparecem LITERALMENTE no texto acima.
+3. É TERMINANTEMENTE PROIBIDO adicionar exames que NÃO estão no texto acima (ex: se "Insulina" não aparece acima, NÃO inclua Insulina).
+4. É TERMINANTEMENTE PROIBIDO substituir ou "interpretar" exames por outros similares.
+5. Cruze CADA exame do texto acima com a tabela de preços. Se encontrar = inclua com preço. Se NÃO encontrar = coloque em "não realizamos".
+6. CONFIRA item por item: cada linha do orçamento DEVE corresponder a um exame REAL do texto extraído.
+7. Se o texto acima lista 17 exames, o orçamento deve ter EXATAMENTE ~17 itens (não 5, não 25).
+8. NÃO pergunte "Gostaria de agendar a coleta?" - coleta de sangue não precisa de agendamento.`;
                 } else {
                     userContent[0].text += `\n\n⚠️ O cliente enviou um documento PDF, mas não foi possível ler os exames. Peça educadamente que ele envie uma foto nítida da requisição.`;
                 }
