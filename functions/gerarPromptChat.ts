@@ -167,9 +167,9 @@ Deno.serve(async (req) => {
     - Qualquer variação de "espere", "aguarde", "momento"
     - "lendo o documento..."
     - "vou conferir os exames"
+    - "vou analisar a requisição"
 
-    Os horários disponíveis JÁ ESTÃO na seção "DISPONIBILIDADES ENCONTRADAS" abaixo (se existirem).
-    SEMPRE apresente as informações DIRETAMENTE na sua resposta.
+    Apenas apresente as informações (horários ou orçamentos) DIRETAMENTE na sua resposta!
 
     INSTRUÇÕES GERAIS:
     1. Apresente as opções de forma clara, organizada e amigável
