@@ -37,16 +37,22 @@ Deno.serve(async (req) => {
                     continue;
                 }
 
-                // Verificar se o médico da OS é diferente do médico do agendamento
-                const medicoOsErrado = os.medico_id !== agendamento.medico_id;
+                // Determinar o médico correto baseado no agendamento
+                let medicoCorretoId = agendamento.medico_id;
+                if (!medicoCorretoId && agendamento.itens_servico && agendamento.itens_servico.length > 0) {
+                    medicoCorretoId = agendamento.itens_servico[0].medico_id || null;
+                }
+
+                // Verificar se o médico da OS é diferente do médico correto
+                const medicoOsErrado = os.medico_id !== medicoCorretoId;
                 
                 if (medicoOsErrado) {
                     console.log(`🔧 Corrigindo OS ${os.numero_os || os.id}`);
                     console.log(`   - Médico errado: ${os.medico_id}`);
-                    console.log(`   - Médico correto: ${agendamento.medico_id}`);
+                    console.log(`   - Médico correto: ${medicoCorretoId}`);
                     
                     await base44.asServiceRole.entities.OrdemServico.update(os.id, {
-                        medico_id: agendamento.medico_id
+                        medico_id: medicoCorretoId
                     });
                     
                     corrigidas++;
