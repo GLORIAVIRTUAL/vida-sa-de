@@ -162,6 +162,8 @@ Deno.serve(async (req) => {
     - "vou verificar os horários disponíveis"
     - "estou verificando"
     - Qualquer variação de "espere", "aguarde", "momento"
+    - "lendo o documento..."
+    - "vou conferir os exames"
 
     Os horários disponíveis JÁ ESTÃO na seção "DISPONIBILIDADES ENCONTRADAS" abaixo (se existirem).
     SEMPRE apresente as informações DIRETAMENTE na sua resposta.

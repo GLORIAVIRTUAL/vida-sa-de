@@ -46,42 +46,23 @@ Deno.serve(async (req) => {
                 let pdfTextoExtraido = null;
                 console.log('📄 Extraindo texto do PDF...');
                 
-                // Executar AMBOS em paralelo — usar o primeiro que retornar
-                const [extractResult, llmResult] = await Promise.allSettled([
-                    Promise.race([
-                        base44.asServiceRole.integrations.Core.ExtractDataFromUploadedFile({
-                            file_url: urlFinal,
-                            json_schema: {
-                                type: "object",
-                                properties: {
-                                    texto_completo: { type: "string", description: "Todo o texto visível no documento, linha por linha" },
-                                    itens_listados: { type: "array", items: { type: "string" }, description: "Lista de cada item/exame/procedimento mencionado" }
-                                }
-                            }
-                        }),
-                        new Promise((_, r) => setTimeout(() => r(new Error('Timeout')), 25000))
-                    ]),
-                    Promise.race([
-                        base44.asServiceRole.integrations.Core.InvokeLLM({
-                            prompt: `Extraia TODO o conteúdo deste PDF. Liste CADA exame/procedimento um por linha. Retorne APENAS o texto extraído.`,
-                            file_urls: [urlFinal]
-                        }),
-                        new Promise((_, r) => setTimeout(() => r(new Error('Timeout')), 25000))
-                    ])
-                ]);
+                // Executar InvokeLLM (converte PDF em imagens e lê com precisão - funciona bem para PDFs escaneados)
+                const llmResult = await Promise.race([
+                    base44.asServiceRole.integrations.Core.InvokeLLM({
+                        prompt: `Você é um especialista em transcrição médica. Extraia TODO o conteúdo legível deste arquivo PDF (pode ser uma imagem escaneada). Liste CADA exame, procedimento ou medicamento solicitado, um por linha. Seja extremamente fiel ao documento original. Retorne APENAS o texto extraído. Se não houver exames ou procedimentos legíveis, retorne "NENHUM CONTEÚDO MÉDICO ENCONTRADO".`,
+                        file_urls: [urlFinal]
+                    }),
+                    new Promise((_, r) => setTimeout(() => r(new Error('Timeout')), 35000))
+                ]).catch(e => { console.warn('⚠️ Erro InvokeLLM PDF:', e.message); return null; });
                 
-                // Usar ExtractData se funcionou
-                if (extractResult.status === 'fulfilled' && extractResult.value?.status === 'success' && extractResult.value?.output) {
-                    const out = extractResult.value.output;
-                    let partes = [];
-                    if (out.itens_listados?.length > 0) partes.push(`Itens/Exames:\n${out.itens_listados.map((item, i) => `${i+1}. ${item}`).join('\n')}`);
-                    if (out.texto_completo) partes.push(`Texto completo:\n${out.texto_completo}`);
-                    if (partes.length > 0) { pdfTextoExtraido = partes.join('\n'); console.log('✅ ExtractData OK, length:', pdfTextoExtraido.length); }
-                }
-                // Fallback: InvokeLLM
-                if (!pdfTextoExtraido && llmResult.status === 'fulfilled' && typeof llmResult.value === 'string' && llmResult.value.trim().length > 10) {
-                    pdfTextoExtraido = llmResult.value.trim();
-                    console.log('✅ InvokeLLM OK, length:', pdfTextoExtraido.length);
+                if (typeof llmResult === 'string' && llmResult.trim().length > 5) {
+                    const textoExtraido = llmResult.trim();
+                    if (!textoExtraido.includes('NENHUM CONTEÚDO MÉDICO ENCONTRADO')) {
+                        pdfTextoExtraido = textoExtraido;
+                        console.log('✅ InvokeLLM PDF OK, length:', pdfTextoExtraido.length);
+                    } else {
+                        console.log('⚠️ InvokeLLM indicou nenhum conteúdo médico no PDF.');
+                    }
                 }
                 
                 if (pdfTextoExtraido) {
