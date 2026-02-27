@@ -2817,55 +2817,26 @@ INSTRUÇÕES GERAIS:
 - SEMPRE mostre preço Particular E preço Cartão Mais Vida quando ambos existirem.
 `;
 
-    // Preparar parâmetros do LLM
-    const llmParams = {
-      prompt: promptCompleto,
-      add_context_from_internet: false,
-      model: config.modelo_llm || 'gpt-4o-mini'
-    };
-    
-    // Se tiver mídia (imagem/documento/vídeo), enviar para análise visual
-    // NOTA: Áudio NÃO é enviado ao LLM principal - já foi transcrito acima e o texto está em messageText
-    if (mediaUrl && (mediaType === 'image' || mediaType === 'document' || mediaType === 'video')) {
-      // Garantir que a URL é permanente (não temporária do Z-API)
-      let urlParaLLM = mediaUrl;
-      
-      // Se a URL é do Z-API (temporária), fazer upload para storage permanente
-      if (mediaUrl.includes('z-api.io') || mediaUrl.includes('whatsapp') || mediaUrl.includes('mmg.whatsapp')) {
-        console.log('📥 URL temporária detectada - fazendo upload permanente para o LLM...');
-        try {
-          const mediaResponse = await fetch(mediaUrl);
-          if (mediaResponse.ok) {
-            const blob = await mediaResponse.blob();
-            const extMap = { image: 'jpg', document: 'pdf', video: 'mp4' };
-            const ext = extMap[mediaType] || 'bin';
-            const fileName = `requisicao_${Date.now()}.${ext}`;
-            const file = new File([blob], fileName, { type: blob.type });
-            
-            const uploadResult = await base44.asServiceRole.integrations.Core.UploadFile({ file });
-            if (uploadResult?.file_url) {
-              urlParaLLM = uploadResult.file_url;
-              console.log('✅ Mídia salva permanentemente para LLM:', urlParaLLM);
-            }
-          } else {
-            console.warn('⚠️ Não foi possível baixar mídia temporária:', mediaResponse.status);
-          }
-        } catch (uploadErr) {
-          console.warn('⚠️ Erro ao fazer upload permanente:', uploadErr.message);
-        }
-      }
-      
-      llmParams.file_urls = [urlParaLLM];
-      console.log('🖼️ Enviando mídia para análise LLM:', urlParaLLM);
-    }
-
-    // Chamar LLM com timeout
-    let llmResponse;
+    // Chamar OpenAI diretamente via função auxiliar chamarOpenAI
+    const modeloLLM = config.modelo_llm || 'gpt-4o';
+    console.log('🤖 Chamando OpenAI via chamarOpenAI. Modelo:', modeloLLM, '| mediaType:', mediaType);
+    let llmResponse = null;
     try {
-      llmResponse = await base44.asServiceRole.integrations.Core.InvokeLLM(llmParams);
-      console.log('✅ LLM respondeu');
+      const openaiResult = await Promise.race([
+        base44.asServiceRole.functions.invoke('chamarOpenAI', {
+          prompt: promptCompleto,
+          messageText: messageText || '',
+          mediaType: mediaType || 'text',
+          mediaUrl: (mediaType === 'image' || mediaType === 'document') ? mediaUrl : null,
+          modelo: modeloLLM,
+          temperatura: config.temperatura || 0.7
+        }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout chamarOpenAI 70s')), 70000))
+      ]);
+      llmResponse = openaiResult?.data?.resposta || null;
+      console.log('✅ OpenAI respondeu. Tokens:', openaiResult?.data?.tokens?.total_tokens);
     } catch (e) {
-      console.error('❌ Erro LLM:', e.message);
+      console.error('❌ Erro ao chamar OpenAI:', e.message);
       llmResponse = null;
     }
     
