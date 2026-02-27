@@ -3,7 +3,8 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 Deno.serve(async (req) => {
   try {
     const { 
-      promptSistema, 
+      promptSistema,
+      informacoesInstitucionais,
       dataAtualCompleta, 
       dataAtualISO, 
       horaAtual, 
@@ -22,6 +23,13 @@ Deno.serve(async (req) => {
 
     const promptCompleto = `${promptSistema}
 
+    ---
+    📋 INFORMAÇÕES INSTITUCIONAIS DA CLÍNICA:
+    
+    ${informacoesInstitucionais || '(nenhuma informação institucional cadastrada)'}
+    
+    🚨 REGRA: Use SEMPRE as informações acima para responder sobre a clínica, serviços, convênios, cartões, endereço, horário, profissionais, lojas parceiras, etc.
+    
     ---
     ${instrucoesMidia || ''}
 
