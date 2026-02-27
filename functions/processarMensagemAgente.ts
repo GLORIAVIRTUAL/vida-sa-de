@@ -166,32 +166,9 @@ Deno.serve(async (req) => {
         console.warn('⚠️ Não foi possível baixar o áudio');
       }
       
-      // FALLBACK: Se Whisper falhou, tentar via InvokeLLM com file_urls
+      // FALLBACK: Se Whisper falhou, não há fallback disponível via InvokeLLM
       if (!transcricaoSucesso && mediaUrl) {
-        console.log('🔄 Whisper falhou - tentando transcrição via InvokeLLM (fallback)...');
-        try {
-          const llmTranscricao = await Promise.race([
-            base44.asServiceRole.integrations.Core.InvokeLLM({
-              prompt: `Transcreva o conteúdo deste áudio em português brasileiro. Retorne APENAS o texto transcrito, sem explicações adicionais. Se não conseguir entender o áudio, retorne exatamente: "[AUDIO_INCOMPREENSIVEL]"`,
-              file_urls: [mediaUrl],
-              add_context_from_internet: false
-            }),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout LLM Transcricao')), 20000))
-          ]);
-          
-          if (llmTranscricao && typeof llmTranscricao === 'string') {
-            const textoLLM = llmTranscricao.trim();
-            console.log('🎤 LLM transcricao resultado:', textoLLM.substring(0, 200));
-            
-            if (textoLLM.length > 0 && !textoLLM.includes('[AUDIO_INCOMPREENSIVEL]') && textoLLM.length < 5000) {
-              messageText = textoLLM;
-              transcricaoSucesso = true;
-              console.log('✅ LLM transcreveu com sucesso (fallback):', textoLLM.substring(0, 150));
-            }
-          }
-        } catch (llmErr) {
-          console.warn('⚠️ LLM fallback transcricao erro:', llmErr.message);
-        }
+        console.log('⚠️ Whisper falhou - sem fallback disponível. Mantendo texto padrão.');
       }
       
       if (!transcricaoSucesso) {
