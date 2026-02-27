@@ -35,6 +35,9 @@ export default function Agendamentos() {
   const [tabelaPrecos, setTabelaPrecos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [diaSelecionado, setDiaSelecionado] = useState(new Date());
+  const handleDiaSelecionado = (date) => {
+    if (date) setDiaSelecionado(date);
+  };
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isReservaOpen, setIsReservaOpen] = useState(false);
   const [selectedAgendamento, setSelectedAgendamento] = useState(null);
