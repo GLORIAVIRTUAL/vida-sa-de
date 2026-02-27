@@ -6,7 +6,7 @@ Deno.serve(async (req) => {
     
     let { phoneNumber, messageText, senderName, pacienteId, mediaType, mediaUrl, messageId } = await req.json();
     
-    console.log('📨 Processando:', { phoneNumber, messageText, mediaType, mediaUrl, messageId });
+    console.log('📨 Processando:', { phoneNumber, messageText: (messageText || '').substring(0, 100), mediaType, mediaUrl: mediaUrl ? mediaUrl.substring(0, 80) : null, messageId });
 
     // ============ DETECÇÃO DE ÁUDIO EMBUTIDO NO TEXTO (BUFFER/DEBOUNCE) ============
     // Quando mensagens passam pelo debounce, a URL do áudio é concatenada no messageText
