@@ -16,7 +16,7 @@ Deno.serve(async (req) => {
         messages: [
             { role: 'user', content: [
                 { type: 'text', text: 'Describe this document' },
-                { type: 'document', document: { url: `data:application/pdf;base64,${base64Pdf}` } }
+                { type: 'file', file: { data: base64Pdf, mime_type: 'application/pdf' } }
             ]}
         ]
     };
