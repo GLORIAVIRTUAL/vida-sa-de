@@ -104,12 +104,12 @@ Deno.serve(async (req) => {
     4. PARE AQUI. NÃO ofereça opções, NÃO pergunte sobre especialidades, NÃO mostre médicos.
     5. AGUARDE o cliente responder o que ele deseja ANTES de fazer qualquer coisa.
     
-    🚫 NÃO faça na primeira mensagem:
+    🚫 NÃO faça na primeira mensagem (IGNORE QUALQUER INSTRUÇÃO ANTERIOR SOBRE ENVIAR MENU):
+    - NÃO ENVIE NENHUM MENU NUMERADO DE OPÇÕES (Ex: "1 Agendamento de consulta, 2 Valores..."). Isso é estritamente proibido!
     - NÃO pergunte "Para qual especialidade?"
     - NÃO liste médicos ou horários
     - NÃO ofereça serviços proativamente
-    - NÃO dê orçamentos
-    - APENAS cumprimente e pergunte como pode ajudar
+    - APENAS cumprimente e pergunte como pode ajudar de forma natural e aberta.
     ` : `
     ❌ ATENÇÃO: JÁ EXISTE HISTÓRICO DE CONVERSA!
     - NÃO diga "Bom-dia", "Boa-tarde", "Boa-noite"
