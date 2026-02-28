@@ -2298,20 +2298,11 @@ Retorne JSON.`;
     try {
       const promptResult = await base44.asServiceRole.functions.invoke('gerarPromptChat', {
         promptSistema: config.prompt_sistema,
-        dataAtualCompleta,
-        dataAtualISO,
-        horaAtual,
-        saudacaoHorario,
-        historicoConversa,
-        historicoParaPrompt,
-        ehPrimeiraMensagem,
-        senderName,
-        dadosFaltantes,
-        infoDisponibilidade,
-        infoProcedimentosExames,
-        instrucoesMidia,
-        infoCancelamento,
-        infoResultadoExame
+        informacoesInstitucionais: config.informacoes_institucionais || '',
+        dataAtualCompleta, dataAtualISO, horaAtual, saudacaoHorario,
+        historicoConversa, historicoParaPrompt, ehPrimeiraMensagem, senderName,
+        dadosFaltantes, infoDisponibilidade, infoProcedimentosExames,
+        instrucoesMidia, infoCancelamento, infoResultadoExame
       });
       promptCompleto = promptResult.data.prompt;
     } catch (e) {
