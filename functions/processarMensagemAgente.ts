@@ -1309,12 +1309,9 @@ Deno.serve(async (req) => {
     const iaPerguntoSeQuerAgendarConsulta = /gostaria de agendar|quer agendar|deseja agendar|posso agendar/i.test(ultimaMsgAssistenteFull);
     const perguntaVagaOuHorario = /quando\s*(tem|tem\s*vaga|tem\s*hor[áa]rio|posso|d[áa]\s*pra)|tem\s*(vaga|hor[áa]rio)|pr[óo]ximo\s*(hor[áa]rio|dia|vaga)|qual\s*(hor[áa]rio|dia|vaga)/i.test(messageText);
     const clientePerguntouSobreVagaAposOferta = iaPerguntoSeQuerAgendarConsulta && perguntaVagaOuHorario;
-    // Perguntas sobre se o médico vai atender em certo dia (ex: "segunda que vem doutor altamiro vai atender?")
-    const ehPerguntaDisponibilidadeMedico = temEspecialidadeOuMedico && (
-      /vai\s+atender|atende\b|est[áa]\s+atendendo|quando\s+atende|tem\s+(?:hor[áa]rio|vaga|agenda)/i.test(messageText) ||
-      /(?:segunda|ter[çc]a|quarta|quinta|sexta|s[áa]bado|domingo|hoje|amanh[ãa]|semana\s+que\s+vem|pr[óo]xim[ao]).*(?:atend|consult)/i.test(messageText));
-    const querAgendarMensagem = !clienteRecusandoAgendar && !ehPerguntaPreco && !ehPerguntaSobreCartao && !respostaCurtaEmContextoCartao && (
-      /agendar|marcar|consulta|hor[áa]rio|dispon[íi]vel|vaga/i.test(messageText) || clientePerguntouSobreVagaAposOferta || ehPerguntaDisponibilidadeMedico);
+    // Perguntas sobre disponibilidade do médico (ex: "que dia dr altamiro vai estar ai?", "quando o doutor atende?")
+    const ehPerguntaDisponibilidadeMedico = temEspecialidadeOuMedico && (/vai\s+(atender|estar|vir)|atende\b|est[áa]\s+(atendendo|na)|quando\s+(atende|vai|ele|ela|o\s+dr)|que\s+dia|tem\s+(?:hor[áa]rio|vaga|agenda)|pr[óo]xim[ao]\s+(dia|vez|atend)/i.test(messageText) || /(?:segunda|ter[çc]a|quarta|quinta|sexta|s[áa]bado|domingo|hoje|amanh[ãa]|semana\s+que\s+vem|pr[óo]xim[ao]).*(?:atend|consult|vai|estar)/i.test(messageText) || /(?:dr|doutor|doutora).*(?:vai|estar|atend|vem|vir)/i.test(messageText));
+    const querAgendarMensagem = !clienteRecusandoAgendar && !ehPerguntaPreco && !ehPerguntaSobreCartao && !respostaCurtaEmContextoCartao && (/agendar|marcar|consulta|hor[áa]rio|dispon[íi]vel|vaga/i.test(messageText) || clientePerguntouSobreVagaAposOferta || ehPerguntaDisponibilidadeMedico);
     const clienteAceitouAgendar = iaPerguntoSeQuerAgendarConsulta && (/^(quero|sim|s|ok|pode|claro|bora|vamos|isso|por favor|yes|vou|gostaria|please|quero\s*sim|sim\s*quero)$/.test(msgTrimLower) || perguntaVagaOuHorario);
     const ultimasMensagensUsuarioObj = historicoMensagensRaw.filter(m => m.role === 'user');
     const ultimaMsgUsuarioFull = ultimasMensagensUsuarioObj.length > 0 ? ultimasMensagensUsuarioObj[ultimasMensagensUsuarioObj.length - 1].content : '';
