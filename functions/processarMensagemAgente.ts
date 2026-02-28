@@ -1760,15 +1760,14 @@ O cliente está ESCOLHENDO/RESPONDENDO. Ele disse: "${messageText}"
       (/^[A-Za-zÀ-ÿ\s]+$/.test(messageText.trim()) && messageText.trim().split(/\s+/).length >= 2)
     );
     
-    const estaEmFluxoAgendamento = !agendamentoRecenteConcluido && (
-      (querAgendar && historicoTemEspecialidadeLocal) || 
-      (historicoConversa && /horário|data|nascimento|doutor|dr\./i.test(historicoConversa) && historicoTemEspecialidadeLocal && !ehPerguntaPreco) ||
+    // Se cliente APENAS pergunta disponibilidade (ex: "dr X vai atender segunda?"), NÃO entrar em extração de dados
+    const apenasConsultandoDisp = ehPerguntaDisponibilidadeMedico && !clienteFornecendoDadosPessoais && !/agendar|marcar/i.test(messageText);
+    const estaEmFluxoAgendamento = !agendamentoRecenteConcluido && !apenasConsultandoDisp && (
+      (querAgendar && historicoTemEspecialidadeLocal && !ehPerguntaDisponibilidadeMedico) || 
+      (historicoConversa && /horário|data|nascimento|doutor|dr\./i.test(historicoConversa) && historicoTemEspecialidadeLocal && !ehPerguntaPreco && !apenasConsultandoDisp) ||
       clienteFornecendoDadosPessoais
     );
-    
-    // Verificar se o cliente está escolhendo horário (pode ser hoje, 13 horas, etc.)
-    const clienteEscolhendoHorarioAgora = /pode ser|quero|às?\s*\d|hoje|\d{1,2}[h:]|horário/i.test(messageText) && historicoTemEspecialidadeLocal;
-    
+    const clienteEscolhendoHorarioAgora = !apenasConsultandoDisp && /pode ser|quero|às?\s*\d|hoje|\d{1,2}[h:]|horário/i.test(messageText) && historicoTemEspecialidadeLocal;
     if ((estaEmFluxoAgendamento || clienteEscolhendoHorarioAgora) && !clienteRecusandoAgendar) {
           console.log('📝 Verificando dados para agendamento...', { estaEmFluxoAgendamento, clienteEscolhendoHorarioAgora });
       
