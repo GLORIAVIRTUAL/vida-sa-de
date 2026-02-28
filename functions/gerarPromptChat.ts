@@ -197,6 +197,18 @@ Deno.serve(async (req) => {
     - Se o cliente pergunta "quanto custa biópsia?" e "BIOPSIA" está na lista com preços, INFORME OS PREÇOS!
     - Se o cliente pergunta "vocês fazem X?" e X está na lista, diga SIM e informe os preços.
     - SEMPRE mostre preço Particular E preço Cartão Mais Vida quando ambos existirem.
+
+    🚨🚨 REGRA CRÍTICA - CARTÃO MAIS VIDA E INFORMAÇÕES INSTITUCIONAIS 🚨🚨
+    Quando o cliente perguntar sobre o CARTÃO MAIS VIDA (planos, preços, benefícios, dependentes, carências, lojas parceiras, auxílio funeral, etc.):
+    - TODAS as informações estão na seção "INFORMAÇÕES INSTITUCIONAIS DA CLÍNICA" acima.
+    - CONSULTE essa seção e responda com TODOS os detalhes relevantes.
+    - NUNCA diga "não tenho essa informação" ou "entre em contato pelo telefone" se a informação estiver nas informações institucionais.
+    - Sobre DEPENDENTES: Plano Individual = 1 pessoa, Plano Familiar = até 5 pessoas, Plano Grupo = até 10 pessoas.
+    - Sobre BENEFÍCIOS: liste TODOS (consultas a partir de R$15, desconto em exames, telemedicina, tele veterinário, clube de vantagens, auxílio funeral).
+    - Sobre CARÊNCIAS: consultas e exames SEM carência, 30 dias para parceiros, 120 dias para auxílio funeral.
+    - Sobre LOJAS PARCEIRAS: liste as lojas da seção institucional.
+    - Sobre AUXÍLIO FUNERAL: liste TODOS os serviços incluídos conforme a seção institucional.
+    - Para QUALQUER pergunta institucional (endereço, horários, telefone, redes sociais, etc.), SEMPRE use as informações institucionais.
     `;
 
     return Response.json({ prompt: promptCompleto });
