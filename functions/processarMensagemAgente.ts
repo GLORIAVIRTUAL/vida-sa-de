@@ -2340,44 +2340,13 @@ Retorne JSON.`;
       }
     }
 
-    // Instruções especiais para mídia
     let instrucoesMidia = '';
     if (mediaType === 'image' || mediaType === 'document') {
-      const tipoMidia = mediaType === 'image' ? '📷 IMAGEM' : '📄 DOCUMENTO (PDF)';
-      instrucoesMidia = `\n\n${tipoMidia} RECEBIDA:
-
-    🚨🚨🚨 REGRAS ABSOLUTAS PARA ANÁLISE DE REQUISIÇÃO MÉDICA 🚨🚨🚨
-    
-    1. LEIA a requisição LINHA POR LINHA - identifique CADA exame individualmente
-    2. LISTE APENAS os exames que ESTÃO na requisição - NÃO invente exames extras!
-    3. Se o texto da requisição não foi extraído com sucesso, AVISA O CLIENTE que não deu pra ler. NUNCA CHUTE/INVENTE NENHUM EXAME.
-    4. Se a requisição tem 17 exames, o orçamento deve ter ~17 itens, NÃO 5!
-    5. NÃO agrupe exames em categorias genéricas como "Exame Laboratorial"
-    6. Use o nome ESPECÍFICO de cada exame com seu preço INDIVIDUAL da lista acima
-    7. "AST e ALT" = 2 exames separados (TGO e TGP)
-    8. "Colesterol total e frações" pode incluir: Colesterol Total, HDL, LDL, VLDL
-    9. Calcule o VALOR TOTAL correto somando TODOS os itens
-    10. Mostre preço Particular E Cartão Mais Vida quando disponíveis
-    11. NÃO peça nome, CPF ou dados pessoais para orçamento!
-    12. Se for resultado/laudo: descreva as informações relevantes`;
+      instrucoesMidia = `\n\n${mediaType === 'image' ? '📷 IMAGEM' : '📄 DOCUMENTO'} RECEBIDA:\n1.LEIA requisição LINHA POR LINHA\n2.LISTE APENAS exames da requisição-NÃO invente!\n3.Se não extraiu texto,peça foto melhor\n4.~17 exames=~17 itens\n5.NÃO agrupe em "Exame Laboratorial"\n6.Nome ESPECÍFICO+preço INDIVIDUAL\n7.AST/ALT=TGO/TGP separados\n8.Colesterol total e frações=Total,HDL,LDL,VLDL\n9.Calcule VALOR TOTAL\n10.Mostre Particular E Cartão Mais Vida\n11.NÃO peça dados pessoais p/ orçamento\n12.Resultado/laudo: descreva info`;
     } else if (mediaType === 'audio') {
-      instrucoesMidia = `\n\n🎤 MÍDIA RECEBIDA: O cliente enviou um ÁUDIO (arquivo de voz do WhatsApp).
-
-    🚨 REGRAS CRÍTICAS PARA ÁUDIO:
-    1. O arquivo de áudio está anexado a esta mensagem. OUÇA/TRANSCREVA o conteúdo do áudio.
-    2. RESPONDA ao que o cliente DISSE no áudio, não ao texto "[Áudio recebido]".
-    3. O texto da mensagem pode ser apenas "[Áudio recebido]" - isso NÃO é o que o cliente disse. O conteúdo real está no ARQUIVO DE ÁUDIO anexado.
-    4. Se você conseguir entender o áudio, responda DIRETAMENTE ao pedido do cliente como se ele tivesse digitado.
-    5. Se NÃO conseguir ouvir/transcrever o áudio, diga: "Desculpe, não consegui entender o áudio. Poderia digitar sua mensagem, por favor? 😊"
-    6. NUNCA ignore o áudio e responda algo genérico ou sem relação.
-    7. NUNCA peça nome/data de nascimento se o cliente não pediu agendamento no áudio.
-    
-    ⚠️ IMPORTANTE: Trate o conteúdo do áudio como se fosse uma mensagem de texto normal do cliente.`;
+      instrucoesMidia = `\n\n🎤 ÁUDIO: OUÇA e RESPONDA ao conteúdo. NÃO responda "[Áudio recebido]". Se não entender: "Poderia digitar sua mensagem?" Trate como texto normal.`;
     } else if (mediaType === 'video') {
-      instrucoesMidia = `\n\n🎥 MÍDIA RECEBIDA: O cliente enviou um VÍDEO.
-
-    Analise o conteúdo do vídeo se relevante para o atendimento.
-    Confirme o recebimento e pergunte como pode ajudar.`;
+      instrucoesMidia = `\n\n🎥 VÍDEO: Analise e confirme recebimento.`;
     }
     
     // Preparar histórico para o prompt - formato estruturado para o LLM entender melhor o contexto
