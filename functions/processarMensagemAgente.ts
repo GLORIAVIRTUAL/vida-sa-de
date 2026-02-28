@@ -1346,7 +1346,7 @@ O cliente está ESCOLHENDO/RESPONDENDO. Ele disse: "${messageText}"
             let todosMedicos = [];
             try {
               const _rawM = await Promise.race([base44.asServiceRole.entities.Medico.filter({ status: 'Ativo' }), new Promise((_, r) => setTimeout(() => r(new Error('Timeout')), 3000))]);
-              todosMedicos = _rawM.filter(m => !/(cart[aã]o\s*mais\s*vida|dr\.?\s*exame\b)/i.test(m.nome || ''));
+              todosMedicos = _rawM.filter(m => !/(cart[aã]o\s*mais\s*vida|dr\.?\s*exame\b|exame\s*laborat|eletrocardio)/i.test(m.nome || ''));
             } catch (e) { todosMedicos = []; }
         
           if (especialidadeDetectada) {
