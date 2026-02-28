@@ -1299,12 +1299,9 @@ Informe ao cliente que:
       // Verificar se o cliente está ESCOLHENDO um horário/médico específico
       // Neste caso, NÃO precisamos buscar novamente - o fluxo de extração cuidará disso
       // Padrões: "dia 12: 13:15", "sexta dia 13: 8:30", "13:15", "dia 12", "segunda", "Dr. Altamiro", "quero", "sim"
-      const clienteEstaEscolhendoHorario = !apenasConsultandoDisp && (
-        /dia\s*\d{1,2}/i.test(messageText) ||
-        /\d{1,2}[:/h]\d{2}/i.test(messageText) ||
-        /\d{1,2}\/\d{1,2}/i.test(messageText) ||
-        /segunda|terça|terca|quarta|quinta|sexta|sábado|sabado/i.test(messageText) ||
-        /dr\.?\s*\w+/i.test(messageText) ||
+      const clienteEstaEscolhendoHorario = !(ehPerguntaDisponibilidadeMedico && !/agendar|marcar/i.test(messageText)) && (
+        /dia\s*\d{1,2}/i.test(messageText) || /\d{1,2}[:/h]\d{2}/i.test(messageText) || /\d{1,2}\/\d{1,2}/i.test(messageText) ||
+        /segunda|terça|terca|quarta|quinta|sexta|sábado|sabado/i.test(messageText) || /dr\.?\s*\w+/i.test(messageText) ||
         /^(sim|quero|ok|pode|claro|esse|essa|este|esta|o primeiro|a primeira|o segundo|a segunda)\s*/i.test(messageText.trim())
       ) && /Dr\.|👨‍⚕️|\d{2}:\d{2}/i.test(ultimaMsgAssistenteFull);
       
