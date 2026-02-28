@@ -1148,7 +1148,7 @@ Deno.serve(async (req) => {
     let todosMedicosParaDeteccao = [];
     try {
       const _raw = await Promise.race([base44.asServiceRole.entities.Medico.filter({ status: 'Ativo' }), new Promise((_, r) => setTimeout(() => r(new Error('Timeout')), 3000))]);
-      todosMedicosParaDeteccao = _raw.filter(m => !/(cart[aã]o\s*mais\s*vida|dr\.?\s*exame\b)/i.test(m.nome || ''));
+      todosMedicosParaDeteccao = _raw.filter(m => !/(cart[aã]o\s*mais\s*vida|dr\.?\s*exame\b|exame\s*laborat|eletrocardio)/i.test(m.nome || ''));
     } catch (e) { console.warn('⚠️ Timeout médicos:', e.message); }
 
     // ======= PASSO 1: Buscar ESPECIALIDADE na MENSAGEM do cliente =======
