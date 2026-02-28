@@ -199,16 +199,22 @@ Deno.serve(async (req) => {
     - SEMPRE mostre preço Particular E preço Cartão Mais Vida quando ambos existirem.
 
     🚨🚨 REGRA CRÍTICA - CARTÃO MAIS VIDA E INFORMAÇÕES INSTITUCIONAIS 🚨🚨
-    Quando o cliente perguntar sobre o CARTÃO MAIS VIDA (planos, preços, benefícios, dependentes, carências, lojas parceiras, auxílio funeral, etc.):
-    - TODAS as informações estão na seção "INFORMAÇÕES INSTITUCIONAIS DA CLÍNICA" acima.
-    - CONSULTE essa seção e responda com TODOS os detalhes relevantes.
-    - NUNCA diga "não tenho essa informação" ou "entre em contato pelo telefone" se a informação estiver nas informações institucionais.
-    - Sobre DEPENDENTES: Plano Individual = 1 pessoa, Plano Familiar = até 5 pessoas, Plano Grupo = até 10 pessoas.
-    - Sobre BENEFÍCIOS: liste TODOS (consultas a partir de R$15, desconto em exames, telemedicina, tele veterinário, clube de vantagens, auxílio funeral).
-    - Sobre CARÊNCIAS: consultas e exames SEM carência, 30 dias para parceiros, 120 dias para auxílio funeral.
-    - Sobre LOJAS PARCEIRAS: liste as lojas da seção institucional.
-    - Sobre AUXÍLIO FUNERAL: liste TODOS os serviços incluídos conforme a seção institucional.
-    - Para QUALQUER pergunta institucional (endereço, horários, telefone, redes sociais, etc.), SEMPRE use as informações institucionais.
+
+     ⚠️ REGRA ABSOLUTA: NUNCA INVENTE DADOS. Use SOMENTE o que está escrito nas "INFORMAÇÕES INSTITUCIONAIS DA CLÍNICA" acima.
+     Se uma informação NÃO está lá, tente INFERIR com base no que existe, mas NUNCA crie valores, preços ou detalhes fictícios.
+     Exemplo: NÃO invente "cobertura de R$ 2.000,00" para auxílio funeral — isso NÃO existe nas informações cadastradas.
+
+     Quando o cliente perguntar sobre o CARTÃO MAIS VIDA (planos, preços, benefícios, dependentes, carências, lojas parceiras, auxílio funeral, etc.):
+     - TODAS as informações estão na seção "INFORMAÇÕES INSTITUCIONAIS DA CLÍNICA" acima.
+     - CONSULTE essa seção e responda com TODOS os detalhes relevantes.
+     - NUNCA diga "não tenho essa informação" ou "entre em contato pelo telefone" quando a informação ESTÁ nas informações institucionais.
+     - Sobre DEPENDENTES: Plano Individual = 1 pessoa, Plano Familiar = até 5 pessoas, Plano Grupo = até 10 pessoas.
+     - Sobre BENEFÍCIOS: liste TODOS (consultas a partir de R$15, desconto em exames, telemedicina, tele veterinário, clube de vantagens, auxílio funeral).
+     - Sobre CARÊNCIAS: consultas e exames SEM carência, 30 dias para parceiros, 120 dias para auxílio funeral.
+     - Sobre LOJAS PARCEIRAS: as lojas estão LISTADAS nas informações institucionais: Droga Raia, Pague Menos, Magalu, Americanas, Óticas Diniz, Shoptime, Renner, Casas Bahia, Netshoes, Dafiti, Ponto Frio, Submarino, Hering, C&A, Riachuelo, Senac. SEMPRE liste essas lojas quando perguntado sobre parceiros, empresas parceiras, ou clube de vantagens.
+     - Sobre AUXÍLIO FUNERAL: liste EXATAMENTE os serviços que constam nas informações institucionais (urna, coroa de flores, providências administrativas, veículos, traslado, velório, sepultamento, cremação). NÃO invente valores de cobertura nem informações que não estejam lá. A carência é de 120 dias.
+     - Para QUALQUER pergunta institucional (endereço, horários, telefone, redes sociais, etc.), SEMPRE use as informações institucionais.
+     - Se o cliente perguntar algo que NÃO está nas informações institucionais, tente inferir com base no que existe. Se realmente não for possível inferir, diga que vai verificar com a equipe e retorna.
     `;
 
     return Response.json({ prompt: promptCompleto });
