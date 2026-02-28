@@ -388,18 +388,11 @@ Deno.serve(async (req) => {
     
     console.log('✅ Config encontrada:', config.nome, '| Modelo LLM:', config.modelo_llm);
     
-    // Verificar se é uma nova conversa (conversa_finalizada = true no contato)
     let conversaFinalizada = false;
     if (contatosCheck.length > 0 && contatosCheck[0].conversa_finalizada) {
       conversaFinalizada = true;
-      console.log('📝 Conversa anterior foi finalizada - iniciando nova conversa - LIMPANDO HISTÓRICO');
-      // Limpar histórico imediatamente ao detectar conversa finalizada
-      await base44.asServiceRole.entities.Contato.update(contatosCheck[0].id, {
-        conversa_finalizada: false,
-        historico_mensagens: [],
-        ultima_mensagem: null,
-        ultima_resposta: null
-      });
+      console.log('📝 Conversa finalizada - limpando histórico');
+      await base44.asServiceRole.entities.Contato.update(contatosCheck[0].id, { conversa_finalizada: false, historico_mensagens: [], ultima_mensagem: null, ultima_resposta: null });
     }
     
     // Buscar histórico de conversa - CARREGAR MAIS MENSAGENS para contexto rico
