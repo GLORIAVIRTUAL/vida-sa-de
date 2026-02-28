@@ -808,88 +808,19 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Função auxiliar para executar o cancelamento
     const executarCancelamento = async (agendamentoId) => {
-      console.log('🔧 executarCancelamento chamado com ID:', agendamentoId);
       try {
-        // Buscar agendamento diretamente - filter por id pode não funcionar corretamente
-        const todosAgendamentos = await base44.asServiceRole.entities.Agendamento.list();
-        const agendamento = todosAgendamentos.find(ag => ag.id === agendamentoId);
-        
-        console.log('🔍 Agendamento encontrado:', agendamento ? 'SIM' : 'NÃO');
-        
-        if (agendamento) {
-          
-          // Buscar dados do médico para a notificação
-          let medicoNome = 'Médico não identificado';
-          let medicoEspecialidade = '';
-          try {
-            const medicos = await base44.asServiceRole.entities.Medico.filter({ id: agendamento.medico_id });
-            if (medicos.length > 0) {
-              medicoNome = medicos[0].nome;
-              medicoEspecialidade = medicos[0].especialidade;
-            }
-          } catch (e) {}
-          
-          // Formatar data para notificação
-          const dataObj = new Date(agendamento.data_agendamento + 'T12:00:00');
-          const dataFormatada = dataObj.toLocaleDateString('pt-BR', { 
-            weekday: 'long', 
-            day: '2-digit', 
-            month: '2-digit'
-          });
-          
-          // Cancelar o agendamento
-          console.log('📝 Atualizando status para Cancelado...');
-          await base44.asServiceRole.entities.Agendamento.update(agendamentoId, {
-            status: 'Cancelado',
-            observacoes: `Cancelado via WhatsApp pela Glória em ${new Date().toLocaleString('pt-BR')}`
-          });
-          console.log('✅ Status atualizado para Cancelado');
-
-          // Atualizar contato para pipeline "Cancelou"
-          try {
-            const contatos = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
-            if (contatos.length > 0) {
-              await base44.asServiceRole.entities.Contato.update(contatos[0].id, {
-                status: 'Cancelou'
-              });
-              console.log('✅ Pipeline do contato atualizado para Cancelou');
-            }
-          } catch (contatoError) {
-            console.log('⚠️ Erro ao atualizar contato:', contatoError.message);
-          }
-          
-          // Criar notificação de cancelamento para a equipe
-          try {
-            await base44.asServiceRole.entities.Notification.create({
-              type: 'agendamento_cancelado',
-              message: `❌ CANCELAMENTO: ${agendamento.paciente_nome || 'Paciente'} cancelou ${medicoEspecialidade} com ${medicoNome} - ${dataFormatada} às ${agendamento.horario}`,
-              data: {
-                agendamento_id: agendamentoId,
-                paciente_nome: agendamento.paciente_nome,
-                medico_nome: medicoNome,
-                especialidade: medicoEspecialidade,
-                data: agendamento.data_agendamento,
-                horario: agendamento.horario,
-                cancelado_por: 'WhatsApp - Glória'
-              },
-              is_read: false
-            });
-            console.log('🔔 Notificação de cancelamento criada');
-          } catch (notifError) {
-            console.error('⚠️ Erro ao criar notificação:', notifError.message);
-          }
-
-          console.log('✅ Agendamento cancelado com sucesso:', agendamentoId);
-          return true;
-        }
-        console.log('❌ Agendamento não encontrado');
-        return false;
-      } catch (e) {
-        console.error('❌ Erro ao cancelar:', e.message, e.stack);
-        return false;
-      }
+        const todosAg = await base44.asServiceRole.entities.Agendamento.list();
+        const ag = todosAg.find(a => a.id === agendamentoId);
+        if (!ag) { console.log('❌ Agendamento não encontrado'); return false; }
+        let medicoNome='Médico', medicoEsp='';
+        try { const ms=await base44.asServiceRole.entities.Medico.filter({id:ag.medico_id}); if(ms.length>0){medicoNome=ms[0].nome;medicoEsp=ms[0].especialidade;} } catch(e){}
+        const df=new Date(ag.data_agendamento+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit'});
+        await base44.asServiceRole.entities.Agendamento.update(agendamentoId,{status:'Cancelado',observacoes:`Cancelado via WhatsApp em ${new Date().toLocaleString('pt-BR')}`});
+        try{const cs=await base44.asServiceRole.entities.Contato.filter({telefone:phoneNumber});if(cs.length>0)await base44.asServiceRole.entities.Contato.update(cs[0].id,{status:'Cancelou'});}catch(e){}
+        try{await base44.asServiceRole.entities.Notification.create({type:'agendamento_cancelado',message:`❌ ${ag.paciente_nome||'Paciente'} cancelou ${medicoEsp} com ${medicoNome} - ${df} às ${ag.horario}`,data:{agendamento_id:agendamentoId,paciente_nome:ag.paciente_nome,medico_nome:medicoNome,especialidade:medicoEsp,data:ag.data_agendamento,horario:ag.horario,cancelado_por:'WhatsApp - Glória'},is_read:false});}catch(e){}
+        console.log('✅ Cancelado:', agendamentoId); return true;
+      } catch(e) { console.error('❌ Erro cancelar:', e.message); return false; }
     };
 
     // Verificar se o cliente está tentando indicar qual agendamento cancelar
