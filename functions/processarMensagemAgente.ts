@@ -1683,182 +1683,52 @@ O cliente está ESCOLHENDO/RESPONDENDO. Ele disse: "${messageText}"
         infoDisponibilidade = '\n\n📅 DISPONIBILIDADES ENCONTRADAS:\n';
         for (const medico of disponibilidadesEncontradas) {
           infoDisponibilidade += `\n👨‍⚕️ *${medico.medico_nome}* (${medico.especialidade}) [ID: ${medico.medico_id}]\n`;
-          let diasM = 0;
-          for (const d of medico.disponibilidades) {
-            if (diasM >= 3 || !d.horarios?.length) continue;
-            infoDisponibilidade += `   📅 ${d.data_formatada}: ${d.horarios.slice(0, 4).join(', ')}\n`;
-            diasM++;
+          for (const d of medico.disponibilidades.slice(0, 3)) {
+            if (!d.horarios?.length) continue;
+            const manha = d.horarios.find(h => parseInt(h.split(':')[0]) < 12);
+            const tarde = d.horarios.find(h => parseInt(h.split(':')[0]) >= 12);
+            const turnosStr = [manha ? `Manhã: ${manha}` : null, tarde ? `Tarde: ${tarde}` : null].filter(Boolean).join(' | ');
+            infoDisponibilidade += `   📅 ${d.data_formatada}: ${turnosStr}\n`;
           }
         }
           infoDisponibilidade += disponibilidadesEncontradas.length > 1
-            ? '\n⚠️ MOSTRE TODOS os médicos e horários acima ao cliente. Pergunte qual médico, dia e horário prefere.'
-            : '\n⚠️ MOSTRE TODOS os horários acima ao cliente. Pergunte qual dia e horário prefere.';
+            ? '\n⚠️ Apresente os médicos e o PRÓXIMO horário disponível de cada turno. Pergunte qual prefere.'
+            : '\n⚠️ Apresente o PRÓXIMO horário disponível de cada turno. Pergunte qual prefere.';
           infoDisponibilidade += '\n⚠️ Para confirmar: preciso nome completo e data de nascimento.';
           console.log('✅ Disponibilidades:', disponibilidadesEncontradas.length, 'médicos');
-        } else if (medicosParaBuscar.length > 0 && disponibilidadesEncontradas.length === 0) {
-          // Médicos da especialidade existem mas não têm horários nos próximos 15 dias
-          // Buscar o PRIMEIRO horário disponível mesmo que seja além dos 15 dias (até 60 dias)
-          console.log('⚠️ Buscando horários além dos 15 dias iniciais...');
-
-          const diasAfrenteBuscaEstendida = 60;
+        } else if (medicosParaBuscar.length > 0) {
+          console.log('⚠️ Buscando horários além dos 15 dias iniciais (até 60 dias)...');
           const disponibilidadesEstendidas = [];
-
           for (const medico of medicosParaBuscar.slice(0, 5)) {
-            const horariosAtendimento = medico.horarios_atendimento || [];
-            if (horariosAtendimento.length === 0) continue;
-
-            let primeiraDisponibilidade = null;
-
-            for (let i = 0; i < diasAfrenteBuscaEstendida && !primeiraDisponibilidade; i++) {
-              const dataConsulta = new Date();
-              dataConsulta.setHours(0, 0, 0, 0);
-              dataConsulta.setDate(dataConsulta.getDate() + i);
-
-              const dataFormatada = dataConsulta.toISOString().split('T')[0];
-              const diaSemana = dataConsulta.getDay();
-
-              // Verificar recorrência do horário
-              const dataBloqueadaEst = horariosAtendimento.some(h => h.data_especifica === dataFormatada && h.bloqueado === true);
-              if (dataBloqueadaEst) continue; // Pular dia bloqueado
-              
-              const horariosDoDia = horariosAtendimento.filter(h => {
-                if (h.bloqueado) return false; // Ignorar horários bloqueados
-                if (h.data_especifica === dataFormatada) return true;
-                if (h.data_especifica) return false;
-                if (Math.floor(h.dia_semana) !== diaSemana) return false;
-
-                // Verificar recorrência
-                const recorrencia = h.recorrencia || 'Toda Semana';
-                if (recorrencia === 'Toda Semana') return true;
-
-                // Calcular semana do mês
-                const primeiroDiaMes = new Date(dataConsulta.getFullYear(), dataConsulta.getMonth(), 1);
-                const semanaMes = Math.ceil((dataConsulta.getDate() + primeiroDiaMes.getDay()) / 7);
-
-                if (recorrencia === '1ª e 3ª Semana do Mês' && (semanaMes === 1 || semanaMes === 3)) return true;
-                if (recorrencia === '2ª e 4ª Semana do Mês' && (semanaMes === 2 || semanaMes === 4)) return true;
-                if (recorrencia === 'Apenas 1ª Semana do Mês' && semanaMes === 1) return true;
-                if (recorrencia === 'Apenas 2ª Semana do Mês' && semanaMes === 2) return true;
-                if (recorrencia === 'Apenas 3ª Semana do Mês' && semanaMes === 3) return true;
-                if (recorrencia === 'Apenas 4ª Semana do Mês' && semanaMes === 4) return true;
-
-                return false;
-              });
-
-              if (horariosDoDia.length === 0) continue;
-
-              // Buscar agendamentos existentes
-              let agendamentosExistentes = [];
-              try {
-                agendamentosExistentes = await base44.asServiceRole.entities.Agendamento.filter({
-                  medico_id: medico.id,
-                  data_agendamento: dataFormatada,
-                  status: { $ne: 'Cancelado' }
-                });
-              } catch (e) {
-                console.warn('⚠️ Erro ao buscar agendamentos:', e.message);
-              }
-
-              const horariosOcupados = agendamentosExistentes.map(ag => ag.horario);
-              const tempoConsulta = medico.tempo_consulta_minutos || 30;
-
-              for (const periodo of horariosDoDia) {
-                const [inicioH, inicioM] = periodo.horario_inicio.split(':').map(Number);
-                const [fimH, fimM] = periodo.horario_fim.split(':').map(Number);
-
-                const inicioMinutos = inicioH * 60 + inicioM;
-                const fimMinutos = fimH * 60 + fimM;
-
-                for (let minutos = inicioMinutos; minutos < fimMinutos; minutos += tempoConsulta) {
-                  const horas = Math.floor(minutos / 60);
-                  const mins = minutos % 60;
-                  const horarioStr = `${String(horas).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
-
-                  const agora = new Date();
-                  const horarioDateTime = new Date(`${dataFormatada}T${horarioStr}:00`);
-                  const isPast = horarioDateTime < agora;
-
-                  if (!isPast && !horariosOcupados.includes(horarioStr)) {
-                    primeiraDisponibilidade = {
-                      data: dataFormatada,
-                      data_formatada: dataConsulta.toLocaleDateString('pt-BR', { 
-                        weekday: 'long', 
-                        day: '2-digit', 
-                        month: '2-digit'
-                      }),
-                      horario: horarioStr
-                    };
-                    break;
-                  }
-                }
-                if (primeiraDisponibilidade) break;
-              }
+            const horariosAtend = medico.horarios_atendimento || [];
+            if (!horariosAtend.length) continue;
+            let pDisp = null;
+            for (let i = 0; i < 60 && !pDisp; i++) {
+              const dc = new Date(); dc.setHours(0,0,0,0); dc.setDate(dc.getDate()+i);
+              const df = dc.toISOString().split('T')[0]; const ds = dc.getDay();
+              if (horariosAtend.some(h => h.data_especifica === df && h.bloqueado)) continue;
+              const hdd = horariosAtend.filter(h => { if(h.bloqueado) return false; if(h.data_especifica===df) return true; if(h.data_especifica) return false; if(Math.floor(h.dia_semana)!==ds) return false; const r=h.recorrencia||'Toda Semana'; if(r==='Toda Semana') return true; const pm=new Date(dc.getFullYear(),dc.getMonth(),1); const sm=Math.ceil((dc.getDate()+pm.getDay())/7); if(r==='1ª e 3ª Semana do Mês') return sm===1||sm===3; if(r==='2ª e 4ª Semana do Mês') return sm===2||sm===4; if(r.includes('1ª')) return sm===1; if(r.includes('2ª')) return sm===2; if(r.includes('3ª')) return sm===3; if(r.includes('4ª')) return sm===4; return false; });
+              if(!hdd.length) continue;
+              let agEx=[]; try { agEx = await base44.asServiceRole.entities.Agendamento.filter({medico_id:medico.id, data_agendamento:df, status:{$ne:'Cancelado'}}); } catch(e){}
+              const occ = agEx.map(a=>a.horario); const tc = medico.tempo_consulta_minutos||30;
+              for(const p of hdd){ const [ih,im]=p.horario_inicio.split(':').map(Number); const [fh,fm]=p.horario_fim.split(':').map(Number); for(let m=ih*60+im; m<fh*60+fm; m+=tc){ const hs=`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`; if(new Date(`${df}T${hs}:00`)>new Date() && !occ.includes(hs)){ pDisp={data:df,data_formatada:dc.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit'}),horario:hs}; break; } } if(pDisp)break; }
             }
-
-            if (primeiraDisponibilidade) {
-              disponibilidadesEstendidas.push({
-                medico_id: medico.id,
-                medico_nome: medico.nome,
-                especialidade: medico.especialidade,
-                primeira_disponibilidade: primeiraDisponibilidade
-              });
-            }
+            if(pDisp) disponibilidadesEstendidas.push({medico_id:medico.id,medico_nome:medico.nome,especialidade:medico.especialidade,primeira_disponibilidade:pDisp});
           }
-
           if (disponibilidadesEstendidas.length > 0) {
             infoDisponibilidade = '\n\n📅 DISPONIBILIDADES ENCONTRADAS (próximos 60 dias):\n';
-
-            for (const medico of disponibilidadesEstendidas) {
-              infoDisponibilidade += `\n👨‍⚕️ ${medico.medico_nome} (${medico.especialidade}):\n`;
-              infoDisponibilidade += `   ID do médico: ${medico.medico_id}\n`;
-              infoDisponibilidade += `   • Primeiro horário: ${medico.primeira_disponibilidade.data_formatada} às ${medico.primeira_disponibilidade.horario}\n`;
-            }
-
-            infoDisponibilidade += '\n⚠️ Para confirmar agendamento, preciso: nome completo e data de nascimento do paciente.';
-            console.log('✅ Disponibilidades estendidas encontradas:', disponibilidadesEstendidas.length, 'médicos');
+            for (const m of disponibilidadesEstendidas) { infoDisponibilidade += `\n👨‍⚕️ ${m.medico_nome} (${m.especialidade}) [ID: ${m.medico_id}]\n   • Primeiro horário: ${m.primeira_disponibilidade.data_formatada} às ${m.primeira_disponibilidade.horario}\n`; }
+            infoDisponibilidade += '\n⚠️ Para confirmar agendamento, preciso: nome completo e data de nascimento.';
           } else {
-            // Realmente não há horários
-            let infoMedicosEncontrados = '';
-            for (const medico of medicosParaBuscar.slice(0, 3)) {
-              const horariosAtendimento = medico.horarios_atendimento || [];
-              if (horariosAtendimento.length > 0) {
-                const diasSemanaMap = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
-                const diasAtendimento = [...new Set(horariosAtendimento.map(h => diasSemanaMap[Math.floor(h.dia_semana)]))];
-                infoMedicosEncontrados += `\n   - ${medico.nome}: atende ${diasAtendimento.join(', ')}`;
-              }
-            }
-
-            infoDisponibilidade = `\n\n⚠️ AGENDA LOTADA:
-
-        Encontramos profissionais de ${especialidadeDetectada}, mas todos os horários estão ocupados nos próximos 60 dias.
-        ${infoMedicosEncontrados}
-
-        Sugira ao cliente entrar em contato pelo telefone 51 3661-5991 para lista de espera.`;
+            const diasMap=["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
+            let infoM=''; medicosParaBuscar.slice(0,3).forEach(m=>{ const h=m.horarios_atendimento||[]; if(h.length) infoM+=`\n   - ${m.nome}: ${[...new Set(h.map(x=>diasMap[Math.floor(x.dia_semana)]))].join(', ')}`; });
+            infoDisponibilidade = `\n\n⚠️ AGENDA LOTADA: Profissionais de ${especialidadeDetectada} com todos horários ocupados (60 dias).${infoM}\nSugira ligar 51 3661-5991 para lista de espera.`;
           }
         } else if (medicosParaBuscar.length === 0 && especialidadeDetectada) {
-          // Nenhum médico encontrado para a especialidade buscada
-          console.log('❌ Nenhum médico cadastrado para a especialidade:', especialidadeDetectada);
-          infoDisponibilidade = `\n\n❌ ESPECIALIDADE NÃO DISPONÍVEL: "${especialidadeDetectada}"
-
-        Não temos profissionais de ${especialidadeDetectada} cadastrados no momento.
-
-        Informe ao cliente que infelizmente a clínica não oferece essa especialidade atualmente e sugira entrar em contato pelo telefone 51 3661-5991 para mais informações.
-
-        NÃO ofereça outras especialidades - apenas informe que não temos essa especialidade disponível.`;
+          infoDisponibilidade = `\n\n❌ ESPECIALIDADE NÃO DISPONÍVEL: "${especialidadeDetectada}"\nNão temos profissionais de ${especialidadeDetectada} cadastrados. Informe ao cliente e sugira ligar 51 3661-5991.`;
         } else {
-          console.log('⚠️ Nenhuma disponibilidade encontrada para a especialidade detectada');
-          // Listar especialidades disponíveis com horários
-          let especialidadesComHorario = [];
-          for (const m of medicosParaBuscar) {
-            if (m.horarios_atendimento && m.horarios_atendimento.length > 0) {
-              especialidadesComHorario.push(`${m.nome} (${m.especialidade})`);
-            }
-          }
-          if (especialidadesComHorario.length > 0) {
-            infoDisponibilidade = `\n\n⚠️ Não encontrei disponibilidades para a especialidade buscada. Médicos encontrados mas sem horários disponíveis: ${especialidadesComHorario.join(', ')}`;
-          } else {
-            infoDisponibilidade = '\n\n⚠️ Não encontrei disponibilidades no momento para essa especialidade. Informe ao cliente que a clínica não possui horários disponíveis no momento para essa especialidade e sugira entrar em contato pelo telefone 51 3661-5991.';
-          }
+          let espCH=[]; medicosParaBuscar.forEach(m=>{ if(m.horarios_atendimento?.length) espCH.push(`${m.nome} (${m.especialidade})`); });
+          infoDisponibilidade = espCH.length > 0 ? `\n\n⚠️ Médicos sem horários disponíveis: ${espCH.join(', ')}` : '\n\n⚠️ Sem disponibilidades. Sugira ligar 51 3661-5991.';
         }
       } catch (e) {
         console.error('⚠️ Erro ao buscar disponibilidades:', e.message);
