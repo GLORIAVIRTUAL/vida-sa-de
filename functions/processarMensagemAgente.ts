@@ -1375,7 +1375,7 @@ Informe ao cliente que:
       // Verificar se o cliente está ESCOLHENDO um horário/médico específico
       // Neste caso, NÃO precisamos buscar novamente - o fluxo de extração cuidará disso
       // Padrões: "dia 12: 13:15", "sexta dia 13: 8:30", "13:15", "dia 12", "segunda", "Dr. Altamiro", "quero", "sim"
-      const clienteEstaEscolhendoHorario = (
+      const clienteEstaEscolhendoHorario = !apenasConsultandoDisp && (
         /dia\s*\d{1,2}/i.test(messageText) ||
         /\d{1,2}[:/h]\d{2}/i.test(messageText) ||
         /\d{1,2}\/\d{1,2}/i.test(messageText) ||
