@@ -1156,10 +1156,10 @@ Deno.serve(async (req) => {
       if (msgLower.includes(normalizarTexto(esp))) { especialidadeDetectada = esp; console.log(`🎯 Especialidade detectada: ${esp}`); break; }
     }
     // PASSO 2: Se NÃO detectou especialidade, buscar MÉDICO ESPECÍFICO na mensagem
-    // IMPORTANTE: Exigir match mais rigoroso - pelo menos 5 chars e ser parte significativa do nome
+    // Match com normalização de acentos e palavras significativas (>3 chars)
     if (!especialidadeDetectada) {
       for (const medico of todosMedicosParaDeteccao) {
-        const partesNome = medico.nome.toLowerCase().split(' ').filter(p => p.length > 4 && !/^(dr\.?|dra\.?|de|da|do|dos|das)$/i.test(p));
+        const partesNome = normalizarTexto(medico.nome).split(' ').filter(p => p.length > 3 && !/^(dr\.?|dra\.?|de|da|do|dos|das)$/i.test(p));
         if (partesNome.some(p => msgLower.includes(p))) {
           medicoEspecificoDetectado = medico; especialidadeDetectada = medico.especialidade;
           console.log(`🎯 Médico específico: ${medico.nome} (${medico.especialidade})`); break;
