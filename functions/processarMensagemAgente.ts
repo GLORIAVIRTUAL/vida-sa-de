@@ -1295,38 +1295,7 @@ O cliente está ESCOLHENDO/RESPONDENDO. Ele disse: "${messageText}"
           if (especialidadeDetectada) {
           const especialidadeLower = especialidadeDetectada.toLowerCase();
 
-          // Mapeamento de sinônimos para especialidades (TUDO NORMALIZADO - sem acentos)
-          // IMPORTANTE: NÃO usar termos muito genéricos que podem causar confusão
-          const sinonimos = {
-            'clinico geral': ['clinico geral', 'clinica geral', 'medico geral', 'consulta geral', 'check-up', 'checkup'],
-            'nutricao': ['nutricao', 'nutricionista', 'dieta', 'emagrecer', 'alimentacao'],
-            'fisioterapia': ['fisioterapia', 'fisioterapeuta', 'rpg', 'reabilitacao'],
-            'psicologia': ['psicologia', 'psicologo', 'psicologa', 'terapeuta', 'ansiedade', 'depressao'],
-            'geriatria': ['geriatria', 'geriatra', 'idoso', 'idosos', 'terceira idade'],
-            'ortopedia': ['ortopedia', 'ortopedista', 'fratura', 'coluna', 'joelho', 'ombro', 'articulacao', 'traumatologia', 'traumatologista'],
-            'ecocardiograma': ['ecocardiograma', 'eco cardiaco', 'ultrassom cardiaco', 'ecografia', 'eco', 'ultrassom', 'ultrassonografia', 'ecografico', 'eco transtorácica', 'eco transtoracica', 'ecografia abdominal', 'ecografia tireoide', 'ecografia pelvica', 'ecografia obstetrica', 'ecografia mamaria', 'ecografia prostata', 'ecografia cervical', 'ecografia transvaginal', 'ecografia vascular'],
-            'psiquiatria': ['psiquiatria', 'psiquiatra', 'remedio controlado'],
-            'urologia': ['urologia', 'urologista', 'prostata', 'bexiga'],
-            'cardiologia': ['cardiologia', 'cardiologista', 'coracao', 'arritmia', 'hipertensao'],
-            'dermatologia': ['dermatologia', 'dermatologista', 'pele', 'acne', 'manchas'],
-            'ginecologia': ['ginecologia', 'ginecologista', 'preventivo', 'papanicolau', 'utero', 'ovario'],
-            'gastroenterologia': ['gastroenterologia', 'gastro', 'gastroenterologista', 'estomago', 'intestino', 'figado', 'azia', 'refluxo'],
-            'neurologia': ['neurologia', 'neurologista', 'cerebro', 'enxaqueca', 'convulsao', 'neuropediatra'],
-            'oftalmologia': ['oftalmologia', 'oftalmologista', 'olho', 'olhos', 'vista', 'visao', 'catarata', 'glaucoma'],
-            'otorrinolaringologia': ['otorrinolaringologia', 'otorrino', 'otorrinolaringologista', 'ouvido', 'nariz', 'garganta', 'sinusite', 'rinite'],
-            'pediatria': ['pediatria', 'pediatra', 'crianca', 'criancas', 'bebe', 'infantil'],
-            'pneumologia': ['pneumologia', 'pneumologista', 'pulmao', 'asma', 'bronquite'],
-            'reumatologia': ['reumatologia', 'reumatologista', 'reumatismo', 'artrite', 'artrose', 'fibromialgia'],
-            'odontologia': ['odontologia', 'odontologista', 'dentista', 'dente', 'dentes', 'ortodontia', 'implante dentario', 'carie'],
-            'endocrinologia': ['endocrinologia', 'endocrinologista', 'tireoide', 'diabetes', 'hormonio'],
-            'quiropraxia': ['quiropraxia', 'quiropraxista', 'ajuste vertebral'],
-            'massoterapia': ['massoterapia', 'massoterapeuta', 'massagem terapeutica', 'drenagem linfatica'],
-            'optometria': ['optometria', 'optometrista', 'grau ocular', 'lente de contato'],
-            'hidroginastica': ['hidroginastica', 'hidroterapia', 'natacao', 'piscina', 'aula experimental hidro'],
-            'pilates': ['pilates', 'pilates aparelhos', 'pilates solo'],
-            'psicopedagogia': ['psicopedagogia', 'psicopedagoga', 'psicopedagogo', 'aprendizagem', 'dificuldade escolar'],
-            'eletrocardiograma': ['eletrocardiograma', 'ecg']
-          };
+          const sinonimos={'clinico geral':['clinico geral','clinica geral','medico geral','check-up','checkup'],'nutricao':['nutricao','nutricionista','dieta','emagrecer'],'fisioterapia':['fisioterapia','fisioterapeuta','rpg','reabilitacao'],'psicologia':['psicologia','psicologo','psicologa','ansiedade','depressao'],'geriatria':['geriatria','geriatra','idoso','terceira idade'],'ortopedia':['ortopedia','ortopedista','fratura','coluna','joelho','traumatologia','traumatologista'],'ecocardiograma':['ecocardiograma','ecografia','eco','ultrassom','ultrassonografia'],'psiquiatria':['psiquiatria','psiquiatra'],'urologia':['urologia','urologista','prostata'],'cardiologia':['cardiologia','cardiologista','coracao','arritmia','hipertensao'],'dermatologia':['dermatologia','dermatologista','pele','acne'],'ginecologia':['ginecologia','ginecologista','preventivo','papanicolau'],'gastroenterologia':['gastroenterologia','gastro','gastroenterologista','estomago','refluxo'],'neurologia':['neurologia','neurologista','enxaqueca','convulsao','neuropediatra'],'oftalmologia':['oftalmologia','oftalmologista','catarata','glaucoma'],'otorrinolaringologia':['otorrinolaringologia','otorrino','sinusite','rinite'],'pediatria':['pediatria','pediatra','crianca'],'pneumologia':['pneumologia','pneumologista','asma','bronquite'],'reumatologia':['reumatologia','reumatologista','artrite','fibromialgia'],'odontologia':['odontologia','dentista','ortodontia'],'endocrinologia':['endocrinologia','endocrinologista','tireoide','diabetes'],'quiropraxia':['quiropraxia','quiropraxista'],'massoterapia':['massoterapia','massoterapeuta','drenagem linfatica'],'optometria':['optometria','optometrista'],'hidroginastica':['hidroginastica','hidroterapia','natacao','piscina'],'pilates':['pilates'],'psicopedagogia':['psicopedagogia','psicopedagoga'],'eletrocardiograma':['eletrocardiograma','ecg']};
 
           // Encontrar termos relacionados (usando texto normalizado)
           const especialidadeNorm = normalizarTexto(especialidadeLower);
