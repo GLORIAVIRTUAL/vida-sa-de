@@ -525,11 +525,8 @@ Deno.serve(async (req) => {
     const _tPV=historicoConversa&&/verificar|consultar|checar|status|confirma|está confirmado|meu agendamento/i.test(historicoConversa)&&!/agendar|marcar|nova consulta/i.test(historicoConversa)&&!_hMFA;
     const querVerificarAgendamento=!_hMFA&&((/verificar|consultar|checar|status|confirma|está confirmado|meu agendamento/i.test(messageText)&&!/cancelar|desmarcar|agendar|marcar|nova|novo/i.test(messageText))||(_tPV&&/(\d{1,2})\/(\d{1,2})\/(\d{4})|nascimento|me chamo/i.test(messageText)));
 
-    // Verificar se cliente quer cancelar agendamento
-    const querCancelar = /cancelar|desmarcar|n[aã]o (vou|posso|irei)|remarcar|adiar|desistir/i.test(messageText) ||
-                        /cancelar|desmarcar/i.test(historicoConversa || '');
-    let infoCancelamento = '';
-    let agendamentoCancelado = false;
+    const querCancelar=/cancelar|desmarcar|n[aã]o (vou|posso|irei)|remarcar|adiar|desistir/i.test(messageText)||/cancelar|desmarcar/i.test(historicoConversa||'');
+    let infoCancelamento='';let agendamentoCancelado=false;
 
     if(querVerificarAgendamento){
       console.log('🔍 VERIFICAÇÃO agendamento...');
