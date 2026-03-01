@@ -1039,43 +1039,18 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Verificar se cliente quer resultado de exame
-    const historicoJaEnviouResultado = /encontrei o resultado|PDF está sendo enviado|arquivo PDF/i.test(historicoConversa || '');
-    const historicoTemFluxoResultado = /seu nome completo|seu cpf|para localizar.*resultado/i.test(historicoConversa || '');
-    const querResultado = !historicoJaEnviouResultado && (
-      /resultado|laudo|exame pronto|meu exame|buscar exame|retirar exame|pegar exame/i.test(messageText) ||
-      (historicoTemFluxoResultado && (/\d{3}/.test(messageText) || /[A-Za-zÀ-ÿ]{2,}\s+[A-Za-zÀ-ÿ]{2,}/.test(messageText)))
-    );
-    let infoResultadoExame = '';
-    let arquivoParaEnviar = null;
-    if (querResultado) {
+    const _hjER=/encontrei o resultado|PDF está sendo enviado|arquivo PDF/i.test(historicoConversa||'');
+    const _hfR=/seu nome completo|seu cpf|para localizar.*resultado/i.test(historicoConversa||'');
+    const querResultado=!_hjER&&(/resultado|laudo|exame pronto|meu exame|buscar exame|retirar exame|pegar exame/i.test(messageText)||(_hfR&&(/\d{3}/.test(messageText)||/[A-Za-zÀ-ÿ]{2,}\s+[A-Za-zÀ-ÿ]{2,}/.test(messageText))));
+    let infoResultadoExame='';let arquivoParaEnviar=null;
+    if(querResultado){
       console.log('📄 Cliente quer resultado de exame...');
-      const cpfMatch = messageText.match(/(\d{11}|\d{3}\.?\d{3}\.?\d{3}[-.]?\d{2})/);
-      let cpfCliente = cpfMatch ? cpfMatch[0].replace(/\D/g, '') : null;
-      if (!cpfCliente && historicoConversa) {
-        const cpfH = historicoConversa.match(/(\d{11}|\d{3}\.?\d{3}\.?\d{3}[-.]?\d{2})/);
-        if (cpfH) cpfCliente = cpfH[0].replace(/\D/g, '');
-      }
-      console.log('🔍 CPF detectado:', cpfCliente);
-      if (cpfCliente && cpfCliente.length === 11) {
-        try {
-          const resultados = await Promise.race([base44.asServiceRole.entities.ResultadoExame.list(), new Promise((_, r) => setTimeout(() => r(new Error('Timeout')), 4000))]);
-          const filtrados = resultados.filter(r => (r.paciente_cpf || '').replace(/\D/g, '') === cpfCliente);
-          if (filtrados.length > 0) {
-            const rec = filtrados.sort((a, b) => new Date(b.created_date) - new Date(a.created_date))[0];
-            arquivoParaEnviar = { url: rec.arquivo_url, nome: rec.nome_arquivo || 'Resultado_Exame.pdf', paciente: rec.paciente_nome, descricao: rec.descricao, data: rec.data_exame };
-            infoResultadoExame = `\n\n✅ RESULTADO ENCONTRADO! Paciente: ${rec.paciente_nome} | Exame: ${rec.descricao || 'Resultado'} | Arquivo: ${rec.nome_arquivo}\n📎 ARQUIVO PDF SERÁ ENVIADO. Diga ao cliente: "Encontrei seu resultado! Estou enviando o arquivo PDF agora! 📄" NÃO diga para buscar na clínica.`;
-            console.log('✅ Resultado encontrado:', JSON.stringify(arquivoParaEnviar));
-          } else {
-            infoResultadoExame = `\n\n⏳ RESULTADO NÃO DISPONÍVEL para CPF ${cpfCliente}. Informe gentilmente que não está pronto e sugira ligar (51) 3661-5991.`;
-          }
-        } catch (e) {
-          infoResultadoExame = `\n\n⚠️ Erro ao buscar resultado. Peça desculpas e indique o telefone.`;
-        }
-      } else {
-        // Sem CPF - pedir nome E CPF
-        infoResultadoExame = `\n\n📋 CLIENTE QUER RESULTADO DE EXAME\n\n🚨 REGRA OBRIGATÓRIA: Para localizar o resultado você PRECISA do NOME COMPLETO E CPF do paciente.\n\nPEÇA OBRIGATORIAMENTE:\n1. Nome completo do paciente\n2. CPF (apenas números)\n\nResposta EXATA a usar:\n"Para localizar seu resultado, preciso de:\n📝 Seu nome completo\n📝 Seu CPF (apenas números, ex: 04252828481)\n\nCom esses dados localizo na hora! 😊"\n\n🚨 NÃO tente localizar sem CPF. NÃO diga para comparecer à clínica para pegar resultado.`;
-      }
+      const cpfM=messageText.match(/(\d{11}|\d{3}\.?\d{3}\.?\d{3}[-.]?\d{2})/);
+      let cpf=cpfM?cpfM[0].replace(/\D/g,''):null;
+      if(!cpf&&historicoConversa){const h=historicoConversa.match(/(\d{11}|\d{3}\.?\d{3}\.?\d{3}[-.]?\d{2})/);if(h)cpf=h[0].replace(/\D/g,'');}
+      if(cpf&&cpf.length===11){
+        try{const rs=await Promise.race([base44.asServiceRole.entities.ResultadoExame.list(),new Promise((_,r)=>setTimeout(()=>r(new Error('T')),4000))]);const f=rs.filter(r=>(r.paciente_cpf||'').replace(/\D/g,'')===cpf);if(f.length>0){const rc=f.sort((a,b)=>new Date(b.created_date)-new Date(a.created_date))[0];arquivoParaEnviar={url:rc.arquivo_url,nome:rc.nome_arquivo||'Resultado_Exame.pdf',paciente:rc.paciente_nome,descricao:rc.descricao,data:rc.data_exame};infoResultadoExame=`\n\n✅ RESULTADO ENCONTRADO! ${rc.paciente_nome}|${rc.descricao||'Resultado'}|${rc.nome_arquivo}\n📎 PDF SERÁ ENVIADO. Diga "Encontrei! Enviando o PDF agora! 📄"`;}else{infoResultadoExame=`\n\n⏳ RESULTADO NÃO DISPONÍVEL p/ CPF ${cpf}. Informe e sugira ligar (51)3661-5991.`;}}catch(e){infoResultadoExame='\n\n⚠️ Erro ao buscar resultado. Peça desculpas.';}
+      }else{infoResultadoExame='\n\n📋 RESULTADO DE EXAME: Peça nome completo + CPF (apenas números). NÃO tente sem CPF.';}
     }
 
     // Verificar se cliente quer agendar - buscar disponibilidades
