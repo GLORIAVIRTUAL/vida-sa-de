@@ -866,7 +866,6 @@ Deno.serve(async (req) => {
     const ehPerguntaInformativa = ehPerguntaInformativaEarly;
     const temEspecialidadeOuMedico = especialidadeDetectada || medicoEspecificoDetectado;
     const iaPerguntoSeQuerAgendar = /gostaria de agendar|quer agendar|deseja agendar|posso agendar|agendar.*\?|como posso te ajudar|qual especialidade|para qual especialidade|agendar uma consulta/i.test(ultimaMsgAssistenteFull);
-    const msgTrimLower = messageText.trim().toLowerCase();
     const clienteConfirmouAgendar = iaPerguntoSeQuerAgendar && /^(sim|s|ok|quero|pode|claro|bora|vamos|isso|por favor|yes|vou|gostaria|please|quero\s*sim|sim\s*quero|com certeza|agendar|quero\s*agendar|sim\s*por\s*favor)$/i.test(msgTrimLower);
     const iaPerguntoComoAjudar = /qual especialidade|para qual especialidade/i.test(ultimaMsgAssistenteFull);
     const clienteRespondeuComEspecialidade = iaPerguntoComoAjudar && especialidadeDetectada && !ehPerguntaInformativa && !ehPerguntaSobreCartao;
