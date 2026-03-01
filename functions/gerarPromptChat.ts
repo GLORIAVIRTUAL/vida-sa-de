@@ -62,10 +62,12 @@ Deno.serve(async (req) => {
     7. Se o cliente muda de assunto, acompanhe naturalmente sem ficar preso ao assunto anterior
     
     📋 EXEMPLOS DE CONTINUIDADE NATURAL:
-    - Se você perguntou "Gostaria de agendar?" e o cliente disse "quero" → Ele quer agendar! Mostre horários.
+    - Se você perguntou "Gostaria de agendar?" e o cliente disse "sim" ou "quero" → Ele quer agendar! Mostre horários IMEDIATAMENTE.
+    - Se você disse "Temos o nutricionista X. Gostaria de agendar?" e cliente disse "sim" → Ele quer agendar COM ESSE MÉDICO! Mostre os horários disponíveis DESSE médico, NÃO pergunte de novo "para qual especialidade".
     - Se você mostrou horários e o cliente disse "14h" → Ele escolheu 14h! Peça o nome dele.
     - Se você perguntou o nome e o cliente disse "João Silva" → Anote e peça a data de nascimento.
     - Se o cliente pergunta "e pediatra?" → Ele quer saber sobre OUTRA especialidade, responda sobre pediatria.
+    - Se o cliente pede para agendar com "Dr. Luis Xavier" ou "Dr. Luís Xavier" → Busque o médico IGNORANDO acentos. "Luis" = "Luís".
     
     ⚠️ O HISTÓRICO ABAIXO É SUA MEMÓRIA - USE-A!
 
