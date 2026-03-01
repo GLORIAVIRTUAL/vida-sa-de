@@ -1053,40 +1053,8 @@ Deno.serve(async (req) => {
       }else{infoResultadoExame='\n\n📋 RESULTADO DE EXAME: Peça nome completo + CPF (apenas números). NÃO tente sem CPF.';}
     }
 
-    // Verificar se cliente quer agendar - buscar disponibilidades
     let infoDisponibilidade = '';
-
-    // ===== DETECÇÃO DE ESPECIALIDADE E MÉDICO (ANTES de avaliar querAgendar) =====
-    // Detectar especialidade mencionada - lista expandida com sinônimos
-    const especialidades = [
-      'Cardiologia', 'Cardiologista', 'Arritmia', 'Hipertensão', 'Hipertensao',
-      'Clínico Geral', 'Clinico Geral', 'Clínico', 'Clinico', 'Check-up', 'Checkup',
-      'Dermatologia', 'Dermatologista', 'Dermato',
-      'Endocrinologia', 'Endocrinologista', 'Tireoide', 'Tireóide', 'Diabetes',
-      'Ginecologia', 'Ginecologista', 'Gineco', 'Preventivo', 'Papanicolau',
-      'Nutrição', 'Nutricao', 'Nutricionista',
-      'Psicologia', 'Psicólogo', 'Psicologo', 'Psicóloga', 'Psicologa',
-      'Ortopedia', 'Ortopedista', 'Traumatologia', 'Traumatologista',
-      'Urologia', 'Urologista', 'Próstata', 'Prostata',
-      'Geriatria', 'Geriatra',
-      'Gastroenterologia', 'Gastro', 'Gastroenterologista',
-      'Reumatologia', 'Reumatologista', 'Reumatismo', 'Fibromialgia',
-      'Psiquiatria', 'Psiquiatra',
-      'Fisioterapia', 'Fisioterapeuta',
-      'Ecografia', 'Ecocardiograma', 'Ultrassom', 'Ultrassonografia',
-      'Oftalmologia', 'Oftalmologista', 'Oftalmo', 'Catarata', 'Glaucoma',
-      'Otorrinolaringologia', 'Otorrino', 'Otorrinolaringologista', 'Sinusite', 'Rinite',
-      'Pediatria', 'Pediatra',
-      'Pneumologia', 'Pneumologista', 'Asma', 'Bronquite',
-      'Neurologia', 'Neurologista', 'Enxaqueca', 'Convulsão', 'Convulsao', 'Neuropediatria',
-      'Quiropraxia', 'Quiropraxista',
-      'Massoterapia', 'Massoterapeuta', 'Drenagem Linfática', 'Drenagem Linfatica',
-      'Optometria', 'Optometrista',
-      'Hidroginástica', 'Hidroginastica', 'Hidroterapia', 'Pilates', 'Natação', 'Natacao',
-      'Psicopedagoga', 'Psicopedagogia', 'Psicopedagogo',
-      'Odontologia', 'Odontologista', 'Dentista', 'Ortodontia', 'Implantodontia',
-      'Eletrocardiograma', 'ECG'
-    ];
+    const especialidades = ['Cardiologia','Cardiologista','Arritmia','Hipertensão','Hipertensao','Clínico Geral','Clinico Geral','Clínico','Clinico','Check-up','Checkup','Dermatologia','Dermatologista','Dermato','Endocrinologia','Endocrinologista','Tireoide','Tireóide','Diabetes','Ginecologia','Ginecologista','Gineco','Preventivo','Papanicolau','Nutrição','Nutricao','Nutricionista','Psicologia','Psicólogo','Psicologo','Psicóloga','Psicologa','Ortopedia','Ortopedista','Traumatologia','Traumatologista','Urologia','Urologista','Próstata','Prostata','Geriatria','Geriatra','Gastroenterologia','Gastro','Gastroenterologista','Reumatologia','Reumatologista','Reumatismo','Fibromialgia','Psiquiatria','Psiquiatra','Fisioterapia','Fisioterapeuta','Ecografia','Ecocardiograma','Ultrassom','Ultrassonografia','Oftalmologia','Oftalmologista','Oftalmo','Catarata','Glaucoma','Otorrinolaringologia','Otorrino','Otorrinolaringologista','Sinusite','Rinite','Pediatria','Pediatra','Pneumologia','Pneumologista','Asma','Bronquite','Neurologia','Neurologista','Enxaqueca','Convulsão','Convulsao','Neuropediatria','Quiropraxia','Quiropraxista','Massoterapia','Massoterapeuta','Drenagem Linfática','Drenagem Linfatica','Optometria','Optometrista','Hidroginástica','Hidroginastica','Hidroterapia','Pilates','Natação','Natacao','Psicopedagoga','Psicopedagogia','Psicopedagogo','Odontologia','Odontologista','Dentista','Ortodontia','Implantodontia','Eletrocardiograma','ECG'];
 
     const normalizarTexto = (texto) => {
       return (texto || '')
