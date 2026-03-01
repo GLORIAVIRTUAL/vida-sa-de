@@ -304,19 +304,9 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
 
   const buscarContatos = async () => {
     try {
-      // Buscar todos os contatos paginando
-      let todosContatos = [];
-      let skip = 0;
-      const batchSize = 100;
-      while (true) {
-        const batch = await base44.entities.Contato.list('-ultima_interacao', batchSize, skip);
-        if (!batch || batch.length === 0) break;
-        todosContatos = [...todosContatos, ...batch];
-        if (batch.length < batchSize) break;
-        skip += batchSize;
-      }
-      const lista = todosContatos;
-      const comHistorico = lista.filter(c => 
+      // Buscar contatos em uma única chamada (limite alto) para evitar rate limit
+      const lista = await base44.entities.Contato.list('-ultima_interacao', 500);
+      const comHistorico = (lista || []).filter(c => 
         (c.historico_mensagens && c.historico_mensagens.length > 0) || c.ultima_mensagem
       );
       const ordenados = [...comHistorico].sort((a, b) => {
@@ -327,10 +317,8 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
         return 0;
       });
       setContatos(ordenados);
-      // NUNCA seleciona automaticamente - apenas quando usuário clicar
-      // Removida seleção automática para evitar trocar de conversa durante atendimento
     } catch (error) {
-      console.error('Erro:', error);
+      console.error('Erro ao buscar contatos:', error);
     } finally {
       setCarregando(false);
     }
