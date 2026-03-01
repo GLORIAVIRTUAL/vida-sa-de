@@ -848,21 +848,10 @@ Deno.serve(async (req) => {
     if(!especialidadeDetectada){for(const m of todosMedicosParaDeteccao){const pn=normalizarTexto(m.nome).split(' ').filter(p=>p.length>3&&!/^(dr\.?|dra\.?|de|da|do|dos|das)$/i.test(p));const pe=pn.filter(p=>msgLower.includes(p));if(pe.length>=2||pe.some(p=>p.length>=6)){medicoEspecificoDetectado=m;especialidadeDetectada=m.especialidade;console.log(`🎯 Médico específico: ${m.nome} (${m.especialidade})`);break;}}}
     if(!especialidadeDetectada&&!medicoEspecificoDetectado){const hcl=normalizarTexto((historicoConversa||'').split('\n').filter(l=>l.startsWith('CLIENTE:')).map(l=>l.replace('CLIENTE:','')).join(' '));for(const esp of especialidades){if(hcl.includes(normalizarTexto(esp))){especialidadeDetectada=esp;break;}}if(!especialidadeDetectada){for(const m of todosMedicosParaDeteccao){const pn=m.nome.toLowerCase().split(' ').filter(p=>p.length>3);if(pn.some(p=>historicoLower.includes(p))){medicoEspecificoDetectado=m;especialidadeDetectada=m.especialidade;break;}}}}
 
-    // Se conversa é sobre Cartão Mais Vida, limpar detecção de especialidade para não entrar em fluxo de agendamento
-    if (ehPerguntaSobreCartao || respostaCurtaEmContextoCartao) {
-      console.log('💳 Conversa sobre Cartão Mais Vida - resetando detecção de especialidade/médico');
-      especialidadeDetectada = null;
-      medicoEspecificoDetectado = null;
-    }
-
-    // ===== AGORA avaliar querAgendar (especialidadeDetectada já está definida) =====
-
-    // REGRA ANTI-LOOP: Se acabou de concluir um agendamento no histórico recente, NÃO entrar em fluxo de agendamento novamente
-    // Detectar se a última resposta do assistente é uma confirmação de agendamento
-    // IMPORTANTE: Verificar APENAS a última mensagem do assistente, não o histórico inteiro
-    const ultimasRespostasAssistenteObj = historicoMensagensRaw.filter(m => m.role === 'assistant');
-    const ultimaMsgAssistenteFull = ultimasRespostasAssistenteObj.length > 0 ? ultimasRespostasAssistenteObj[ultimasRespostasAssistenteObj.length - 1].content : '';
-    const agendamentoRecenteConcluido = /Agendamento confirmado|Te aguardamos|Lembre-se de trazer documento/i.test(ultimaMsgAssistenteFull);
+    if(ehPerguntaSobreCartao||respostaCurtaEmContextoCartao){especialidadeDetectada=null;medicoEspecificoDetectado=null;}
+    const ultimasRespostasAssistenteObj=historicoMensagensRaw.filter(m=>m.role==='assistant');
+    const ultimaMsgAssistenteFull=ultimasRespostasAssistenteObj.length>0?ultimasRespostasAssistenteObj[ultimasRespostasAssistenteObj.length-1].content:'';
+    const agendamentoRecenteConcluido=/Agendamento confirmado|Te aguardamos|Lembre-se de trazer documento/i.test(ultimaMsgAssistenteFull);
     
     if (agendamentoRecenteConcluido) {
       console.log('✅ Agendamento recém concluído detectado no histórico - resetando detecção de especialidade/médico do histórico');
