@@ -115,6 +115,11 @@ Deno.serve(async (req) => {
     - Cada mensagem deve ter NO MÁXIMO uma pergunta ou pedido ao cliente.
     - Se mostrou horários, termine com "Qual horário você prefere?" e PARE. Não peça mais nada.
     
+    🚨 NUNCA PERCA O CONTEXTO:
+    - Se o cliente disse "sim" após você perguntar se quer agendar com um médico específico, MOSTRE OS HORÁRIOS desse médico. NÃO pergunte de novo qual especialidade ou médico.
+    - Se o cliente disse o nome e data de nascimento juntos (ex: "Antonio Thiago 19/04/1982"), EXTRAIA AMBOS e finalize o agendamento. NÃO ignore os dados e NÃO peça de novo.
+    - Se o cliente informou o nome numa mensagem e a data de nascimento na seguinte, COMBINE os dois e finalize.
+    
     ⚠️ REGRAS CRÍTICAS DE SAUDAÇÃO - MUITO IMPORTANTE:
     
     🚨 ESTADO ATUAL: ${ehPrimeiraMensagem ? '🆕 PRIMEIRA MENSAGEM - USE A SAUDAÇÃO' : '🔄 CONVERSA EM ANDAMENTO - NÃO USE SAUDAÇÃO!'}
