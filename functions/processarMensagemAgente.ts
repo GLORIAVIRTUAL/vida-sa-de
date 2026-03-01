@@ -845,14 +845,17 @@ Deno.serve(async (req) => {
     for (const esp of especialidades) {
       if (msgLower.includes(normalizarTexto(esp))) { especialidadeDetectada = esp; console.log(`🎯 Especialidade detectada: ${esp}`); break; }
     }
+    // Declarar variáveis de contexto ANTES de usá-las
+    const ultimasRespostasAssistenteObj=historicoMensagensRaw.filter(m=>m.role==='assistant');
+    const ultimaMsgAssistenteFull=ultimasRespostasAssistenteObj.length>0?ultimasRespostasAssistenteObj[ultimasRespostasAssistenteObj.length-1].content:'';
+    const msgTrimLower = messageText.trim().toLowerCase();
+
     if(!especialidadeDetectada){for(const m of todosMedicosParaDeteccao){const pn=normalizarTexto(m.nome).split(' ').filter(p=>p.length>3&&!/^(dr\.?|dra\.?|de|da|do|dos|das)$/i.test(p));const pe=pn.filter(p=>msgLower.includes(p));if(pe.length>=2||pe.some(p=>p.length>=6)){medicoEspecificoDetectado=m;especialidadeDetectada=m.especialidade;console.log(`🎯 Médico específico: ${m.nome} (${m.especialidade})`);break;}}}
     // PASSO 2.5: Médico na última resp. do assistente + cliente confirmou com "sim"
     if(!especialidadeDetectada&&!medicoEspecificoDetectado&&ultimaMsgAssistenteFull){const uaN=normalizarTexto(ultimaMsgAssistenteFull);for(const m of todosMedicosParaDeteccao){const pn=normalizarTexto(m.nome).split(' ').filter(p=>p.length>3&&!/^(dr\.?|dra\.?|de|da|do|dos|das)$/i.test(p));const pe=pn.filter(p=>uaN.includes(p));if(pe.length>=2||pe.some(p=>p.length>=6)){if(/^(sim|s|ok|quero|pode|claro|bora|vamos|isso|yes|vou|gostaria|quero\s*sim|agendar)$/i.test(msgTrimLower)){medicoEspecificoDetectado=m;especialidadeDetectada=m.especialidade;console.log(`🎯 Médico confirmação: ${m.nome}`);break;}}}}
     if(!especialidadeDetectada&&!medicoEspecificoDetectado){const hcl=normalizarTexto((historicoConversa||'').split('\n').filter(l=>l.startsWith('CLIENTE:')).map(l=>l.replace('CLIENTE:','')).join(' '));for(const esp of especialidades){if(hcl.includes(normalizarTexto(esp))){especialidadeDetectada=esp;break;}}if(!especialidadeDetectada){for(const m of todosMedicosParaDeteccao){const pn=m.nome.toLowerCase().split(' ').filter(p=>p.length>3);if(pn.some(p=>historicoLower.includes(p))){medicoEspecificoDetectado=m;especialidadeDetectada=m.especialidade;break;}}}}
 
     if(ehPerguntaSobreCartao||respostaCurtaEmContextoCartao){especialidadeDetectada=null;medicoEspecificoDetectado=null;}
-    const ultimasRespostasAssistenteObj=historicoMensagensRaw.filter(m=>m.role==='assistant');
-    const ultimaMsgAssistenteFull=ultimasRespostasAssistenteObj.length>0?ultimasRespostasAssistenteObj[ultimasRespostasAssistenteObj.length-1].content:'';
     const agendamentoRecenteConcluido=/Agendamento confirmado|Te aguardamos|Lembre-se de trazer documento/i.test(ultimaMsgAssistenteFull);
     
     if(agendamentoRecenteConcluido){const _mte=especialidades.some(e=>normalizarTexto(messageText).includes(normalizarTexto(e)));const _mtm=todosMedicosParaDeteccao.some(m=>m.nome.toLowerCase().split(' ').filter(p=>p.length>3).some(p=>msgLower.includes(p)));if(!_mte&&!_mtm){especialidadeDetectada=null;medicoEspecificoDetectado=null;}}
