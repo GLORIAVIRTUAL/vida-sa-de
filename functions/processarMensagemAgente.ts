@@ -1311,6 +1311,7 @@ REGRAS CRÍTICAS:
 - Se o assistente ofereceu "Dr. Douglas Filipe Bianchi", use EXATAMENTE esse nome
 - NÃO confunda médicos diferentes - verifique qual médico foi mencionado na conversa
 - ⚠️ MUITO IMPORTANTE: Se o cliente enviou nome e data de nascimento juntos (ex: "Antonio thiago 19/04/1982"), EXTRAIA AMBOS! O nome é tudo antes da data, a data de nascimento é a data no formato DD/MM/AAAA.
+- 🚨🚨 REGRA ABSOLUTAMENTE CRÍTICA SOBRE HORÁRIOS: O horario extraído DEVE ser EXATAMENTE um dos horários listados pelo ASSISTENTE no histórico da conversa. Procure a mensagem onde o assistente mostrou disponibilidades (ex: "Segunda 2/03: 08:00", "Sexta 6/03: 10:00"). Se o cliente escolheu "sexta dia 6" e o horário oferecido para sexta dia 6 foi "10:00", extraia horario="10:00". NUNCA invente horário (como 14:00) que NÃO foi oferecido. Se não especificou horário, use o PRIMEIRO horário oferecido para o dia escolhido.
 
 Retorne JSON.`;
 
