@@ -1539,11 +1539,8 @@ O cliente está ESCOLHENDO/RESPONDENDO. Ele disse: "${messageText}"
     
     // Verificar se o cliente está fornecendo dados pessoais (nome ou data de nascimento) no contexto de agendamento
     const clienteFornecendoDadosPessoais = assistentePediuDadosPaciente && (
-      // Data de nascimento no formato DD/MM/AAAA
       /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(messageText.trim()) ||
-      // Nome seguido de data (ex: "Antonio thiago cavalcanti 19/04/1982")
       /[A-Za-zÀ-ÿ]+\s+[A-Za-zÀ-ÿ]+.*\d{1,2}\/\d{1,2}\/\d{4}/.test(messageText) ||
-      // Apenas nome (2+ palavras, sem números exceto possível data)
       (/^[A-Za-zÀ-ÿ\s]+$/.test(messageText.trim()) && messageText.trim().split(/\s+/).length >= 2)
     );
     
