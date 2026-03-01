@@ -2202,37 +2202,8 @@ Retorne JSON.`;
     2. Se o texto estiver vazio ou ilegível, PEÇA para o cliente digitar os exames ou mandar uma foto melhor. NUNCA invente exames!
     3. Se houver exames, monte o orçamento DIRETO, sem pedir dados pessoais.
 
-    📋 FORMATO DO ORÇAMENTO:
-
-    📋 *ORÇAMENTO*
-    ━━━━━━━━━━━━━━━━━━━━
-    ✅ *Exames que realizamos:*
-    • [Nome do exame] - R$ XX,XX
-
-    ❌ *Exames que NÃO realizamos:*
-    • [Nome do exame]
-
-    ━━━━━━━━━━━━━━━━━━━━
-    💰 *VALOR TOTAL: R$ XX,XX*
-    ━━━━━━━━━━━━━━━━━━━━
-
-    📍 *Endereço:* Tristão Monteiro, 580 – Zona Nova, Tramandaí/RS
-    📞 *Telefone:* (51) 3661-5991
-
-    A coleta é realizada de segunda a sábado, das 7h às 10h. Basta comparecer em jejum! 😊
-
-    ⚠️ REGRAS:
-    1. NUNCA INVENTE PREÇOS! Use APENAS os valores da lista acima.
-    2. Se o exame NÃO estiver na lista, coloque em "NÃO realizamos".
-    3. SEMPRE calcule e mostre o VALOR TOTAL.
-    4. NÃO peça nome/CPF para orçamento - só peça se for AGENDAR.
-    5. 🚫 NUNCA pergunte "Gostaria de agendar a coleta?" - coleta NÃO é agendada.
-    6. 💰 Mostre TODOS os preços disponíveis (Particular E Cartão Mais Vida).
-    7. 🔬 NUNCA use "Exame Laboratorial" genérico! Liste CADA exame individualmente.
-    8. 🏥 Ecografia: a clínica FAZ SIM. NUNCA coloque como "NÃO realizamos".
-    9. 🔍 Raio X, Ressonância, Tomografia: realizados em parceiro.
-    
-    🚨 FIDELIDADE À REQUISIÇÃO: Liste SOMENTE exames do texto extraído. NÃO adicione extras. Match por nome (AST=TGO, ALT=TGP). ~17 exames na requisição = ~17 itens no orçamento.`;
+    📋 FORMATO: 📋*ORÇAMENTO* ✅Realizamos: •[exame]-R$XX ❌Não realizamos: •[exame] 💰TOTAL:R$XX 📍Tristão Monteiro,580-Tramandaí (51)3661-5991. Coleta seg-sáb 7h-10h jejum.
+    ⚠️ Nunca invente preços. Calcule total. Não peça dados pessoais p/orçamento. Coleta NÃO é agendada. Liste cada exame individual. Eco=FAZ SIM. RX/Ressonância/Tomografia=parceiro. Fidelidade à requisição (AST=TGO,ALT=TGP).`;
         }
       } catch (e) {
         console.error('⚠️ Erro ao buscar procedimentos/exames:', e.message);
