@@ -60,29 +60,24 @@ export default function FormularioOS({
   onSalvar,
   onCancelar
 }) {
-  // CORREÇÃO: Priorizar SEMPRE o medico_id do agendamento
-  const [medicoSelecionadoId, setMedicoSelecionadoId] = useState(() => {
-    // Na inicialização, priorizar o médico do agendamento
-    // Verifica primeiro o medico_id principal
-    if (agendamento?.medico_id) return agendamento.medico_id;
-    // Se for procedimento/exame e tiver itens de serviço com médico
-    if (agendamento?.itens_servico?.length > 0 && agendamento.itens_servico[0].medico_id) {
-      return agendamento.itens_servico[0].medico_id;
+  // CORREÇÃO: Resolver o médico correto considerando Odontologia (agenda unificada)
+  // Se o agendamento tem "Dentista: NomeDoDentista" nas observações, usar o ID DESSE dentista
+  const resolverMedicoId = (ag, meds, fallbackMedico) => {
+    const dentNome = ag?.observacoes?.match(/Dentista:\s*(.+?)(\n|$)/)?.[1]?.trim();
+    if (dentNome) {
+      const dentObj = meds.find(m => m.nome === dentNome);
+      if (dentObj) return dentObj.id;
     }
-    return medico?.id || null;
-  });
+    if (ag?.medico_id) return ag.medico_id;
+    if (ag?.itens_servico?.length > 0 && ag.itens_servico[0].medico_id) return ag.itens_servico[0].medico_id;
+    return fallbackMedico?.id || null;
+  };
 
-  // Se agendamento mudar, atualizar o medico selecionado
+  const [medicoSelecionadoId, setMedicoSelecionadoId] = useState(() => resolverMedicoId(agendamento, medicos, medico));
+
   useEffect(() => {
-    // SEMPRE usar o médico do agendamento se existir
-    if (agendamento?.medico_id) {
-      setMedicoSelecionadoId(agendamento.medico_id);
-    } else if (agendamento?.itens_servico && agendamento.itens_servico.length > 0 && agendamento.itens_servico[0].medico_id) {
-      setMedicoSelecionadoId(agendamento.itens_servico[0].medico_id);
-    } else if (medico?.id) {
-      setMedicoSelecionadoId(medico.id);
-    }
-  }, [agendamento, medico]);
+    setMedicoSelecionadoId(resolverMedicoId(agendamento, medicos, medico));
+  }, [agendamento, medico, medicos]);
 
   const [dados, setDados] = useState({
     valor_total: 0,
