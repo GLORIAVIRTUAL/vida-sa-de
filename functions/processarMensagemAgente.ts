@@ -1895,48 +1895,12 @@ Retorne JSON.`;
     }
 
     const estaConfirmando = /^(sim|s|ok|certo|correto|confirmo|pode|isso|claro|beleza|tudo bem|confirm|yes)$/i.test(messageText.trim());
-    if (estaConfirmando && historicoConversa && /Para confirmar o agendamento|data de nascimento|nome completo/i.test(historicoConversa)) {
-      console.log('✅ Cliente confirmando dados');
-    }
-
-    // Se agendamento foi criado, retornar mensagem de confirmação
-    if (agendamentoCriado) {
+    if(estaConfirmando&&historicoConversa&&/Para confirmar o agendamento|data de nascimento|nome completo/i.test(historicoConversa)){console.log('✅ Cliente confirmando dados');}
+    if(agendamentoCriado){
       console.log('🎉 Retornando confirmação de agendamento');
-      
-      // Salvar no histórico
-      try {
-        const contatos = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
-        const timestamp = new Date().toISOString();
-        
-        if (contatos.length > 0) {
-          const contato = contatos[0];
-          const historicoAtual = contato.historico_mensagens || [];
-          historicoAtual.push(
-            { role: 'user', content: messageText, timestamp },
-            { role: 'assistant', content: mensagemAgendamento, timestamp }
-          );
-          
-          await base44.asServiceRole.entities.Contato.update(contato.id, {
-            ultima_mensagem: messageText,
-            ultima_resposta: mensagemAgendamento,
-            historico_mensagens: historicoAtual.slice(-50),
-            ultima_interacao: timestamp,
-            total_mensagens: (contato.total_mensagens || 0) + 2,
-            agendamentos_realizados: (contato.agendamentos_realizados || 0) + 1,
-            processando_ia_lock: null // Liberar lock
-          });
-        }
-      } catch (e) {
-        console.error('⚠️ Erro ao salvar histórico:', e.message);
-      }
-      
-      await liberarLock(base44, phoneNumber);
-      return Response.json({ 
-        success: true, 
-        resposta: mensagemAgendamento,
-        conversationId: null,
-        agendamento_criado: true
-      });
+      try{const cs=await base44.asServiceRole.entities.Contato.filter({telefone:phoneNumber});const ts=new Date().toISOString();if(cs.length>0){const c=cs[0];const h=c.historico_mensagens||[];h.push({role:'user',content:messageText,timestamp:ts},{role:'assistant',content:mensagemAgendamento,timestamp:ts});await base44.asServiceRole.entities.Contato.update(c.id,{ultima_mensagem:messageText,ultima_resposta:mensagemAgendamento,historico_mensagens:h.slice(-50),ultima_interacao:ts,total_mensagens:(c.total_mensagens||0)+2,agendamentos_realizados:(c.agendamentos_realizados||0)+1,processando_ia_lock:null});}}catch(e){console.error('⚠️ Erro:',e.message);}
+      await liberarLock(base44,phoneNumber);
+      return Response.json({success:true,resposta:mensagemAgendamento,conversationId:null,agendamento_criado:true});
     }
 
     // Usar InvokeLLM diretamente para gerar resposta
