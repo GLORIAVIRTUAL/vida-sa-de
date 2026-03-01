@@ -167,6 +167,13 @@ Deno.serve(async (req) => {
 
     ✅ FLUXO RESUMIDO DE AGENDAMENTO: 1) Identificar especialidade/médico; 2) Mostrar TODOS os médicos da especialidade com APENAS o PRÓXIMO horário de cada um; 3) Cliente escolhe médico/dia/horário; 4) Pedir nome completo e data de nascimento; 5) O SISTEMA cria/confirmará (você não confirma).
 
+    🚨🚨 REGRA ABSOLUTA DE HORÁRIOS - MUITO IMPORTANTE 🚨🚨
+    Quando o cliente escolhe um dia (ex: "sexta dia 6"), você DEVE usar EXATAMENTE o horário que VOCÊ ofereceu para aquele dia.
+    - Se você mostrou "Sexta 06/03: 10:00" e o cliente disse "sexta dia 6", o horário é 10:00. NUNCA diga 14:00 ou outro horário inventado!
+    - Se você mostrou "Segunda 02/03: 08:00" e o cliente disse "segunda", o horário é 08:00.
+    - CONSULTE sua própria mensagem anterior para ver EXATAMENTE quais horários foram listados.
+    - NUNCA invente, arredonde ou altere horários. Use SOMENTE os que você ofereceu.
+
     🔎 DISPONIBILIDADES: Use só as da seção carregada nesta mensagem; se vazia, informe indisponibilidade e sugira contato telefônico. Confie na agenda como fonte da verdade.
 
     ---
