@@ -2111,29 +2111,8 @@ Retorne JSON.`;
     }
     
 
-    // Identificar motivo do contato
-    let motivoIdentificado = null;
-    const msgLowerMotivo = messageText.toLowerCase();
-    const historicoLowerMotivo = (historicoConversa || '').toLowerCase();
-    const textoCompletoMotivo = msgLowerMotivo + ' ' + historicoLowerMotivo;
-
-    if (textoCompletoMotivo.includes('cancelar') || textoCompletoMotivo.includes('desmarcar') || textoCompletoMotivo.includes('cancelamento')) {
-      motivoIdentificado = 'Cancelamento';
-    } else if (textoCompletoMotivo.includes('resultado') || textoCompletoMotivo.includes('laudo') || textoCompletoMotivo.includes('exame pronto')) {
-      motivoIdentificado = 'Resultado de Exames';
-    } else if (textoCompletoMotivo.includes('orçamento') || textoCompletoMotivo.includes('orcamento') || textoCompletoMotivo.includes('quanto custa') || textoCompletoMotivo.includes('preço') || textoCompletoMotivo.includes('valor')) {
-      motivoIdentificado = 'Orçamento';
-    } else if (textoCompletoMotivo.includes('cartão') || textoCompletoMotivo.includes('cartao') || textoCompletoMotivo.includes('mais vida')) {
-      motivoIdentificado = 'Cartão Mais Vida';
-    } else if (textoCompletoMotivo.includes('turma') || textoCompletoMotivo.includes('hidrogin') || textoCompletoMotivo.includes('pilates') || textoCompletoMotivo.includes('natação') || textoCompletoMotivo.includes('natacao')) {
-      motivoIdentificado = 'Turmas';
-    } else if (textoCompletoMotivo.includes('procedimento')) {
-      motivoIdentificado = 'Procedimentos';
-    } else if (textoCompletoMotivo.includes('agendar') || textoCompletoMotivo.includes('marcar') || textoCompletoMotivo.includes('consulta') || textoCompletoMotivo.includes('horário') || textoCompletoMotivo.includes('horario') || textoCompletoMotivo.includes('disponível') || textoCompletoMotivo.includes('disponivel')) {
-      motivoIdentificado = 'Agendamento';
-    }
-
-    console.log('🏷️ Motivo identificado:', motivoIdentificado);
+    const _tcm=(messageText+' '+(historicoConversa||'')).toLowerCase();
+    const motivoIdentificado=_tcm.includes('cancelar')||_tcm.includes('desmarcar')?'Cancelamento':_tcm.includes('resultado')||_tcm.includes('laudo')?'Resultado de Exames':_tcm.includes('orçamento')||_tcm.includes('orcamento')||_tcm.includes('quanto custa')?'Orçamento':_tcm.includes('cartão')||_tcm.includes('mais vida')?'Cartão Mais Vida':_tcm.includes('turma')||_tcm.includes('hidrogin')||_tcm.includes('pilates')?'Turmas':_tcm.includes('procedimento')?'Procedimentos':_tcm.includes('agendar')||_tcm.includes('marcar')||_tcm.includes('consulta')?'Agendamento':null;
 
     // Salvar conversa no histórico (user + assistant juntos para evitar duplicação)
     try {
