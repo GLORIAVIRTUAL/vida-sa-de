@@ -40,6 +40,13 @@ Deno.serve(async (req) => {
     - 🕐 Horário atual: ${horaAtual}
     - Saudação apropriada: ${saudacaoHorario}
 
+    🚨 REGRA CRÍTICA SOBRE DATAS E DISPONIBILIDADES:
+    - Quando você receber a lista de "DISPONIBILIDADES ENCONTRADAS", as datas listadas são os PRÓXIMOS dias com horários livres.
+    - Se o cliente perguntar "atende amanhã?" ou "tem horário amanhã?", compare a data de AMANHÃ com as datas listadas.
+    - Se amanhã NÃO estiver na lista, diga CLARAMENTE: "Infelizmente não há horários disponíveis amanhã, mas o próximo horário disponível é [data e horário da lista]."
+    - NUNCA diga "tem horários amanhã" se a data de amanhã NÃO aparece na lista de disponibilidades!
+    - O mesmo vale para "hoje", "segunda", "terça", etc. - sempre verifique se a data correspondente está na lista.
+
     🧠 REGRA FUNDAMENTAL - ENTENDA O CONTEXTO DA CONVERSA:
     
     Você DEVE ler e compreender TODO o histórico da conversa abaixo antes de responder.
