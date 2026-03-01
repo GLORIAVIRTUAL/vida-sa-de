@@ -1534,46 +1534,10 @@ O cliente está ESCOLHENDO/RESPONDENDO. Ele disse: "${messageText}"
 
             if (horariosDoDia.length === 0) continue;
 
-            // Buscar agendamentos com timeout
-            let agendamentosExistentes = [];
-            try {
-              agendamentosExistentes = await Promise.race([
-                base44.asServiceRole.entities.Agendamento.filter({
-                  medico_id: medico.id,
-                  data_agendamento: dataFormatada,
-                  status: { $ne: 'Cancelado' }
-                }),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout Agendamentos')), 2000))
-              ]);
-            } catch (e) {
-              console.warn(`⚠️ Timeout ao buscar agendamentos de ${medico.nome}:`, e.message);
-            }
-
-            const horariosOcupados = agendamentosExistentes.map(ag => ag.horario);
-            const horariosDisponiveis = [];
-            const tempoConsulta = medico.tempo_consulta_minutos || 30;
-
-            for (const periodo of horariosDoDia) {
-              const [inicioH, inicioM] = periodo.horario_inicio.split(':').map(Number);
-              const [fimH, fimM] = periodo.horario_fim.split(':').map(Number);
-              
-              const inicioMinutos = inicioH * 60 + inicioM;
-              const fimMinutos = fimH * 60 + fimM;
-
-              for (let minutos = inicioMinutos; minutos < fimMinutos; minutos += tempoConsulta) {
-                const horas = Math.floor(minutos / 60);
-                const mins = minutos % 60;
-                const horarioStr = `${String(horas).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
-
-                const agora = new Date();
-                const horarioDateTime = new Date(`${dataFormatada}T${horarioStr}:00`);
-                const isPast = (dataConsulta.toDateString() === agora.toDateString() && horarioDateTime < agora);
-
-                if (!isPast && !horariosOcupados.includes(horarioStr)) {
-                  horariosDisponiveis.push(horarioStr);
-                }
-              }
-            }
+                    let agendamentosExistentes = [];
+            try { agendamentosExistentes = await Promise.race([base44.asServiceRole.entities.Agendamento.filter({medico_id:medico.id,data_agendamento:dataFormatada,status:{$ne:'Cancelado'}}),new Promise((_,r)=>setTimeout(()=>r(new Error('Timeout')),2000))]); } catch(e){}
+            const horariosOcupados=agendamentosExistentes.map(ag=>ag.horario);const horariosDisponiveis=[];const tempoConsulta=medico.tempo_consulta_minutos||30;
+            for(const periodo of horariosDoDia){const [ih,im]=periodo.horario_inicio.split(':').map(Number);const [fh,fm]=periodo.horario_fim.split(':').map(Number);for(let m=ih*60+im;m<fh*60+fm;m+=tempoConsulta){const hs=`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;const hdt=new Date(`${dataFormatada}T${hs}:00`);if(!(dataConsulta.toDateString()===new Date().toDateString()&&hdt<new Date())&&!horariosOcupados.includes(hs))horariosDisponiveis.push(hs);}}
 
             if (horariosDisponiveis.length > 0) {
               disponibilidadesMedico.push({
