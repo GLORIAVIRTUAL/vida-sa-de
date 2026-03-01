@@ -960,7 +960,7 @@ O cliente está ESCOLHENDO/RESPONDENDO. Ele disse: "${messageText}"
 🚨 REGRAS ABSOLUTAS:
 1. NÃO diga que não há horários! O cliente está respondendo à lista que você já apresentou.
 2. NÃO diga "infelizmente não temos horários disponíveis" - você ACABOU de mostrar horários!
-3. Se ele mencionou um médico e horário/data, CONFIRME a escolha dele dizendo "Ótimo! Vou agendar com [médico] no dia [data] às [horário]."
+3. Se ele mencionou um médico e horário/data, CONFIRME usando EXATAMENTE o horário que VOCÊ ofereceu para aquele dia. Ex: se você ofereceu "Sexta 06/03: 10:00" e cliente disse "sexta dia 6", confirme "Vou agendar sexta dia 6 às 10:00". NUNCA use um horário que não foi oferecido!
 4. DEPOIS peça: "Preciso do seu nome completo e data de nascimento (DD/MM/AAAA) para finalizar."
 5. O SISTEMA vai criar o agendamento automaticamente quando tiver todos os dados.
 6. NÃO repita a lista de disponibilidades! O cliente JÁ viu a lista.
