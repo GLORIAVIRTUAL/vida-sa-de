@@ -1477,21 +1477,11 @@ O cliente está ESCOLHENDO/RESPONDENDO. Ele disse: "${messageText}"
         }
 
         if (disponibilidadesEncontradas.length > 0) {
-        infoDisponibilidade = '\n\n📅 DISPONIBILIDADES ENCONTRADAS:\n';
-        for (const medico of disponibilidadesEncontradas) {
-          infoDisponibilidade += `\n👨‍⚕️ *${medico.medico_nome}* (${medico.especialidade}) [ID: ${medico.medico_id}]\n`;
-          for (const d of medico.disponibilidades.slice(0, 3)) {
-            if (!d.horarios?.length) continue;
-            const manha = d.horarios.find(h => parseInt(h.split(':')[0]) < 12);
-            const tarde = d.horarios.find(h => parseInt(h.split(':')[0]) >= 12);
-            const turnosStr = [manha ? `Manhã: ${manha}` : null, tarde ? `Tarde: ${tarde}` : null].filter(Boolean).join(' | ');
-            infoDisponibilidade += `   📅 ${d.data_formatada}: ${turnosStr}\n`;
-          }
-        }
-          infoDisponibilidade += disponibilidadesEncontradas.length > 1
-            ? '\n⚠️ Apresente os médicos e o PRÓXIMO horário disponível de cada turno. Pergunte qual prefere.'
-            : '\n⚠️ Apresente o PRÓXIMO horário disponível de cada turno. Pergunte qual prefere.';
-          infoDisponibilidade += '\n⚠️ Para confirmar: preciso nome completo e data de nascimento.';
+        const _am=new Date(agoraBrasil);_am.setDate(_am.getDate()+1);const _amI=`${_am.getFullYear()}-${String(_am.getMonth()+1).padStart(2,'0')}-${String(_am.getDate()).padStart(2,'0')}`;
+        infoDisponibilidade = `\n\n📅 DISPONIBILIDADES ENCONTRADAS:\n🚨HOJE=${dataAtualISO} AMANHÃ=${_amI}. Se perguntam "amanhã?" e ${_amI} NÃO está abaixo→"NÃO há amanhã, próximo é [1º abaixo]".\n`;
+        for(const medico of disponibilidadesEncontradas){infoDisponibilidade+=`\n👨‍⚕️ *${medico.medico_nome}* (${medico.especialidade}) [ID: ${medico.medico_id}]\n`;for(const d of medico.disponibilidades.slice(0,3)){if(!d.horarios?.length)continue;const mn=d.horarios.find(h=>parseInt(h.split(':')[0])<12);const td=d.horarios.find(h=>parseInt(h.split(':')[0])>=12);const ts=[mn?`Manhã: ${mn}`:null,td?`Tarde: ${td}`:null].filter(Boolean).join(' | ');infoDisponibilidade+=`   📅 ${d.data_formatada}: ${ts}\n`;}}
+          infoDisponibilidade+=disponibilidadesEncontradas.length>1?'\n⚠️ Apresente médicos e PRÓXIMO horário de cada turno. Pergunte qual prefere.':'\n⚠️ Apresente PRÓXIMO horário de cada turno. Pergunte qual prefere.';
+          infoDisponibilidade+='\n⚠️ Para confirmar: nome completo e data nascimento.';
           console.log('✅ Disponibilidades:', disponibilidadesEncontradas.length, 'médicos');
         } else if (medicosParaBuscar.length > 0) {
           console.log('⚠️ Buscando horários além dos 15 dias iniciais (até 60 dias)...');
