@@ -1098,33 +1098,8 @@ Deno.serve(async (req) => {
     for (const esp of especialidades) {
       if (msgLower.includes(normalizarTexto(esp))) { especialidadeDetectada = esp; console.log(`🎯 Especialidade detectada: ${esp}`); break; }
     }
-    // PASSO 2: Se NÃO detectou especialidade, buscar MÉDICO ESPECÍFICO na mensagem
-    // Match com normalização de acentos e palavras significativas (>3 chars)
-    if (!especialidadeDetectada) {
-      for (const medico of todosMedicosParaDeteccao) {
-        const partesNome = normalizarTexto(medico.nome).split(' ').filter(p => p.length > 3 && !/^(dr\.?|dra\.?|de|da|do|dos|das)$/i.test(p));
-        if (partesNome.some(p => msgLower.includes(p))) {
-          medicoEspecificoDetectado = medico; especialidadeDetectada = medico.especialidade;
-          console.log(`🎯 Médico específico: ${medico.nome} (${medico.especialidade})`); break;
-        }
-      }
-    }
-    // PASSO 3: Se nada na mensagem, buscar no HISTÓRICO
-    if (!especialidadeDetectada && !medicoEspecificoDetectado) {
-      const historicoClienteLower = normalizarTexto((historicoConversa || '').split('\n').filter(l => l.startsWith('CLIENTE:')).map(l => l.replace('CLIENTE:', '')).join(' '));
-      for (const esp of especialidades) {
-        if (historicoClienteLower.includes(normalizarTexto(esp))) { especialidadeDetectada = esp; console.log(`🎯 Esp. histórico: ${esp}`); break; }
-      }
-      if (!especialidadeDetectada) {
-        for (const medico of todosMedicosParaDeteccao) {
-          const partesNome = medico.nome.toLowerCase().split(' ').filter(p => p.length > 3);
-          if (partesNome.some(p => historicoLower.includes(p))) {
-            medicoEspecificoDetectado = medico; especialidadeDetectada = medico.especialidade;
-            console.log(`🎯 Médico histórico: ${medico.nome}`); break;
-          }
-        }
-      }
-    }
+    if(!especialidadeDetectada){for(const m of todosMedicosParaDeteccao){const pn=normalizarTexto(m.nome).split(' ').filter(p=>p.length>3&&!/^(dr\.?|dra\.?|de|da|do|dos|das)$/i.test(p));const pe=pn.filter(p=>msgLower.includes(p));if(pe.length>=2||pe.some(p=>p.length>=6)){medicoEspecificoDetectado=m;especialidadeDetectada=m.especialidade;console.log(`🎯 Médico específico: ${m.nome} (${m.especialidade})`);break;}}}
+    if(!especialidadeDetectada&&!medicoEspecificoDetectado){const hcl=normalizarTexto((historicoConversa||'').split('\n').filter(l=>l.startsWith('CLIENTE:')).map(l=>l.replace('CLIENTE:','')).join(' '));for(const esp of especialidades){if(hcl.includes(normalizarTexto(esp))){especialidadeDetectada=esp;break;}}if(!especialidadeDetectada){for(const m of todosMedicosParaDeteccao){const pn=m.nome.toLowerCase().split(' ').filter(p=>p.length>3);if(pn.some(p=>historicoLower.includes(p))){medicoEspecificoDetectado=m;especialidadeDetectada=m.especialidade;break;}}}}
 
     // Se conversa é sobre Cartão Mais Vida, limpar detecção de especialidade para não entrar em fluxo de agendamento
     if (ehPerguntaSobreCartao || respostaCurtaEmContextoCartao) {
