@@ -853,28 +853,9 @@ Deno.serve(async (req) => {
     const ultimaMsgAssistenteFull=ultimasRespostasAssistenteObj.length>0?ultimasRespostasAssistenteObj[ultimasRespostasAssistenteObj.length-1].content:'';
     const agendamentoRecenteConcluido=/Agendamento confirmado|Te aguardamos|Lembre-se de trazer documento/i.test(ultimaMsgAssistenteFull);
     
-    if (agendamentoRecenteConcluido) {
-      console.log('✅ Agendamento recém concluído detectado no histórico - resetando detecção de especialidade/médico do histórico');
-      // Se a mensagem atual NÃO menciona explicitamente uma nova especialidade/médico, limpar a detecção vinda do histórico
-      const mensagemAtualTemEspecialidade = especialidades.some(esp => normalizarTexto(messageText).includes(normalizarTexto(esp)));
-      const mensagemAtualTemMedico = todosMedicosParaDeteccao.some(m => {
-        const partesNome = m.nome.toLowerCase().split(' ').filter(p => p.length > 3);
-        return partesNome.some(p => msgLower.includes(p));
-      });
-      
-      if (!mensagemAtualTemEspecialidade && !mensagemAtualTemMedico) {
-        // Limpar detecção que veio do histórico (da conversa anterior de agendamento)
-        especialidadeDetectada = null;
-        medicoEspecificoDetectado = null;
-        console.log('🔄 Especialidade/médico resetados - veio do histórico do agendamento concluído');
-      }
-    }
-
-    // REGRA ANTI-LOOP: Se o cliente está RECUSANDO agendar, NÃO entrar em fluxo de agendamento
-    const clienteRecusandoAgendar = /n[aã]o\s*(quero|preciso|desejo|vou|queria)?\s*(agendar|marcar|consulta)|n[aã]o\s*[,.]?\s*(obrigad|valeu|brigad)|deixa\s*(pra\s*l[aá]|quieto)|agora\s*n[aã]o|depois|sem\s*agendar/i.test(messageText);
-
-    // Detectar se o histórico já tem uma especialidade mencionada
-    const historicoTemEspecialidadeCheck = historicoConversa && /clínico|clinico|cardiolog|dermatolog|ginecolog|nutrici|psicolog|ortoped|urolog|geriatr|gastro|reumato|psiquiatr|fisioterap|oftalmolog|otorrino|pediatr|pneumolog|neurolog|quiroprax|massoterap|optometr|hidro|pilates|odontolog|dentist|endocrinolog|Dr\.|👨‍⚕️/i.test(historicoConversa);
+    if(agendamentoRecenteConcluido){const _mte=especialidades.some(e=>normalizarTexto(messageText).includes(normalizarTexto(e)));const _mtm=todosMedicosParaDeteccao.some(m=>m.nome.toLowerCase().split(' ').filter(p=>p.length>3).some(p=>msgLower.includes(p)));if(!_mte&&!_mtm){especialidadeDetectada=null;medicoEspecificoDetectado=null;}}
+    const clienteRecusandoAgendar=/n[aã]o\s*(quero|preciso|desejo|vou|queria)?\s*(agendar|marcar|consulta)|n[aã]o\s*[,.]?\s*(obrigad|valeu|brigad)|deixa\s*(pra\s*l[aá]|quieto)|agora\s*n[aã]o|depois|sem\s*agendar/i.test(messageText);
+    const historicoTemEspecialidadeCheck=historicoConversa&&/clínico|clinico|cardiolog|dermatolog|ginecolog|nutrici|psicolog|ortoped|urolog|geriatr|gastro|reumato|psiquiatr|fisioterap|oftalmolog|otorrino|pediatr|pneumolog|neurolog|quiroprax|massoterap|optometr|hidro|pilates|odontolog|dentist|endocrinolog|Dr\.|👨‍⚕️/i.test(historicoConversa);
 
     const ehPerguntaPreco = ehPerguntaPrecoEarly;
     const ehPerguntaInformativa = ehPerguntaInformativaEarly;
