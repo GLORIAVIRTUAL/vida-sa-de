@@ -27,51 +27,8 @@ const normalizeString = (str) => {
     return String(str).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
 }
 
-// Função para comprimir imagens
-const compressImage = (file, maxWidth = 1200, quality = 0.8) => {
-  return new Promise((resolve) => {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    const img = new Image();
-    
-    img.onload = () => {
-      const ratio = Math.min(maxWidth / img.width, maxWidth / img.height);
-      canvas.width = img.width * ratio;
-      canvas.height = img.height * ratio;
-      
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      
-      canvas.toBlob(resolve, file.type, quality);
-    };
-    
-    img.src = URL.createObjectURL(file);
-  });
-};
-
-// Função para fazer upload com retry
-const uploadWithRetry = async (file, maxRetries = 3, delay = 2000) => {
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      console.log(`🔄 Tentativa ${attempt}/${maxRetries} de upload...`);
-      const result = await base44.integrations.Core.UploadFile({ file });
-      console.log(`✅ Upload bem-sucedido na tentativa ${attempt}`);
-      return result;
-    } catch (error) {
-      console.error(`❌ Tentativa ${attempt} falhou:`, error);
-      
-      if (attempt === maxRetries) {
-        throw error;
-      }
-      
-      // Aguardar antes da próxima tentativa
-      console.log(`⏳ Aguardando ${delay}ms antes da próxima tentativa.`);
-      await new Promise(resolve => setTimeout(resolve, delay));
-      
-      // Aumentar o delay para a próxima tentativa
-      delay *= 1.5;
-    }
-  }
-};
+const compressImage = (file, maxWidth = 1200, quality = 0.8) => new Promise((resolve) => { const canvas = document.createElement('canvas'), ctx = canvas.getContext('2d'), img = new Image(); img.onload = () => { const ratio = Math.min(maxWidth / img.width, maxWidth / img.height); canvas.width = img.width * ratio; canvas.height = img.height * ratio; ctx.drawImage(img, 0, 0, canvas.width, canvas.height); canvas.toBlob(resolve, file.type, quality); }; img.src = URL.createObjectURL(file); });
+const uploadWithRetry = async (file, maxRetries = 3, delay = 2000) => { for (let attempt = 1; attempt <= maxRetries; attempt++) { try { return await base44.integrations.Core.UploadFile({ file }); } catch (error) { if (attempt === maxRetries) throw error; await new Promise(resolve => setTimeout(resolve, delay)); delay *= 1.5; } } };
 
 export default function FormularioAgendamento({ agendamento, dadosIniciais, todosAgendamentos, medicos, pacientes: pacientesProps, procedimentos, exames, categorias, tabelaPrecos, onSave, onClose }) {
   const { toast } = useToast();
