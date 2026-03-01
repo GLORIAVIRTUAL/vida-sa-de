@@ -1460,8 +1460,8 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
       lembrete_dias_antes: parseInt(formData.lembrete_dias_antes) || 0
       };
 
-      // Adicionar campos opcionais
-      if (formData.medico_id) dados.medico_id = formData.medico_id;
+      // Adicionar campos opcionais - CORREÇÃO ODONTOLOGIA: usar medico_id do dentista selecionado
+      const _dn=formData.observacoes?.match(/Dentista:\s*(.+?)(\n|$)/)?.[1]?.trim(),_dm=_dn&&medicos.find(m=>m.nome===_dn);dados.medico_id=_dm?_dm.id:(formData.medico_id||null);
       if (formData.observacoes) dados.observacoes = formData.observacoes;
       if (formData.procedimento_id) dados.procedimento_id = formData.procedimento_id;
       if (formData.exames_ids?.length > 0) dados.exames_ids = formData.exames_ids;
