@@ -1323,7 +1323,8 @@ Retorne JSON.`;
         } catch(_ee){ console.warn('⚠️ Erro extração OpenAI:', _ee.message); }
 
         console.log('📊 Extração de dados:', JSON.stringify(extracao));
-
+        // VALIDAÇÃO: horário extraído deve ter sido oferecido no histórico
+        if(extracao.horario&&extracao.data_agendamento&&historicoConversa&&!historicoConversa.includes(extracao.horario)){console.warn('⚠️ Horário NÃO oferecido:',extracao.horario);const dO=new Date(extracao.data_agendamento+'T12:00:00');const dN=String(dO.getDate()).padStart(2,'0');const mN=String(dO.getMonth()+1).padStart(2,'0');const hA=historicoMensagensRaw.filter(m=>m.role==='assistant').map(m=>m.content).join('\n');const rx=new RegExp(`(?:${dN}[/.]${mN}|dia\\s*${parseInt(dN)})[^\\n]*(\\d{2}:\\d{2})`,'gi');const mt=[...(hA.matchAll(rx))];if(mt.length>0){console.log(`🔧 Corrigindo ${extracao.horario}→${mt[0][1]}`);extracao.horario=mt[0][1];}}
         // Verificar quais dados faltam
             if (!extracao.nome_paciente) dadosFaltantes.push('nome completo');
             if (!extracao.data_nascimento) dadosFaltantes.push('data de nascimento');
