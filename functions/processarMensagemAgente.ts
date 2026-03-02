@@ -319,7 +319,9 @@ Deno.serve(async (req) => {
     // EXCEÇÃO: Mensagens vindas do buffer (messageId começa com "buffer_") já foram validadas
     // pelo webhook chamador — o contato estava em modo IA quando entrou no debounce.
     // Outra instância (ex: webhookWhatsappChatbot) pode ter revertido para humano durante o delay.
-    const contatosCheck = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
+    let contatosCheck = [];
+    const contatoVerificado = await buscarContatoPorTelefone(phoneNumber);
+    if (contatoVerificado) contatosCheck = [contatoVerificado];
     if (contatosCheck.length > 0 && contatosCheck[0].atendimento_humano && !isBufferMessage) {
       console.log('⚠️ Contato em atendimento humano - ignorando IA');
       
