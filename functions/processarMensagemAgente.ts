@@ -1905,7 +1905,7 @@ Retorne JSON.`;
             { role: 'assistant', content: llmResponse, timestamp }
           ],
           ultima_interacao: timestamp, total_mensagens: 2,
-          origem: 'WhatsApp', status: 'Novo', atendimento_humano: false
+          origem: 'WhatsApp', status: 'Novo', atendimento_humano: true
         };
 
         // Adicionar motivo se identificado
