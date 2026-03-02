@@ -98,12 +98,24 @@ ${pdfTextoExtraido}
         const body = {
             model: modeloFinal,
             messages: [
-                { role: 'system', content: prompt },
-                { role: 'user', content: userContent.length === 1 ? userContent[0].text : userContent }
+                { role: 'system', content: prompt }
             ],
             max_tokens: 1500,
             temperature: temperatura || 0.7
         };
+
+        if (historico && Array.isArray(historico)) {
+            historico.forEach(msg => {
+                if (msg.role && msg.content) {
+                    body.messages.push({
+                        role: msg.role === 'user' ? 'user' : 'assistant',
+                        content: msg.content
+                    });
+                }
+            });
+        }
+
+        body.messages.push({ role: 'user', content: userContent.length === 1 ? userContent[0].text : userContent });
 
         const openaiResp = await Promise.race([
             fetch('https://api.openai.com/v1/chat/completions', {
