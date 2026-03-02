@@ -481,14 +481,14 @@ Deno.serve(async (req) => {
             paciente_id: pacienteId,
             origem: 'WhatsApp',
             status: 'Novo',
-            atendimento_humano: false,
+            atendimento_humano: true,
             ultima_mensagem: messageText,
             historico_mensagens: [userEntry],
             ultima_interacao: timestamp,
             total_mensagens: 1,
             conversa_finalizada: false
           });
-          console.log('🤖 Novo contato criado em modo IA (automático)');
+          console.log('👤 Novo contato criado em modo HUMANO (automático)');
         }
         
         return Response.json({ 
