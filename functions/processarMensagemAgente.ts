@@ -429,8 +429,8 @@ Deno.serve(async (req) => {
     let contatoFresh = contatoHistorico;
     if (contatoHistorico) {
       try {
-        const freshList = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
-        if (freshList.length > 0) contatoFresh = freshList[0];
+        const cFresh = await buscarContatoPorTelefone(phoneNumber);
+        if (cFresh) contatoFresh = cFresh;
       } catch (e) {}
     }
     const historicoMsgs = contatoFresh ? (contatoFresh.historico_mensagens || []) : [];
