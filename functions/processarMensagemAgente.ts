@@ -402,7 +402,9 @@ Deno.serve(async (req) => {
     let historicoMensagensRaw = []; // Guardar mensagens brutas para contexto do LLM
     let contatoHistorico = null; // Referência ao contato para uso posterior
     try {
-      const contatos = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
+      let contatos = [];
+      const cVerif = await buscarContatoPorTelefone(phoneNumber);
+      if (cVerif) contatos = [cVerif];
       if (contatos.length > 0) {
         contatoHistorico = contatos[0];
         // Se a conversa foi finalizada ou histórico está vazio, tratar como primeira mensagem
