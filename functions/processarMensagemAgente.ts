@@ -1774,28 +1774,43 @@ Retorne JSON.`;
       promptCompleto = config.prompt_sistema;
     }
 
-    // Chamar OpenAI diretamente via função auxiliar chamarOpenAI
+    // Chamar OpenAI diretamente com histórico
     const modeloLLM = config.modelo_llm || 'gpt-4o';
-    console.log('🤖 Chamando OpenAI via chamarOpenAI. Modelo:', modeloLLM, '| mediaType:', mediaType);
     let llmResponse = null;
     try {
-      const openaiResult = await Promise.race([
-        base44.asServiceRole.functions.invoke('chamarOpenAI', {
-          prompt: promptCompleto,
-          messageText: messageText || '',
-          historico: historicoMensagensRaw,
-          mediaType: mediaType || 'text',
-          mediaUrl: (mediaType === 'image' || mediaType === 'document') ? mediaUrl : null,
-          modelo: modeloLLM,
-          temperatura: config.temperatura || 0.7
+      const openaiKey = Deno.env.get('OPENAI_API_KEY');
+      const messages = [{ role: 'system', content: promptCompleto }];
+      
+      if (historicoMensagensRaw && historicoMensagensRaw.length > 0) {
+        historicoMensagensRaw.forEach(m => {
+          if (m.role && m.content) messages.push({ role: m.role, content: m.content });
+        });
+      }
+      
+      let userContent = [{ type: 'text', text: messageText || '(sem texto)' }];
+      if (mediaUrl && mediaType === 'image') userContent.push({ type: 'image_url', image_url: { url: mediaUrl } });
+      else if (mediaUrl && mediaType === 'document') userContent[0].text += `\n[Doc: ${mediaUrl}]`;
+      messages.push({ role: 'user', content: userContent });
+      
+      const body = { model: modeloLLM, messages, max_tokens: 1500, temperature: config.temperatura || 0.7 };
+      const openaiResp = await Promise.race([
+        fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
         }),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout chamarOpenAI 70s')), 70000))
+        new Promise((_, r) => setTimeout(() => r(new Error('Timeout OpenAI 70s')), 70000))
       ]);
-      llmResponse = openaiResult?.data?.resposta || null;
-      console.log('✅ OpenAI respondeu. Tokens:', openaiResult?.data?.tokens?.total_tokens);
+      
+      if (openaiResp.ok) {
+        const data = await openaiResp.json();
+        llmResponse = data.choices?.[0]?.message?.content || null;
+        console.log('✅ OpenAI OK');
+      } else {
+        console.error('❌ Erro HTTP OpenAI:', openaiResp.status, await openaiResp.text());
+      }
     } catch (e) {
       console.error('❌ Erro ao chamar OpenAI:', e.message);
-      llmResponse = null;
     }
     
 
