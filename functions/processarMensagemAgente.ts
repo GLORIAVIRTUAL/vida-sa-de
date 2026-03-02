@@ -755,9 +755,9 @@ Deno.serve(async (req) => {
             
             // Salvar no histórico e retornar IMEDIATAMENTE
             try {
-              const contatosCancelHist = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
-              if (contatosCancelHist.length > 0) {
-                const contatoCancel = contatosCancelHist[0];
+              const cCancelHist = await buscarContatoPorTelefone(phoneNumber);
+              if (cCancelHist) {
+                const contatoCancel = cCancelHist;
                 const historicoAtualCancel = contatoCancel.historico_mensagens || [];
                 const timestampCancel = new Date().toISOString();
                 historicoAtualCancel.push(
