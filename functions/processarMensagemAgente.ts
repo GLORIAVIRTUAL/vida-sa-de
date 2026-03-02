@@ -1921,9 +1921,9 @@ Retorne JSON.`;
     // Se tem arquivo para enviar, adicionar ao histórico como mensagem separada
     if (arquivoParaEnviar && arquivoParaEnviar.url) {
       try {
-        const contatos = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
-        if (contatos.length > 0) {
-          const contato = contatos[0];
+        const cEnv = await buscarContatoPorTelefone(phoneNumber);
+        if (cEnv) {
+          const contato = cEnv;
           const historicoAtual = contato.historico_mensagens || [];
           const timestamp = new Date().toISOString();
           
