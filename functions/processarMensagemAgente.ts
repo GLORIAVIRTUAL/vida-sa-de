@@ -1893,21 +1893,17 @@ Retorne JSON.`;
         await base44.asServiceRole.entities.Contato.update(contato.id, updateData);
         console.log('✅ Contato atualizado:', contato.id.substring(0, 8));
       } else {
-        // Criar novo contato
+        let tCP = phoneNumber.replace(/\D/g, '');
+        if (!tCP.startsWith('55')) tCP = '55' + tCP;
         const novoContatoData = {
-          nome: senderName,
-          telefone: phoneNumber,
-          paciente_id: pacienteId,
-          ultima_mensagem: messageText,
-          ultima_resposta: llmResponse,
+          nome: senderName, telefone: tCP, paciente_id: pacienteId,
+          ultima_mensagem: messageText, ultima_resposta: llmResponse,
           historico_mensagens: [
             { role: 'user', content: messageText, timestamp, messageId },
             { role: 'assistant', content: llmResponse, timestamp }
           ],
-          ultima_interacao: timestamp,
-          total_mensagens: 2,
-          origem: 'WhatsApp',
-          status: 'Novo'
+          ultima_interacao: timestamp, total_mensagens: 2,
+          origem: 'WhatsApp', status: 'Novo', atendimento_humano: false
         };
 
         // Adicionar motivo se identificado
