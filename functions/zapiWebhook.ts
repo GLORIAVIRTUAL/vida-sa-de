@@ -604,15 +604,56 @@ async function processarMensagemRecebida(base44, payload) {
                     telefone: telefoneComPrefixo,
                     origem: 'WhatsApp',
                     status: 'Novo',
-                    atendimento_humano: true,
+                    atendimento_humano: false,
                     atendente_atual: null,
                     atendente_id: null,
                     historico_mensagens: historicoInicial,
-                    ultima_interacao: agora
+                    ultima_interacao: agora,
+                    mensagens_pendentes: [{
+                        texto: mediaUrl ? `${textoMensagem}\n${mediaUrl}` : textoMensagem,
+                        timestamp: agora,
+                        messageId: msgId,
+                        mediaType: mediaType,
+                        mediaUrl: mediaUrl
+                    }],
+                    ultimo_timestamp_pendente: agora
                 });
 
-                console.log('👤 Novo contato criado em modo HUMANO - aguardando atendente...');
-                return new Response(JSON.stringify({ message: "Novo contato criado em modo humano", status: "humano" }), { status: 200 });
+                console.log('🤖 Novo contato criado - iniciando debounce para IA...');
+                
+                // Disparar processamento assíncrono após o delay para o novo contato
+                setTimeout(async () => {
+                    try {
+                        const recemCriado = await base44.asServiceRole.entities.Contato.filter({ telefone: telefoneComPrefixo });
+                        if (recemCriado.length > 0) {
+                            const c = recemCriado[0];
+                            if (c.mensagens_pendentes && c.mensagens_pendentes.length > 0) {
+                                const textosCombinados = c.mensagens_pendentes.map(m => m.texto).join(' ');
+                                const ultimaComMidia = [...c.mensagens_pendentes].reverse().find(m => m.mediaUrl);
+                                
+                                await base44.asServiceRole.entities.Contato.update(c.id, {
+                                    mensagens_pendentes: [],
+                                    ultimo_timestamp_pendente: null
+                                });
+                                
+                                const bufferMessageId = `buffer_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+                                await base44.asServiceRole.functions.invoke('processarMensagemAgente', {
+                                    phoneNumber: telefoneComPrefixo,
+                                    messageText: textosCombinados,
+                                    senderName: senderName,
+                                    pacienteId: null,
+                                    mediaType: ultimaComMidia?.mediaType || 'text',
+                                    mediaUrl: ultimaComMidia?.mediaUrl || null,
+                                    messageId: bufferMessageId
+                                });
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Erro no processamento do novo contato:', e);
+                    }
+                }, 3000);
+
+                return new Response(JSON.stringify({ message: "Novo contato criado, processamento IA iniciado", status: "ia_pendente" }), { status: 200 });
             }
         } catch (contatoError) {
             console.error('⚠️ Erro ao verificar/criar contato:', contatoError.message);
