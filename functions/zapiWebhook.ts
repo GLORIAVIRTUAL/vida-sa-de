@@ -577,10 +577,25 @@ async function processarMensagemRecebida(base44, payload) {
                         ultima_interacao: agora,
                         telefone: telAtualizado,
                         nome: contatoExistente.nome || senderName,
-                        conversa_finalizada: false,
-                        atendimento_humano: true
+                        conversa_finalizada: false
                     });
-                    return new Response(JSON.stringify({ message: "Contato existente encontrado", status: "humano" }), { status: 200 });
+                    
+                    // Se o contato estava em modo IA, precisamos enviar para a IA
+                    if (contatoExistente.atendimento_humano === false) {
+                        const bufferMessageId = `buffer_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+                        await base44.asServiceRole.functions.invoke('processarMensagemAgente', {
+                            phoneNumber: telAtualizado,
+                            messageText: textoMensagem,
+                            senderName: senderName,
+                            pacienteId: null,
+                            mediaType: mediaType || 'text',
+                            mediaUrl: mediaUrl || null,
+                            messageId: bufferMessageId
+                        });
+                        return new Response(JSON.stringify({ message: "Contato existente encaminhado para IA", status: "ia" }), { status: 200 });
+                    }
+                    
+                    return new Response(JSON.stringify({ message: "Contato existente atualizado (humano)", status: "humano" }), { status: 200 });
                 }
                 
                 // Realmente novo contato - criar
