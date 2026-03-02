@@ -1717,24 +1717,7 @@ Retorne JSON.`;
             }
           }
 
-          infoProcedimentosExames += `\n🚨🚨🚨 REGRAS ABSOLUTAS PARA USO DA BASE DE DADOS 🚨🚨🚨
-
-    📌 REGRAS DE USO DA BASE DE DADOS:
-    1. CONSULTE a lista acima ANTES de dizer "não realizamos". Se está na lista = SIM, oferecemos!
-    2. BUSCA FLEXÍVEL: "biópsia"="BIOPSIA", "eco"="ECOCARDIOGRAMA". Sinônimos contam!
-    3. Informe TODOS os preços (Particular E Cartão Mais Vida).
-    4. Se NÃO está na lista = diga que precisa verificar e sugira ligar (51) 3661-5991.
-    5. Exames de sangue: a clínica FAZ coleta todos os dias! Nunca diga que não faz.
-    6. NUNCA invente preços. Esta lista é atualizada em tempo real.
-    
-    🚨 NÃO PEÇA NOME/CPF PARA DAR ORÇAMENTO!
-    Quando o cliente enviar uma requisição (imagem ou PDF), você DEVE:
-    1. Ler o texto extraído da imagem/documento (seja fiel a ele).
-    2. Se o texto estiver vazio ou ilegível, PEÇA para o cliente digitar os exames ou mandar uma foto melhor. NUNCA invente exames!
-    3. Se houver exames, monte o orçamento DIRETO, sem pedir dados pessoais.
-
-    📋 FORMATO: 📋*ORÇAMENTO* ✅Realizamos: •[exame]-R$XX ❌Não realizamos: •[exame] 💰TOTAL:R$XX 📍Tristão Monteiro,580-Tramandaí (51)3661-5991. Coleta seg-sáb 7h-10h jejum.
-    ⚠️ Nunca invente preços. Calcule total. Não peça dados pessoais p/orçamento. Coleta NÃO é agendada. Liste cada exame individual. Eco=FAZ SIM. RX/Ressonância/Tomografia=parceiro. Fidelidade à requisição (AST=TGO,ALT=TGP).`;
+          infoProcedimentosExames += `\n🚨 REGRAS: Consulte lista acima ANTES de responder. NÃO invente preços. Para exames de sangue, a clínica faz coleta diária, não precisa agendar.`;
         }
       } catch (e) {
         console.error('⚠️ Erro ao buscar procedimentos/exames:', e.message);
