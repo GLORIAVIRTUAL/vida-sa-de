@@ -1185,7 +1185,6 @@ O cliente está ESCOLHENDO/RESPONDENDO. Ele disse: "${messageText}"
           infoDisponibilidade+=disponibilidadesEncontradas.length>1?'\n⚠️ Apresente médicos e PRÓXIMO horário de cada turno. Pergunte qual prefere.':'\n⚠️ Apresente PRÓXIMO horário de cada turno. Pergunte qual prefere.';
           infoDisponibilidade+='\n⚠️ Para confirmar: nome completo e data nascimento.';
           console.log('✅ Disponibilidades:', disponibilidadesEncontradas.length, 'médicos');
-          console.log('INFO DISPONIBILIDADE:', infoDisponibilidade);
         } else if (medicosParaBuscar.length > 0) {
           console.log('⚠️ Buscando horários além dos 15 dias iniciais (até 60 dias)...');
           const disponibilidadesEstendidas = [];
