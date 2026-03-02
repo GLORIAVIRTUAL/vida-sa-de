@@ -6,7 +6,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 Deno.serve(async (req) => {
     try {
         const base44 = createClientFromRequest(req);
-        const { prompt, messageText, mediaType, mediaUrl, modelo, temperatura } = await req.json();
+        const { prompt, messageText, historico, mediaType, mediaUrl, modelo, temperatura } = await req.json();
 
         const openaiKey = Deno.env.get('OPENAI_API_KEY');
         if (!openaiKey) {
