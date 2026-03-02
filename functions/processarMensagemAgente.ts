@@ -1596,7 +1596,7 @@ Retorne JSON.`;
     if(estaConfirmando&&historicoConversa&&/Para confirmar o agendamento|data de nascimento|nome completo/i.test(historicoConversa)){console.log('✅ Cliente confirmando dados');}
     if(agendamentoCriado){
       console.log('🎉 Retornando confirmação de agendamento');
-      try{const cs=await base44.asServiceRole.entities.Contato.filter({telefone:phoneNumber});const ts=new Date().toISOString();if(cs.length>0){const c=cs[0];const h=c.historico_mensagens||[];h.push({role:'user',content:messageText,timestamp:ts},{role:'assistant',content:mensagemAgendamento,timestamp:ts});await base44.asServiceRole.entities.Contato.update(c.id,{ultima_mensagem:messageText,ultima_resposta:mensagemAgendamento,historico_mensagens:h.slice(-50),ultima_interacao:ts,total_mensagens:(c.total_mensagens||0)+2,agendamentos_realizados:(c.agendamentos_realizados||0)+1,processando_ia_lock:null});}}catch(e){console.error('⚠️ Erro:',e.message);}
+      try{const c=await buscarContatoPorTelefone(phoneNumber);const ts=new Date().toISOString();if(c){const h=c.historico_mensagens||[];h.push({role:'user',content:messageText,timestamp:ts},{role:'assistant',content:mensagemAgendamento,timestamp:ts});await base44.asServiceRole.entities.Contato.update(c.id,{ultima_mensagem:messageText,ultima_resposta:mensagemAgendamento,historico_mensagens:h.slice(-50),ultima_interacao:ts,total_mensagens:(c.total_mensagens||0)+2,agendamentos_realizados:(c.agendamentos_realizados||0)+1,processando_ia_lock:null});}}catch(e){console.error('⚠️ Erro:',e.message);}
       await liberarLock(base44,phoneNumber);
       return Response.json({success:true,resposta:mensagemAgendamento,conversationId:null,agendamento_criado:true});
     }
