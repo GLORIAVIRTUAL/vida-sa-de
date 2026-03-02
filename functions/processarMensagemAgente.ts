@@ -1817,11 +1817,11 @@ Retorne JSON.`;
 
     // Salvar conversa no histórico (user + assistant juntos para evitar duplicação)
     try {
-      const contatos = await base44.asServiceRole.entities.Contato.filter({ telefone: phoneNumber });
+      const cFinal = await buscarContatoPorTelefone(phoneNumber);
       const timestamp = new Date().toISOString();
 
-      if (contatos.length > 0) {
-        const contato = contatos[0];
+      if (cFinal) {
+        const contato = cFinal;
         const historicoAtual = contato.historico_mensagens || [];
 
         // Verificar duplicatas - orçamentos e outras mensagens repetidas
