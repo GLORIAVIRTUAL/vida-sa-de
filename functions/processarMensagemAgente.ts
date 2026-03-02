@@ -1179,7 +1179,8 @@ O cliente está ESCOLHENDO/RESPONDENDO. Ele disse: "${messageText}"
 
         if (disponibilidadesEncontradas.length > 0) {
         const _am=new Date(agoraBrasil);_am.setDate(_am.getDate()+1);const _amI=`${_am.getFullYear()}-${String(_am.getMonth()+1).padStart(2,'0')}-${String(_am.getDate()).padStart(2,'0')}`;
-        infoDisponibilidade = `\n\n📅 DISPONIBILIDADES ENCONTRADAS:\n🚨HOJE=${dataAtualISO} AMANHÃ=${_amI}. Se perguntam "amanhã?" e ${_amI} NÃO está abaixo→"NÃO há amanhã, próximo é [1º abaixo]".\n`;
+        const _hojeI = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+        infoDisponibilidade = `\n\n📅 DISPONIBILIDADES ENCONTRADAS:\n🚨HOJE=${_hojeI} AMANHÃ=${_amI}. Se perguntam "amanhã?" e ${_amI} NÃO está abaixo→"NÃO há amanhã, próximo é [1º abaixo]".\n`;
         for(const medico of disponibilidadesEncontradas){infoDisponibilidade+=`\n👨‍⚕️ *${medico.medico_nome}* (${medico.especialidade}) [ID: ${medico.medico_id}]\n`;for(const d of medico.disponibilidades.slice(0,3)){if(!d.horarios?.length)continue;const mn=d.horarios.find(h=>parseInt(h.split(':')[0])<12);const td=d.horarios.find(h=>parseInt(h.split(':')[0])>=12);const ts=[mn?`Manhã: ${mn}`:null,td?`Tarde: ${td}`:null].filter(Boolean).join(' | ');infoDisponibilidade+=`   📅 ${d.data_formatada}: ${ts}\n`;}}
           infoDisponibilidade+=disponibilidadesEncontradas.length>1?'\n⚠️ Apresente médicos e PRÓXIMO horário de cada turno. Pergunte qual prefere.':'\n⚠️ Apresente PRÓXIMO horário de cada turno. Pergunte qual prefere.';
           infoDisponibilidade+='\n⚠️ Para confirmar: nome completo e data nascimento.';
