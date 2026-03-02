@@ -1800,6 +1800,7 @@ Retorne JSON.`;
         base44.asServiceRole.functions.invoke('chamarOpenAI', {
           prompt: promptCompleto,
           messageText: messageText || '',
+          historico: historicoMensagensRaw,
           mediaType: mediaType || 'text',
           mediaUrl: (mediaType === 'image' || mediaType === 'document') ? mediaUrl : null,
           modelo: modeloLLM,
