@@ -943,8 +943,8 @@ Informe ao cliente que:
       // Padrões: "dia 12: 13:15", "sexta dia 13: 8:30", "13:15", "dia 12", "segunda", "Dr. Altamiro", "quero", "sim"
       const clienteEstaEscolhendoHorario = !(ehPerguntaDisponibilidadeMedico && !/agendar|marcar/i.test(messageText)) && (
         /dia\s*\d{1,2}/i.test(messageText) || /\d{1,2}[:/h]\d{2}/i.test(messageText) || /\d{1,2}\/\d{1,2}/i.test(messageText) ||
-        /segunda|terça|terca|quarta|quinta|sexta|sábado|sabado/i.test(messageText) || /dr\.?\s*\w+/i.test(messageText) ||
-        /^(sim|quero|ok|pode|claro|esse|essa|este|esta|o primeiro|a primeira|o segundo|a segunda)\s*/i.test(messageText.trim())
+        /segunda|terça|terca|quarta|quinta|sexta|sábado|sabado|hoje|amanh[ãa]/i.test(messageText) || /dr\.?\s*\w+/i.test(messageText) ||
+        /^(sim|quero|ok|pode|claro|esse|essa|este|esta|o primeiro|a primeira|o segundo|a segunda|qualquer)\b/i.test(messageText.trim())
       ) && /Dr\.|👨‍⚕️|\d{2}:\d{2}/i.test(ultimaMsgAssistenteFull);
       
       // Verificar se disponibilidades já foram mostradas (com horários reais no formato que usamos)
@@ -956,7 +956,9 @@ Informe ao cliente que:
         /Qual médico.*prefere|Qual horário.*prefere|qual.*você.*prefere/i.test(ultimaMsgAssistenteFull)
       );
 
-      if (clienteEstaEscolhendoHorario || jaShowouDisponibilidades) {
+      const isPerguntaNovaDisponibilidade = ehPerguntaDisponibilidadeMedico || /outr[oa] (dia|m[eê]s|semana|hor[áa]rio|m[eé]dico)/i.test(messageText) || /ele atende\b|ela atende\b/i.test(messageText);
+
+      if (clienteEstaEscolhendoHorario || (jaShowouDisponibilidades && !isPerguntaNovaDisponibilidade)) {
         console.log('⏭️ Cliente está escolhendo/respondendo - NÃO rebuscando disponibilidades');
         infoDisponibilidade = `\n\n✅ DISPONIBILIDADES JÁ FORAM MOSTRADAS AO CLIENTE ANTERIORMENTE.
 O cliente está ESCOLHENDO/RESPONDENDO. Ele disse: "${messageText}"
