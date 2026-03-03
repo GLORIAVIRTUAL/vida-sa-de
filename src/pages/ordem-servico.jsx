@@ -367,16 +367,6 @@ export default function OrdemDeServico() {
 
   const ordensFiltradas = useMemo(() => {
     return ordens.filter((os) => {
-      // Filtro de data
-      const dataRef = os.data_execucao || os.created_date;
-      if (dataRef) {
-        const dataApenas = dataRef.split('T')[0];
-        if (dataInicio && dataApenas < dataInicio) return false;
-        if (dataFim && dataApenas > dataFim) return false;
-      } else if (dataInicio || dataFim) {
-        return false;
-      }
-
       // Filtro de status de pagamento
       if (statusPagamentoFiltro !== "todos" && os.status_pagamento !== statusPagamentoFiltro) {
         return false;
@@ -394,7 +384,7 @@ export default function OrdemDeServico() {
 
       return true;
     });
-  }, [ordens, dataInicio, dataFim, statusPagamentoFiltro, searchTerm, getNome]);
+  }, [ordens, statusPagamentoFiltro, searchTerm, getNome]);
 
   const osFormData = useMemo(() => {
     if (!agendamentoParaOS || !medicos.length || !categorias.length) {
