@@ -93,7 +93,7 @@ export default function OrdemDeServico() {
     } else {
       carregarDados(false);
     }
-  }, [agendamentoId]);
+  }, [agendamentoId, dataInicio, dataFim]);
 
   const handleAbrirFormOS = useCallback(async (agendamento) => {
     console.log('═══════════════════════════════════════');
