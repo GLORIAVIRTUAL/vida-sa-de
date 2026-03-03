@@ -59,8 +59,8 @@ export default function OrdemDeServico() {
   const carregandoRef = useRef(false);
 
   // Filtros
-  const [dataInicio, setDataInicio] = useState(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
-  const [dataFim, setDataFim] = useState(format(endOfMonth(new Date()), 'yyyy-MM-dd'));
+  const [dataInicio, setDataInicio] = useState("");
+  const [dataFim, setDataFim] = useState("");
   const [statusPagamentoFiltro, setStatusPagamentoFiltro] = useState("todos");
 
   const handleCorrigirNomes = async () => {
