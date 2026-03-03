@@ -106,13 +106,6 @@ export default function VisualizacaoDiaria({ agendamentos, medicos, pacientes, o
     if (!paciente && agendamento?.paciente_nome) {
       const nomeNorm = normStr(agendamento.paciente_nome);
       paciente = pacientes.find((p) => normStr(p.nome) === nomeNorm);
-      // 2b. Busca local por nome parcial (primeiro nome)
-      if (!paciente) {
-        const primeiroNome = nomeNorm.split(' ')[0];
-        if (primeiroNome.length >= 3) {
-          paciente = pacientes.find((p) => normStr(p.nome).startsWith(primeiroNome));
-        }
-      }
     }
 
     // Se encontrou localmente, abrir imediatamente
