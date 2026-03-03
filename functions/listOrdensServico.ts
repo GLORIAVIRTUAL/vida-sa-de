@@ -25,9 +25,9 @@ Deno.serve(async (req) => {
 
         let ordens;
         if (Object.keys(filtro).length > 0) {
-            ordens = await base44.asServiceRole.entities.OrdemServico.filter(filtro, "-data_execucao", 500);
+            ordens = await base44.asServiceRole.entities.OrdemServico.filter(filtro, "-data_execucao", 2000);
         } else {
-            ordens = await base44.asServiceRole.entities.OrdemServico.list("-data_execucao", 500);
+            ordens = await base44.asServiceRole.entities.OrdemServico.list("-data_execucao", 2000);
         }
 
         return Response.json({ ordens });
