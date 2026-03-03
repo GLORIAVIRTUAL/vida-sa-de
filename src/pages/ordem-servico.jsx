@@ -368,9 +368,13 @@ export default function OrdemDeServico() {
   const ordensFiltradas = useMemo(() => {
     return ordens.filter((os) => {
       // Filtro de data
-      if (os.data_execucao) {
-        const dentroData = os.data_execucao >= dataInicio && os.data_execucao <= dataFim;
-        if (!dentroData) return false;
+      const dataRef = os.data_execucao || os.created_date;
+      if (dataRef) {
+        const dataApenas = dataRef.split('T')[0];
+        if (dataInicio && dataApenas < dataInicio) return false;
+        if (dataFim && dataApenas > dataFim) return false;
+      } else if (dataInicio || dataFim) {
+        return false;
       }
 
       // Filtro de status de pagamento
