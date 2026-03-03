@@ -560,7 +560,9 @@ export default function OrdemDeServico() {
                     </TableRow> :
 
                 ordensFiltradas.map((os) => {
-                  const dataExecucao = os.data_execucao ? new Date(os.data_execucao + 'T00:00:00') : null;
+                  const dataRef = os.data_execucao || os.created_date;
+                  const dataApenas = dataRef ? dataRef.split('T')[0] : null;
+                  const dataExecucao = dataApenas ? new Date(dataApenas + 'T00:00:00') : null;
                   return (
                     <TableRow key={os.id}>
                           <TableCell>{dataExecucao && !isNaN(dataExecucao.getTime()) ? format(dataExecucao, 'dd/MM/yyyy') : 'N/A'}</TableCell>
