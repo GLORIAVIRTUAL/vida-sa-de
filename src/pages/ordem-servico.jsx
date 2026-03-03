@@ -224,8 +224,8 @@ export default function OrdemDeServico() {
         // Etapa 2: Ordens de Serviço
         let ordensData = [];
         try {
-          console.log('🔄 Carregando OS via função backend...');
-          const res = await base44.functions.invoke('listOrdensServico', {});
+          console.log('🔄 Carregando OS via função backend...', { dataInicio, dataFim });
+          const res = await base44.functions.invoke('listOrdensServico', { dataInicio, dataFim });
           if (res?.data?.ordens) {
             ordensData = res.data.ordens;
             console.log('✅ OS carregadas via função:', ordensData.length);
