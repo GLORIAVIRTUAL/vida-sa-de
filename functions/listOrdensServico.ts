@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 Deno.serve(async (req) => {
     try {
@@ -10,12 +10,25 @@ Deno.serve(async (req) => {
             return Response.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Consumir o corpo da requisição se houver, para evitar problemas de stream não lido
-        try { await req.json(); } catch (e) {}
+        let body = {};
+        try { body = await req.json(); } catch (e) {}
 
-        // Listar ordens de serviço ordenadas pela data de execução (realizadas)
-        // Ordenação decrescente (-data_execucao) para mostrar as mais recentes primeiro
-        const ordens = await base44.asServiceRole.entities.OrdemServico.list("-data_execucao", 500);
+        const { dataInicio, dataFim } = body;
+
+        // Construir filtro de data
+        const filtro = {};
+        if (dataInicio || dataFim) {
+            filtro.data_execucao = {};
+            if (dataInicio) filtro.data_execucao.$gte = dataInicio;
+            if (dataFim) filtro.data_execucao.$lte = dataFim;
+        }
+
+        let ordens;
+        if (Object.keys(filtro).length > 0) {
+            ordens = await base44.asServiceRole.entities.OrdemServico.filter(filtro, "-data_execucao", 500);
+        } else {
+            ordens = await base44.asServiceRole.entities.OrdemServico.list("-data_execucao", 500);
+        }
 
         return Response.json({ ordens });
 
