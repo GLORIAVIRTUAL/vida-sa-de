@@ -115,27 +115,17 @@ export default function VisualizacaoDiaria({ agendamentos, medicos, pacientes, o
       return;
     }
     
-    // 3. Fallback: buscar via backend que varre TODOS os pacientes
-    const termoBusca = agendamento?.paciente_nome || '';
-    if (termoBusca || pacienteId) {
+    // 3. Busca direta por ID via SDK (rápida)
+    if (pacienteId) {
       try {
-        const response = await base44.functions.invoke('searchPatients', { 
-          termo: termoBusca, 
-          paciente_id: pacienteId,
-          limit: 10 
-        });
-        const resultados = response?.data;
-        if (Array.isArray(resultados) && resultados.length > 0) {
-          const nomeNorm = normStr(termoBusca);
-          paciente = resultados.find(p => normStr(p.nome) === nomeNorm) || resultados[0];
-          if (paciente) {
-            setPacienteParaEditar(paciente);
-            setFormularioPacienteAberto(true);
-            return;
-          }
+        const resultados = await Paciente.filter({ id: pacienteId });
+        if (resultados.length > 0) {
+          setPacienteParaEditar(resultados[0]);
+          setFormularioPacienteAberto(true);
+          return;
         }
       } catch (error) {
-        console.error('Erro ao buscar paciente:', error);
+        console.error('Erro ao buscar paciente por ID:', error);
       }
     }
     
