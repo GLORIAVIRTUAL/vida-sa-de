@@ -58,9 +58,13 @@ export default function OrdemDeServico() {
   const [corrigindo, setCorrigindo] = useState(false);
   const carregandoRef = useRef(false);
 
-  // Filtros
-  const [dataInicio, setDataInicio] = useState("");
-  const [dataFim, setDataFim] = useState("");
+  // Filtros - padrão: últimos 3 meses para evitar carga gigante
+  const [dataInicio, setDataInicio] = useState(() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 3);
+    return format(d, 'yyyy-MM-dd');
+  });
+  const [dataFim, setDataFim] = useState(() => format(new Date(), 'yyyy-MM-dd'));
   const [statusPagamentoFiltro, setStatusPagamentoFiltro] = useState("todos");
 
   const handleCorrigirNomes = async () => {
