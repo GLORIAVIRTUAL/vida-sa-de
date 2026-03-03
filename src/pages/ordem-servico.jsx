@@ -86,14 +86,30 @@ export default function OrdemDeServico() {
     }
   };
 
+  // Carregamento inicial
   useEffect(() => {
-    // Se vier com agendamento_id na URL, carregar em modo rápido
     if (agendamentoId) {
       carregarDados(true);
     } else {
       carregarDados(false);
     }
-  }, [agendamentoId, dataInicio, dataFim]);
+  }, [agendamentoId]);
+
+  // Recarregar quando filtros de data mudam (com debounce)
+  const debounceRef = useRef(null);
+  useEffect(() => {
+    // Pular o primeiro render (carregamento inicial já cuida)
+    if (debounceRef.current === null) {
+      debounceRef.current = 'init';
+      return;
+    }
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      carregandoRef.current = false; // Resetar lock para permitir novo carregamento
+      carregarDados(false);
+    }, 800);
+    return () => { if (debounceRef.current && debounceRef.current !== 'init') clearTimeout(debounceRef.current); };
+  }, [dataInicio, dataFim]);
 
   const handleAbrirFormOS = useCallback(async (agendamento) => {
     console.log('═══════════════════════════════════════');
