@@ -32,16 +32,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ============ TRANSCRIÇÃO DE ÁUDIO VIA WHISPER (OpenAI) ============
-    // Áudios do WhatsApp (OGG/opus) são transcritos usando a API Whisper da OpenAI.
-    // Whisper suporta .ogg nativamente e é muito mais preciso que InvokeLLM para áudio.
     if (mediaType === 'audio' && mediaUrl) {
-      console.log('🎤 Áudio detectado - iniciando transcrição via Whisper...');
-      console.log('🔗 URL do áudio recebida:', mediaUrl);
-      
       let transcricaoSucesso = false;
-      
-      // PASSO 1: Baixar o áudio
       let audioBlob = null;
       
       try {
