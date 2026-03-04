@@ -1771,8 +1771,20 @@ Retorne JSON.`;
       }
       
       let userContent = [{ type: 'text', text: messageText || '(sem texto)' }];
-      if (mediaUrl && mediaType === 'image') userContent.push({ type: 'image_url', image_url: { url: mediaUrl } });
-      else if (mediaUrl && mediaType === 'document') userContent[0].text += `\n[Doc: ${mediaUrl}]`;
+      if (mediaUrl && mediaType === 'image') {
+        userContent.push({ type: 'image_url', image_url: { url: mediaUrl } });
+      } else if (mediaUrl && mediaType === 'document') {
+        try {
+          const eR = await base44.asServiceRole.functions.invoke('extractPdfText', { fileUrl: mediaUrl });
+          if (eR?.data?.text) {
+            userContent[0].text += `\n\n🚨 CONTEÚDO DO PDF 🚨\n${eR.data.text}\n\n🚨 REGRAS: 1. LISTE APENAS os exames que aparecem LITERALMENTE no texto acima. 2. É PROIBIDO adicionar exames que NÃO estão no texto. 3. É PROIBIDO substituir exames. 4. Cruze CADA exame com a tabela. Se não achar, diga "não realizamos". 5. NÃO pergunte se quer agendar coleta.`;
+          } else {
+            userContent[0].text += `\n\n⚠️ O cliente enviou um PDF, mas não foi possível ler. Peça foto nítida.`;
+          }
+        } catch (e) {
+          userContent[0].text += `\n\n⚠️ O cliente enviou um PDF, mas não foi possível ler. Peça foto nítida.`;
+        }
+      }
       messages.push({ role: 'user', content: userContent });
       
       const body = { model: modeloLLM, messages, max_tokens: 1500, temperature: config.temperatura || 0.7 };
