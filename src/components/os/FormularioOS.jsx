@@ -404,9 +404,8 @@ export default function FormularioOS({
       } else if (percentual > 0) {
         // Calcular repasse sobre o valor final da venda (com desconto/acréscimo)
         const valorFinalVenda = valorTotal - descontoAgendamento + acrescimoAgendamento;
-        const bruto = valorFinalVenda * (percentual / 100);
-        // NÃO aplicar imposto de 10% para Particular e Cartão Mais Vida
-        repasseMedico = isentoImposto ? bruto : bruto * 0.90;
+        // O valor cadastrado é o valor líquido do repasse
+        repasseMedico = valorFinalVenda * (percentual / 100);
       }
       }
 

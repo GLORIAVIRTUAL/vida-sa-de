@@ -120,8 +120,7 @@ Deno.serve(async (req) => {
                 novoRepasseMedico = repasseFixo;
             } else if (percentual > 0) {
                 const valorFinalVenda = (os.valor_total || 0) - (os.desconto || 0) + (os.acrescimo_manual || 0);
-                const bruto = valorFinalVenda * (percentual / 100);
-                novoRepasseMedico = isentoImposto ? bruto : bruto * 0.90;
+                novoRepasseMedico = valorFinalVenda * (percentual / 100);
             }
 
             // Arredondar para 2 casas decimais para evitar problemas de precisão
