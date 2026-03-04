@@ -683,7 +683,7 @@ export default function Relatorios() {
             </div>
           </div>
           
-          <h3>Detalhamento (${dadosFiltrados.length} registros)</h3>
+          <h3>Detalhamento (${new Set(dadosFiltrados.map(os => os.original_id || os.id)).size} atendimentos / ${dadosFiltrados.length} registros)</h3>
           <table>
             <thead>
               <tr>
