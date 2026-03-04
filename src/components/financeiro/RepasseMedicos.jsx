@@ -266,7 +266,7 @@ export default function RepasseMedicos({ ordensServico, medicos, pacientes, onRe
             <div class="label">VALOR TOTAL DO REPASSE</div>
             <div class="valor">R$ ${grupoMedico.total_repasse.toFixed(2)}</div>
             <div style="font-size: 12px; margin-top: 10px; opacity: 0.9;">
-              (Já descontado 10% de impostos)
+              (Valor líquido)
             </div>
           </div>
 
@@ -492,7 +492,7 @@ export default function RepasseMedicos({ ordensServico, medicos, pacientes, onRe
                   R$ {medicoSelecionado.total_repasse.toFixed(2)}
                 </p>
                 <p className="text-xs text-green-700 mt-1">
-                  {medicoSelecionado.quantidade} atendimento(s) • Já descontado 10% impostos
+                  {medicoSelecionado.quantidade} atendimento(s) • Valor líquido
                 </p>
               </div>
 

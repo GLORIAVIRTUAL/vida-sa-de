@@ -65,7 +65,6 @@ export default function Repasses() {
         ordens: [],
         totais: {
           valor_total_os: 0,
-          imposto_total: 0,
           repasse_total: 0,
           valor_clinica_total: 0,
           quantidade_atendimentos: 0
@@ -76,9 +75,7 @@ export default function Repasses() {
     acc[medicoId].ordens.push(os);
     
     // Somar totais
-    const imposto = os.valor_final * 0.10;
     acc[medicoId].totais.valor_total_os += os.valor_final;
-    acc[medicoId].totais.imposto_total += imposto;
     acc[medicoId].totais.repasse_total += os.valor_repasse_medico || 0;
     acc[medicoId].totais.valor_clinica_total += os.valor_clinica || 0;
     acc[medicoId].totais.quantidade_atendimentos += 1;
@@ -281,7 +278,6 @@ export default function Repasses() {
 
     // Totais gerais
     let totalGeralOS = 0;
-    let totalGeralImposto = 0;
     let totalGeralRepasses = 0;
     let totalGeralClinica = 0;
     let totalGeralAtendimentos = 0;
@@ -291,7 +287,6 @@ export default function Repasses() {
       if (!medico) return;
 
       totalGeralOS += totais.valor_total_os;
-      totalGeralImposto += totais.imposto_total;
       totalGeralRepasses += totais.repasse_total;
       totalGeralClinica += totais.valor_clinica_total;
       totalGeralAtendimentos += totais.quantidade_atendimentos;
@@ -313,19 +308,11 @@ export default function Repasses() {
                 </div>
               </div>
               
-              <div class="total-item imposto">
-                <div class="total-label">📋 IMPOSTO (10%)</div>
-                <div class="total-value">R$ ${totais.imposto_total.toFixed(2)}</div>
-                <div style="font-size: 11px; color: #6b7280; margin-top: 5px;">
-                  Descontado do valor total
-                </div>
-              </div>
-              
               <div class="total-item repasse">
                 <div class="total-label">👨‍⚕️ REPASSE MÉDICO</div>
                 <div class="total-value">R$ ${totais.repasse_total.toFixed(2)}</div>
                 <div style="font-size: 11px; color: #6b7280; margin-top: 5px;">
-                  Já descontado 10% imposto
+                  Valor líquido
                 </div>
               </div>
               
@@ -348,7 +335,6 @@ export default function Repasses() {
                   <th>Paciente</th>
                   <th>Serviço</th>
                   <th class="text-right">Valor Total</th>
-                  <th class="text-right">Imposto (10%)</th>
                   <th class="text-right">Repasse Médico</th>
                   <th class="text-right">Valor Clínica</th>
                 </tr>
@@ -358,7 +344,6 @@ export default function Repasses() {
 
       ordens.forEach(os => {
         const paciente = pacientes.find(p => p.id === os.paciente_id);
-        const imposto = os.valor_final * 0.10;
 
         htmlContent += `
           <tr>
@@ -367,7 +352,6 @@ export default function Repasses() {
             <td>${paciente?.nome || "N/A"}</td>
             <td>${os.tipo_servico}</td>
             <td class="text-right">R$ ${os.valor_final.toFixed(2)}</td>
-            <td class="text-right" style="color: #ef4444;">R$ ${imposto.toFixed(2)}</td>
             <td class="text-right" style="color: #8b5cf6; font-weight: bold;">R$ ${(os.valor_repasse_medico || 0).toFixed(2)}</td>
             <td class="text-right" style="color: #10b981; font-weight: bold;">R$ ${(os.valor_clinica || 0).toFixed(2)}</td>
           </tr>
@@ -390,10 +374,6 @@ export default function Repasses() {
           <div class="resumo-item">
             <div class="resumo-label">TOTAL OS</div>
             <div class="resumo-value">R$ ${totalGeralOS.toFixed(2)}</div>
-          </div>
-          <div class="resumo-item">
-            <div class="resumo-label">IMPOSTO</div>
-            <div class="resumo-value">R$ ${totalGeralImposto.toFixed(2)}</div>
           </div>
           <div class="resumo-item">
             <div class="resumo-label">REPASSES</div>
@@ -508,7 +488,7 @@ export default function Repasses() {
 
                     <CardContent className="p-6 space-y-6">
                       {/* Totais do Médico */}
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500">
                           <div className="flex items-center gap-2 mb-2">
                             <DollarSign className="w-5 h-5 text-blue-600" />
@@ -522,19 +502,6 @@ export default function Repasses() {
                           </p>
                         </div>
 
-                        <div className="bg-red-50 p-4 rounded-lg border-l-4 border-red-500">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Receipt className="w-5 h-5 text-red-600" />
-                            <span className="text-xs font-semibold text-red-900">IMPOSTO (10%)</span>
-                          </div>
-                          <p className="text-2xl font-bold text-red-600">
-                            R$ {totais.imposto_total.toFixed(2)}
-                          </p>
-                          <p className="text-xs text-red-700 mt-1">
-                            Descontado do total
-                          </p>
-                        </div>
-
                         <div className="bg-purple-50 p-4 rounded-lg border-l-4 border-purple-500">
                           <div className="flex items-center gap-2 mb-2">
                             <TrendingDown className="w-5 h-5 text-purple-600" />
@@ -544,7 +511,7 @@ export default function Repasses() {
                             R$ {totais.repasse_total.toFixed(2)}
                           </p>
                           <p className="text-xs text-purple-700 mt-1">
-                            Já c/ desc. 10%
+                            Valor líquido
                           </p>
                         </div>
 
@@ -574,7 +541,6 @@ export default function Repasses() {
                               <TableHead>Paciente</TableHead>
                               <TableHead>Serviço</TableHead>
                               <TableHead className="text-right">Valor Total</TableHead>
-                              <TableHead className="text-right">Imposto (10%)</TableHead>
                               <TableHead className="text-right">Repasse Médico</TableHead>
                               <TableHead className="text-right">Valor Clínica</TableHead>
                             </TableRow>
@@ -582,7 +548,6 @@ export default function Repasses() {
                           <TableBody>
                             {ordens.map(os => {
                               const paciente = pacientes.find(p => p.id === os.paciente_id);
-                              const imposto = os.valor_final * 0.10;
 
                               return (
                                 <TableRow key={os.id}>
@@ -600,9 +565,6 @@ export default function Repasses() {
                                   </TableCell>
                                   <TableCell className="text-right font-semibold">
                                     R$ {os.valor_final.toFixed(2)}
-                                  </TableCell>
-                                  <TableCell className="text-right text-red-600 font-semibold">
-                                    R$ {imposto.toFixed(2)}
                                   </TableCell>
                                   <TableCell className="text-right text-purple-600 font-bold">
                                     R$ {(os.valor_repasse_medico || 0).toFixed(2)}
