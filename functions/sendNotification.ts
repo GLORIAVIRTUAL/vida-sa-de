@@ -131,6 +131,7 @@ Deno.serve(async (req) => {
                             telefone: telefoneCompleto,
                             origem: 'Manual',
                             status: 'Cliente',
+                            atendimento_humano: true,
                             historico_mensagens: [{
                                 role: 'assistant',
                                 content: `📢 [Notificação Manual]\n${mensagem}`,
