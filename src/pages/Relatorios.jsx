@@ -539,7 +539,7 @@ export default function Relatorios() {
             </div>
           </div>
           
-          <h3>Repasses em Aberto (${osEmAberto.length})</h3>
+          <h3>Repasses em Aberto (${new Set(osEmAberto.map(os => os.original_id || os.id)).size})</h3>
           <table class="em-aberto">
             <thead>
               <tr>
