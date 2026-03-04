@@ -188,28 +188,29 @@ export default function Relatorios() {
     if (!agendamento) return null;
     
     const obsTexto = agendamento.observacoes || '';
-    if (!obsTexto) return null;
     
-    // Procurar padrão "Dentista: Dra. Nome" ou "Dentista: Dr. Nome" nas observações
-    const matchDentista = obsTexto.match(/Dentista:\s*(Dr[a]?\.\s*.+?)(?:\n|$)/i);
-    if (matchDentista) {
-      const nomeDentista = matchDentista[1].trim();
-      // Tentar encontrar o médico correspondente na lista de médicos
-      const medEncontrado = medicos.find(m => {
-        const nNorm = m.nome.toLowerCase().replace(/^dr[a]?\.\s*/i, '').trim();
-        const dNorm = nomeDentista.toLowerCase().replace(/^dr[a]?\.\s*/i, '').trim();
-        return nNorm === dNorm || nNorm.includes(dNorm) || dNorm.includes(nNorm);
-      });
-      if (medEncontrado) return medEncontrado;
-      
-      // Fallback: buscar apenas pelo sobrenome principal (ex: "Goldani" ou "Souza")
-      const palavrasDentista = nomeDentista.toLowerCase().replace(/^dr[a]?\.\s*/i, '').trim().split(/\s+/);
-      if (palavrasDentista.length > 0) {
-        const sobrenomeDentista = palavrasDentista[palavrasDentista.length - 1];
-        const medPorSobrenome = medicos.find(m => {
-          return m.nome.toLowerCase().includes(sobrenomeDentista) && sobrenomeDentista.length > 3;
+    if (obsTexto) {
+      // Procurar padrão "Dentista: Dra. Nome" ou "Dentista: Dr. Nome" nas observações
+      const matchDentista = obsTexto.match(/Dentista:\s*(Dr[a]?\.\s*.+?)(?:\n|$)/i);
+      if (matchDentista) {
+        const nomeDentista = matchDentista[1].trim();
+        // Tentar encontrar o médico correspondente na lista de médicos
+        const medEncontrado = medicos.find(m => {
+          const nNorm = m.nome.toLowerCase().replace(/^dr[a]?\.\s*/i, '').trim();
+          const dNorm = nomeDentista.toLowerCase().replace(/^dr[a]?\.\s*/i, '').trim();
+          return nNorm === dNorm || nNorm.includes(dNorm) || dNorm.includes(nNorm);
         });
-        if (medPorSobrenome) return medPorSobrenome;
+        if (medEncontrado) return medEncontrado;
+        
+        // Fallback: buscar apenas pelo sobrenome principal (ex: "Goldani" ou "Souza")
+        const palavrasDentista = nomeDentista.toLowerCase().replace(/^dr[a]?\.\s*/i, '').trim().split(/\s+/);
+        if (palavrasDentista.length > 0) {
+          const sobrenomeDentista = palavrasDentista[palavrasDentista.length - 1];
+          const medPorSobrenome = medicos.find(m => {
+            return m.nome.toLowerCase().includes(sobrenomeDentista) && sobrenomeDentista.length > 3;
+          });
+          if (medPorSobrenome) return medPorSobrenome;
+        }
       }
     }
     
@@ -219,6 +220,15 @@ export default function Relatorios() {
     if (agendamento.medico_id && agendamento.medico_id !== os.medico_id) {
       const medDoAgendamento = medicos.find(m => m.id === agendamento.medico_id);
       if (medDoAgendamento) return medDoAgendamento;
+    }
+
+    // Fallback: verificar se o agendamento tem itens_servico com medico_id
+    if (agendamento.itens_servico && agendamento.itens_servico.length > 0) {
+      const itemComMedico = agendamento.itens_servico.find(i => i.medico_id && i.medico_id !== os.medico_id);
+      if (itemComMedico) {
+        const medDoItem = medicos.find(m => m.id === itemComMedico.medico_id);
+        if (medDoItem) return medDoItem;
+      }
     }
     
     return null;
