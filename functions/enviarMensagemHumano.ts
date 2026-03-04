@@ -144,6 +144,7 @@ Deno.serve(async (req) => {
           ultima_resposta: conteudoMensagem,
           ultima_interacao: timestamp,
           total_mensagens: (contato.total_mensagens || 0) + 1,
+          atendimento_humano: true,
           atendente_atual: nomeAtendente,
           atendente_id: user.id
         });
