@@ -79,6 +79,8 @@ Deno.serve(async (req) => {
       '❌ Disponibilidades ainda NÃO foram mostradas (ou foram há muito tempo). Se cliente quer agendar, MOSTRE as opções.'}
     ${dadosFaltantes && dadosFaltantes.length > 0 ? `📋 DADOS QUE FALTAM: ${dadosFaltantes.join(', ')}` : ''}
 
+    ${infoAgendamentosCliente || ''}
+
     ${infoDisponibilidade || ''}
 
     ${infoCancelamento || ''}
