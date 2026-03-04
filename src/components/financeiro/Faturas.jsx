@@ -578,19 +578,64 @@ export default function Faturas({ ordensServico, pacientes, medicos, procediment
 
             <div className="flex items-center gap-2">
               <Activity className="w-4 h-4 text-gray-500" />
-              <Select value={filtroServico} onValueChange={setFiltroServico}>
-                <SelectTrigger className="w-64">
-                  <SelectValue placeholder="Todos os serviços" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos os Serviços</SelectItem>
-                  {opcoesFiltro.servicos.map(serv => (
-                    <SelectItem key={serv} value={serv}>
-                      {serv}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Popover open={openServico} onOpenChange={setOpenServico}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={openServico}
+                    className="w-64 justify-between font-normal"
+                  >
+                    <span className="truncate">
+                      {filtroServico === "todos"
+                        ? "Todos os Serviços"
+                        : filtroServico}
+                    </span>
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-64 p-0">
+                  <Command>
+                    <CommandInput placeholder="Buscar serviço..." />
+                    <CommandList>
+                      <CommandEmpty>Nenhum serviço encontrado.</CommandEmpty>
+                      <CommandGroup>
+                        <CommandItem
+                          value="todos"
+                          onSelect={() => {
+                            setFiltroServico("todos");
+                            setOpenServico(false);
+                          }}
+                        >
+                          <Check
+                            className={`mr-2 h-4 w-4 ${
+                              filtroServico === "todos" ? "opacity-100" : "opacity-0"
+                            }`}
+                          />
+                          Todos os Serviços
+                        </CommandItem>
+                        {opcoesFiltro.servicos.map((serv) => (
+                          <CommandItem
+                            key={serv}
+                            value={serv}
+                            onSelect={() => {
+                              setFiltroServico(serv);
+                              setOpenServico(false);
+                            }}
+                          >
+                            <Check
+                              className={`mr-2 h-4 w-4 ${
+                                filtroServico === serv ? "opacity-100" : "opacity-0"
+                              }`}
+                            />
+                            {serv}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
 
