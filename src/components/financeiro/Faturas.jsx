@@ -31,6 +31,48 @@ export default function Faturas({ ordensServico, pacientes, medicos, procediment
     );
   }, [categorias]);
 
+  // Extrair opções únicas para os filtros
+  const opcoesFiltro = useMemo(() => {
+    const inicioMes = mesSelecionado + '-01';
+    const fimMes = format(endOfMonth(new Date(inicioMes + 'T00:00:00')), 'yyyy-MM-dd');
+
+    const ordensFiltradas = ordensServico.filter(os => {
+      if (!os.data_execucao || os.status_pagamento === "Cancelado") return false;
+      if (os.data_execucao < inicioMes || os.data_execucao > fimMes) return false;
+      const categoria = categorias.find(c => c.id === os.categoria_preco_id);
+      if (!categoria) return false;
+      return categoriasPublicas.some(pub => categoria.nome.toUpperCase().includes(pub.toUpperCase()));
+    });
+
+    const profs = new Map();
+    const servs = new Set();
+
+    ordensFiltradas.forEach(os => {
+      const medico = medicos.find(m => m.id === os.medico_id);
+      if (medico) profs.set(medico.id, medico.nome);
+
+      let nomeServico = os.tipo_servico;
+      if (os.tipo_servico === "Procedimento" && os.procedimento_id) {
+        const proc = procedimentos.find(p => p.id === os.procedimento_id);
+        nomeServico = proc?.nome || os.tipo_servico;
+      } else if (os.tipo_servico === "Exame" && os.exames_ids?.length > 0) {
+        const examesNomes = os.exames_ids.map(exId => {
+          const ex = exames.find(e => e.id === exId);
+          return ex?.nome || "Exame";
+        });
+        nomeServico = examesNomes.join(", ");
+      } else if (os.tipo_servico === "Consulta" && medico) {
+        nomeServico = `Consulta - ${medico.especialidade}`;
+      }
+      if (nomeServico) servs.add(nomeServico);
+    });
+
+    return {
+      profissionais: Array.from(profs.entries()).map(([id, nome]) => ({ id, nome })).sort((a, b) => a.nome.localeCompare(b.nome)),
+      servicos: Array.from(servs).sort()
+    };
+  }, [ordensServico, mesSelecionado, categorias, medicos, procedimentos, exames]);
+
   // Gerar faturas por categoria e mês
   const faturas = useMemo(() => {
     const inicioMes = mesSelecionado + '-01';
@@ -143,6 +185,10 @@ export default function Faturas({ ordensServico, pacientes, medicos, procediment
         nomeServico = `Consulta - ${medico.especialidade}`;
       }
 
+      // Aplicar filtros adicionais
+      if (filtroProfissional !== "todos" && os.medico_id !== filtroProfissional) return;
+      if (filtroServico !== "todos" && nomeServico !== filtroServico) return;
+
       faturasPorCategoria[categoria.id].itens.push({
         data: os.data_execucao,
         paciente_nome: nomePaciente,
@@ -156,11 +202,11 @@ export default function Faturas({ ordensServico, pacientes, medicos, procediment
       faturasPorCategoria[categoria.id].quantidade_atendimentos += 1;
     });
 
-    const result = Object.values(faturasPorCategoria);
+    const result = Object.values(faturasPorCategoria).filter(f => f.quantidade_atendimentos > 0);
     if (debugMode) console.log(`💰 Faturas geradas: ${result.length}`, result);
 
     return result;
-  }, [ordensServico, mesSelecionado, categorias, pacientes, medicos, procedimentos, exames, debugMode]);
+  }, [ordensServico, mesSelecionado, categorias, pacientes, medicos, procedimentos, exames, debugMode, filtroProfissional, filtroServico]);
 
   // Filtrar faturas pela categoria selecionada
   const faturasFiltradas = useMemo(() => {
@@ -516,6 +562,40 @@ export default function Faturas({ ordensServico, pacientes, medicos, procediment
                   {categoriasDisponiveis.map(cat => (
                     <SelectItem key={cat.id} value={cat.id}>
                       {cat.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <User className="w-4 h-4 text-gray-500" />
+              <Select value={filtroProfissional} onValueChange={setFiltroProfissional}>
+                <SelectTrigger className="w-64">
+                  <SelectValue placeholder="Todos os profissionais" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os Profissionais</SelectItem>
+                  {opcoesFiltro.profissionais.map(prof => (
+                    <SelectItem key={prof.id} value={prof.id}>
+                      {prof.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Activity className="w-4 h-4 text-gray-500" />
+              <Select value={filtroServico} onValueChange={setFiltroServico}>
+                <SelectTrigger className="w-64">
+                  <SelectValue placeholder="Todos os serviços" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os Serviços</SelectItem>
+                  {opcoesFiltro.servicos.map(serv => (
+                    <SelectItem key={serv} value={serv}>
+                      {serv}
                     </SelectItem>
                   ))}
                 </SelectContent>
