@@ -890,39 +890,20 @@ Deno.serve(async (req) => {
     } else {
       // Cliente quer AGENDAR - processar normalmente
     
-    // Verificar se cliente pergunta sobre ecografia/ecocardiograma e médico está de férias/inativo
-    // NOTA: Esta verificação precisa rodar ANTES da declaração de medicosParaBuscar
     const ecografiaNorm = normalizarTexto(especialidadeDetectada || '');
     const ehEcografia = ['ecografia', 'ecocardiograma', 'eco', 'ultrassom', 'ultrassonografia'].some(t => ecografiaNorm.includes(t));
-    
     if (ehEcografia) {
-      // Buscar TODOS os médicos de ecografia (ativos e inativos) para verificar status
       let medicosEcoTodos = [];
       try {
         const todosMedicosGeral = await base44.asServiceRole.entities.Medico.list();
         medicosEcoTodos = todosMedicosGeral.filter(m => {
           const espNorm = normalizarTexto(m.especialidade || '');
           const espsNorm = (m.especialidades || []).map(e => normalizarTexto(e));
-          return espNorm.includes('ecocardiograma') || espNorm.includes('ecografia') || 
-                 espsNorm.some(e => e.includes('ecocardiograma') || e.includes('ecografia'));
+          return espNorm.includes('ecocardiograma') || espNorm.includes('ecografia') || espsNorm.some(e => e.includes('ecocardiograma') || e.includes('ecografia'));
         });
-      } catch (e) { console.warn('⚠️ Erro busca médicos eco:', e.message); }
-      
-      // Se NENHUM médico de ecografia está ativo, informar que está de férias
-      const temMedicoEcoAtivo = medicosEcoTodos.some(m => m.status === 'Ativo');
-      if (medicosEcoTodos.length > 0 && !temMedicoEcoAtivo) {
-        const nomesMedicos = medicosEcoTodos.map(m => m.nome).join(', ');
-        console.log('⚠️ Médicos de ecografia encontrados mas TODOS inativos/férias:', nomesMedicos);
-        infoDisponibilidade = `\n\n⚠️ ECOGRAFIA/ECOCARDIOGRAMA - MÉDICO DE FÉRIAS:
-O profissional responsável pelas ecografias é o ${nomesMedicos}, que está atualmente de FÉRIAS.
-
-Informe ao cliente que:
-1. SIM, a clínica realiza ecografias (diversos tipos: abdominal, tireoide, obstétrica, mamária, pélvica, ecocardiograma, próstata, articulação, etc.)
-2. O Dr. Douglas Filipe Bianchi está de FÉRIAS no momento
-3. Em breve a agenda será reaberta para agendamentos de ecografia
-4. Sugira que entre em contato pelo telefone (51) 3661-5991 ou mande mensagem novamente em alguns dias para verificar a nova agenda
-5. Se o cliente quiser saber os TIPOS e VALORES das ecografias, consulte a lista de procedimentos abaixo e informe normalmente
-6. NÃO diga que a clínica não faz ecografia - ela FAZ! Apenas o médico está temporariamente de férias`;
+      } catch (e) {}
+      if (medicosEcoTodos.length > 0 && !medicosEcoTodos.some(m => m.status === 'Ativo')) {
+        infoDisponibilidade = `\n\n⚠️ ECOGRAFIA/ECOCARDIOGRAMA - MÉDICO DE FÉRIAS: O profissional ${medicosEcoTodos.map(m => m.nome).join(', ')} está de FÉRIAS. Informe que a clínica FAZ ecografias, mas a agenda reabrirá em breve.`;
       }
     }
     
