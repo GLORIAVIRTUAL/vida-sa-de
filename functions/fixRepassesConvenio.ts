@@ -138,6 +138,9 @@ Deno.serve(async (req) => {
                         valor_clinica: novoValorClinica
                     });
                     
+                    // Adicionar pequeno delay para evitar rate limit
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    
                     atualizadas++;
                     detalhes.push({
                         os_id: os.id,
@@ -151,6 +154,8 @@ Deno.serve(async (req) => {
                 } catch (e) {
                     erros++;
                     console.error(`Erro ao atualizar OS ${os.id}:`, e);
+                    // Em caso de erro (ex: rate limit), esperar mais tempo
+                    await new Promise(resolve => setTimeout(resolve, 1000));
                 }
             }
         }
