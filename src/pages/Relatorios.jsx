@@ -245,7 +245,12 @@ export default function Relatorios() {
     const medicoReal = obterMedicoRealDaOS(os);
     if (medicoReal) return medicoReal.nome;
     
-    const med = medicos.find(m => m.id === os.medico_id);
+    let medicoIdBase = os.medico_id;
+    if (MAPEAMENTO_MEDICOS_LEGADO[medicoIdBase]) {
+      medicoIdBase = MAPEAMENTO_MEDICOS_LEGADO[medicoIdBase];
+    }
+    
+    const med = medicos.find(m => m.id === medicoIdBase);
     if (med) return med.nome;
     
     // Fallback: tentar extrair do campo itens
