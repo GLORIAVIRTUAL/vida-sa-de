@@ -345,7 +345,7 @@ Deno.serve(async (req) => {
     
     // Se é mensagem de buffer mas contato foi revertido para humano, RESPEITAR modo humano
     // Não forçar modo IA - só mudar para IA manualmente
-    if (isBufferMessage && contatosCheck.length > 0 && contatosCheck[0].atendimento_humano) {
+    if (isBufferMessage && contatosCheck.length > 0 && contatosCheck[0].atendimento_humano !== false) {
       console.log('👤 Buffer: contato está em modo humano - respeitando. NÃO processando IA.');
       await liberarLock(base44, phoneNumber);
       return Response.json({ 
