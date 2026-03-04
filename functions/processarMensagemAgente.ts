@@ -8,9 +8,7 @@ Deno.serve(async (req) => {
     
     console.log('📨 Processando:', { phoneNumber, messageText: (messageText || '').substring(0, 100), mediaType, mediaUrl: mediaUrl ? mediaUrl.substring(0, 80) : null, messageId });
 
-    // ============ DETECÇÃO DE ÁUDIO EMBUTIDO NO TEXTO (BUFFER/DEBOUNCE) ============
-    // Quando mensagens passam pelo debounce, a URL do áudio é concatenada no messageText
-    // e mediaType/mediaUrl ficam como "text"/null. Precisamos detectar e restaurar.
+    // DETECÇÃO DE ÁUDIO EMBUTIDO NO TEXTO (BUFFER/DEBOUNCE)
     if ((!mediaUrl || mediaType === 'text') && messageText) {
       // Detectar se o texto contém indicador de áudio + uma URL
       const temIndicadorAudio = /\[(?:á|a)udio\s*(?:recebido)?\]/i.test(messageText);
