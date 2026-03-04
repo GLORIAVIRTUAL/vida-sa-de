@@ -569,7 +569,7 @@ export default function Relatorios() {
             </tbody>
           </table>
           
-          <h3>Repasses Realizados (${osRealizados.length})</h3>
+          <h3>Repasses Realizados (${new Set(osRealizados.map(os => os.original_id || os.id)).size})</h3>
           <table class="realizados">
             <thead>
               <tr>
