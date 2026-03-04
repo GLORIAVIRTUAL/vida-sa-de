@@ -130,6 +130,9 @@ Deno.serve(async (req) => {
             novoRepasseMedico = Math.round(novoRepasseMedico * 100) / 100;
             const repasseAtual = Math.round((os.valor_repasse_medico || 0) * 100) / 100;
 
+            // Log para debug
+            console.log(`OS: ${os.id} | Medico: ${medicoAtual.nome} | Categoria: ${categoriaNome} | Tipo: ${os.tipo_servico} | Fixo: ${repasseFixo} | Perc: ${percentual} | Novo Repasse: ${novoRepasseMedico} | Atual: ${repasseAtual}`);
+
             // Se o valor calculado for diferente do atual, atualizar
             if (Math.abs(novoRepasseMedico - repasseAtual) > 0.01) {
                 try {
