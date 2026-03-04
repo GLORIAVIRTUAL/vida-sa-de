@@ -1053,7 +1053,7 @@ export default function Relatorios() {
             <TabsContent value="detalhado">
               <Card>
                 <CardHeader>
-                  <CardTitle>Detalhamento - {dadosFiltrados.length} registros</CardTitle>
+                  <CardTitle>Detalhamento - {estatisticas.totalAtendimentos} atendimentos ({dadosFiltrados.length} registros)</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="max-h-[600px] overflow-auto">
