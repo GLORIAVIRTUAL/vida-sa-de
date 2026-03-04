@@ -1709,6 +1709,25 @@ Retorne JSON.`;
     // Preparar histórico para o prompt - formato estruturado para o LLM entender melhor o contexto
     let historicoParaPrompt = '';
     let contextoPreviousConversation = '';
+    let infoAgendamentosCliente = '';
+    try {
+      const tn = phoneNumber.replace(/\D/g, ''); const u8 = tn.slice(-8);
+      const tPacs = await base44.asServiceRole.entities.Paciente.list('-created_date', 500);
+      const pF = tPacs.filter(p => (p.telefone || '').replace(/\D/g, '').slice(-8) === u8);
+      if (pF.length > 0) {
+        const pIds = pF.map(p => p.id); const hj = new Date().toISOString().split('T')[0];
+        const tAgs = await base44.asServiceRole.entities.Agendamento.filter({data_agendamento: {$gte: hj}, status: {$in: ['Agendado', 'Confirmado', 'Pago']}});
+        const aC = tAgs.filter(a => pIds.includes(a.paciente_id));
+        if (aC.length > 0) {
+          const mds = await base44.asServiceRole.entities.Medico.list(); const mM = {}; mds.forEach(m => { mM[m.id] = m; });
+          infoAgendamentosCliente = `\n\n📅 AGENDAMENTOS FUTUROS DESTE CLIENTE NO SISTEMA:\n`;
+          aC.forEach(ag => { const md = mM[ag.medico_id]; const dF = new Date(ag.data_agendamento + 'T12:00:00').toLocaleDateString('pt-BR'); infoAgendamentosCliente += `- ${ag.tipo_servico} com ${md ? md.nome : 'Médico'} em ${dF} às ${ag.horario} (Status: ${ag.status})\n`; });
+          infoAgendamentosCliente += `\n🚨 REGRA CRÍTICA: Se o cliente perguntar sobre seu agendamento, confirmar o horário, ou disser que está chegando, USE ESTES DADOS REAIS. Se o cliente disser um horário diferente do que está no sistema, CORRIJA-O educadamente informando o horário real que consta no sistema. NUNCA concorde com um horário errado!`;
+        } else {
+          infoAgendamentosCliente = `\n\n📅 AGENDAMENTOS FUTUROS DESTE CLIENTE NO SISTEMA:\nNenhum agendamento futuro encontrado. Se o cliente disser que tem consulta, informe que não consta no sistema e pergunte se deseja agendar.`;
+        }
+      }
+    } catch (e) {}
 
     if (conversaFinalizada && historicoConversa) {
       contextoPreviousConversation = `\n\n📜 CONTEXTO: Esta é uma NOVA CONVERSA. A conversa anterior foi finalizada pelo atendente.
