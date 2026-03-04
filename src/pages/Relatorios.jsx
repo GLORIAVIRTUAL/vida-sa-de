@@ -1232,32 +1232,29 @@ export default function Relatorios() {
                     osMedico.forEach(os => {
                       const nomeCat = obterNomeCategoria(os);
                       if (!porCategoriaLocal[nomeCat]) {
-                        porCategoriaLocal[nomeCat] = { quantidade: 0, valor: 0 };
+                        porCategoriaLocal[nomeCat] = { ids: new Set(), valor: 0 };
                       }
-                      porCategoriaLocal[nomeCat].quantidade++;
+                      porCategoriaLocal[nomeCat].ids.add(os.original_id || os.id);
                       porCategoriaLocal[nomeCat].valor += (os.valor_final || 0);
                     });
+                    Object.keys(porCategoriaLocal).forEach(cat => {
+                      porCategoriaLocal[cat].quantidade = porCategoriaLocal[cat].ids.size;
+                      delete porCategoriaLocal[cat].ids;
+                    });
                     
-                    // Agrupar por forma de pagamento (desmembrando "Múltiplas Formas")
+                    // Agrupar por forma de pagamento
                     const porPagamentoLocal = {};
                     osMedico.forEach(os => {
-                      if (os.forma_pagamento === 'Múltiplas Formas' && os.pagamentos_detalhados && os.pagamentos_detalhados.length > 0) {
-                        os.pagamentos_detalhados.forEach(pg => {
-                          const forma = pg.forma || 'Não informado';
-                          if (!porPagamentoLocal[forma]) {
-                            porPagamentoLocal[forma] = { quantidade: 0, valor: 0 };
-                          }
-                          porPagamentoLocal[forma].quantidade++;
-                          porPagamentoLocal[forma].valor += (pg.valor || 0);
-                        });
-                      } else {
-                        const forma = os.forma_pagamento || 'Não informado';
-                        if (!porPagamentoLocal[forma]) {
-                          porPagamentoLocal[forma] = { quantidade: 0, valor: 0 };
-                        }
-                        porPagamentoLocal[forma].quantidade++;
-                        porPagamentoLocal[forma].valor += (os.valor_final || 0);
+                      const forma = os.forma_pagamento || 'Não informado';
+                      if (!porPagamentoLocal[forma]) {
+                        porPagamentoLocal[forma] = { ids: new Set(), valor: 0 };
                       }
+                      porPagamentoLocal[forma].ids.add(os.original_id || os.id);
+                      porPagamentoLocal[forma].valor += (os.valor_final || 0);
+                    });
+                    Object.keys(porPagamentoLocal).forEach(forma => {
+                      porPagamentoLocal[forma].quantidade = porPagamentoLocal[forma].ids.size;
+                      delete porPagamentoLocal[forma].ids;
                     });
                     
                     return (
