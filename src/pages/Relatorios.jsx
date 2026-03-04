@@ -1532,7 +1532,7 @@ export default function Relatorios() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <CheckCircle className="w-5 h-5 text-green-500" />
-                      Repasses Realizados - {dadosFiltrados.filter(os => os.repasse_realizado).length} pagos
+                      Repasses Realizados - {new Set(dadosFiltrados.filter(os => os.repasse_realizado).map(os => os.original_id || os.id)).size} pagos
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
