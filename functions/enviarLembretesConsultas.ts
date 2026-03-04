@@ -158,6 +158,7 @@ Deno.serve(async (req) => {
                                 telefone: telefone,
                                 origem: 'Manual',
                                 status: 'Cliente',
+                                atendimento_humano: true,
                                 paciente_id: agendamento.paciente_id || null,
                                 historico_mensagens: [{
                                     role: 'assistant',
