@@ -1757,61 +1757,54 @@ Retorne JSON.`;
       promptCompleto = config.prompt_sistema;
     }
 
-    // Chamar OpenAI diretamente com histórico
     const modeloLLM = config.modelo_llm || 'gpt-4o';
     let llmResponse = null;
-    try {
-      const openaiKey = Deno.env.get('OPENAI_API_KEY');
-      const messages = [{ role: 'system', content: promptCompleto }];
-      
-      if (historicoMensagensRaw && historicoMensagensRaw.length > 0) {
-        historicoMensagensRaw.forEach(m => {
-          if (m.role && m.content) messages.push({ role: m.role, content: m.content });
-        });
-      }
-      
-      let userContent = [{ type: 'text', text: messageText || '(sem texto)' }];
-      if (mediaUrl && mediaType === 'image') {
-        userContent.push({ type: 'image_url', image_url: { url: mediaUrl } });
-      } else if (mediaUrl && mediaType === 'document') {
-        // =====================================================================
-        // 🔒 CÓDIGO BLOQUEADO/PROTEGIDO A PEDIDO DO USUÁRIO 🔒
-        // NÃO REMOVA, NÃO ALTERE E NÃO SIMPLIFIQUE ESTE BLOCO DE EXTRAÇÃO DE PDF.
-        // É CRÍTICO QUE O TEXTO DO PDF SEJA EXTRAÍDO E ENVIADO AO LLM COM ESTAS REGRAS.
-        // =====================================================================
-        try {
-          const eR = await base44.asServiceRole.functions.invoke('extractPdfText', { fileUrl: mediaUrl });
-          if (eR?.data?.text) {
-            userContent[0].text += `\n\n🚨 CONTEÚDO DO PDF 🚨\n${eR.data.text}\n\n🚨 REGRAS: 1. LISTE APENAS os exames que aparecem LITERALMENTE no texto acima. 2. É PROIBIDO adicionar exames que NÃO estão no texto. 3. É PROIBIDO substituir exames. 4. Cruze CADA exame com a tabela. Se não achar, diga "não realizamos". 5. NÃO pergunte se quer agendar coleta.`;
-          } else {
+    if (arquivoParaEnviar) {
+      llmResponse = "Encontrei seu resultado! Enviando o arquivo PDF agora mesmo. 📄";
+    } else {
+      try {
+        const openaiKey = Deno.env.get('OPENAI_API_KEY');
+        const messages = [{ role: 'system', content: promptCompleto }];
+        if (historicoMensagensRaw && historicoMensagensRaw.length > 0) {
+          historicoMensagensRaw.forEach(m => {
+            if (m.role && m.content) messages.push({ role: m.role, content: m.content });
+          });
+        }
+        let userContent = [{ type: 'text', text: messageText || '(sem texto)' }];
+        if (mediaUrl && mediaType === 'image') {
+          userContent.push({ type: 'image_url', image_url: { url: mediaUrl } });
+        } else if (mediaUrl && mediaType === 'document') {
+          // 🔒 CÓDIGO BLOQUEADO - NÃO ALTERE
+          try {
+            const eR = await base44.asServiceRole.functions.invoke('extractPdfText', { fileUrl: mediaUrl });
+            if (eR?.data?.text) {
+              userContent[0].text += `\n\n🚨 CONTEÚDO DO PDF 🚨\n${eR.data.text}\n\n🚨 REGRAS: 1. LISTE APENAS os exames que aparecem LITERALMENTE no texto acima. 2. É PROIBIDO adicionar exames que NÃO estão no texto. 3. É PROIBIDO substituir exames. 4. Cruze CADA exame com a tabela. Se não achar, diga "não realizamos". 5. NÃO pergunte se quer agendar coleta.`;
+            } else {
+              userContent[0].text += `\n\n⚠️ O cliente enviou um PDF, mas não foi possível ler. Peça foto nítida.`;
+            }
+          } catch (e) {
             userContent[0].text += `\n\n⚠️ O cliente enviou um PDF, mas não foi possível ler. Peça foto nítida.`;
           }
-        } catch (e) {
-          userContent[0].text += `\n\n⚠️ O cliente enviou um PDF, mas não foi possível ler. Peça foto nítida.`;
         }
-        // =====================================================================
+        messages.push({ role: 'user', content: userContent });
+        const body = { model: modeloLLM, messages, max_tokens: 1500, temperature: config.temperatura || 0.7 };
+        const openaiResp = await Promise.race([
+          fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+          }),
+          new Promise((_, r) => setTimeout(() => r(new Error('Timeout OpenAI 70s')), 70000))
+        ]);
+        if (openaiResp.ok) {
+          const data = await openaiResp.json();
+          llmResponse = data.choices?.[0]?.message?.content || null;
+        } else {
+          console.error('❌ Erro HTTP OpenAI:', openaiResp.status, await openaiResp.text());
+        }
+      } catch (e) {
+        console.error('❌ Erro ao chamar OpenAI:', e.message);
       }
-      messages.push({ role: 'user', content: userContent });
-      
-      const body = { model: modeloLLM, messages, max_tokens: 1500, temperature: config.temperatura || 0.7 };
-      const openaiResp = await Promise.race([
-        fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
-        }),
-        new Promise((_, r) => setTimeout(() => r(new Error('Timeout OpenAI 70s')), 70000))
-      ]);
-      
-      if (openaiResp.ok) {
-        const data = await openaiResp.json();
-        llmResponse = data.choices?.[0]?.message?.content || null;
-        console.log('✅ OpenAI OK');
-      } else {
-        console.error('❌ Erro HTTP OpenAI:', openaiResp.status, await openaiResp.text());
-      }
-    } catch (e) {
-      console.error('❌ Erro ao chamar OpenAI:', e.message);
     }
     
 
