@@ -442,7 +442,7 @@ Deno.serve(async (req) => {
       if (mediaUrl) userEntry.mediaUrl = mediaUrl;
       
       // Verificar se contato está em modo humano - NOVOS contatos começam em modo humano por padrão
-      const estaEmModoHumano = !contatoFresh || contatoFresh.atendimento_humano === true;
+      const estaEmModoHumano = !contatoFresh || contatoFresh.atendimento_humano !== false;
       
       if (estaEmModoHumano) {
         // MODO HUMANO: Apenas salvar mensagem, NÃO enviar saudação da IA
