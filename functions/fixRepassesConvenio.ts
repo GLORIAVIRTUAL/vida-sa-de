@@ -139,7 +139,7 @@ Deno.serve(async (req) => {
                     });
                     
                     // Adicionar pequeno delay para evitar rate limit
-                    await new Promise(resolve => setTimeout(resolve, 100));
+                    await new Promise(resolve => setTimeout(resolve, 500));
                     
                     atualizadas++;
                     detalhes.push({
