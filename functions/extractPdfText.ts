@@ -9,6 +9,10 @@ Deno.serve(async (req) => {
             return Response.json({ error: 'fileUrl required' }, { status: 400 });
         }
 
+        // =====================================================================
+        // 🔒 CÓDIGO BLOQUEADO/PROTEGIDO A PEDIDO DO USUÁRIO 🔒
+        // NÃO ALTERE A LÓGICA DE EXTRAÇÃO DE PDF. ELA FOI HOMOLOGADA E ESTÁ FUNCIONANDO.
+        // =====================================================================
         console.log('📄 PDF detectado - Extraindo texto via InvokeLLM...');
         let pdfTextoExtraido = null;
         
