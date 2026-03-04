@@ -1774,6 +1774,11 @@ Retorne JSON.`;
       if (mediaUrl && mediaType === 'image') {
         userContent.push({ type: 'image_url', image_url: { url: mediaUrl } });
       } else if (mediaUrl && mediaType === 'document') {
+        // =====================================================================
+        // 🔒 CÓDIGO BLOQUEADO/PROTEGIDO A PEDIDO DO USUÁRIO 🔒
+        // NÃO REMOVA, NÃO ALTERE E NÃO SIMPLIFIQUE ESTE BLOCO DE EXTRAÇÃO DE PDF.
+        // É CRÍTICO QUE O TEXTO DO PDF SEJA EXTRAÍDO E ENVIADO AO LLM COM ESTAS REGRAS.
+        // =====================================================================
         try {
           const eR = await base44.asServiceRole.functions.invoke('extractPdfText', { fileUrl: mediaUrl });
           if (eR?.data?.text) {
@@ -1784,6 +1789,7 @@ Retorne JSON.`;
         } catch (e) {
           userContent[0].text += `\n\n⚠️ O cliente enviou um PDF, mas não foi possível ler. Peça foto nítida.`;
         }
+        // =====================================================================
       }
       messages.push({ role: 'user', content: userContent });
       
