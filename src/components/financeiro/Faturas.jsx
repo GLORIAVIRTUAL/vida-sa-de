@@ -15,6 +15,7 @@ export default function Faturas({ ordensServico, pacientes, medicos, procediment
   const [categoriaSelecionada, setCategoriaSelecionada] = useState("todas");
   const [filtroProfissional, setFiltroProfissional] = useState("todos");
   const [filtroServico, setFiltroServico] = useState("todos");
+  const [openServico, setOpenServico] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
 
   // Categorias que geram faturas (órgãos públicos)
