@@ -11,6 +11,8 @@ import { ptBR } from "date-fns/locale";
 export default function Faturas({ ordensServico, pacientes, medicos, procedimentos, exames, categorias }) {
   const [mesSelecionado, setMesSelecionado] = useState(format(new Date(), "yyyy-MM"));
   const [categoriaSelecionada, setCategoriaSelecionada] = useState("todas");
+  const [filtroProfissional, setFiltroProfissional] = useState("todos");
+  const [filtroServico, setFiltroServico] = useState("todos");
   const [debugMode, setDebugMode] = useState(false);
 
   // Categorias que geram faturas (órgãos públicos)
