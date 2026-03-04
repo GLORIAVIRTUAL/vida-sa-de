@@ -326,13 +326,18 @@ async function processarMensagemRecebida(base44, payload) {
             if (contatos.length > 0) {
                 let contato = contatos[0];
                 
-                // Se conversa estava finalizada, reativar em modo humano
-                if (contato.conversa_finalizada) {
-                    console.log('🔄 [zapiWebhook] Reativando conversa finalizada em modo Humano');
+                // Se conversa estava finalizada OU passou muito tempo inativa, reativar em modo humano
+                const HORAS_TIMEOUT = 2;
+                const ultimaInteracao = new Date(contato.ultima_interacao || contato.created_date).getTime();
+                const tempoInativo = Date.now() - ultimaInteracao;
+                const expirouTimeout = tempoInativo > (HORAS_TIMEOUT * 60 * 60 * 1000);
+
+                if (contato.conversa_finalizada || (contato.atendimento_humano === false && expirouTimeout)) {
+                    console.log('🔄 [zapiWebhook] Reativando em modo Humano (finalizada ou timeout)');
                     const historicoExistente = contato.historico_mensagens || [];
                     const separador = {
                         role: 'assistant',
-                        content: '── Conversa anterior finalizada ──',
+                        content: contato.conversa_finalizada ? '── Conversa anterior finalizada ──' : '── Conversa expirada (timeout) ──',
                         timestamp: agora,
                         sistema: true
                     };
