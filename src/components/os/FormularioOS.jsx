@@ -345,13 +345,26 @@ export default function FormularioOS({
       // Verificar tipo de repasse do médico (valor_fixo ou percentual)
       const tipoRepasse = medicoAtual.tipo_repasse || 'percentual';
 
+      // Buscar configuração específica por categoria (se existir)
+      const repasseEspecifico = medicoAtual.repasses_por_categoria?.find(
+        r => r.categoria_id === agendamento.categoria_preco_id
+      );
+
       // Lógica diferenciada para Procedimentos vs Consultas
       if (agendamento.tipo_servico === 'Procedimento' && procedimento) {
         // 1. Prioridade: Definição no próprio Procedimento (Valor Fixo)
         if (procedimento.valor_repasse_medico > 0) {
           repasseFixo = procedimento.valor_repasse_medico;
         } 
-        // 2. Fallback: Configuração do Médico para Procedimentos
+        // 2. Prioridade: Repasse específico por categoria para procedimentos
+        else if (repasseEspecifico && (repasseEspecifico.valor_procedimento > 0 || repasseEspecifico.tipo_repasse === 'valor_fixo')) {
+          if (repasseEspecifico.tipo_repasse === 'valor_fixo') {
+            repasseFixo = repasseEspecifico.valor_procedimento || 0;
+          } else {
+            percentual = repasseEspecifico.valor_procedimento || 0;
+          }
+        }
+        // 3. Fallback: Configuração do Médico para Procedimentos
         else if (tipoRepasse === 'valor_fixo') {
           repasseFixo = isParticular
             ? (medicoAtual.valor_repasse_fixo_procedimento || medicoAtual.valor_repasse_fixo || 0)
@@ -363,7 +376,16 @@ export default function FormularioOS({
         }
       } else {
         // Lógica para Consultas
-        if (tipoRepasse === 'valor_fixo') {
+        // 1. Prioridade: Repasse específico por categoria para consultas
+        if (repasseEspecifico) {
+          if (repasseEspecifico.tipo_repasse === 'valor_fixo') {
+            repasseFixo = repasseEspecifico.valor || 0;
+          } else {
+            percentual = repasseEspecifico.valor || 0;
+          }
+        }
+        // 2. Fallback: Configuração do Médico para Consultas
+        else if (tipoRepasse === 'valor_fixo') {
           // Médico configurado com valor fixo
           repasseFixo = isParticular
             ? (medicoAtual.valor_repasse_fixo || 0)
