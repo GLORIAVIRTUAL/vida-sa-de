@@ -33,45 +33,33 @@ export default function Faturas({ ordensServico, pacientes, medicos, procediment
 
   // Extrair opções únicas para os filtros
   const opcoesFiltro = useMemo(() => {
-    const inicioMes = mesSelecionado + '-01';
-    const fimMes = format(endOfMonth(new Date(inicioMes + 'T00:00:00')), 'yyyy-MM-dd');
-
-    const ordensFiltradas = ordensServico.filter(os => {
-      if (!os.data_execucao || os.status_pagamento === "Cancelado") return false;
-      if (os.data_execucao < inicioMes || os.data_execucao > fimMes) return false;
-      const categoria = categorias.find(c => c.id === os.categoria_preco_id);
-      if (!categoria) return false;
-      return categoriasPublicas.some(pub => categoria.nome.toUpperCase().includes(pub.toUpperCase()));
-    });
-
     const profs = new Map();
     const servs = new Set();
 
-    ordensFiltradas.forEach(os => {
-      const medico = medicos.find(m => m.id === os.medico_id);
-      if (medico) profs.set(medico.id, medico.nome);
+    // Mostrar todos os médicos cadastrados
+    medicos.forEach(m => profs.set(m.id, m.nome));
 
-      let nomeServico = os.tipo_servico;
-      if (os.tipo_servico === "Procedimento" && os.procedimento_id) {
-        const proc = procedimentos.find(p => p.id === os.procedimento_id);
-        nomeServico = proc?.nome || os.tipo_servico;
-      } else if (os.tipo_servico === "Exame" && os.exames_ids?.length > 0) {
-        const examesNomes = os.exames_ids.map(exId => {
-          const ex = exames.find(e => e.id === exId);
-          return ex?.nome || "Exame";
-        });
-        nomeServico = examesNomes.join(", ");
-      } else if (os.tipo_servico === "Consulta" && medico) {
-        nomeServico = `Consulta - ${medico.especialidade}`;
+    // Mostrar todos os procedimentos e exames cadastrados + consultas genéricas baseadas nas especialidades
+    procedimentos.forEach(p => servs.add(p.nome));
+    exames.forEach(e => servs.add(e.nome));
+    
+    // Adicionar também os serviços que já existem no histórico para garantir que nada fique de fora
+    ordensServico.forEach(os => {
+      if (os.tipo_servico === "Consulta") {
+        const medico = medicos.find(m => m.id === os.medico_id);
+        if (medico && medico.especialidade) {
+          servs.add(`Consulta - ${medico.especialidade}`);
+        } else {
+          servs.add("Consulta");
+        }
       }
-      if (nomeServico) servs.add(nomeServico);
     });
 
     return {
       profissionais: Array.from(profs.entries()).map(([id, nome]) => ({ id, nome })).sort((a, b) => a.nome.localeCompare(b.nome)),
       servicos: Array.from(servs).sort()
     };
-  }, [ordensServico, mesSelecionado, categorias, medicos, procedimentos, exames]);
+  }, [medicos, procedimentos, exames, ordensServico]);
 
   // Gerar faturas por categoria e mês
   const faturas = useMemo(() => {
