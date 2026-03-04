@@ -1758,7 +1758,7 @@ Retorne JSON.`;
         dataAtualCompleta, dataAtualISO, horaAtual, saudacaoHorario,
         historicoConversa, historicoParaPrompt, ehPrimeiraMensagem, senderName,
         dadosFaltantes, infoDisponibilidade, infoProcedimentosExames,
-        instrucoesMidia, infoCancelamento, infoResultadoExame
+        instrucoesMidia, infoCancelamento, infoResultadoExame, infoAgendamentosCliente
       });
       promptCompleto = promptResult.data.prompt;
     } catch (e) {
