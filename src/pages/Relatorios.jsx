@@ -1484,7 +1484,7 @@ export default function Relatorios() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <AlertCircle className="w-5 h-5 text-orange-500" />
-                      Repasses em Aberto - {dadosFiltrados.filter(os => !os.repasse_realizado && os.valor_repasse_medico > 0).length} pendentes
+                      Repasses em Aberto - {new Set(dadosFiltrados.filter(os => !os.repasse_realizado && os.valor_repasse_medico > 0).map(os => os.original_id || os.id)).size} pendentes
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
