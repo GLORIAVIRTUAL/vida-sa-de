@@ -18,7 +18,8 @@ Deno.serve(async (req) => {
       infoProcedimentosExames, 
       instrucoesMidia,
       infoCancelamento,
-      infoResultadoExame
+      infoResultadoExame,
+      infoAgendamentosCliente
     } = await req.json();
 
     const promptCompleto = `${promptSistema}
