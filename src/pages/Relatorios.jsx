@@ -349,29 +349,21 @@ export default function Relatorios() {
     const totalVendido = dadosFiltrados.reduce((acc, os) => acc + (os.valor_final || 0), 0);
     const totalRepasse = dadosFiltrados.reduce((acc, os) => acc + (os.valor_repasse_medico || 0), 0);
     const totalClinica = dadosFiltrados.reduce((acc, os) => acc + (os.valor_clinica || 0), 0);
-    const totalAtendimentos = dadosFiltrados.length;
+    const totalAtendimentos = new Set(dadosFiltrados.map(os => os.original_id || os.id)).size;
     
-    // Por forma de pagamento (desmembrando "Múltiplas Formas")
+    // Por forma de pagamento
     const porFormaPagamento = {};
     dadosFiltrados.forEach(os => {
-      if (os.forma_pagamento === 'Múltiplas Formas' && os.pagamentos_detalhados && os.pagamentos_detalhados.length > 0) {
-        // Desmembrar cada forma de pagamento detalhada
-        os.pagamentos_detalhados.forEach(pg => {
-          const forma = pg.forma || 'Não informado';
-          if (!porFormaPagamento[forma]) {
-            porFormaPagamento[forma] = { quantidade: 0, valor: 0 };
-          }
-          porFormaPagamento[forma].quantidade++;
-          porFormaPagamento[forma].valor += (pg.valor || 0);
-        });
-      } else {
-        const forma = os.forma_pagamento || 'Não informado';
-        if (!porFormaPagamento[forma]) {
-          porFormaPagamento[forma] = { quantidade: 0, valor: 0 };
-        }
-        porFormaPagamento[forma].quantidade++;
-        porFormaPagamento[forma].valor += (os.valor_final || 0);
+      const forma = os.forma_pagamento || 'Não informado';
+      if (!porFormaPagamento[forma]) {
+        porFormaPagamento[forma] = { ids: new Set(), valor: 0 };
       }
+      porFormaPagamento[forma].ids.add(os.original_id || os.id);
+      porFormaPagamento[forma].valor += (os.valor_final || 0);
+    });
+    Object.keys(porFormaPagamento).forEach(forma => {
+      porFormaPagamento[forma].quantidade = porFormaPagamento[forma].ids.size;
+      delete porFormaPagamento[forma].ids;
     });
     
     // Por categoria (convênio/particular)
@@ -379,11 +371,15 @@ export default function Relatorios() {
     dadosFiltrados.forEach(os => {
       const nomeCategoria = obterNomeCategoria(os);
       if (!porCategoria[nomeCategoria]) {
-        porCategoria[nomeCategoria] = { quantidade: 0, valor: 0, repasse: 0 };
+        porCategoria[nomeCategoria] = { ids: new Set(), valor: 0, repasse: 0 };
       }
-      porCategoria[nomeCategoria].quantidade++;
+      porCategoria[nomeCategoria].ids.add(os.original_id || os.id);
       porCategoria[nomeCategoria].valor += (os.valor_final || 0);
       porCategoria[nomeCategoria].repasse += (os.valor_repasse_medico || 0);
+    });
+    Object.keys(porCategoria).forEach(cat => {
+      porCategoria[cat].quantidade = porCategoria[cat].ids.size;
+      delete porCategoria[cat].ids;
     });
     
     // Por médico - separar por medico_id real (considerando agendas unificadas)
@@ -395,13 +391,17 @@ export default function Relatorios() {
         const nomeMedico = med ? med.nome : obterNomeMedico(os);
         const especialidade = med ? (med.especialidade || '') : '';
         porMedicoId[medicoId] = { 
-          quantidade: 0, valor: 0, repasse: 0, medicoId, 
+          ids: new Set(), valor: 0, repasse: 0, medicoId, 
           nome: nomeMedico, especialidade 
         };
       }
-      porMedicoId[medicoId].quantidade++;
+      porMedicoId[medicoId].ids.add(os.original_id || os.id);
       porMedicoId[medicoId].valor += (os.valor_final || 0);
       porMedicoId[medicoId].repasse += (os.valor_repasse_medico || 0);
+    });
+    Object.keys(porMedicoId).forEach(id => {
+      porMedicoId[id].quantidade = porMedicoId[id].ids.size;
+      delete porMedicoId[id].ids;
     });
 
     // Manter porMedico agrupado por nome para gráficos gerais (compatibilidade)
@@ -409,11 +409,15 @@ export default function Relatorios() {
     dadosFiltrados.forEach(os => {
       const nomeMedico = obterNomeMedico(os);
       if (!porMedico[nomeMedico]) {
-        porMedico[nomeMedico] = { quantidade: 0, valor: 0, repasse: 0, medicoId: os.medico_id };
+        porMedico[nomeMedico] = { ids: new Set(), valor: 0, repasse: 0, medicoId: os.medico_id };
       }
-      porMedico[nomeMedico].quantidade++;
+      porMedico[nomeMedico].ids.add(os.original_id || os.id);
       porMedico[nomeMedico].valor += (os.valor_final || 0);
       porMedico[nomeMedico].repasse += (os.valor_repasse_medico || 0);
+    });
+    Object.keys(porMedico).forEach(nome => {
+      porMedico[nome].quantidade = porMedico[nome].ids.size;
+      delete porMedico[nome].ids;
     });
     
     return {
