@@ -54,6 +54,9 @@ Deno.serve(async (req) => {
             // Ignorar OS sem médico ou sem categoria
             if (!os.medico_id || !os.categoria_preco_id) continue;
 
+            // Filtrar apenas fevereiro de 2026
+            if (!os.data_execucao || !os.data_execucao.startsWith('2026-02')) continue;
+
             const medicoAtual = medicosMap[os.medico_id];
             if (!medicoAtual) continue;
 
