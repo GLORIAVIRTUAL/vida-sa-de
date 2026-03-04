@@ -32,6 +32,11 @@ const MAPEAMENTO_CATEGORIA_LEGADO = {
   '68cdd084c8857d27e40c696e': 'Óticas Parceiras'
 };
 
+// Mapeamento de médicos deletados/duplicados para o ID correto atual
+const MAPEAMENTO_MEDICOS_LEGADO = {
+  '6984d88ac5cead4f4fabe1f5': '6967d7f6de081dae6837a4b3', // Dr. Antuan Neder antigo -> novo
+};
+
 export default function Relatorios() {
   const [loading, setLoading] = useState(true);
   const [ordensServico, setOrdensServico] = useState([]);
