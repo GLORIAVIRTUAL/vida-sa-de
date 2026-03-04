@@ -312,7 +312,7 @@ Deno.serve(async (req) => {
     let contatosCheck = [];
     const contatoVerificado = await buscarContatoPorTelefone(phoneNumber);
     if (contatoVerificado) contatosCheck = [contatoVerificado];
-    if (contatosCheck.length > 0 && contatosCheck[0].atendimento_humano && !isBufferMessage) {
+    if (contatosCheck.length > 0 && contatosCheck[0].atendimento_humano !== false && !isBufferMessage) {
       console.log('⚠️ Contato em atendimento humano - ignorando IA');
       
       // Apenas salvar a mensagem no histórico sem responder com IA
