@@ -1344,9 +1344,11 @@ Retorne JSON.`;
         if (!extracao.data_agendamento) dadosFaltantes.push('data da consulta');
         if (!extracao.horario && !jaEscolheuHorario) dadosFaltantes.push('horário');
 
-        // Se temos TODOS os dados, criar agendamento IMEDIATAMENTE
-        if (extracao.dados_completos && extracao.nome_paciente && extracao.data_nascimento && 
-            (extracao.medico_nome || extracao.medico_id) && extracao.data_agendamento && extracao.horario) {
+        // VALIDAÇÃO: nome deve ter 2+ palavras, data nascimento formato DD/MM/YYYY
+        const _nV=extracao.nome_paciente&&extracao.nome_paciente.trim().split(/\s+/).length>=2&&extracao.nome_paciente.trim().length>=5;
+        const _dV=extracao.data_nascimento&&/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(extracao.data_nascimento.trim());
+        if(!_nV||!_dV){console.log('⚠️ Dados paciente insuficientes:',{nome:extracao.nome_paciente,nV:_nV,dn:extracao.data_nascimento,dV:_dV});extracao.dados_completos=false;if(!_nV&&!dadosFaltantes.includes('nome completo'))dadosFaltantes.push('nome completo');if(!_dV&&!dadosFaltantes.includes('data de nascimento'))dadosFaltantes.push('data de nascimento');}
+        if (_nV && _dV && (extracao.medico_nome || extracao.medico_id) && extracao.data_agendamento && extracao.horario) {
           
           console.log('✅ Todos os dados coletados, criando agendamento...');
           console.log('📋 Médico extraído:', extracao.medico_nome, '| ID:', extracao.medico_id);
