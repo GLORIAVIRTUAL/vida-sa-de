@@ -754,7 +754,7 @@ export default function Relatorios() {
               <p className="text-gray-600">
                 Controle detalhado de vendas, repasses e receitas 
                 <span className="ml-2 text-blue-600 font-medium">
-                  ({ordensServico.length} OS carregadas, {dadosFiltrados.length} no período)
+                  ({new Set(ordensServico.map(os => os.original_id || os.id)).size} OS carregadas, {estatisticas.totalAtendimentos} no período)
                 </span>
               </p>
             </div>
