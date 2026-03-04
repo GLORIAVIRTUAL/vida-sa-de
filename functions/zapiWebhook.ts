@@ -326,9 +326,9 @@ async function processarMensagemRecebida(base44, payload) {
             if (contatos.length > 0) {
                 let contato = contatos[0];
                 
-                // Se conversa estava finalizada, reativar em modo IA (chatbot)
+                // Se conversa estava finalizada, reativar em modo humano
                 if (contato.conversa_finalizada) {
-                    console.log('🔄 [zapiWebhook] Reativando conversa finalizada em modo IA');
+                    console.log('🔄 [zapiWebhook] Reativando conversa finalizada em modo Humano');
                     const historicoExistente = contato.historico_mensagens || [];
                     const separador = {
                         role: 'assistant',
