@@ -1577,40 +1577,16 @@ Retorne JSON.`;
       return Response.json({success:true,resposta:mensagemAgendamento,conversationId:null,agendamento_criado:true});
     }
 
-    // Usar InvokeLLM diretamente para gerar resposta
     console.log('🤖 Chamando LLM...');
-
-    // Obter horário atual no fuso de Brasília (America/Sao_Paulo)
     const agoraBrasilia = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
     const horaAtual = new Date().toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' });
     const horaNumero = parseInt(new Date().toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', hour12: false }));
-
-    // Data completa formatada para o prompt
-    const dataAtualCompleta = new Date().toLocaleDateString('pt-BR', { 
-      timeZone: 'America/Sao_Paulo',
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    });
-
-    const dataAtualISO = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }); // formato YYYY-MM-DD
-
+    const dataAtualCompleta = new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    const dataAtualISO = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
     let saudacaoHorario = 'Bom-dia';
-    if (horaNumero >= 12 && horaNumero < 18) {
-      saudacaoHorario = 'Boa-tarde';
-    } else if (horaNumero >= 18 || horaNumero < 5) {
-      saudacaoHorario = 'Boa-noite';
-    }
-
-    // Primeira mensagem agora NÃO retorna imediatamente - passa pelo LLM para resposta contextualizada.
-    // Usamos ehPrimeiraMensagemDefinitiva que já foi calculado acima.
+    if (horaNumero >= 12 && horaNumero < 18) saudacaoHorario = 'Boa-tarde';
+    else if (horaNumero >= 18 || horaNumero < 5) saudacaoHorario = 'Boa-noite';
     const ehPrimeiraMensagem = ehPrimeiraMensagemDefinitiva;
-
-    // NOTA: Detecção de primeira mensagem agora é feita no início da função (antes dos fluxos).
-    // Este bloco foi removido para evitar duplicação.
-
-    // Buscar procedimentos e exames disponíveis - SEMPRE carregar para que a IA tenha informações atualizadas
     let infoProcedimentosExames = '';
     
     // SEMPRE carregar a lista completa de procedimentos e exames para que a IA possa responder sobre qualquer serviço
@@ -1776,10 +1752,16 @@ Retorne JSON.`;
         const messages = [{ role: 'system', content: promptCompleto }];
         if (historicoMensagensRaw && historicoMensagensRaw.length > 0) {
           historicoMensagensRaw.forEach(m => {
-            if (m.role && m.content) messages.push({ role: m.role, content: m.content });
+            if (m.role && m.content) {
+              let cleanContent = m.content;
+              if (m.mediaUrl) cleanContent = cleanContent.replace(m.mediaUrl, '').trim();
+              messages.push({ role: m.role, content: cleanContent });
+            }
           });
         }
-        let userContent = [{ type: 'text', text: messageText || '(sem texto)' }];
+        let cleanMessageText = messageText || '(sem texto)';
+        if (mediaUrl) cleanMessageText = cleanMessageText.replace(mediaUrl, '').trim();
+        let userContent = [{ type: 'text', text: cleanMessageText || '(sem texto)' }];
         if (mediaUrl && mediaType === 'image') {
           userContent.push({ type: 'image_url', image_url: { url: mediaUrl } });
         } else if (mediaUrl && mediaType === 'document') {
