@@ -280,24 +280,22 @@ export default function FormularioOS({
       valorTotal = parseFloat(agendamento.valor_total) || 0;
       
       if (agendamento.exames_ids && exames) {
-        const numExames = agendamento.exames_ids.length;
         let somaItens = 0;
+        let itensCalculados = [];
         
-        agendamento.exames_ids.forEach((exameId, idx) => {
+        agendamento.exames_ids.forEach((exameId) => {
           const exame = exames.find(e => e.id === exameId);
-          const nomeExame = exame ? exame.nome : `Exame ${idx + 1}`;
+          const nomeExame = exame ? exame.nome : `Exame`;
           
-          // Distribuir o valor total proporcionalmente entre os exames
-          let valorItem;
-          if (idx < numExames - 1) {
-            valorItem = parseFloat((valorTotal / numExames).toFixed(2));
-          } else {
-            // Último item recebe o restante para evitar erro de centavos
-            valorItem = parseFloat((valorTotal - somaItens).toFixed(2));
+          let valorItem = 0;
+          if (exame) {
+            const isParticular = !agendamento.convenio || agendamento.convenio.toLowerCase() === 'particular';
+            valorItem = isParticular ? (parseFloat(exame.valor_particular) || 0) : (parseFloat(exame.valor_convenio) || parseFloat(exame.valor_particular) || 0);
           }
+          
           somaItens += valorItem;
           
-          itensOS.push({
+          itensCalculados.push({
             descricao: `Exame: ${nomeExame}`,
             tipo: 'Exame',
             valor_unitario: valorItem,
@@ -305,6 +303,34 @@ export default function FormularioOS({
             valor_total: valorItem
           });
         });
+
+        if (somaItens > 0 && Math.abs(somaItens - valorTotal) > 0.05) {
+          let somaAjustada = 0;
+          itensCalculados.forEach((item, idx) => {
+            if (idx < itensCalculados.length - 1) {
+              item.valor_unitario = parseFloat((item.valor_unitario / somaItens * valorTotal).toFixed(2));
+              item.valor_total = item.valor_unitario;
+              somaAjustada += item.valor_unitario;
+            } else {
+              item.valor_unitario = parseFloat((valorTotal - somaAjustada).toFixed(2));
+              item.valor_total = item.valor_unitario;
+            }
+          });
+        } else if (somaItens === 0 && valorTotal > 0) {
+          let somaFallback = 0;
+          itensCalculados.forEach((item, idx) => {
+            if (idx < itensCalculados.length - 1) {
+              item.valor_unitario = parseFloat((valorTotal / itensCalculados.length).toFixed(2));
+              item.valor_total = item.valor_unitario;
+              somaFallback += item.valor_unitario;
+            } else {
+              item.valor_unitario = parseFloat((valorTotal - somaFallback).toFixed(2));
+              item.valor_total = item.valor_unitario;
+            }
+          });
+        }
+
+        itensOS.push(...itensCalculados);
       } else {
         // Sem detalhamento de exames, item único
         itensOS.push({
