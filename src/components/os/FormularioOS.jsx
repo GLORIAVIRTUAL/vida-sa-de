@@ -63,6 +63,7 @@ export default function FormularioOS({
   // CORREÇÃO: Resolver o médico correto considerando Odontologia (agenda unificada)
   // Se o agendamento tem "Dentista: NomeDoDentista" nas observações, usar o ID DESSE dentista
   const resolverMedicoId = (ag, meds, fallbackMedico) => {
+    if (ag?.tipo_servico === 'Exame') return null;
     const dentNome = ag?.observacoes?.match(/Dentista:\s*(.+?)(\n|$)/)?.[1]?.trim();
     if (dentNome) {
       const dentObj = meds.find(m => m.nome === dentNome);
