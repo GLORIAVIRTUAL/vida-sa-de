@@ -647,11 +647,17 @@ Deno.serve(async (req) => {
           }
         }
         
-        // 2. Verificar se cliente mencionou horário específico (13:15, 13h15, às 13:15)
+        // 2. Verificar se cliente mencionou horário específico (13:15, 13h15, às 13:15, 10h, 10 horas)
         if (!agendamentoParaCancelar) {
-          const horarioMatch = messageText.match(/(\d{1,2})[h:](\d{2})/);
-          if (horarioMatch) {
-            const horarioBuscado = `${String(horarioMatch[1]).padStart(2,'0')}:${horarioMatch[2]}`;
+          const horarioCompletoMatch = messageText.match(/(?:às|as)?\s*(\d{1,2})[h:](\d{2})/i);
+          const horaCheiaMatch = messageText.match(/(?:às|as)?\s*(\d{1,2})\s*(?:h\b|horas?\b)/i) || messageText.match(/^(\d{1,2})$/);
+          let horarioBuscado = null;
+          if (horarioCompletoMatch) {
+            horarioBuscado = `${String(horarioCompletoMatch[1]).padStart(2,'0')}:${horarioCompletoMatch[2]}`;
+          } else if (horaCheiaMatch) {
+            horarioBuscado = `${String(horaCheiaMatch[1]).padStart(2,'0')}:00`;
+          }
+          if (horarioBuscado) {
             for (const ag of agendamentosFuturos) {
               if (ag.horario === horarioBuscado) {
                 agendamentoParaCancelar = ag.id;
