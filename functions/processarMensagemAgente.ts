@@ -777,6 +777,7 @@ Deno.serve(async (req) => {
           }
         } else {
           console.log('⚠️ Não foi possível identificar qual agendamento cancelar');
+          infoCancelamento = '\n\n⚠️ CANCELAMENTO AINDA NÃO EXECUTADO. Peça para o cliente confirmar com a data exata ou escolher a opção correta. É PROIBIDO responder que o cancelamento foi concluído.';
         }
       }
     }
