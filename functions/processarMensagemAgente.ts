@@ -779,7 +779,7 @@ Deno.serve(async (req) => {
               cancelamento_executado: true
             });
           } else {
-            console.log('❌ Falha ao executar cancelamento');
+            console.log('❌ Falha ao executar cancelamento'); await liberarLock(base44, phoneNumber); return Response.json({ success: true, resposta: 'Não consegui concluir o cancelamento no sistema agora. Por favor, tente novamente em instantes.', cancelamento_executado: false });
           }
         } else {
           console.log('⚠️ Não foi possível identificar qual agendamento cancelar');
