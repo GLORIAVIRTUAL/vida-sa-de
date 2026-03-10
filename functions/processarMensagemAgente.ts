@@ -611,7 +611,7 @@ Deno.serve(async (req) => {
         for (const paciente of pacientes) {
           const agendamentos = await base44.asServiceRole.entities.Agendamento.filter({
             paciente_id: paciente.id,
-            status: { $in: ['Agendado', 'Pago'] }
+            status: { $in: ['Agendado', 'Confirmado', 'Pago'] }
           });
           const futuros = agendamentos.filter(ag => ag.data_agendamento >= hoje);
           agendamentosFuturos.push(...futuros);
