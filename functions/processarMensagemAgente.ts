@@ -544,8 +544,8 @@ Deno.serve(async (req) => {
 
     const executarCancelamento = async (agendamentoId) => {
       try {
-        const todosAg = await base44.asServiceRole.entities.Agendamento.list();
-        const ag = todosAg.find(a => a.id === agendamentoId);
+        const ags = await base44.asServiceRole.entities.Agendamento.filter({ id: agendamentoId });
+        const ag = Array.isArray(ags) ? ags[0] : null;
         if (!ag) { console.log('❌ Agendamento não encontrado'); return false; }
         let medicoNome='Médico', medicoEsp='';
         try { const ms=await base44.asServiceRole.entities.Medico.filter({id:ag.medico_id}); if(ms.length>0){medicoNome=ms[0].nome;medicoEsp=ms[0].especialidade;} } catch(e){}
