@@ -681,21 +681,22 @@ Deno.serve(async (req) => {
           }
         }
         
-        // 4. Verificar se cliente mencionou data (19/01, dia 19, 12/02)
+        // 4. Verificar se cliente mencionou data ou confirmou o agendamento já proposto
         if (!agendamentoParaCancelar) {
           const dataMatch = messageText.match(/(\d{1,2})\/(\d{1,2})|dia\s*(\d{1,2})/i);
-          if (dataMatch) {
-            const dia = dataMatch[1] || dataMatch[3];
-            const mes = dataMatch[2] || String(new Date().getMonth() + 1);
-            const dataFormatada = `${new Date().getFullYear()}-${String(mes).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;
-            
-            for (const ag of agendamentosFuturos) {
-              if (ag.data_agendamento === dataFormatada) {
-                agendamentoParaCancelar = ag.id;
-                console.log(`✅ Cliente mencionou data ${dataFormatada}: ${ag.id}`);
-                break;
-              }
-            }
+          const dia = dataMatch?.[1] || dataMatch?.[3];
+          const mes = dataMatch?.[2] || String(new Date().getMonth() + 1);
+          let dataRef = dia ? `${new Date().getFullYear()}-${String(mes).padStart(2,'0')}-${String(dia).padStart(2,'0')}` : null;
+          let horarioRef = null;
+          if (!dataRef && /\b(sim|confirmo|ok|pode|prosseguir|isso|exato|quero cancelar|pode cancelar|sim quero cancelar|cancelar)\b/i.test(msgLower)) {
+            const ultimaAssist = [...historicoMensagensRaw].reverse().find(m => m.role === 'assistant')?.content || '';
+            const dm = ultimaAssist.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+            const hm = ultimaAssist.match(/(?:às|as)\s*(\d{2}:\d{2})/i);
+            if (/posso prosseguir com o cancelamento|você deseja cancelar/i.test(ultimaAssist.toLowerCase())) { dataRef = dm ? `${dm[3]}-${dm[2]}-${dm[1]}` : null; horarioRef = hm?.[1] || null; }
+          }
+          if (dataRef) {
+            const candidato = agendamentosFuturos.find(ag => ag.data_agendamento === dataRef && (!horarioRef || ag.horario === horarioRef));
+            if (candidato) { agendamentoParaCancelar = candidato.id; console.log(`✅ Cancelamento identificado por data/contexto: ${candidato.id}`); }
           }
         }
         
