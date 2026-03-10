@@ -783,7 +783,14 @@ Deno.serve(async (req) => {
           }
         } else {
           console.log('⚠️ Não foi possível identificar qual agendamento cancelar');
-          infoCancelamento = '\n\n⚠️ CANCELAMENTO AINDA NÃO EXECUTADO. Peça para o cliente confirmar com a data exata ou escolher a opção correta. É PROIBIDO responder que o cancelamento foi concluído.';
+          await liberarLock(base44, phoneNumber);
+          return Response.json({
+            success: true,
+            resposta: agendamentosFuturos.length > 1
+              ? 'Para cancelar corretamente, me responda com o número da opção, a data exata ou o horário exato da consulta.'
+              : 'Para cancelar corretamente, me confirme a data exata ou o horário exato da consulta.',
+            cancelamento_executado: false
+          });
         }
       }
     }
