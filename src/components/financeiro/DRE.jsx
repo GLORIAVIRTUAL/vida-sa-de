@@ -11,67 +11,39 @@ export default function DRE({ lancamentos, loading }) {
 
   const processarDRE = () => {
     const [ano, mes] = mesAno.split('-');
-    // Formato YYYY-MM para comparação de strings (mais confiável que Date)
     const mesAnoFiltro = `${ano}-${mes.padStart(2, '0')}`;
 
-    const lancamentosPeriodo = lancamentos.filter(l => {
-      if (!l.data_lancamento) return false;
-      // Comparar apenas pelo ano-mês da data_lancamento (formato YYYY-MM-DD)
-      const dataLancAnoMes = l.data_lancamento.substring(0, 7);
-      return dataLancAnoMes === mesAnoFiltro;
+    const lancamentosPeriodo = filtrarLancamentosPorPeriodo(lancamentos, {
+      mesAno: mesAnoFiltro
     });
 
-    // Receitas
-    const receitaConsultas = lancamentosPeriodo
-      .filter(l => l.tipo === "Entrada" && l.categoria === "Receita Consultas")
-      .reduce((sum, l) => sum + l.valor, 0);
+    const resumo = somarLancamentos(lancamentosPeriodo);
+    const entradasPorCategoria = agruparLancamentosPorCategoria(lancamentosPeriodo, 'Entrada');
+    const saidasPorCategoria = agruparLancamentosPorCategoria(lancamentosPeriodo, 'Saída');
 
-    const receitaProcedimentos = lancamentosPeriodo
-      .filter(l => l.tipo === "Entrada" && l.categoria === "Receita Procedimentos")
-      .reduce((sum, l) => sum + l.valor, 0);
+    const receitaConsultas = entradasPorCategoria['Receita Consultas'] || 0;
+    const receitaProcedimentos = entradasPorCategoria['Receita Procedimentos'] || 0;
+    const receitaExames = entradasPorCategoria['Receita Exames'] || 0;
+    const outrasReceitas = Object.entries(entradasPorCategoria)
+      .filter(([categoria]) => !['Receita Consultas', 'Receita Procedimentos', 'Receita Exames'].includes(categoria))
+      .reduce((total, [, valor]) => total + valor, 0);
 
-    const receitaExames = lancamentosPeriodo
-      .filter(l => l.tipo === "Entrada" && l.categoria === "Receita Exames")
-      .reduce((sum, l) => sum + l.valor, 0);
+    const repasseMedico = saidasPorCategoria['Repasse Médico'] || 0;
+    const repasseLab = saidasPorCategoria['Repasse Laboratório'] || 0;
+    const aluguel = saidasPorCategoria['Aluguel'] || 0;
+    const utilidades = saidasPorCategoria['Água/Luz'] || 0;
+    const materialMedico = saidasPorCategoria['Material Médico'] || 0;
+    const equipamentos = saidasPorCategoria['Equipamentos'] || 0;
+    const salarios = saidasPorCategoria['Salários'] || 0;
+    const marketing = saidasPorCategoria['Marketing'] || 0;
+    const impostos = saidasPorCategoria['Impostos'] || 0;
+    const outros = Object.entries(saidasPorCategoria)
+      .filter(([categoria]) => !['Repasse Médico', 'Repasse Laboratório', 'Aluguel', 'Água/Luz', 'Material Médico', 'Equipamentos', 'Salários', 'Marketing', 'Impostos'].includes(categoria))
+      .reduce((total, [, valor]) => total + valor, 0);
 
-    const receitaBruta = receitaConsultas + receitaProcedimentos + receitaExames;
-
-    // Despesas Operacionais
-    const repasseMedico = lancamentosPeriodo
-      .filter(l => l.tipo === "Saída" && l.categoria === "Repasse Médico")
-      .reduce((sum, l) => sum + l.valor, 0);
-
-    const repasseLab = lancamentosPeriodo
-      .filter(l => l.tipo === "Saída" && l.categoria === "Repasse Laboratório")
-      .reduce((sum, l) => sum + l.valor, 0);
-
-    const aluguel = lancamentosPeriodo
-      .filter(l => l.tipo === "Saída" && l.categoria === "Aluguel")
-      .reduce((sum, l) => sum + l.valor, 0);
-
-    const utilidades = lancamentosPeriodo
-      .filter(l => l.tipo === "Saída" && l.categoria === "Água/Luz")
-      .reduce((sum, l) => sum + l.valor, 0);
-
-    const materialMedico = lancamentosPeriodo
-      .filter(l => l.tipo === "Saída" && l.categoria === "Material Médico")
-      .reduce((sum, l) => sum + l.valor, 0);
-
-    const salarios = lancamentosPeriodo
-      .filter(l => l.tipo === "Saída" && l.categoria === "Salários")
-      .reduce((sum, l) => sum + l.valor, 0);
-
-    const marketing = lancamentosPeriodo
-      .filter(l => l.tipo === "Saída" && l.categoria === "Marketing")
-      .reduce((sum, l) => sum + l.valor, 0);
-
-    const outros = lancamentosPeriodo
-      .filter(l => l.tipo === "Saída" && l.categoria === "Outros")
-      .reduce((sum, l) => sum + l.valor, 0);
-
-    const totalDespesas = repasseMedico + repasseLab + aluguel + utilidades + materialMedico + salarios + marketing + outros;
-
-    const lucroLiquido = receitaBruta - totalDespesas;
+    const receitaBruta = resumo.entradas;
+    const totalDespesas = resumo.saidas;
+    const lucroLiquido = resumo.saldo;
     const margemLiquida = receitaBruta > 0 ? (lucroLiquido / receitaBruta) * 100 : 0;
 
     return {
@@ -80,6 +52,7 @@ export default function DRE({ lancamentos, loading }) {
         consultas: receitaConsultas,
         procedimentos: receitaProcedimentos,
         exames: receitaExames,
+        outras: outrasReceitas,
         total: receitaBruta
       },
       despesas: {
@@ -88,8 +61,10 @@ export default function DRE({ lancamentos, loading }) {
         aluguel,
         utilidades,
         materialMedico,
+        equipamentos,
         salarios,
         marketing,
+        impostos,
         outros,
         total: totalDespesas
       },
@@ -209,6 +184,10 @@ export default function DRE({ lancamentos, loading }) {
               <span className="font-medium">Exames</span>
               <span className="font-bold text-green-600">R$ {dre.receitas.exames.toFixed(2)}</span>
             </div>
+            <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+              <span className="font-medium">Outras Entradas</span>
+              <span className="font-bold text-green-600">R$ {dre.receitas.outras.toFixed(2)}</span>
+            </div>
             <div className="border-t-2 border-green-200 pt-3">
               <div className="flex justify-between items-center">
                 <span className="text-lg font-bold text-green-800">RECEITA BRUTA</span>
@@ -244,12 +223,20 @@ export default function DRE({ lancamentos, loading }) {
               <span className="font-semibold text-red-600">R$ {dre.despesas.materialMedico.toFixed(2)}</span>
             </div>
             <div className="flex justify-between items-center p-2 bg-red-50 rounded-lg">
+              <span className="text-sm">Equipamentos</span>
+              <span className="font-semibold text-red-600">R$ {dre.despesas.equipamentos.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between items-center p-2 bg-red-50 rounded-lg">
               <span className="text-sm">Salários</span>
               <span className="font-semibold text-red-600">R$ {dre.despesas.salarios.toFixed(2)}</span>
             </div>
             <div className="flex justify-between items-center p-2 bg-red-50 rounded-lg">
               <span className="text-sm">Marketing</span>
               <span className="font-semibold text-red-600">R$ {dre.despesas.marketing.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between items-center p-2 bg-red-50 rounded-lg">
+              <span className="text-sm">Impostos</span>
+              <span className="font-semibold text-red-600">R$ {dre.despesas.impostos.toFixed(2)}</span>
             </div>
             <div className="flex justify-between items-center p-2 bg-red-50 rounded-lg">
               <span className="text-sm">Outros</span>

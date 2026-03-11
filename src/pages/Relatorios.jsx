@@ -97,8 +97,9 @@ export default function Relatorios() {
         return todos;
       };
       
-      const [osData, medicosData, categoriasData, pacientesData, agendamentosData] = await Promise.all([
+      const [osData, lancamentosData, medicosData, categoriasData, pacientesData, agendamentosData] = await Promise.all([
         OrdemServico.list('-data_execucao', 5000),
+        Lancamento.list('-data_lancamento', 5000),
         Medico.list(),
         CategoriaPreco.list(),
         Paciente.list('nome', 5000),
@@ -140,6 +141,7 @@ export default function Relatorios() {
       });
 
       setOrdensServico(osDesmembradas);
+      setLancamentos(lancamentosData || []);
       setMedicos(medicosData || []);
       setCategorias(categoriasData || []);
       setPacientes(pacientesData || []);
@@ -370,6 +372,21 @@ export default function Relatorios() {
       return 0;
     });
   }, [ordensServico, filtros, medicos, agendamentosMap]);
+
+  const lancamentosFinanceiros = useMemo(() => {
+    return filtrarLancamentosPorPeriodo(lancamentos, {
+      dataInicio: filtros.dataInicio,
+      dataFim: filtros.dataFim
+    });
+  }, [lancamentos, filtros.dataInicio, filtros.dataFim]);
+
+  const estatisticasFinanceiras = useMemo(() => {
+    const resumo = somarLancamentos(lancamentosFinanceiros);
+    return {
+      ...resumo,
+      movimentacoes: lancamentosFinanceiros.length
+    };
+  }, [lancamentosFinanceiros]);
 
   // Calcular estatísticas
   const estatisticas = useMemo(() => {
@@ -910,50 +927,50 @@ export default function Relatorios() {
 
           {/* Cards de Resumo */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-emerald-100 text-sm">Total Entradas</p>
+                    <p className="text-2xl font-bold">{formatCurrency(estatisticasFinanceiras.entradas)}</p>
+                  </div>
+                  <TrendingUp className="w-10 h-10 text-emerald-200" />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-gradient-to-br from-red-500 to-red-600 text-white">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-red-100 text-sm">Total Saídas</p>
+                    <p className="text-2xl font-bold">{formatCurrency(estatisticasFinanceiras.saidas)}</p>
+                  </div>
+                  <AlertCircle className="w-10 h-10 text-red-200" />
+                </div>
+              </CardContent>
+            </Card>
+            
             <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-blue-100 text-sm">Total Vendido</p>
-                    <p className="text-2xl font-bold">{formatCurrency(estatisticas.totalVendido)}</p>
+                    <p className="text-blue-100 text-sm">Saldo do Período</p>
+                    <p className="text-2xl font-bold">{formatCurrency(estatisticasFinanceiras.saldo)}</p>
                   </div>
                   <DollarSign className="w-10 h-10 text-blue-200" />
                 </div>
               </CardContent>
             </Card>
             
-            <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white">
+            <Card className="bg-gradient-to-br from-slate-600 to-slate-700 text-white">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-green-100 text-sm">Receita Clínica</p>
-                    <p className="text-2xl font-bold">{formatCurrency(estatisticas.totalClinica)}</p>
+                    <p className="text-slate-100 text-sm">Movimentações</p>
+                    <p className="text-2xl font-bold">{estatisticasFinanceiras.movimentacoes}</p>
                   </div>
-                  <Building2 className="w-10 h-10 text-green-200" />
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-purple-100 text-sm">Repasse Médicos</p>
-                    <p className="text-2xl font-bold">{formatCurrency(estatisticas.totalRepasse)}</p>
-                  </div>
-                  <Users className="w-10 h-10 text-purple-200" />
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-orange-100 text-sm">Atendimentos</p>
-                    <p className="text-2xl font-bold">{estatisticas.totalAtendimentos}</p>
-                  </div>
-                  <Calendar className="w-10 h-10 text-orange-200" />
+                  <FileText className="w-10 h-10 text-slate-200" />
                 </div>
               </CardContent>
             </Card>
