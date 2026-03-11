@@ -893,6 +893,39 @@ function formatarData(dataStr) {
     }
 }
 
+async function enviarStatusDigitando(telefone, tempoSegundos = 10) {
+    const instanceId = Deno.env.get('ZAPI_INSTANCE_ID');
+    const token = Deno.env.get('ZAPI_TOKEN');
+    const clientToken = Deno.env.get('ZAPI_CLIENT_TOKEN');
+
+    let telefoneFormatado = telefone.replace(/\D/g, '');
+    if (telefoneFormatado.startsWith('55') && telefoneFormatado.length === 12) {
+        telefoneFormatado = telefoneFormatado.slice(0, 4) + '9' + telefoneFormatado.slice(4);
+    }
+    
+    console.log('⌨️ Enviando status "digitando..." para:', telefoneFormatado);
+    
+    try {
+        const response = await fetch(`https://api.z-api.io/instances/${instanceId}/token/${token}/chats/presence`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Client-Token': clientToken
+            },
+            body: JSON.stringify({
+                phone: telefoneFormatado,
+                presence: 'composing',
+                delay: tempoSegundos
+            })
+        });
+        const result = await response.json();
+        return result;
+    } catch (e) {
+        console.error('⚠️ Erro ao enviar status digitando:', e.message);
+        return null;
+    }
+}
+
 async function enviarMensagemZapi(telefone, mensagem) {
     const instanceId = Deno.env.get('ZAPI_INSTANCE_ID');
     const token = Deno.env.get('ZAPI_TOKEN');
@@ -917,7 +950,8 @@ async function enviarMensagemZapi(telefone, mensagem) {
         },
         body: JSON.stringify({
             phone: telefoneFormatado,
-            message: mensagem
+            message: mensagem,
+            delayTyping: 3
         })
     });
 
