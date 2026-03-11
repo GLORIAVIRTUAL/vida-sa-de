@@ -31,7 +31,7 @@ const VALORES_PLANOS = {
   "Grupo Parcelado": 718.80
 };
 
-const CUSTO_CARTAO_FISICO = 5.00;
+const CUSTO_CARTAO_FISICO = 0.00;
 const CUSTO_BENEFICIO = 120.00;
 
 export default function FormularioVendaCartao({ venda, onClose, onSave }) { // NEW: Recebe venda como prop
@@ -551,48 +551,7 @@ export default function FormularioVendaCartao({ venda, onClose, onSave }) { // N
                   </Select>
                 </div>
 
-                {/* NOVO: Seção de Cartões Físicos */}
-                <div className="col-span-2 bg-blue-50 p-4 rounded-lg border-2 border-blue-200">
-                  <h4 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
-                    💳 Cartões Físicos
-                  </h4>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <Label htmlFor="quantidade_cartoes">Quantidade de Cartões</Label>
-                      <Input
-                        id="quantidade_cartoes"
-                        type="number"
-                        min="0"
-                        max={limiteMaximoCartoes}
-                        value={formData.quantidade_cartoes}
-                        onChange={(e) => handleChange('quantidade_cartoes', e.target.value)}
-                        className="font-semibold"
-                      />
-                      <p className="text-xs text-blue-600 mt-1">
-                        {formData.quantidade_cartoes} cartão(ões) × R$ {CUSTO_CARTAO_FISICO.toFixed(2).replace('.', ',')}
-                      </p>
-                    </div>
-                    <div>
-                      <Label>Custo dos Cartões</Label>
-                      <Input
-                        value={`R$ ${formData.valor_cartoes.toFixed(2).replace('.', ',')}`}
-                        disabled
-                        className="bg-blue-100 font-semibold text-blue-900"
-                      />
-                    </div>
-                    <div>
-                      <Label>Valor do Plano Base</Label>
-                      <Input
-                        value={`R$ ${formData.valor_plano.toFixed(2).replace('.', ',')}`}
-                        disabled
-                        className="bg-gray-100 font-semibold"
-                      />
-                    </div>
-                  </div>
-                  <p className="text-xs text-blue-700 mt-3">
-                    💡 <strong>Cálculo:</strong> Plano Base (R$ {formData.valor_plano.toFixed(2).replace('.', ',')}) + {formData.quantidade_cartoes} Cartão(ões) (R$ {formData.valor_cartoes.toFixed(2).replace('.', ',')}) {calcularCustoBeneficios(formData.titular, formData.dependentes) > 0 ? `+ Benefícios (R$ ${calcularCustoBeneficios(formData.titular, formData.dependentes).toFixed(2).replace('.', ',')})` : ''} = <strong>R$ {formData.valor_total.toFixed(2).replace('.', ',')}</strong>
-                  </p>
-                </div>
+
 
                 {/* Seção de Benefícios */}
                 {calcularCustoBeneficios(formData.titular, formData.dependentes) > 0 && (
