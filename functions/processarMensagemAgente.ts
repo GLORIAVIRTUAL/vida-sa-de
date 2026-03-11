@@ -611,10 +611,9 @@ Deno.serve(async (req) => {
         // Buscar agendamentos de TODOS os pacientes encontrados
         for (const paciente of pacientes) {
           const agendamentos = await base44.asServiceRole.entities.Agendamento.filter({
-            paciente_id: paciente.id,
-            status: { $in: ['Agendado', 'Confirmado', 'Pago'] }
+            paciente_id: paciente.id
           });
-          const futuros = agendamentos.filter(ag => ag.data_agendamento >= hoje);
+          const futuros = agendamentos.filter(ag => ag.data_agendamento >= hoje && ['Agendado', 'Confirmado', 'Pago'].includes(ag.status));
           agendamentosFuturos.push(...futuros);
         }
         // Remover duplicatas
