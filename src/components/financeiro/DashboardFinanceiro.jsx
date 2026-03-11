@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, DollarSign, FileText, Calculator, Users } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { filtrarLancamentosPorPeriodo, somarLancamentos } from "./financeiroUtils";
 
 export default function DashboardFinanceiro({ lancamentos = [], ordensServico = [], loading }) {
   const hoje = new Date();
@@ -13,48 +13,26 @@ export default function DashboardFinanceiro({ lancamentos = [], ordensServico = 
   const fimMesAnterior = endOfMonth(subMonths(hoje, 1));
 
   const calcularEstatisticas = () => {
-    // Data de criação do app (após duplicação) - ignora lançamentos importados
-    const dataInicioApp = new Date('2026-01-20T13:40:00');
-    
-    // Filtra apenas lançamentos criados NESTE app (após a duplicação)
-    const lancamentosValidos = lancamentos.filter(l => 
-      l.created_date && new Date(l.created_date) >= dataInicioApp
-    );
-
-    // Mês atual - filtra apenas lançamentos do mês
-    const lancamentosMesAtual = lancamentosValidos.filter(l => {
-      const dataLanc = new Date(l.data_lancamento + 'T00:00:00');
-      return dataLanc >= inicioMesAtual && dataLanc <= fimMesAtual;
+    const lancamentosMesAtual = filtrarLancamentosPorPeriodo(lancamentos, {
+      dataInicio: format(inicioMesAtual, 'yyyy-MM-dd'),
+      dataFim: format(fimMesAtual, 'yyyy-MM-dd')
     });
 
-    // Mês anterior
-    const lancamentosMesAnterior = lancamentosValidos.filter(l => {
-      const dataLanc = new Date(l.data_lancamento + 'T00:00:00');
-      return dataLanc >= inicioMesAnterior && dataLanc <= fimMesAnterior;
+    const lancamentosMesAnterior = filtrarLancamentosPorPeriodo(lancamentos, {
+      dataInicio: format(inicioMesAnterior, 'yyyy-MM-dd'),
+      dataFim: format(fimMesAnterior, 'yyyy-MM-dd')
     });
 
-    const receitaMesAtual = parseFloat(lancamentosMesAtual
-      .filter(l => l.tipo === "Entrada")
-      .reduce((sum, l) => sum + (l.valor || 0), 0).toFixed(2));
+    const resumoMesAtual = somarLancamentos(lancamentosMesAtual);
+    const resumoMesAnterior = somarLancamentos(lancamentosMesAnterior);
 
-    // Despesas: EXCLUI "Repasse Médico" e "Repasse Laboratório" 
-    // para mostrar apenas despesas operacionais reais
-    const categoriasExcluidas = ["Repasse Médico", "Repasse Laboratório"];
-    const despesaMesAtual = parseFloat(lancamentosMesAtual
-      .filter(l => l.tipo === "Saída" && !categoriasExcluidas.includes(l.categoria))
-      .reduce((sum, l) => sum + (l.valor || 0), 0).toFixed(2));
+    const receitaMesAtual = parseFloat(resumoMesAtual.entradas.toFixed(2));
+    const despesaMesAtual = parseFloat(resumoMesAtual.saidas.toFixed(2));
+    const lucroMesAtual = parseFloat(resumoMesAtual.saldo.toFixed(2));
 
-    const receitaMesAnterior = parseFloat(lancamentosMesAnterior
-      .filter(l => l.tipo === "Entrada")
-      .reduce((sum, l) => sum + (l.valor || 0), 0).toFixed(2));
-
-    // Despesas: EXCLUI "Repasse Médico" e "Repasse Laboratório"
-    const despesaMesAnterior = parseFloat(lancamentosMesAnterior
-      .filter(l => l.tipo === "Saída" && !categoriasExcluidas.includes(l.categoria))
-      .reduce((sum, l) => sum + (l.valor || 0), 0).toFixed(2));
-
-    const lucroMesAtual = parseFloat((receitaMesAtual - despesaMesAtual).toFixed(2));
-    const lucroMesAnterior = parseFloat((receitaMesAnterior - despesaMesAnterior).toFixed(2));
+    const receitaMesAnterior = parseFloat(resumoMesAnterior.entradas.toFixed(2));
+    const despesaMesAnterior = parseFloat(resumoMesAnterior.saidas.toFixed(2));
+    const lucroMesAnterior = parseFloat(resumoMesAnterior.saldo.toFixed(2));
 
     return {
       receitaMesAtual,
@@ -62,7 +40,7 @@ export default function DashboardFinanceiro({ lancamentos = [], ordensServico = 
       lucroMesAtual,
       totalOS: ordensServico.length,
       crescimentoReceita: receitaMesAnterior ? parseFloat(((receitaMesAtual - receitaMesAnterior) / receitaMesAnterior * 100).toFixed(1)) : 0,
-      crescimentoLucro: lucroMesAnterior ? parseFloat(((lucroMesAtual - lucroMesAnterior) / lucroMesAnterior * 100).toFixed(1)) : 0
+      crescimentoLucro: lucroMesAnterior ? parseFloat(((lucroMesAtual - lucroMesAnterior) / Math.abs(lucroMesAnterior) * 100).toFixed(1)) : 0
     };
   };
 

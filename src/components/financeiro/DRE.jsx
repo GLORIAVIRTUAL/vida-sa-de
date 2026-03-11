@@ -4,6 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { TrendingUp, TrendingDown, Calculator, Percent } from "lucide-react";
 import { format, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { agruparLancamentosPorCategoria, filtrarLancamentosPorPeriodo, somarLancamentos } from "./financeiroUtils";
 
 export default function DRE({ lancamentos, loading }) {
   const [mesAno, setMesAno] = useState(format(new Date(), "yyyy-MM"));
