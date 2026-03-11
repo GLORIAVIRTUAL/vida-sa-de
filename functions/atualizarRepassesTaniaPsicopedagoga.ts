@@ -76,7 +76,10 @@ Deno.serve(async (req) => {
 
       if (ordem.tipo_servico === 'Procedimento') {
         if (repasseEspecifico && repasseEspecifico.tipo_repasse === 'valor_fixo') {
-          repasse = repasseEspecifico.valor_procedimento || 0;
+          repasse = repasseEspecifico.valor_procedimento || repasseEspecifico.valor || 0;
+        } else if (repasseEspecifico) {
+          const percentualProcedimento = repasseEspecifico.valor_procedimento || repasseEspecifico.valor || 0;
+          repasse = roundCurrency((ordem.valor_final || 0) * (percentualProcedimento / 100));
         } else if (tania.tipo_repasse === 'valor_fixo') {
           repasse = isParticular
             ? (tania.valor_repasse_fixo_procedimento || tania.valor_repasse_fixo || 0)
