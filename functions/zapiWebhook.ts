@@ -473,6 +473,10 @@ async function processarMensagemRecebida(base44, payload) {
                         ultimo_timestamp_pendente: null
                     });
                     
+                    // Enviar status de "digitando..." enquanto a IA processa
+                    // Não aguardamos (await) para não atrasar o início do processamento da IA
+                    enviarStatusDigitando(telefone, 10).catch(e => console.error(e));
+                    
                     // Montar payload combinado
                     const payloadCombinado = {
                         ...payload,
