@@ -905,7 +905,6 @@ Deno.serve(async (req) => {
       }
     }
     
-    const clienteEscolhendoHorario = /hoje|\d{1,2}[h:]?\s*(?:horas?)?|\d{1,2}:\d{2}|amanhã|segunda|terça|quarta|quinta|sexta|sábado/i.test(messageText);
     const deveBuscarDisponibilidades = (querAgendar || ehPerguntaDisponibilidadeMedico || (ehPerguntaInformativa && temEspecialidadeOuMedico)) && (temEspecialidadeOuMedico || 
       (clienteConfirmouAgendar && historicoTemEspecialidadeCheck) ||
       (jaEmFluxoAgendamento && temEspecialidadeOuMedico) ||
