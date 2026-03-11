@@ -27,6 +27,7 @@ import ReciboVenda from "../components/venda-cartao/ReciboVenda";
 import ContratoAdesao from "../components/venda-cartao/ContratoAdesao";
 import GeradorCartoes from "../components/venda-cartao/GeradorCartoes";
 import RelatorioVendaCartao from "../components/venda-cartao/RelatorioVendaCartao";
+import RelatorioZeloButton from "../components/venda-cartao/RelatorioZeloButton";
 
 const SENHA_CANCELAMENTO = "123123";
 
@@ -315,6 +316,7 @@ export default function VendaCartaoPage() {
               <Printer className="w-5 h-5 mr-2" />
               Relatórios
             </Button>
+            <RelatorioZeloButton vendas={vendasFiltradas} />
             <Link to={createPageUrl('ImportarVendasCartao')}>
               <Button 
                 variant="outline" 
