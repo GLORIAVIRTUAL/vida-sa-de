@@ -547,15 +547,15 @@ Deno.serve(async (req) => {
       try {
         const ags = await base44.asServiceRole.entities.Agendamento.filter({ id: agendamentoId });
         const ag = Array.isArray(ags) ? ags[0] : null;
-        if (!ag) { console.log('❌ Agendamento não encontrado'); return false; }
+        if (!ag) return false;
         let medicoNome='Médico', medicoEsp='';
         try { const ms=await base44.asServiceRole.entities.Medico.filter({id:ag.medico_id}); if(ms.length>0){medicoNome=ms[0].nome;medicoEsp=ms[0].especialidade;} } catch(e){}
         const df=new Date(ag.data_agendamento+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit'});
         await base44.asServiceRole.entities.Agendamento.update(agendamentoId,{status:'Cancelado',observacoes:`Cancelado via WhatsApp em ${new Date().toLocaleString('pt-BR')}`});
         try{const cs=await base44.asServiceRole.entities.Contato.filter({telefone:phoneNumber});if(cs.length>0)await base44.asServiceRole.entities.Contato.update(cs[0].id,{status:'Cancelou'});}catch(e){}
         try{await base44.asServiceRole.entities.Notification.create({type:'agendamento_cancelado',message:`❌ ${ag.paciente_nome||'Paciente'} cancelou ${medicoEsp} com ${medicoNome} - ${df} às ${ag.horario}`,data:{agendamento_id:agendamentoId,paciente_nome:ag.paciente_nome,medico_nome:medicoNome,especialidade:medicoEsp,data:ag.data_agendamento,horario:ag.horario,cancelado_por:'WhatsApp - Glória'},is_read:false});}catch(e){}
-        console.log('✅ Cancelado:', agendamentoId); return true;
-      } catch(e) { console.error('❌ Erro cancelar:', e.message); return false; }
+        return true;
+      } catch(e) { return false; }
     };
 
     // Verificar se o cliente está tentando indicar qual agendamento cancelar
