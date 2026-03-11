@@ -737,48 +737,40 @@ Deno.serve(async (req) => {
         
         // Executar cancelamento se encontrou qual
         if (agendamentoParaCancelar) {
-          console.log('🎯 EXECUTANDO cancelamento do agendamento:', agendamentoParaCancelar);
           const cancelou = await executarCancelamento(agendamentoParaCancelar);
           if (cancelou) {
             agendamentoCancelado = true;
-            console.log('✅ CANCELAMENTO EXECUTADO COM SUCESSO!');
-            
-            // Buscar dados do agendamento cancelado para resposta
             const agCancelado = agendamentosFuturos.find(a => a.id === agendamentoParaCancelar);
             const medicoCanc = agCancelado ? medicosMap[agCancelado.medico_id] : null;
             const dataObjCanc = agCancelado ? new Date(agCancelado.data_agendamento + 'T12:00:00') : null;
             const dataFmtCanc = dataObjCanc ? dataObjCanc.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' }) : '';
-            
-            const respostaCancelamento = `✅ Agendamento cancelado com sucesso!\n\n❌ *Cancelado:* ${agCancelado?.tipo_servico || 'Consulta'} - ${dataFmtCanc} às ${agCancelado?.horario || ''}${medicoCanc ? ` com ${medicoCanc.nome} (${medicoCanc.especialidade || ''})` : ''}\n\nSe precisar de mais alguma coisa, estou à disposição! 😊`;
-            
-            // Salvar no histórico e retornar IMEDIATAMENTE
+            const querRemarcar = /remarcar|adiar|mudar.*data|mudar.*hor[áa]rio/i.test(messageText) || /remarcar|adiar/i.test(historicoConversa || '');
+            let respostaCancelamento = `✅ Agendamento cancelado com sucesso!\n\n❌ *Cancelado:* ${agCancelado?.tipo_servico || 'Consulta'} - ${dataFmtCanc} às ${agCancelado?.horario || ''}${medicoCanc ? ` com ${medicoCanc.nome} (${medicoCanc.especialidade || ''})` : ''}\n\n`;
+            if (querRemarcar) {
+                respostaCancelamento += `Para quando você gostaria de remarcar?`;
+                if (medicoCanc) respostaCancelamento += ` Posso ver os próximos horários disponíveis para ${medicoCanc.especialidade || 'essa consulta'}.`;
+            } else {
+                respostaCancelamento += `Se precisar de mais alguma coisa, estou à disposição! 😊`;
+            }
             try {
               const cCancelHist = await buscarContatoPorTelefone(phoneNumber);
               if (cCancelHist) {
-                const contatoCancel = cCancelHist;
-                const historicoAtualCancel = contatoCancel.historico_mensagens || [];
+                const historicoAtualCancel = cCancelHist.historico_mensagens || [];
                 const timestampCancel = new Date().toISOString();
                 historicoAtualCancel.push(
                   { role: 'user', content: messageText, timestamp: timestampCancel, messageId },
                   { role: 'assistant', content: respostaCancelamento, timestamp: timestampCancel }
                 );
-                await base44.asServiceRole.entities.Contato.update(contatoCancel.id, {
+                await base44.asServiceRole.entities.Contato.update(cCancelHist.id, {
                   historico_mensagens: historicoAtualCancel.slice(-50),
                   ultima_interacao: timestampCancel,
                   ultima_mensagem: messageText,
                   ultima_resposta: respostaCancelamento
                 });
               }
-            } catch (e) {
-              console.error('⚠️ Erro ao salvar histórico cancelamento:', e.message);
-            }
-            
+            } catch (e) {}
             await liberarLock(base44, phoneNumber);
-            return Response.json({ 
-              success: true, 
-              resposta: respostaCancelamento,
-              cancelamento_executado: true
-            });
+            return Response.json({ success: true, resposta: respostaCancelamento, cancelamento_executado: true });
           } else {
             console.log('❌ Falha ao executar cancelamento'); await liberarLock(base44, phoneNumber); return Response.json({ success: true, resposta: 'Não consegui concluir o cancelamento no sistema agora. Por favor, tente novamente em instantes.', cancelamento_executado: false });
           }
