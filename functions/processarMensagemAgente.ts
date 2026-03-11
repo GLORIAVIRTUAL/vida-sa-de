@@ -8,27 +8,16 @@ Deno.serve(async (req) => {
     
     console.log('📨 Processando:', { phoneNumber, messageText: (messageText || '').substring(0, 100), mediaType, mediaUrl: mediaUrl ? mediaUrl.substring(0, 80) : null, messageId });
 
-    // DETECÇÃO DE ÁUDIO EMBUTIDO NO TEXTO (BUFFER/DEBOUNCE)
+    // DETECÇÃO DE MÍDIA EMBUTIDA NO TEXTO (BUFFER/DEBOUNCE perde mediaType/mediaUrl)
     if ((!mediaUrl || mediaType === 'text') && messageText) {
-      // Detectar se o texto contém indicador de áudio + uma URL
-      const temIndicadorAudio = /\[(?:á|a)udio\s*(?:recebido)?\]/i.test(messageText);
-      // Capturar QUALQUER URL no texto (ogg, backblaze, supabase, base44, etc.)
       const urlNoTexto = messageText.match(/(https?:\/\/[^\s]+)/i);
-      
-      if (temIndicadorAudio && urlNoTexto) {
-        // Se tem [Áudio recebido] + URL, é áudio do buffer
-        mediaType = 'audio';
-        mediaUrl = urlNoTexto[1];
-        messageText = messageText.replace(urlNoTexto[0], '').replace(/\[(?:á|a)udio\s*(?:recebido)?\]/gi, '').trim();
-        if (!messageText) messageText = '[Áudio recebido]';
-        console.log('🎤 Áudio detectado no texto (indicador+URL):', mediaUrl.substring(0, 80));
-      } else if (urlNoTexto && /\.ogg/i.test(urlNoTexto[1])) {
-        mediaType = 'audio'; mediaUrl = urlNoTexto[1];
-        messageText = messageText.replace(urlNoTexto[0], '').trim() || '[Áudio recebido]';
-      } else if (urlNoTexto && /\.pdf/i.test(urlNoTexto[1])) {
-        mediaType = 'document'; mediaUrl = urlNoTexto[1];
-        messageText = messageText.replace(urlNoTexto[0], '').trim() || '[Documento recebido]';
-        console.log('📄 PDF restaurado do texto buffer:', mediaUrl.substring(0, 80));
+      if (urlNoTexto) {
+        const u = urlNoTexto[1]; const limpaTxt = (tag) => { messageText = messageText.replace(urlNoTexto[0], '').replace(tag, '').trim(); mediaUrl = u; };
+        if (/\[(?:á|a)udio/i.test(messageText)) { mediaType='audio'; limpaTxt(/\[(?:á|a)udio\s*(?:recebido)?\]/gi); messageText=messageText||'[Áudio recebido]'; }
+        else if (/\[(?:i|I)magem/i.test(messageText) || /\.(jpg|jpeg|png|webp)/i.test(u)) { mediaType='image'; limpaTxt(/\[(?:i|I)magem\s*(?:recebida)?\]/gi); messageText=messageText||'[Imagem recebida]'; }
+        else if (/\.ogg/i.test(u)) { mediaType='audio'; limpaTxt(/$/); messageText=messageText||'[Áudio recebido]'; }
+        else if (/\.pdf/i.test(u)) { mediaType='document'; limpaTxt(/$/); messageText=messageText||'[Documento recebido]'; }
+        if (mediaUrl) console.log(`📎 Mídia restaurada do buffer: type=${mediaType}, url=${mediaUrl.substring(0,80)}`);
       }
     }
 
