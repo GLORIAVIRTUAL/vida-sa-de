@@ -1699,8 +1699,8 @@ Retorne JSON.`;
       const pF = tPacs.filter(p => (p.telefone || '').replace(/\D/g, '').slice(-8) === u8);
       if (pF.length > 0) {
         const pIds = pF.map(p => p.id); const hj = new Date().toISOString().split('T')[0];
-        const tAgs = await base44.asServiceRole.entities.Agendamento.filter({data_agendamento: {$gte: hj}, status: {$in: ['Agendado', 'Confirmado', 'Pago']}});
-        const aC = tAgs.filter(a => pIds.includes(a.paciente_id));
+        const tAgs = await base44.asServiceRole.entities.Agendamento.filter({data_agendamento: {$gte: hj}});
+        const aC = tAgs.filter(a => pIds.includes(a.paciente_id) && ['Agendado', 'Confirmado', 'Pago'].includes(a.status));
         if (aC.length > 0) {
           const mds = await base44.asServiceRole.entities.Medico.list(); const mM = {}; mds.forEach(m => { mM[m.id] = m; });
           infoAgendamentosCliente = `\n\n📅 AGENDAMENTOS FUTUROS DESTE CLIENTE NO SISTEMA:\n`;
