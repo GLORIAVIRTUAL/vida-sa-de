@@ -1433,15 +1433,15 @@ Retorne JSON.`;
             // Verificar se horário ainda está disponível (com timeout)
             let agendamentosExistentes = [];
             try {
-              agendamentosExistentes = await Promise.race([
+              const _agEx = await Promise.race([
                 base44.asServiceRole.entities.Agendamento.filter({
                   medico_id: medicoEncontrado.id,
                   data_agendamento: extracao.data_agendamento,
-                  horario: extracao.horario,
-                  status: { $ne: 'Cancelado' }
+                  horario: extracao.horario
                 }),
                 new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout Agendamentos')), 2000))
               ]);
+              agendamentosExistentes = _agEx.filter(a => a.status !== 'Cancelado');
             } catch (e) {
               console.warn('⚠️ Timeout ao buscar agendamentos:', e.message);
             }
