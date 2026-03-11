@@ -145,6 +145,10 @@ export default function FormularioOS({
     if (!agendamento) return;
 
     const medicoAtual = medicos.find(m => m.id === medicoSelecionadoId) || medico;
+    const procedimentoItemId = agendamento.itens_servico?.find(item => item.procedimento_id)?.procedimento_id;
+    const procedimentoAtual = procedimento ||
+      (agendamento.procedimento_id ? procedimentos.find(p => p.id === agendamento.procedimento_id) : null) ||
+      (procedimentoItemId ? procedimentos.find(p => p.id === procedimentoItemId) : null);
 
     let valorTotal = 0;
     let itensOS = [];
@@ -378,11 +382,14 @@ export default function FormularioOS({
       );
 
       // Lógica diferenciada para Procedimentos vs Consultas
-      if (agendamento.tipo_servico === 'Procedimento' && procedimento) {
-        // 1. Prioridade: Definição no próprio Procedimento (Valor Fixo)
-        if (procedimento.valor_repasse_medico > 0) {
-          repasseFixo = procedimento.valor_repasse_medico;
-        } 
+      if (agendamento.tipo_servico === 'Procedimento' && procedimentoAtual) {
+        // 1. Prioridade: Definição no próprio Procedimento
+        if (procedimentoAtual.valor_repasse_medico > 0) {
+          repasseFixo = procedimentoAtual.valor_repasse_medico;
+        }
+        else if (procedimentoAtual.percentual_repasse_medico > 0) {
+          percentual = procedimentoAtual.percentual_repasse_medico;
+        }
         // 2. Prioridade: Repasse específico por categoria para procedimentos
         else if (repasseEspecifico && (repasseEspecifico.valor_procedimento > 0 || repasseEspecifico.tipo_repasse === 'valor_fixo')) {
           if (repasseEspecifico.tipo_repasse === 'valor_fixo') {
@@ -466,7 +473,7 @@ export default function FormularioOS({
       valor_repasse_laboratorio: repasseLab,
       valor_clinica: valorClinicaAjustado > 0 ? valorClinicaAjustado : valorFinalCalculado - repasseMedico - repasseLab
     }));
-  }, [agendamento, medico, procedimento, exames, categorias, medicoSelecionadoId, medicos]);
+  }, [agendamento, medico, procedimento, procedimentos, exames, categorias, medicoSelecionadoId, medicos]);
 
   useEffect(() => {
     let valorComDesconto = dados.valor_total - dados.desconto;
