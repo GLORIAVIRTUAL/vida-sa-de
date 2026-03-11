@@ -33,7 +33,8 @@ export default function RelatorioVendaCartao({ open, onClose }) {
     dataFim: format(new Date(), 'yyyy-MM-dd'),
     status: 'todos',
     plano: 'todos',
-    pagamento: 'todos'
+    pagamento: 'todos',
+    beneficiarios: 'todos'
   });
 
   useEffect(() => {
@@ -54,11 +55,14 @@ export default function RelatorioVendaCartao({ open, onClose }) {
 
   const vendasFiltradas = useMemo(() => {
     return vendas.filter(v => {
+      const totalDependentes = v.dependentes?.length || 0;
       if (filtros.dataInicio && v.data_venda < filtros.dataInicio) return false;
       if (filtros.dataFim && v.data_venda > filtros.dataFim) return false;
       if (filtros.status !== 'todos' && v.status !== filtros.status) return false;
       if (filtros.plano !== 'todos' && v.tipo_plano !== filtros.plano) return false;
       if (filtros.pagamento !== 'todos' && v.forma_pagamento !== filtros.pagamento) return false;
+      if (filtros.beneficiarios === 'titulares' && totalDependentes > 0) return false;
+      if (filtros.beneficiarios === 'dependentes' && totalDependentes === 0) return false;
       return true;
     });
   }, [vendas, filtros]);
@@ -198,7 +202,7 @@ export default function RelatorioVendaCartao({ open, onClose }) {
 
         <div className="flex-1 overflow-y-auto space-y-4">
           {/* Filtros */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
             <div>
               <Label className="text-xs">Data Início</Label>
               <Input type="date" value={filtros.dataInicio} onChange={e => setFiltros({...filtros, dataInicio: e.target.value})} className="h-9" />
@@ -245,6 +249,17 @@ export default function RelatorioVendaCartao({ open, onClose }) {
                   <SelectItem value="Cartão Crédito">Cartão Crédito</SelectItem>
                   <SelectItem value="PIX">PIX</SelectItem>
                   <SelectItem value="Transferência">Transferência</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Beneficiários</Label>
+              <Select value={filtros.beneficiarios} onValueChange={v => setFiltros({...filtros, beneficiarios: v})}>
+                <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  <SelectItem value="titulares">Só titulares</SelectItem>
+                  <SelectItem value="dependentes">Com dependentes</SelectItem>
                 </SelectContent>
               </Select>
             </div>
