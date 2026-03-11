@@ -47,17 +47,6 @@ export default function RelatorioZeloButton({ vendas = [] }) {
         formatDateForCsv(venda.titular?.data_nascimento),
         formatDateForCsv(venda.created_date)
       ]);
-
-      (venda.dependentes || []).forEach((dependente) => {
-        rows.push([
-          venda.numero_venda || '',
-          'Dependente',
-          dependente.nome || '',
-          dependente.cpf || '',
-          formatDateForCsv(dependente.data_nascimento),
-          formatDateForCsv(venda.created_date)
-        ]);
-      });
     });
 
     const csvContent = rows
