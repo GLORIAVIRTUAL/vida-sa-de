@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, DollarSign, FileText, Calculator, Users } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { filtrarLancamentosPorPeriodo, somarLancamentos } from "./financeiroUtils";
 
 export default function DashboardFinanceiro({ lancamentos = [], ordensServico = [], loading }) {
