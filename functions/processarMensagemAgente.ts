@@ -1126,7 +1126,7 @@ O cliente está ESCOLHENDO/RESPONDENDO. Ele disse: "${messageText}"
             if (horariosDoDia.length === 0) continue;
 
                     let agendamentosExistentes = [];
-            try { agendamentosExistentes = await Promise.race([base44.asServiceRole.entities.Agendamento.filter({medico_id:medico.id,data_agendamento:dataFormatada,status:{$ne:'Cancelado'}}),new Promise((_,r)=>setTimeout(()=>r(new Error('Timeout')),2000))]); } catch(e){}
+            try { const _agEx = await Promise.race([base44.asServiceRole.entities.Agendamento.filter({medico_id:medico.id,data_agendamento:dataFormatada}),new Promise((_,r)=>setTimeout(()=>r(new Error('Timeout')),2000))]); agendamentosExistentes = _agEx.filter(a => a.status !== 'Cancelado'); } catch(e){}
             const horariosOcupados=agendamentosExistentes.map(ag=>ag.horario);const horariosDisponiveis=[];const tempoConsulta=medico.tempo_consulta_minutos||30;
             for(const periodo of horariosDoDia){const [ih,im]=periodo.horario_inicio.split(':').map(Number);const [fh,fm]=periodo.horario_fim.split(':').map(Number);for(let m=ih*60+im;m<fh*60+fm;m+=tempoConsulta){const hs=`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;const hdt=new Date(`${dataFormatada}T${hs}:00`);if(!(dataConsulta.toDateString()===new Date().toDateString()&&hdt<new Date())&&!horariosOcupados.includes(hs))horariosDisponiveis.push(hs);}}
 
