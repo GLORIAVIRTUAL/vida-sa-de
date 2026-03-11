@@ -1771,24 +1771,32 @@ Retorne JSON.`;
         let cleanMessageText = messageText || '(sem texto)';
         if (mediaUrl) cleanMessageText = cleanMessageText.replace(mediaUrl, '').trim();
         let userContent = [{ type: 'text', text: cleanMessageText || '(sem texto)' }];
+        let forcarGpt4o = false;
         if (mediaUrl && mediaType === 'image') {
-          userContent.push({ type: 'image_url', image_url: { url: mediaUrl } });
-          userContent[0].text += `\n\n🚨 ATENÇÃO À IMAGEM: Liste APENAS os exames que estão literalmente escritos na imagem. É ESTRITAMENTE PROIBIDO inventar ou deduzir exames com base no nome do médico (ex: Dra Lidiane) ou especialidade. Se não conseguir ler com clareza, peça uma foto melhor.`;
+          // Extrair texto via GPT-4o Vision dedicado (mesma estratégia do PDF)
+          console.log('📷 Extraindo texto da imagem via GPT-4o Vision...');
+          let txtImg = null;
+          try {
+            const vR = await Promise.race([fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{'Authorization':`Bearer ${Deno.env.get('OPENAI_API_KEY')}`,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-4o',messages:[{role:'user',content:[{type:'text',text:'Transcreva TODO o texto visível nesta imagem de documento médico brasileiro, linha por linha. Inclua nomes, exames, datas, CRM. NÃO interprete. Se ilegível, escreva [ilegível].'},{type:'image_url',image_url:{url:mediaUrl,detail:'high'}}]}],max_tokens:2000,temperature:0})}),new Promise((_,r)=>setTimeout(()=>r(new Error('Timeout')),30000))]);
+            if(vR.ok){const vD=await vR.json();txtImg=vD.choices?.[0]?.message?.content||null;console.log('✅ Vision OCR:',(txtImg||'').substring(0,200));}
+            else console.warn('⚠️ Vision erro:',vR.status);
+          } catch(e){console.warn('⚠️ Vision:',e.message);}
+          if(txtImg&&txtImg.length>20){
+            userContent[0].text+=`\n\n🚨 CONTEÚDO DA IMAGEM 🚨\n${txtImg}\n\n🚨 REGRAS: 1.LISTE APENAS exames acima. 2.PROIBIDO inventar. 3.Cruze com tabela. 4.Calcule TOTAL Particular E Cartão.`;
+          } else {
+            userContent.push({type:'image_url',image_url:{url:mediaUrl,detail:'high'}});
+            userContent[0].text+=`\n\n🚨 Liste APENAS exames escritos na imagem. PROIBIDO inventar. Se ilegível, peça foto melhor.`;
+            forcarGpt4o=true;
+          }
         } else if (mediaUrl && mediaType === 'document') {
-          // 🔒 CÓDIGO BLOQUEADO - NÃO ALTERE
           try {
             const eR = await base44.asServiceRole.functions.invoke('extractPdfText', { fileUrl: mediaUrl });
-            if (eR?.data?.text) {
-              userContent[0].text += `\n\n🚨 CONTEÚDO DO PDF 🚨\n${eR.data.text}\n\n🚨 REGRAS: 1. LISTE APENAS os exames que aparecem LITERALMENTE no texto acima. 2. É PROIBIDO adicionar exames que NÃO estão no texto. 3. É PROIBIDO substituir exames. 4. Cruze CADA exame com a tabela. Se não achar, diga "não realizamos". 5. NÃO pergunte se quer agendar coleta.`;
-            } else {
-              userContent[0].text += `\n\n⚠️ O cliente enviou um PDF, mas não foi possível ler. Peça foto nítida.`;
-            }
-          } catch (e) {
-            userContent[0].text += `\n\n⚠️ O cliente enviou um PDF, mas não foi possível ler. Peça foto nítida.`;
-          }
+            if(eR?.data?.text){userContent[0].text+=`\n\n🚨 CONTEÚDO DO PDF 🚨\n${eR.data.text}\n\n🚨 REGRAS: 1.LISTE APENAS exames acima. 2.PROIBIDO inventar. 3.Cruze com tabela. 4.NÃO pergunte se quer agendar coleta.`;}
+            else{userContent[0].text+=`\n\n⚠️ PDF ilegível. Peça foto nítida.`;}
+          } catch(e){userContent[0].text+=`\n\n⚠️ PDF ilegível. Peça foto nítida.`;}
         }
         messages.push({ role: 'user', content: userContent });
-        const body = { model: modeloLLM, messages, max_tokens: 1500, temperature: config.temperatura || 0.7 };
+        const body = { model: forcarGpt4o?'gpt-4o':modeloLLM, messages, max_tokens: 1500, temperature: config.temperatura || 0.7 };
         const openaiResp = await Promise.race([
           fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
