@@ -1682,11 +1682,11 @@ Retorne JSON.`;
 
     let instrucoesMidia = '';
     if (mediaType === 'image') {
-      instrucoesMidia = `\n\n📷 IMAGEM RECEBIDA:\n🚨 REGRAS CRÍTICAS PARA LEITURA DE IMAGEM:\n1. LEIA a imagem com extrema atenção, linha por linha.\n2. LISTE APENAS E EXATAMENTE os exames que estão ESCRITOS NA IMAGEM.\n3. É ESTRITAMENTE PROIBIDO inventar, deduzir ou adicionar exames baseados na especialidade ou no nome do médico (ex: Dra Lidiane). Liste APENAS o que está legível.\n4. Se a imagem estiver ilegível, NÃO TENTE ADIVINHAR. Peça uma foto mais nítida.\n5. NÃO agrupe exames. Liste cada um com seu nome específico e preço individual.\n6. Cruze CADA exame com a tabela de preços. Se não achar, diga "não realizamos".\n7. Calcule o VALOR TOTAL.\n8. Mostre o valor Particular E Cartão Mais Vida.`;
+      instrucoesMidia = `\n\n📷 IMAGEM RECEBIDA: O texto da imagem foi extraído via OCR e está no conteúdo da mensagem. LISTE APENAS exames do texto extraído. PROIBIDO inventar. Cruze com tabela de preços. Calcule TOTAL. Mostre Particular E Cartão Mais Vida.`;
     } else if (mediaType === 'document') {
-      instrucoesMidia = `\n\n📄 DOCUMENTO RECEBIDO:\n1.LEIA requisição LINHA POR LINHA\n2.LISTE APENAS exames da requisição-NÃO invente!\n3.Se não extraiu texto,peça foto melhor\n4.~17 exames=~17 itens\n5.NÃO agrupe em "Exame Laboratorial"\n6.Nome ESPECÍFICO+preço INDIVIDUAL\n7.AST/ALT=TGO/TGP separados\n8.Colesterol total e frações=Total,HDL,LDL,VLDL\n9.Calcule VALOR TOTAL\n10.Mostre Particular E Cartão Mais Vida\n11.NÃO peça dados pessoais p/ orçamento\n12.Resultado/laudo: descreva info`;
+      instrucoesMidia = `\n\n📄 DOCUMENTO: LISTE APENAS exames do texto extraído. NÃO invente. Nome ESPECÍFICO+preço INDIVIDUAL. Calcule TOTAL. Mostre Particular E Cartão Mais Vida.`;
     } else if (mediaType === 'audio') {
-      instrucoesMidia = `\n\n🎤 ÁUDIO: OUÇA e RESPONDA ao conteúdo. NÃO responda "[Áudio recebido]". Se não entender: "Poderia digitar sua mensagem?" Trate como texto normal.`;
+      instrucoesMidia = `\n\n🎤 ÁUDIO: OUÇA e RESPONDA ao conteúdo. Se não entender: "Poderia digitar?"`;
     } else if (mediaType === 'video') {
       instrucoesMidia = `\n\n🎥 VÍDEO: Analise e confirme recebimento.`;
     }
