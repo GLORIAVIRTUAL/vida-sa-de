@@ -189,6 +189,7 @@ Deno.serve(async (req) => {
     - "Quanto custa?" → Pergunte: "Quanto custa o quê? Uma consulta, exame ou procedimento específico?"
     - "Preciso de ajuda" → Pergunte: "Claro! Em que posso te ajudar? Agendamento, exames, orçamento?"
     - "Quero marcar" → Pergunte: "Quer marcar uma consulta? Para qual especialidade?"
+    - "Quero remarcar" → 🚨 SE A SEÇÃO "CANCELAMENTO" MOSTRAR AGENDAMENTOS, mostre-os e pergunte qual deseja remarcar. NUNCA pergunte a especialidade se já houver agendamentos listados para remarcar! Se não houver agendamentos, pergunte qual especialidade deseja agendar.
 
     NUNCA assuma a intenção do cliente. NUNCA busque dados aleatórios. SEMPRE pergunte primeiro.
 
