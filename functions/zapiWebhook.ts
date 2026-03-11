@@ -464,8 +464,17 @@ async function processarMensagemRecebida(base44, payload) {
                     console.log(`✅ Sou a última instância (${pendentesAtuais.length} msgs no buffer). Processando tudo...`);
                     
                     // Juntar todas as mensagens pendentes
-                    const textosCombinados = pendentesAtuais.map(m => m.texto).join(' ');
-                    const ultimaComMidia = [...pendentesAtuais].reverse().find(m => m.mediaUrl);
+                    // IMPORTANTE: Separar texto puro da URL de mídia para não perder mediaType/mediaUrl
+                    const ultimaComMidia = [...pendentesAtuais].reverse().find(m => m.mediaUrl && m.mediaType && m.mediaType !== 'text');
+                    // Construir texto combinado SEM incluir URLs de mídia (serão passadas separadamente)
+                    const textosCombinados = pendentesAtuais.map(m => {
+                      let txt = m.texto || '';
+                      // Remover URL de mídia do texto para evitar duplicação
+                      if (m.mediaUrl && txt.includes(m.mediaUrl)) {
+                        txt = txt.replace(m.mediaUrl, '').trim();
+                      }
+                      return txt;
+                    }).filter(t => t).join(' ');
                     
                     // Limpar buffer ANTES de processar
                     await base44.asServiceRole.entities.Contato.update(contatoAtualizado.id, {
