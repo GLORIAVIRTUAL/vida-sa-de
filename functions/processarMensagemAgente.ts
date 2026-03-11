@@ -1773,6 +1773,7 @@ Retorne JSON.`;
         let userContent = [{ type: 'text', text: cleanMessageText || '(sem texto)' }];
         if (mediaUrl && mediaType === 'image') {
           userContent.push({ type: 'image_url', image_url: { url: mediaUrl } });
+          userContent[0].text += `\n\n🚨 ATENÇÃO À IMAGEM: Liste APENAS os exames que estão literalmente escritos na imagem. É ESTRITAMENTE PROIBIDO inventar ou deduzir exames com base no nome do médico (ex: Dra Lidiane) ou especialidade. Se não conseguir ler com clareza, peça uma foto melhor.`;
         } else if (mediaUrl && mediaType === 'document') {
           // 🔒 CÓDIGO BLOQUEADO - NÃO ALTERE
           try {
