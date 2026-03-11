@@ -376,9 +376,10 @@ export default function Relatorios() {
   const lancamentosFinanceiros = useMemo(() => {
     return filtrarLancamentosPorPeriodo(lancamentos, {
       dataInicio: filtros.dataInicio,
-      dataFim: filtros.dataFim
+      dataFim: filtros.dataFim,
+      formaPagamento: filtros.formaPagamento
     });
-  }, [lancamentos, filtros.dataInicio, filtros.dataFim]);
+  }, [lancamentos, filtros.dataInicio, filtros.dataFim, filtros.formaPagamento]);
 
   const estatisticasFinanceiras = useMemo(() => {
     const resumo = somarLancamentos(lancamentosFinanceiros);
