@@ -512,6 +512,19 @@ export default function Relatorios() {
     };
   }, [dadosFiltrados, categorias, medicos, agendamentosMap]);
 
+  const resumoCards = useMemo(() => {
+    if (filtros.medicoId !== 'todos') {
+      return {
+        entradas: estatisticas.totalVendido,
+        saidas: estatisticas.totalRepasse,
+        saldo: estatisticas.totalClinica,
+        movimentacoes: estatisticas.totalAtendimentos
+      };
+    }
+
+    return estatisticasFinanceiras;
+  }, [filtros.medicoId, estatisticas, estatisticasFinanceiras]);
+
   // Dados para gráficos
   const dadosGraficoFormaPagamento = useMemo(() => {
     return Object.entries(estatisticas.porFormaPagamento).map(([forma, dados]) => ({
