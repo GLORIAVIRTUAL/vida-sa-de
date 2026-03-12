@@ -435,12 +435,12 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
       await base44.entities.Contato.update(contatoSelecionado.id, {
         status: 'Cliente',
         conversa_finalizada: true,
-        atendimento_humano: false,
+        atendimento_humano: true,
         atendente_atual: null,
         atendente_id: null
       });
 
-      setContatoSelecionado({...contatoSelecionado, conversa_finalizada: true, status: 'Cliente', atendimento_humano: false, atendente_atual: null});
+      setContatoSelecionado({...contatoSelecionado, conversa_finalizada: true, status: 'Cliente', atendimento_humano: true, atendente_atual: null, atendente_id: null});
       await buscarContatos();
     } catch (error) {
       console.error('Erro ao finalizar:', error);
@@ -517,6 +517,20 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
     if (contato.ultima_mensagem) msgs.push({ role: 'user', content: contato.ultima_mensagem });
     if (contato.ultima_resposta) msgs.push({ role: 'assistant', content: contato.ultima_resposta });
     return msgs;
+  };
+
+  const estaAguardandoResposta = (contato) => {
+    if (!contato || contato.conversa_finalizada) return false;
+    if (contato.atendente_atual) return false;
+
+    const historico = contato.historico_mensagens || [];
+    const ultimaMensagem = historico.length > 0 ? historico[historico.length - 1] : null;
+
+    if (ultimaMensagem) {
+      return ultimaMensagem.role === 'user';
+    }
+
+    return !!(contato.ultima_mensagem && !contato.ultima_resposta);
   };
 
   // Buscar templates aprovados da Meta
@@ -628,12 +642,8 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
       return contato.atendimento_humano && contato.atendente_atual;
     }
     if (filtroStatus === 'sem_resposta') {
-      // Sem resposta = ninguém atendeu ainda (sem atendente e não finalizada)
-      if (contato.conversa_finalizada) return false;
       if (contato.atendimento_humano && contato.atendente_atual) return false;
-      // Sem atendente humano atribuído
-      const temResposta = contato.historico_mensagens?.some(m => m.role === 'assistant') || contato.ultima_resposta;
-      return !temResposta;
+      return estaAguardandoResposta(contato);
     }
     if (filtroStatus === 'finalizadas') {
       return contato.conversa_finalizada === true;
