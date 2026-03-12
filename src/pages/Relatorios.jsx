@@ -517,11 +517,11 @@ export default function Relatorios() {
   }, [dadosFiltrados, categorias, medicos, agendamentosMap]);
 
   const lancamentosPagos = useMemo(() => {
-    return lancamentosFinanceiros.filter((lancamento) => (lancamento.status || 'Realizado') === 'Realizado');
+    return lancamentosFinanceiros.filter((lancamento) => lancamento.tipo === 'Entrada' && !!lancamento.ordem_servico_id);
   }, [lancamentosFinanceiros]);
 
   const lancamentosEmAberto = useMemo(() => {
-    return lancamentosFinanceiros.filter((lancamento) => (lancamento.status || 'Realizado') === 'Pendente');
+    return lancamentosFinanceiros.filter((lancamento) => lancamento.tipo === 'Entrada' && !lancamento.ordem_servico_id);
   }, [lancamentosFinanceiros]);
 
   // Dados para gráficos
@@ -1676,19 +1676,19 @@ export default function Relatorios() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <Card className="bg-gradient-to-br from-slate-700 to-slate-800 text-white">
                     <CardContent className="p-6">
-                      <p className="text-slate-100 text-sm">Total de Lançamentos</p>
-                      <p className="text-3xl font-bold">{lancamentosFinanceiros.length}</p>
+                      <p className="text-slate-100 text-sm">Total de Orçamentos</p>
+                      <p className="text-3xl font-bold">{lancamentosPagos.length + lancamentosEmAberto.length}</p>
                     </CardContent>
                   </Card>
                   <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white">
                     <CardContent className="p-6">
-                      <p className="text-green-100 text-sm">Pagos / Realizados</p>
+                      <p className="text-green-100 text-sm">Com Ordem de Serviço</p>
                       <p className="text-3xl font-bold">{formatCurrency(lancamentosPagos.reduce((acc, lancamento) => acc + (lancamento.valor || 0), 0))}</p>
                     </CardContent>
                   </Card>
                   <Card className="bg-gradient-to-br from-yellow-500 to-orange-500 text-white">
                     <CardContent className="p-6">
-                      <p className="text-orange-100 text-sm">Em Aberto / Pendentes</p>
+                      <p className="text-orange-100 text-sm">Em Aberto / Sem OS</p>
                       <p className="text-3xl font-bold">{formatCurrency(lancamentosEmAberto.reduce((acc, lancamento) => acc + (lancamento.valor || 0), 0))}</p>
                     </CardContent>
                   </Card>
@@ -1698,7 +1698,7 @@ export default function Relatorios() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <CheckCircle className="w-5 h-5 text-green-500" />
-                      Lançamentos Pagos / Realizados ({lancamentosPagos.length})
+                      Lançamentos com Ordem de Serviço ({lancamentosPagos.length})
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -1735,7 +1735,7 @@ export default function Relatorios() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <AlertCircle className="w-5 h-5 text-orange-500" />
-                      Lançamentos em Aberto / Pendentes ({lancamentosEmAberto.length})
+                      Lançamentos em Aberto / Sem Ordem de Serviço ({lancamentosEmAberto.length})
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
