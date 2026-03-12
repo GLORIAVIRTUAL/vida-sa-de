@@ -374,12 +374,47 @@ export default function Relatorios() {
   }, [ordensServico, filtros, medicos, agendamentosMap]);
 
   const lancamentosFinanceiros = useMemo(() => {
-    return filtrarLancamentosPorPeriodo(lancamentos, {
+    const lancamentosBase = filtrarLancamentosPorPeriodo(lancamentos, {
       dataInicio: filtros.dataInicio,
       dataFim: filtros.dataFim,
       formaPagamento: filtros.formaPagamento
     });
-  }, [lancamentos, filtros.dataInicio, filtros.dataFim, filtros.formaPagamento]);
+
+    const temFiltrosExtras =
+      filtros.medicoId !== 'todos' ||
+      filtros.categoriaNome !== 'todos' ||
+      filtros.statusPagamento !== 'todos';
+
+    if (!temFiltrosExtras) {
+      return lancamentosBase;
+    }
+
+    const ordensVisiveisIds = new Set(
+      dadosFiltrados.flatMap((os) => [os.id, os.original_id].filter(Boolean))
+    );
+
+    const mapaStatusLancamento = {
+      Pago: 'Realizado',
+      Pendente: 'Pendente',
+      Cancelado: 'Cancelado'
+    };
+
+    return lancamentosBase.filter((lancamento) => {
+      if (lancamento.ordem_servico_id) {
+        return ordensVisiveisIds.has(lancamento.ordem_servico_id);
+      }
+
+      if (filtros.medicoId !== 'todos') {
+        return lancamento.medico_id === filtros.medicoId;
+      }
+
+      if (filtros.statusPagamento !== 'todos') {
+        return (lancamento.status || 'Realizado') === mapaStatusLancamento[filtros.statusPagamento];
+      }
+
+      return filtros.categoriaNome === 'todos';
+    });
+  }, [lancamentos, dadosFiltrados, filtros.dataInicio, filtros.dataFim, filtros.formaPagamento, filtros.medicoId, filtros.categoriaNome, filtros.statusPagamento]);
 
   const estatisticasFinanceiras = useMemo(() => {
     const resumo = somarLancamentos(lancamentosFinanceiros);
