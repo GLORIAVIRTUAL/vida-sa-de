@@ -264,6 +264,10 @@ export default function Relatorios() {
     return 'Não informado';
   };
 
+  const obterValorClinicaCalculado = (os) => {
+    return (os.valor_final || 0) - (os.valor_repasse_medico || 0) - (os.valor_repasse_laboratorio || 0);
+  };
+
   // Obter o ID real do médico da OS (considerando agendas unificadas)
   const obterMedicoIdReal = (os) => {
     let medicoIdBase = os.medico_id;
@@ -428,7 +432,7 @@ export default function Relatorios() {
   const estatisticas = useMemo(() => {
     const totalVendido = dadosFiltrados.reduce((acc, os) => acc + (os.valor_final || 0), 0);
     const totalRepasse = dadosFiltrados.reduce((acc, os) => acc + (os.valor_repasse_medico || 0), 0);
-    const totalClinica = dadosFiltrados.reduce((acc, os) => acc + (os.valor_clinica || 0), 0);
+    const totalClinica = dadosFiltrados.reduce((acc, os) => acc + obterValorClinicaCalculado(os), 0);
     const totalAtendimentos = new Set(dadosFiltrados.map(os => os.original_id || os.id)).size;
     
     // Por forma de pagamento
@@ -797,7 +801,7 @@ export default function Relatorios() {
                   <td>${os.forma_pagamento || '-'}</td>
                   <td class="text-right">R$ ${(os.valor_final || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                   <td class="text-right">R$ ${(os.valor_repasse_medico || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                  <td class="text-right">R$ ${(os.valor_clinica || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                  <td class="text-right">R$ ${obterValorClinicaCalculado(os).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                 </tr>`;
               }).join('')}
             </tbody>
@@ -1183,7 +1187,7 @@ export default function Relatorios() {
                               </TableCell>
                               <TableCell className="text-right font-medium">{formatCurrency(os.valor_final)}</TableCell>
                               <TableCell className="text-right text-purple-600">{formatCurrency(os.valor_repasse_medico)}</TableCell>
-                              <TableCell className="text-right text-green-600">{formatCurrency(os.valor_clinica)}</TableCell>
+                              <TableCell className="text-right text-green-600">{formatCurrency(obterValorClinicaCalculado(os))}</TableCell>
                             </TableRow>
                           );
                         })}
