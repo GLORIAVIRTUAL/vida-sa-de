@@ -424,19 +424,6 @@ export default function Relatorios() {
     };
   }, [lancamentosFinanceiros]);
 
-  const resumoCards = useMemo(() => {
-    if (filtros.medicoId !== 'todos') {
-      return {
-        entradas: estatisticas.totalVendido,
-        saidas: estatisticas.totalRepasse,
-        saldo: estatisticas.totalClinica,
-        movimentacoes: estatisticas.totalAtendimentos
-      };
-    }
-
-    return estatisticasFinanceiras;
-  }, [filtros.medicoId, estatisticas, estatisticasFinanceiras]);
-
   // Calcular estatísticas
   const estatisticas = useMemo(() => {
     const totalVendido = dadosFiltrados.reduce((acc, os) => acc + (os.valor_final || 0), 0);
