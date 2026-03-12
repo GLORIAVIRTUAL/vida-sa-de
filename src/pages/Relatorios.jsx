@@ -1666,6 +1666,105 @@ export default function Relatorios() {
                 </Card>
               </div>
             </TabsContent>
+
+            <TabsContent value="orcamentos">
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Card className="bg-gradient-to-br from-slate-700 to-slate-800 text-white">
+                    <CardContent className="p-6">
+                      <p className="text-slate-100 text-sm">Total de Lançamentos</p>
+                      <p className="text-3xl font-bold">{lancamentosFinanceiros.length}</p>
+                    </CardContent>
+                  </Card>
+                  <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white">
+                    <CardContent className="p-6">
+                      <p className="text-green-100 text-sm">Pagos / Realizados</p>
+                      <p className="text-3xl font-bold">{formatCurrency(lancamentosPagos.reduce((acc, lancamento) => acc + (lancamento.valor || 0), 0))}</p>
+                    </CardContent>
+                  </Card>
+                  <Card className="bg-gradient-to-br from-yellow-500 to-orange-500 text-white">
+                    <CardContent className="p-6">
+                      <p className="text-orange-100 text-sm">Em Aberto / Pendentes</p>
+                      <p className="text-3xl font-bold">{formatCurrency(lancamentosEmAberto.reduce((acc, lancamento) => acc + (lancamento.valor || 0), 0))}</p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <CheckCircle className="w-5 h-5 text-green-500" />
+                      Lançamentos Pagos / Realizados ({lancamentosPagos.length})
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="max-h-[350px] overflow-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Data</TableHead>
+                            <TableHead>Descrição</TableHead>
+                            <TableHead>Categoria</TableHead>
+                            <TableHead>Pagamento</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead className="text-right">Valor</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {lancamentosPagos.map((lancamento) => (
+                            <TableRow key={lancamento.id}>
+                              <TableCell>{lancamento.data_lancamento ? format(parseISO(lancamento.data_lancamento), 'dd/MM/yy') : '-'}</TableCell>
+                              <TableCell className="font-medium">{lancamento.descricao || '-'}</TableCell>
+                              <TableCell>{lancamento.categoria || '-'}</TableCell>
+                              <TableCell>{lancamento.forma_pagamento || '-'}</TableCell>
+                              <TableCell><Badge className="bg-green-100 text-green-800">{lancamento.status || 'Realizado'}</Badge></TableCell>
+                              <TableCell className="text-right">{formatCurrency(lancamento.valor)}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <AlertCircle className="w-5 h-5 text-orange-500" />
+                      Lançamentos em Aberto / Pendentes ({lancamentosEmAberto.length})
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="max-h-[350px] overflow-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Data</TableHead>
+                            <TableHead>Descrição</TableHead>
+                            <TableHead>Categoria</TableHead>
+                            <TableHead>Pagamento</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead className="text-right">Valor</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {lancamentosEmAberto.map((lancamento) => (
+                            <TableRow key={lancamento.id}>
+                              <TableCell>{lancamento.data_lancamento ? format(parseISO(lancamento.data_lancamento), 'dd/MM/yy') : '-'}</TableCell>
+                              <TableCell className="font-medium">{lancamento.descricao || '-'}</TableCell>
+                              <TableCell>{lancamento.categoria || '-'}</TableCell>
+                              <TableCell>{lancamento.forma_pagamento || '-'}</TableCell>
+                              <TableCell><Badge className="bg-yellow-100 text-yellow-800">{lancamento.status || 'Pendente'}</Badge></TableCell>
+                              <TableCell className="text-right">{formatCurrency(lancamento.valor)}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
           </Tabs>
         </div>
       </div>
