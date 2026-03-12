@@ -424,6 +424,19 @@ export default function Relatorios() {
     };
   }, [lancamentosFinanceiros]);
 
+  const resumoCards = useMemo(() => {
+    if (filtros.medicoId !== 'todos') {
+      return {
+        entradas: estatisticas.totalVendido,
+        saidas: estatisticas.totalRepasse,
+        saldo: estatisticas.totalClinica,
+        movimentacoes: estatisticas.totalAtendimentos
+      };
+    }
+
+    return estatisticasFinanceiras;
+  }, [filtros.medicoId, estatisticas, estatisticasFinanceiras]);
+
   // Calcular estatísticas
   const estatisticas = useMemo(() => {
     const totalVendido = dadosFiltrados.reduce((acc, os) => acc + (os.valor_final || 0), 0);
@@ -968,7 +981,7 @@ export default function Relatorios() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-emerald-100 text-sm">Total Entradas</p>
-                    <p className="text-2xl font-bold">{formatCurrency(estatisticasFinanceiras.entradas)}</p>
+                    <p className="text-2xl font-bold">{formatCurrency(resumoCards.entradas)}</p>
                   </div>
                   <TrendingUp className="w-10 h-10 text-emerald-200" />
                 </div>
@@ -979,8 +992,8 @@ export default function Relatorios() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-red-100 text-sm">Total Saídas</p>
-                    <p className="text-2xl font-bold">{formatCurrency(estatisticasFinanceiras.saidas)}</p>
+                    <p className="text-red-100 text-sm">{filtros.medicoId !== 'todos' ? 'Total Repasse' : 'Total Saídas'}</p>
+                    <p className="text-2xl font-bold">{formatCurrency(resumoCards.saidas)}</p>
                   </div>
                   <AlertCircle className="w-10 h-10 text-red-200" />
                 </div>
@@ -991,8 +1004,8 @@ export default function Relatorios() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-blue-100 text-sm">Saldo do Período</p>
-                    <p className="text-2xl font-bold">{formatCurrency(estatisticasFinanceiras.saldo)}</p>
+                    <p className="text-blue-100 text-sm">{filtros.medicoId !== 'todos' ? 'Receita Clínica' : 'Saldo do Período'}</p>
+                    <p className="text-2xl font-bold">{formatCurrency(resumoCards.saldo)}</p>
                   </div>
                   <DollarSign className="w-10 h-10 text-blue-200" />
                 </div>
@@ -1004,7 +1017,7 @@ export default function Relatorios() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-slate-100 text-sm">Movimentações</p>
-                    <p className="text-2xl font-bold">{estatisticasFinanceiras.movimentacoes}</p>
+                    <p className="text-2xl font-bold">{resumoCards.movimentacoes}</p>
                   </div>
                   <FileText className="w-10 h-10 text-slate-200" />
                 </div>
