@@ -426,18 +426,11 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
     if (!contatoSelecionado) return;
     try {
       const mensagemEncerramento = "Esta conversa foi encerrada. Agradecemos o seu contato e ficamos à disposição para o que mais precisar. 😊";
-      let erroEnvio = null;
-
-      try {
-        await base44.functions.invoke('enviarMensagemHumano', {
-          phoneNumber: contatoSelecionado.telefone,
-          messageText: mensagemEncerramento,
-          contatoId: contatoSelecionado.id
-        });
-      } catch (error) {
-        console.error('Erro ao enviar encerramento:', error);
-        erroEnvio = error;
-      }
+      await base44.functions.invoke('enviarMensagemHumano', {
+        phoneNumber: contatoSelecionado.telefone,
+        messageText: mensagemEncerramento,
+        contatoId: contatoSelecionado.id
+      });
 
       await base44.entities.Contato.update(contatoSelecionado.id, {
         status: 'Cliente',
@@ -449,10 +442,6 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
 
       setContatoSelecionado({...contatoSelecionado, conversa_finalizada: true, status: 'Cliente', atendimento_humano: true, atendente_atual: null, atendente_id: null});
       await buscarContatos();
-
-      if (erroEnvio) {
-        alert('Conversa finalizada, mas a mensagem de encerramento não foi enviada.');
-      }
     } catch (error) {
       console.error('Erro ao finalizar:', error);
       alert('Erro ao finalizar: ' + error.message);

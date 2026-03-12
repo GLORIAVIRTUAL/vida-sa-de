@@ -1,63 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
-async function enviarViaMeta({ numero, nomeRemetente, messageText, messageType, mediaUrl, fileName }) {
-  const accessToken = Deno.env.get("META_ACCESS_TOKEN");
-  const phoneNumberId = Deno.env.get("META_PHONE_NUMBER_ID");
-
-  if (!accessToken || !phoneNumberId) {
-    throw new Error('Meta WhatsApp não configurado');
-  }
-
-  const payload = {
-    messaging_product: 'whatsapp',
-    recipient_type: 'individual',
-    to: numero,
-  };
-
-  if (messageType === 'image' && mediaUrl) {
-    payload.type = 'image';
-    payload.image = {
-      link: mediaUrl,
-      caption: `*${nomeRemetente}:* ${messageText || ''}`
-    };
-  } else if (messageType === 'document' && mediaUrl) {
-    payload.type = 'document';
-    payload.document = {
-      link: mediaUrl,
-      filename: fileName || 'documento.pdf'
-    };
-  } else if (messageType === 'audio' && mediaUrl) {
-    payload.type = 'audio';
-    payload.audio = {
-      link: mediaUrl
-    };
-  } else {
-    payload.type = 'text';
-    payload.text = {
-      preview_url: false,
-      body: `*${nomeRemetente}:* ${messageText || ''}`
-    };
-  }
-
-  const response = await fetch(`https://graph.facebook.com/v22.0/${phoneNumberId}/messages`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(payload)
-  });
-
-  const result = await response.json();
-  console.log('📤 Meta response:', result);
-
-  if (!response.ok) {
-    throw new Error(result?.error?.message || 'Erro ao enviar via Meta');
-  }
-
-  return result;
-}
-
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -157,12 +99,9 @@ Deno.serve(async (req) => {
       
       if (!response.ok) {
         console.error('❌ Erro Z-API:', result);
-        console.log('🔄 Tentando fallback via Meta WhatsApp...');
-        await enviarViaMeta({ numero, nomeRemetente, messageText, messageType, mediaUrl, fileName });
-        console.log('✅ Mensagem enviada via Meta com sucesso');
-      } else {
-        console.log('✅ Mensagem enviada via Z-API com sucesso');
+        return Response.json({ error: 'Erro ao enviar via Z-API', details: result }, { status: 400 });
       }
+      console.log('✅ Mensagem enviada via Z-API com sucesso');
     } catch (error) {
       console.error('❌ Erro ao enviar Z-API:', error.message);
       return Response.json({ error: error.message }, { status: 500 });
