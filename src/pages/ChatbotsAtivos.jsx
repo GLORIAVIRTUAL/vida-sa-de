@@ -304,9 +304,19 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
 
   const buscarContatos = async () => {
     try {
-      // Buscar contatos em uma única chamada (limite alto) para evitar rate limit
-      const lista = await base44.entities.Contato.list('-ultima_interacao', 500);
-      const comHistorico = (lista || []).filter(c => 
+      let todosContatos = [];
+      let skip = 0;
+      const batchSize = 500;
+
+      while (true) {
+        const lote = await base44.entities.Contato.list('-ultima_interacao', batchSize, skip);
+        if (!lote || lote.length === 0) break;
+        todosContatos = [...todosContatos, ...lote];
+        if (lote.length < batchSize) break;
+        skip += batchSize;
+      }
+
+      const comHistorico = (todosContatos || []).filter(c => 
         (c.historico_mensagens && c.historico_mensagens.length > 0) || c.ultima_mensagem
       );
       const ordenados = [...comHistorico].sort((a, b) => {
@@ -1394,7 +1404,16 @@ export default function ChatbotsAtivos() {
                 // 2) Se não achou com filter, buscar na lista geral com busca parcial
                 if (!contatoEncontrado) {
                   const ultimos8 = telLimpo.slice(-8);
-                  const todosContatos = await base44.entities.Contato.list('-ultima_interacao', 500);
+                  let todosContatos = [];
+                  let skip = 0;
+                  const batchSize = 500;
+                  while (true) {
+                    const lote = await base44.entities.Contato.list('-ultima_interacao', batchSize, skip);
+                    if (!lote || lote.length === 0) break;
+                    todosContatos = [...todosContatos, ...lote];
+                    if (lote.length < batchSize) break;
+                    skip += batchSize;
+                  }
                   contatoEncontrado = todosContatos.find(c => {
                     const telC = (c.telefone || '').replace(/\D/g, '');
                     return telC.includes(ultimos8);
