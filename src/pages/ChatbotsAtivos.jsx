@@ -737,16 +737,9 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
                            <Badge className="bg-green-100 text-green-700 text-[9px] px-1 py-0" title={`Atendido por ${contato.atendente_atual}`}>
                              👤 {contato.atendente_atual.split(' ')[0]}
                            </Badge>
-                         ) : contato.atendimento_humano && !contato.conversa_finalizada && !contato.atendente_atual ? (
-                           <Badge className="bg-green-100 text-green-700 text-[9px] px-1 py-0">👤</Badge>
+                         ) : estaAguardandoResposta(contato) ? (
+                           <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-red-100" title="Aguardando resposta"><User className="w-3 h-3 text-red-600" /></span>
                          ) : (() => {
-                           // Verificar se tem resposta do assistente
-                           const temResposta = contato.historico_mensagens?.some(m => m.role === 'assistant') || contato.ultima_resposta;
-                           if (!temResposta && !contato.conversa_finalizada) {
-                             // Sem resposta ainda - ícone vermelho
-                             return <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-red-100" title="Aguardando resposta"><User className="w-3 h-3 text-red-600" /></span>;
-                           }
-                           // Modo IA ativo - ícone robô azul
                            return <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-100" title="Atendimento por IA"><Bot className="w-3 h-3 text-blue-600" /></span>;
                          })()}
                          {contato.conversa_finalizada && (
