@@ -512,18 +512,13 @@ export default function Relatorios() {
     };
   }, [dadosFiltrados, categorias, medicos, agendamentosMap]);
 
-  const resumoCards = useMemo(() => {
-    if (filtros.medicoId !== 'todos') {
-      return {
-        entradas: estatisticas.totalVendido,
-        saidas: estatisticas.totalRepasse,
-        saldo: estatisticas.totalClinica,
-        movimentacoes: estatisticas.totalAtendimentos
-      };
-    }
+  const lancamentosPagos = useMemo(() => {
+    return lancamentosFinanceiros.filter((lancamento) => (lancamento.status || 'Realizado') === 'Realizado');
+  }, [lancamentosFinanceiros]);
 
-    return estatisticasFinanceiras;
-  }, [filtros.medicoId, estatisticas, estatisticasFinanceiras]);
+  const lancamentosEmAberto = useMemo(() => {
+    return lancamentosFinanceiros.filter((lancamento) => (lancamento.status || 'Realizado') === 'Pendente');
+  }, [lancamentosFinanceiros]);
 
   // Dados para gráficos
   const dadosGraficoFormaPagamento = useMemo(() => {
@@ -980,8 +975,8 @@ export default function Relatorios() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-emerald-100 text-sm">Total Entradas</p>
-                    <p className="text-2xl font-bold">{formatCurrency(resumoCards.entradas)}</p>
+                    <p className="text-emerald-100 text-sm">{filtros.medicoId !== 'todos' ? 'Total Vendido' : 'Total Vendido'}</p>
+                    <p className="text-2xl font-bold">{formatCurrency(estatisticas.totalVendido)}</p>
                   </div>
                   <TrendingUp className="w-10 h-10 text-emerald-200" />
                 </div>
@@ -992,8 +987,8 @@ export default function Relatorios() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-red-100 text-sm">{filtros.medicoId !== 'todos' ? 'Total Repasse' : 'Total Saídas'}</p>
-                    <p className="text-2xl font-bold">{formatCurrency(resumoCards.saidas)}</p>
+                    <p className="text-red-100 text-sm">Total Repasse</p>
+                    <p className="text-2xl font-bold">{formatCurrency(estatisticas.totalRepasse)}</p>
                   </div>
                   <AlertCircle className="w-10 h-10 text-red-200" />
                 </div>
@@ -1004,8 +999,8 @@ export default function Relatorios() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-blue-100 text-sm">{filtros.medicoId !== 'todos' ? 'Receita Clínica' : 'Saldo do Período'}</p>
-                    <p className="text-2xl font-bold">{formatCurrency(resumoCards.saldo)}</p>
+                    <p className="text-blue-100 text-sm">Receita Clínica</p>
+                    <p className="text-2xl font-bold">{formatCurrency(estatisticas.totalClinica)}</p>
                   </div>
                   <DollarSign className="w-10 h-10 text-blue-200" />
                 </div>
@@ -1016,8 +1011,8 @@ export default function Relatorios() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-slate-100 text-sm">Movimentações</p>
-                    <p className="text-2xl font-bold">{resumoCards.movimentacoes}</p>
+                    <p className="text-slate-100 text-sm">Atendimentos</p>
+                    <p className="text-2xl font-bold">{estatisticas.totalAtendimentos}</p>
                   </div>
                   <FileText className="w-10 h-10 text-slate-200" />
                 </div>
@@ -1051,6 +1046,10 @@ export default function Relatorios() {
               <TabsTrigger value="repasses" className="flex items-center gap-2">
                 <DollarSign className="w-4 h-4" />
                 Repasses
+              </TabsTrigger>
+              <TabsTrigger value="orcamentos" className="flex items-center gap-2">
+                <FileText className="w-4 h-4" />
+                Orçamentos em Aberto
               </TabsTrigger>
               </TabsList>
 
