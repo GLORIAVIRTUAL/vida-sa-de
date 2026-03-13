@@ -518,13 +518,30 @@ export default function Relatorios() {
     };
   }, [dadosFiltrados, categorias, medicos, agendamentosMap]);
 
-  const lancamentosPagos = useMemo(() => {
-    return lancamentosFinanceiros.filter((lancamento) => lancamento.tipo === 'Entrada' && !!lancamento.ordem_servico_id);
-  }, [lancamentosFinanceiros]);
+  const agendamentosSemOS = useMemo(() => {
+    const agendamentosComOSIds = new Set(
+      ordensServico.map((os) => os.agendamento_id).filter(Boolean)
+    );
 
-  const lancamentosEmAberto = useMemo(() => {
-    return lancamentosFinanceiros.filter((lancamento) => lancamento.tipo === 'Entrada' && !lancamento.ordem_servico_id);
-  }, [lancamentosFinanceiros]);
+    return agendamentos.filter((ag) => {
+      if (!ag?.id || agendamentosComOSIds.has(ag.id)) return false;
+      if (["Cancelado", "Finalizado", "Não Compareceu"].includes(ag.status)) return false;
+      if (filtros.dataInicio && ag.data_agendamento < filtros.dataInicio) return false;
+      if (filtros.dataFim && ag.data_agendamento > filtros.dataFim) return false;
+      if (filtros.medicoId !== 'todos' && ag.medico_id !== filtros.medicoId) return false;
+      if (filtros.categoriaNome !== 'todos' && obterNomeCategoria(ag) !== filtros.categoriaNome) return false;
+      return true;
+    }).sort((a, b) => {
+      if (filtros.ordenacao === 'nome') {
+        return (a.paciente_nome || '').localeCompare(b.paciente_nome || '');
+      } else if (filtros.ordenacao === 'data') {
+        return (b.data_agendamento || '').localeCompare(a.data_agendamento || '');
+      } else if (filtros.ordenacao === 'valor') {
+        return (b.valor_final || 0) - (a.valor_final || 0);
+      }
+      return 0;
+    });
+  }, [agendamentos, ordensServico, filtros, categorias]);
 
   // Dados para gráficos
   const dadosGraficoFormaPagamento = useMemo(() => {
