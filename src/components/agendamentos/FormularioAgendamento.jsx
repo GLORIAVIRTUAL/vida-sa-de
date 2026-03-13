@@ -101,70 +101,16 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
   const [horariosMultiplosServicos, setHorariosMultiplosServicos] = useState([]);
   const [loadingHorariosMultiplos, setLoadingHorariosMultiplos] = useState(false);
 
-  // Função para buscar preço da consulta baseado no médico e categoria
   const buscarPrecoConsulta = useCallback((medicoId, categoriaId) => {
     if (!medicoId || !categoriaId) return 0;
-
     const medico = medicos.find(m => m.id === medicoId);
-    if (!medico) {
-      console.warn('⚠️ Médico não encontrado:', medicoId);
-      return 0;
-    }
-
-    console.log(`🔍 Buscando preço para médico: ${medico.nome} (ID: ${medicoId})`);
-    console.log(`🔍 Especialidade do médico: ${medico.especialidade}`);
-    console.log(`📋 Categoria ID: ${categoriaId}`);
-
-    // Normalizar especialidade do médico específico
-    const especialidadeNorm = normalizeString(medico.especialidade);
-    console.log(`🔤 Especialidade normalizada: ${especialidadeNorm}`);
-
-    // Buscar procedimento de consulta da especialidade
-    // PRIORIZAR match EXATO no campo especialidade do procedimento
-    let procedimentoConsulta = procedimentos.find(p => {
-      const nomeNorm = normalizeString(p.nome);
-      const temConsulta = nomeNorm.includes('CONSULTA');
-      const especialidadeExata = p.especialidade && normalizeString(p.especialidade) === especialidadeNorm;
-      
-      if (temConsulta && especialidadeExata) {
-        console.log(`✅ Match exato encontrado: ${p.nome} (especialidade: ${p.especialidade})`);
-      }
-      
-      return temConsulta && especialidadeExata;
-    });
-
-    // Se não encontrou por especialidade exata, tentar pelo nome
-    if (!procedimentoConsulta) {
-      console.log(`⚠️ Não encontrou match exato por especialidade, tentando pelo nome...`);
-      procedimentoConsulta = procedimentos.find(p => {
-        const nomeNorm = normalizeString(p.nome);
-        const temConsulta = nomeNorm.includes('CONSULTA');
-        const temEspecialidadeNoNome = nomeNorm.includes(especialidadeNorm);
-        
-        return temConsulta && temEspecialidadeNoNome;
-      });
-    }
-
-    if (!procedimentoConsulta) {
-      console.error(`❌ PROCEDIMENTO NÃO ENCONTRADO para especialidade: ${medico.especialidade}`);
-      return 0;
-    }
-
-    console.log(`✅ Procedimento encontrado: ${procedimentoConsulta.nome} (ID: ${procedimentoConsulta.id})`);
-
-    // Buscar preço na tabela de preços
-    const preco = tabelaPrecos.find(tp => 
-      tp.procedimento_id === procedimentoConsulta.id && 
-      tp.categoria_id === categoriaId
-    );
-
-    if (!preco) {
-      console.error(`❌ PREÇO NÃO ENCONTRADO na tabela para procedimento ${procedimentoConsulta.id} e categoria ${categoriaId}`);
-      return 0;
-    }
-
-    console.log(`✅💰 Preço encontrado: R$ ${preco.valor.toFixed(2)}`);
-    return preco.valor;
+    if (!medico) return 0;
+    const espNorm = normalizeString(medico.especialidade);
+    let proc = procedimentos.find(p => normalizeString(p.nome).includes('CONSULTA') && p.especialidade && normalizeString(p.especialidade) === espNorm);
+    if (!proc) proc = procedimentos.find(p => normalizeString(p.nome).includes('CONSULTA') && normalizeString(p.nome).includes(espNorm));
+    if (!proc) return 0;
+    const preco = tabelaPrecos.find(tp => tp.procedimento_id === proc.id && tp.categoria_id === categoriaId);
+    return preco?.valor || 0;
   }, [medicos, procedimentos, tabelaPrecos]);
 
   // Função de busca otimizada via servidor
