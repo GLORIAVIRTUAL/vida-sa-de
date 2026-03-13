@@ -1389,11 +1389,18 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
                                    </SelectContent>
                                  </Select>
                                  {mensagemDisponibilidade && <p className={`text-xs mt-1 ${horarioDisponivel ? 'text-gray-600' : 'text-red-600'}`}>{mensagemDisponibilidade}</p>}
-                               </div>
-                             </div>
+                                 </div>
+                                 </div>
 
-                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                               <div>
+                                 {/* Duração do atendimento */}
+                                 <div className="max-w-xs">
+                                 <Label htmlFor="duracao_minutos">Duração (minutos)</Label>
+                                 <Input id="duracao_minutos" type="number" min="5" step="5" placeholder={(() => { const m = medicos.find(x => x.id === formData.medico_id); return m?.tempo_consulta_minutos ? `Padrão: ${m.tempo_consulta_minutos} min` : 'Ex: 30'; })()} value={formData.duracao_minutos} onChange={(e) => handleChange('duracao_minutos', e.target.value)} className="mt-1" />
+                                 <p className="text-xs text-gray-500 mt-1">Ajuste se necessário. {formData.medico_id && (() => { const m = medicos.find(x => x.id === formData.medico_id); return m?.tempo_consulta_minutos ? `Padrão do profissional: ${m.tempo_consulta_minutos} min` : ''; })()}</p>
+                                 </div>
+
+                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                 <div>
                                  <Label htmlFor="tipo_servico">Tipo de Serviço *</Label>
                                  <Select name="tipo_servico" value={formData.tipo_servico} onValueChange={(value) => { handleChange('tipo_servico', value); if (value !== 'Múltiplos Serviços') { setModoMultiplosServicos(false); handleChange('itens_servico', []); } }}>
                                    <SelectTrigger id="tipo_servico" className="mt-1"><SelectValue /></SelectTrigger>
