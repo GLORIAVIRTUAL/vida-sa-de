@@ -1835,77 +1835,21 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
                                      >
                                        <SelectTrigger id="medico_id" className="mt-1"><SelectValue placeholder="Selecione..." /></SelectTrigger>
                                        <SelectContent>
-                                         {/* Agrupar médicos - mostrar especialidades únicas para Odontologia e Dr. Ruben */}
-                                                 {(() => {
-                                                           const medicosOdontologia = medicos.filter(m => normalizeString(m.especialidade) === 'ODONTOLOGIA');
-                                                           const medicosRuben = medicos.filter(m => normalizeString(m.nome).includes('RUBEN'));
-                                                           const medicosMarco = medicos.filter(m => normalizeString(m.nome).includes('MARCO ANTONIO DELAZERI') || normalizeString(m.nome).includes('MARCO ANTÔNIO DELAZERI'));
-                                                           const outrosMedicos = medicos.filter(m => 
-                                                             normalizeString(m.especialidade) !== 'ODONTOLOGIA' &&
-                                                             !normalizeString(m.nome).includes('RUBEN') &&
-                                                             !normalizeString(m.nome).includes('MARCO ANTONIO DELAZERI') &&
-                                                             !normalizeString(m.nome).includes('MARCO ANTÔNIO DELAZERI')
-                                                           );
-
-                                                           const resultado = [];
-
-                                                           // Se tem mais de 1 dentista, criar uma opção "Odontologia" genérica
-                                                           if (medicosOdontologia.length > 1) {
-                                                             resultado.push(
-                                                               <SelectItem key="odonto-unificado" value={medicosOdontologia[0].id}>
-                                                                 🦷 Odontologia (Agenda Unificada)
-                                                               </SelectItem>
-                                                             );
-                                                           } else {
-                                                             // Se só tem 1 dentista, mostrar normalmente
-                                                             medicosOdontologia.forEach(m => {
-                                                               resultado.push(
-                                                                 <SelectItem key={m.id} value={m.id}>Dr(a). {m.nome} - {m.especialidade}</SelectItem>
-                                                               );
-                                                             });
-                                                           }
-
-                                                           // Se tem mais de 1 "Dr. Ruben", criar uma opção unificada
-                                                           if (medicosRuben.length > 1) {
-                                                             resultado.push(
-                                                               <SelectItem key="ruben-unificado" value={medicosRuben[0].id}>
-                                                                 🩺 Dr. Ruben Hurtado (Múltiplas Especialidades)
-                                                               </SelectItem>
-                                                             );
-                                                           } else if (medicosRuben.length === 1) {
-                                                             // Se só tem 1, mostrar normalmente
-                                                             resultado.push(
-                                                               <SelectItem key={medicosRuben[0].id} value={medicosRuben[0].id}>
-                                                                 Dr(a). {medicosRuben[0].nome} - {medicosRuben[0].especialidade}
-                                                               </SelectItem>
-                                                             );
-                                                           }
-
-                                                           // Se tem mais de 1 "Dr. Marco Antônio Delazeri", criar uma opção unificada
-                                                           if (medicosMarco.length > 1) {
-                                                             resultado.push(
-                                                               <SelectItem key="marco-unificado" value={medicosMarco[0].id}>
-                                                                 🩺 Dr. Marco Antônio Delazeri (Múltiplas Especialidades)
-                                                               </SelectItem>
-                                                             );
-                                                           } else if (medicosMarco.length === 1) {
-                                                             // Se só tem 1, mostrar normalmente
-                                                             resultado.push(
-                                                               <SelectItem key={medicosMarco[0].id} value={medicosMarco[0].id}>
-                                                                 Dr(a). {medicosMarco[0].nome} - {medicosMarco[0].especialidade}
-                                                               </SelectItem>
-                                                             );
-                                                           }
-
-                                                           // Outros médicos
-                                                           outrosMedicos.forEach(m => {
-                                                             resultado.push(
-                                                               <SelectItem key={m.id} value={m.id}>Dr(a). {m.nome} - {m.especialidade}</SelectItem>
-                                                             );
-                                                           });
-
-                                                           return resultado;
-                                                         })()}
+                                         {(() => {
+                                           const mO = medicos.filter(m => normalizeString(m.especialidade) === 'ODONTOLOGIA');
+                                           const mRu = medicos.filter(m => normalizeString(m.nome).includes('RUBEN'));
+                                           const mMa = medicos.filter(m => normalizeString(m.nome).includes('MARCO ANTONIO DELAZERI') || normalizeString(m.nome).includes('MARCO ANTÔNIO DELAZERI'));
+                                           const outros = medicos.filter(m => normalizeString(m.especialidade) !== 'ODONTOLOGIA' && !normalizeString(m.nome).includes('RUBEN') && !normalizeString(m.nome).includes('MARCO ANTONIO DELAZERI') && !normalizeString(m.nome).includes('MARCO ANTÔNIO DELAZERI'));
+                                           const r = [];
+                                           if (mO.length > 1) r.push(<SelectItem key="odonto-u" value={mO[0].id}>🦷 Odontologia (Agenda Unificada)</SelectItem>);
+                                           else mO.forEach(m => r.push(<SelectItem key={m.id} value={m.id}>Dr(a). {m.nome} - {m.especialidade}</SelectItem>));
+                                           if (mRu.length > 1) r.push(<SelectItem key="ruben-u" value={mRu[0].id}>🩺 Dr. Ruben Hurtado (Múltiplas Esp.)</SelectItem>);
+                                           else if (mRu.length === 1) r.push(<SelectItem key={mRu[0].id} value={mRu[0].id}>Dr(a). {mRu[0].nome} - {mRu[0].especialidade}</SelectItem>);
+                                           if (mMa.length > 1) r.push(<SelectItem key="marco-u" value={mMa[0].id}>🩺 Dr. Marco A. Delazeri (Múltiplas Esp.)</SelectItem>);
+                                           else if (mMa.length === 1) r.push(<SelectItem key={mMa[0].id} value={mMa[0].id}>Dr(a). {mMa[0].nome} - {mMa[0].especialidade}</SelectItem>);
+                                           outros.forEach(m => r.push(<SelectItem key={m.id} value={m.id}>Dr(a). {m.nome} - {m.especialidade}</SelectItem>));
+                                           return r;
+                                         })()}
                                        </SelectContent>
                                      </Select>
                                    </div>
