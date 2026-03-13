@@ -519,17 +519,44 @@ export default function Relatorios() {
   }, [dadosFiltrados, categorias, medicos, agendamentosMap]);
 
   const agendamentosSemOS = useMemo(() => {
-    const agendamentosComOSIds = new Set(
-      ordensServico.map((os) => os.agendamento_id).filter(Boolean)
-    );
+    const normalizarTexto = (valor) => String(valor || '').trim().toLowerCase();
+    const diferencaDias = (dataA, dataB) => {
+      if (!dataA || !dataB) return Infinity;
+      const a = new Date(`${dataA}T00:00:00`);
+      const b = new Date(`${dataB}T00:00:00`);
+      return Math.abs((a - b) / 86400000);
+    };
+
+    const existeOSCorrespondente = (ag) => {
+      return ordensServico.some((os) => {
+        if (os.agendamento_id === ag.id) return true;
+
+        const mesmoPaciente =
+          (os.paciente_id && ag.paciente_id && os.paciente_id === ag.paciente_id) ||
+          (normalizarTexto(os.paciente_nome) && normalizarTexto(os.paciente_nome) === normalizarTexto(ag.paciente_nome));
+        const mesmoMedico = (os.medico_id || '') === (ag.medico_id || '');
+        const mesmoTipo = (os.tipo_servico || '') === (ag.tipo_servico || '');
+        const mesmaCategoria = (os.categoria_preco_id || '') === (ag.categoria_preco_id || '');
+        const mesmoValor = Math.abs(Number(os.valor_final || 0) - Number(ag.valor_final || 0)) < 0.01;
+        const dataCompativel = diferencaDias(os.data_execucao, ag.data_agendamento) <= 1;
+
+        return mesmoPaciente && mesmoMedico && mesmoTipo && mesmaCategoria && mesmoValor && dataCompativel;
+      });
+    };
 
     return agendamentos.filter((ag) => {
-      if (!ag?.id || agendamentosComOSIds.has(ag.id)) return false;
+      if (!ag?.id || existeOSCorrespondente(ag)) return false;
       if (["Cancelado", "Finalizado", "Não Compareceu"].includes(ag.status)) return false;
       if (filtros.dataInicio && ag.data_agendamento < filtros.dataInicio) return false;
       if (filtros.dataFim && ag.data_agendamento > filtros.dataFim) return false;
       if (filtros.medicoId !== 'todos' && ag.medico_id !== filtros.medicoId) return false;
       if (filtros.categoriaNome !== 'todos' && obterNomeCategoria(ag) !== filtros.categoriaNome) return false;
+      if (filtros.formaPagamento !== 'todos' && (ag.forma_pagamento || '') !== filtros.formaPagamento) return false;
+      if (filtros.statusPagamento !== 'todos') {
+        if (filtros.statusPagamento === 'Pago' && ag.status !== 'Pago') return false;
+        if (filtros.statusPagamento === 'Cancelado' && ag.status !== 'Cancelado') return false;
+        if (filtros.statusPagamento === 'Pendente' && ['Pago', 'Cancelado'].includes(ag.status)) return false;
+      }
       return true;
     }).sort((a, b) => {
       if (filtros.ordenacao === 'nome') {
