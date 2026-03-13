@@ -13,6 +13,7 @@ import { createPageUrl } from '@/utils';
 export default function CadastroRapidoPaciente({ open, onClose, nomeInicial, telefoneInicial }) {
   const [formData, setFormData] = useState({
     nome: '',
+    cpf: '',
     telefone: '',
     convenio: 'Particular'
   });
@@ -25,6 +26,7 @@ export default function CadastroRapidoPaciente({ open, onClose, nomeInicial, tel
     if (open) {
       setFormData({
         nome: nomeInicial || '',
+        cpf: '',
         telefone: telefoneInicial || '',
         convenio: 'Particular'
       });
@@ -49,8 +51,8 @@ export default function CadastroRapidoPaciente({ open, onClose, nomeInicial, tel
   };
 
   const handleSalvar = async () => {
-    if (!formData.nome || !formData.telefone) {
-      alert('Nome e telefone são obrigatórios');
+    if (!formData.nome || !formData.cpf || !formData.telefone) {
+      alert('Nome, CPF e telefone são obrigatórios');
       return;
     }
 
@@ -58,9 +60,9 @@ export default function CadastroRapidoPaciente({ open, onClose, nomeInicial, tel
     try {
       const paciente = await base44.entities.Paciente.create({
         nome: formData.nome,
+        cpf: formData.cpf,
         telefone: formData.telefone,
         convenio: formData.convenio,
-        cpf: '', // Será preenchido depois
         prioridade: 'Normal',
         status: 'Ativo'
       });
@@ -112,6 +114,17 @@ export default function CadastroRapidoPaciente({ open, onClose, nomeInicial, tel
           </div>
 
           <div>
+            <Label htmlFor="cpf">CPF *</Label>
+            <Input
+              id="cpf"
+              value={formData.cpf}
+              onChange={(e) => handleChange('cpf', e.target.value)}
+              placeholder="Ex: 123.456.789-00"
+              required
+            />
+          </div>
+
+          <div>
             <Label htmlFor="telefone">Telefone *</Label>
             <Input
               id="telefone"
@@ -152,7 +165,7 @@ export default function CadastroRapidoPaciente({ open, onClose, nomeInicial, tel
           <Alert>
             <Info className="w-4 h-4" />
             <AlertDescription>
-              Após salvar, complete o cadastro com CPF, endereço e outras informações na página{' '}
+              Após salvar, complete o cadastro com endereço e outras informações na página{' '}
               <strong>Pacientes</strong>.
             </AlertDescription>
           </Alert>
@@ -168,7 +181,7 @@ export default function CadastroRapidoPaciente({ open, onClose, nomeInicial, tel
             </Button>
             <Button 
               onClick={handleSalvar} 
-              disabled={salvando || !formData.nome || !formData.telefone}
+              disabled={salvando || !formData.nome || !formData.cpf || !formData.telefone}
               className="flex-1 bg-blue-600 hover:bg-blue-700"
             >
               {salvando ? (
