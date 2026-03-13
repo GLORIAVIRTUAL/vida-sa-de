@@ -1404,56 +1404,15 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
           resultado = await Agendamento.create(dados);
           console.log('✅ Agendamento criado com sucesso');
 
-          // Criar notificação visual e sonora para NOVO agendamento (não edição)
-          if (resultado) { // Ensure creation was successful and we have a result
+          if (resultado) {
             try {
-              const paciente = pacientesEncontrados.find(p => p.id === formData.paciente_id);
-              const medico = medicos.find(m => m.id === formData.medico_id);
-              const procedimento = procedimentos.find(p => p.id === formData.procedimento_id);
-              
-              // Buscar usuário atual para saber quem criou o agendamento
-              let nomeUsuarioCriador = 'Sistema';
-              try {
-                const usuarioAtual = await base44.auth.me();
-                nomeUsuarioCriador = usuarioAtual?.display_name || usuarioAtual?.full_name || 'Usuário';
-              } catch (e) {
-                console.log('⚠️ Não foi possível obter usuário atual');
-              }
-              
-              let nomeServico = formData.tipo_servico;
-              if (medico) {
-                nomeServico += ` com Dr(a). ${medico.nome}`;
-              } else if (procedimento) {
-                nomeServico = procedimento.nome;
-              }
-              
-              console.log('🔔 Criando notificação de novo agendamento...');
-              
-              await Notification.create({
-                type: 'novo_agendamento',
-                message: `🆕 ${paciente?.nome || 'Paciente'} - ${nomeServico} - ${formData.data_agendamento} às ${formData.horario}`,
-                data: {
-                  agendamentoId: resultado.id,
-                  paciente_nome: paciente?.nome || 'Paciente',
-                  medico_nome: medico?.nome || 'N/A',
-                  data_agendamento: formData.data_agendamento,
-                  horario: formData.horario,
-                  tipo_servico: formData.tipo_servico,
-                  agendado_por: nomeUsuarioCriador,
-                  agendado_por_tipo: 'usuario'
-                }
-              });
-              
-              // Atualizar o agendamento com quem criou
-              await Agendamento.update(resultado.id, {
-                agendado_por: nomeUsuarioCriador,
-                agendado_por_tipo: 'usuario'
-              });
-              
-              console.log('✅ Notificação criada com sucesso!');
-            } catch (errorNotif) {
-              console.error('⚠️ Erro ao criar notificação (não crítico):', errorNotif);
-            }
+              const pac = pacientesEncontrados.find(p => p.id === formData.paciente_id);
+              const med = medicos.find(m => m.id === formData.medico_id);
+              let nomeUsr = 'Sistema'; try { const u = await base44.auth.me(); nomeUsr = u?.display_name || u?.full_name || 'Usuário'; } catch(e) {}
+              let nSvc = formData.tipo_servico; if (med) nSvc += ` com Dr(a). ${med.nome}`;
+              await Notification.create({ type: 'novo_agendamento', message: `🆕 ${pac?.nome || 'Paciente'} - ${nSvc} - ${formData.data_agendamento} às ${formData.horario}`, data: { agendamentoId: resultado.id, paciente_nome: pac?.nome || 'Paciente', medico_nome: med?.nome || 'N/A', data_agendamento: formData.data_agendamento, horario: formData.horario, tipo_servico: formData.tipo_servico, agendado_por: nomeUsr, agendado_por_tipo: 'usuario' } });
+              await Agendamento.update(resultado.id, { agendado_por: nomeUsr, agendado_por_tipo: 'usuario' });
+            } catch (e) { console.error('⚠️ Notificação não crítica:', e); }
           }
           toast({ title: "Sucesso!", description: "Agendamento salvo!" }); // Specific toast for single create
         }
