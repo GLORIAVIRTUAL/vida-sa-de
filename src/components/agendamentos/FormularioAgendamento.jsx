@@ -38,8 +38,8 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
     medico_id: '',
     data_agendamento: format(new Date(), 'yyyy-MM-dd'), 
     horario: '',
-    tipo_servico: 'Consulta',
-    itens_servico: [], // NOVO: Lista de serviços múltiplos
+    tipo_servico: 'Consulta', duracao_minutos: '',
+    itens_servico: [],
     is_encaixe: false,
     is_recorrente: false,
     recorrencia_tipo: '',
