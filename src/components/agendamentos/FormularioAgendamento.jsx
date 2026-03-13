@@ -321,6 +321,7 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
           data_agendamento: agendamento.data_agendamento ? format(new Date(agendamento.data_agendamento + 'T00:00:00'), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
           horario: agendamento.horario || '',
           tipo_servico: agendamento.tipo_servico || 'Consulta',
+          duracao_minutos: agendamento.duracao_minutos?.toString() || '',
           itens_servico: agendamento.itens_servico || [],
           is_encaixe: agendamento.is_encaixe || false,
           is_recorrente: agendamento.is_recorrente || false,
