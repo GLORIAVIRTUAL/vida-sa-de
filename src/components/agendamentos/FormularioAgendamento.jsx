@@ -1309,66 +1309,14 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
     setSalvando(true);
 
     try {
-      // Validações mínimas
-      if (!formData.paciente_id || !formData.data_agendamento || !formData.horario) {
-        toast({ 
-          title: "Erro", 
-          description: "Preencha todos os campos obrigatórios", 
-          variant: "destructive" 
-        });
-        setSalvando(false);
-        return;
-      }
-
-      // CRÍTICO: Validar categoria
-      if (!formData.categoria_preco_id) {
-        toast({ 
-          title: "Erro", 
-          description: "Selecione uma categoria de preço!", 
-          variant: "destructive" 
-        });
-        setSalvando(false);
-        return;
-      }
-
-      console.log('💾 Salvando agendamento...');
-      console.log('📦 categoria_preco_id:', formData.categoria_preco_id);
-
-      // Validações específicas por tipo de serviço
-      if ((formData.tipo_servico === 'Consulta' || formData.tipo_servico === 'Retorno') && !formData.medico_id) {
-        toast({ title: "Erro", description: "Selecione um médico", variant: "destructive" });
-        setSalvando(false);
-        return;
-      }
-
-      if (formData.tipo_servico === 'Procedimento' && !formData.procedimento_id) {
-        toast({ title: "Erro", description: "Selecione um procedimento", variant: "destructive" });
-        setSalvando(false);
-        return;
-      }
-
-      if (formData.tipo_servico === 'Exame' && (!formData.exames_ids || formData.exames_ids.length === 0)) {
-        toast({ title: "Erro", description: "Selecione ao menos um exame", variant: "destructive" });
-        setSalvando(false);
-        return;
-      }
-
-      if (formData.tipo_servico === 'Múltiplos Serviços' && (!formData.itens_servico || formData.itens_servico.length === 0)) {
-        toast({ title: "Erro", description: "Adicione ao menos um serviço", variant: "destructive" });
-        setSalvando(false);
-        return;
-      }
-
-      // Validação para campos de recorrência se is_recorrente for true
-      if (formData.is_recorrente && (!formData.recorrencia_tipo || !formData.recorrencia_data_fim)) {
-        toast({
-          title: "Erro",
-          description: "Para agendamentos recorrentes, selecione a frequência e a data final.",
-          variant: "destructive",
-        });
-        setSalvando(false);
-        return;
-      }
+      const erroValidacao = (msg) => { toast({ title: "Erro", description: msg, variant: "destructive" }); setSalvando(false); return true; };
+      if (!formData.paciente_id || !formData.data_agendamento || !formData.horario) { erroValidacao("Preencha todos os campos obrigatórios"); return; }
+      if (!formData.categoria_preco_id) { erroValidacao("Selecione uma categoria de preço!"); return; }
+      if ((formData.tipo_servico === 'Consulta' || formData.tipo_servico === 'Retorno') && !formData.medico_id) { erroValidacao("Selecione um médico"); return; }
+      if (formData.tipo_servico === 'Procedimento' && !formData.procedimento_id) { erroValidacao("Selecione um procedimento"); return; }
+      if (formData.tipo_servico === 'Exame' && (!formData.exames_ids || formData.exames_ids.length === 0)) { erroValidacao("Selecione ao menos um exame"); return; }
+      if (formData.tipo_servico === 'Múltiplos Serviços' && (!formData.itens_servico || formData.itens_servico.length === 0)) { erroValidacao("Adicione ao menos um serviço"); return; }
+      if (formData.is_recorrente && (!formData.recorrencia_tipo || !formData.recorrencia_data_fim)) { erroValidacao("Para recorrentes, selecione frequência e data final."); return; }
 
       // Preparar dados - GARANTIR QUE CATEGORIA ESTÁ INCLUÍDA
       // Buscar nome do paciente para salvar no snapshot
