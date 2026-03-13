@@ -45,6 +45,7 @@ export default function Relatorios() {
   const [medicos, setMedicos] = useState([]);
   const [categorias, setCategorias] = useState([]);
   const [pacientes, setPacientes] = useState([]);
+  const [agendamentos, setAgendamentos] = useState([]);
   const [agendamentosMap, setAgendamentosMap] = useState({});
   
   // Filtros - restaurar do localStorage ou iniciar com padrão
