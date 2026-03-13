@@ -112,6 +112,7 @@ export default function Relatorios() {
       // Criar mapa de agendamentos por ID para cruzamento rápido
       const agMap = {};
       (agendamentosData || []).forEach(ag => { agMap[ag.id] = ag; });
+      setAgendamentos(agendamentosData || []);
       setAgendamentosMap(agMap);
       
       // Desmembrar OS com Múltiplas Formas
