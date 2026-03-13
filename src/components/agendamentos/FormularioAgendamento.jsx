@@ -1418,20 +1418,7 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
         }
       }
 
-      // Salvar últimas configurações do usuário para acelerar próximos agendamentos
-      try {
-        const currentUser = await base44.auth.me();
-        const userId = currentUser?.id || currentUser?.email || 'default';
-        const preConfig = {
-          data_agendamento: formData.data_agendamento,
-          tipo_servico: formData.tipo_servico,
-          medico_id: formData.medico_id || '',
-        };
-        localStorage.setItem(`agendamento_preconfig_${userId}`, JSON.stringify(preConfig));
-        console.log('💾 Pré-configuração salva para próximo agendamento:', preConfig);
-      } catch (e) {
-        console.warn('⚠️ Não foi possível salvar pré-configuração:', e);
-      }
+      try { const cu = await base44.auth.me(); localStorage.setItem(`agendamento_preconfig_${cu?.id||'default'}`, JSON.stringify({ data_agendamento: formData.data_agendamento, tipo_servico: formData.tipo_servico, medico_id: formData.medico_id || '' })); } catch(e) {}
 
       await onSave();
       onClose();
