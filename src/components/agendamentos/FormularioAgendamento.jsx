@@ -1691,28 +1691,7 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
     setFormData(prev => ({ ...prev, valor_total: total.toFixed(2).toString() }));
   };
 
-  // Funções para controlar o redimensionamento da lista de exames
-  const handleMouseDownResize = (e) => {
-    e.preventDefault(); // Prevent text selection
-    setRedimensionandoExames(true);
-    const startY = e.clientY;
-    const startHeight = alturaListaExames;
-
-    const handleMouseMove = (e) => {
-      const newHeight = startHeight + (e.clientY - startY);
-      // Limitar altura entre 100px e 400px
-      setAlturaListaExames(Math.max(100, Math.min(400, newHeight)));
-    };
-
-    const handleMouseUp = () => {
-      setRedimensionandoExames(false);
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-  };
+  const handleMouseDownResize = (e) => { e.preventDefault(); setRedimensionandoExames(true); const startY = e.clientY; const startH = alturaListaExames; const onMove = (ev) => setAlturaListaExames(Math.max(100, Math.min(400, startH + (ev.clientY - startY)))); const onUp = () => { setRedimensionandoExames(false); document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); }; document.addEventListener('mousemove', onMove); document.addEventListener('mouseup', onUp); };
 
   const handleAnalisarPedidoExame = async () => {
     if (!pedidoExameFile) { toast({ title: "Nenhum arquivo", description: "Selecione um arquivo.", variant: "destructive" }); return; }
