@@ -519,29 +519,38 @@ export default function Relatorios() {
   }, [dadosFiltrados, categorias, medicos, agendamentosMap]);
 
   const agendamentosSemOS = useMemo(() => {
-    const normalizarTexto = (valor) => String(valor || '').trim().toLowerCase();
-    const diferencaDias = (dataA, dataB) => {
-      if (!dataA || !dataB) return Infinity;
-      const a = new Date(`${dataA}T00:00:00`);
-      const b = new Date(`${dataB}T00:00:00`);
-      return Math.abs((a - b) / 86400000);
-    };
+    // Construir Set de agendamento_ids que já possuem OS vinculada (direto pelo campo)
+    const agendamentoIdsComOS = new Set();
+    ordensServico.forEach((os) => {
+      if (os.agendamento_id) agendamentoIdsComOS.add(os.agendamento_id);
+    });
+
+    // Para agendamentos com status "Pago" que não têm vínculo direto,
+    // construir Set de paciente_ids que possuem OS para verificação extra
+    const osPorPaciente = {};
+    ordensServico.forEach((os) => {
+      if (os.paciente_id) {
+        if (!osPorPaciente[os.paciente_id]) osPorPaciente[os.paciente_id] = [];
+        osPorPaciente[os.paciente_id].push(os);
+      }
+    });
 
     const existeOSCorrespondente = (ag) => {
-      return ordensServico.some((os) => {
-        if (os.agendamento_id === ag.id) return true;
+      // 1. Verificação direta pelo agendamento_id (mais confiável)
+      if (agendamentoIdsComOS.has(ag.id)) return true;
 
-        const mesmoPaciente =
-          (os.paciente_id && ag.paciente_id && os.paciente_id === ag.paciente_id) ||
-          (normalizarTexto(os.paciente_nome) && normalizarTexto(os.paciente_nome) === normalizarTexto(ag.paciente_nome));
-        const mesmoMedico = (os.medico_id || '') === (ag.medico_id || '');
-        const mesmoTipo = (os.tipo_servico || '') === (ag.tipo_servico || '');
-        const mesmaCategoria = (os.categoria_preco_id || '') === (ag.categoria_preco_id || '');
-        const mesmoValor = Math.abs(Number(os.valor_final || 0) - Number(ag.valor_final || 0)) < 0.01;
-        const dataCompativel = diferencaDias(os.data_execucao, ag.data_agendamento) <= 1;
+      // 2. Se o agendamento está como "Pago", buscar OS do mesmo paciente com data próxima
+      if (ag.status === 'Pago' && ag.paciente_id && osPorPaciente[ag.paciente_id]) {
+        return osPorPaciente[ag.paciente_id].some((os) => {
+          const dataAg = ag.data_agendamento || '';
+          const dataOS = os.data_execucao || '';
+          if (!dataAg || !dataOS) return false;
+          const diffDias = Math.abs((new Date(`${dataAg}T00:00:00`) - new Date(`${dataOS}T00:00:00`)) / 86400000);
+          return diffDias <= 2;
+        });
+      }
 
-        return mesmoPaciente && mesmoMedico && mesmoTipo && mesmaCategoria && mesmoValor && dataCompativel;
-      });
+      return false;
     };
 
     return agendamentos.filter((ag) => {
