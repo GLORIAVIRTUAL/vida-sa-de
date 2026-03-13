@@ -1807,16 +1807,7 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
                                </div>
                                {(formData.tipo_servico === 'Retorno' || formData.tipo_servico === 'Consulta' || formData.tipo_servico === 'Procedimento') && (
                                    <div>
-                                     <Label htmlFor="medico_id">
-                                       {(() => {
-                                         // Verificar se existe algum médico de odontologia
-                                         const temOdontologia = medicos.some(m => normalizeString(m.especialidade) === 'ODONTOLOGIA');
-                                         if (temOdontologia && formData.tipo_servico !== 'Procedimento') {
-                                           return 'Especialidade *';
-                                         }
-                                         return formData.tipo_servico === 'Procedimento' ? 'Médico (Opcional)' : 'Médico *';
-                                       })()}
-                                     </Label>
+                                     <Label htmlFor="medico_id">{medicos.some(m => normalizeString(m.especialidade) === 'ODONTOLOGIA') && formData.tipo_servico !== 'Procedimento' ? 'Especialidade *' : formData.tipo_servico === 'Procedimento' ? 'Médico (Opcional)' : 'Médico *'}</Label>
                                      <Select name="medico_id" value={(() => {
                                          const mR = medicos.filter(m => normalizeString(m.nome).includes('RUBEN'));
                                          if (mR.length > 1 && mR.some(m => m.id === formData.medico_id)) return mR[0].id;
