@@ -1302,38 +1302,9 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
     });
   };
 
-  // Função `calcularDatasRecorrentes` foi mantida no código, mas a nova lógica do `handleSubmit` não a utilizará para criar múltiplos agendamentos.
-  // Se a intenção é que o backend crie a série, esta função pode não ser mais necessária no frontend.
-  // No entanto, para fins de visualização no Alert, ela ainda é útil.
   const calcularDatasRecorrentes = (dataInicioStr, dataFimStr, recorrenciaTipo) => {
-    const datas = [];
-    let dataAtual = new Date(dataInicioStr + 'T00:00:00'); // Use T00:00:00 to avoid timezone issues
-    const dataFim = new Date(dataFimStr + 'T00:00:00');
-
-    let contador = 0;
-    const limiteSeguranca = 365; // Safety limit to prevent infinite loops
-
-    while (dataAtual <= dataFim && contador < limiteSeguranca) {
-        datas.push(format(dataAtual, 'yyyy-MM-dd'));
-
-        switch (recorrenciaTipo) {
-            case 'Semanal':
-                dataAtual.setDate(dataAtual.getDate() + 7);
-                break;
-            case 'Quinzenal':
-                dataAtual.setDate(dataAtual.getDate() + 15);
-                break;
-            case 'Mensal':
-                dataAtual.setMonth(dataAtual.getMonth() + 1);
-                break;
-            default:
-                // Fallback, though ideally controlled by Select component
-                dataAtual.setDate(dataAtual.getDate() + 7);
-                break;
-        }
-        contador++;
-    }
-    return datas;
+    const datas = []; let d = new Date(dataInicioStr + 'T00:00:00'); const fim = new Date(dataFimStr + 'T00:00:00'); let c = 0;
+    while (d <= fim && c < 365) { datas.push(format(d, 'yyyy-MM-dd')); if (recorrenciaTipo === 'Mensal') d.setMonth(d.getMonth() + 1); else d.setDate(d.getDate() + (recorrenciaTipo === 'Quinzenal' ? 15 : 7)); c++; } return datas;
   };
   
   const handleSubmit = async (e) => {
