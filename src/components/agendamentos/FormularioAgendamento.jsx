@@ -113,61 +113,16 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
     return preco?.valor || 0;
   }, [medicos, procedimentos, tabelaPrecos]);
 
-  // Função de busca otimizada via servidor
   const buscarPacientesPorNome = async () => {
-    if (!buscaPaciente || buscaPaciente.trim().length < 2) {
-      toast({
-        title: "Digite pelo menos 2 caracteres",
-        description: "Precisamos de pelo menos 2 caracteres para buscar.",
-        variant: "destructive"
-      });
-      return;
-    }
-
+    if (!buscaPaciente || buscaPaciente.trim().length < 2) { toast({ title: "Digite pelo menos 2 caracteres", variant: "destructive" }); return; }
     setBuscandoPaciente(true);
     try {
-      const termo = buscaPaciente.trim();
-      console.log(`🔍 [DIRECT] Buscando pacientes: "${termo}"`);
-
-      // CHAMADA DIRETA - Removido safeApiCall para debug e performance
-      const response = await base44.functions.invoke('searchPatients', { termo, limit: 500 });
-
-      if (response?.data?.error) {
-         console.error("❌ Erro Backend:", response.data.error);
-         toast({ title: "Erro", description: "Falha na busca de pacientes.", variant: "destructive" });
-         setPacientesEncontrados([]);
-         return;
-      }
-
-      const resultados = Array.isArray(response?.data) ? response.data : [];
-      console.log(`✅ ${resultados.length} encontrados`);
-
-      setPacientesEncontrados(resultados);
-
-      if (resultados.length > 0) {
-        toast({
-          title: "Pacientes encontrados!",
-          description: `${resultados.length} paciente(s) encontrado(s). Selecione um abaixo.`
-        });
-      } else {
-        toast({
-          title: "Nenhum resultado",
-          description: `Nenhum paciente encontrado com "${termo}".`,
-          variant: "destructive"
-        });
-      }
-      
-    } catch (error) {
-      console.error("Erro ao buscar pacientes:", error);
-      toast({
-        title: "Erro na busca",
-        description: "Não foi possível buscar pacientes. Tente novamente.",
-        variant: "destructive"
-      });
-      setPacientesEncontrados([]);
-    } finally {
-      setBuscandoPaciente(false);
-    }
+      const response = await base44.functions.invoke('searchPatients', { termo: buscaPaciente.trim(), limit: 500 });
+      if (response?.data?.error) { toast({ title: "Erro", description: "Falha na busca.", variant: "destructive" }); setPacientesEncontrados([]); return; }
+      const r = Array.isArray(response?.data) ? response.data : []; setPacientesEncontrados(r);
+      if (r.length > 0) toast({ title: `${r.length} paciente(s) encontrado(s)` }); else toast({ title: "Nenhum resultado", variant: "destructive" });
+    } catch (error) { toast({ title: "Erro na busca", variant: "destructive" }); setPacientesEncontrados([]); }
+    finally { setBuscandoPaciente(false); }
   };
 
   const handleCriarPacienteRapido = async () => {
