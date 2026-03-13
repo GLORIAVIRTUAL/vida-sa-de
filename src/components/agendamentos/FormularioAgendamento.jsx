@@ -1065,52 +1065,16 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
   }, [formData.tipo_servico, formData.medico_id, formData.procedimento_id, formData.exames_ids, formData.categoria_preco_id, medicos, procedimentos, exames, tabelaPrecos, categorias, buscarPrecoConsulta]);
   
   const handleChange = (field, value) => {
-    console.log(`📝 Campo alterado: ${field} = ${value}`);
-    
     setFormData(prev => {
-      const newData = { ...prev, [field]: value };
-
-      // Atualizar procedimento_id quando mudar médico ou tipo de serviço para 'Consulta'
-      if (
-        (field === 'medico_id' || field === 'tipo_servico') && 
-        newData.tipo_servico === 'Consulta' && 
-        newData.medico_id
-      ) {
-        const medico = medicos.find(m => m.id === newData.medico_id);
-        if (medico) {
-          const especialidadeNorm = normalizeString(medico.especialidade);
-
-          const procedimentoConsulta = procedimentos.find(p => {
-            const nomeNorm = normalizeString(p.nome);
-
-            const temConsulta = nomeNorm.includes('CONSULTA');
-            const temEspecialidade = nomeNorm.includes(especialidadeNorm);
-            const especialidadeMatch = p.especialidade && normalizeString(p.especialidade) === especialidadeNorm;
-
-            return temConsulta && (temEspecialidade || especialidadeMatch);
-          });
-
-          if (procedimentoConsulta) {
-            newData.procedimento_id = procedimentoConsulta.id;
-          } else {
-            newData.procedimento_id = ''; // Clear if not found
-          }
-        } else {
-          newData.procedimento_id = ''; // Clear if no medico
-        }
-      } else if (field === 'tipo_servico' && newData.tipo_servico !== 'Consulta') {
-        newData.procedimento_id = ''; // Clear if type changes from Consulta
-      }
-
-      // Recalcular valor final quando desconto ou acréscimo mudar
-      if (field === 'desconto_manual' || field === 'acrescimo_manual') {
-        const valorBase = parseFloat(newData.valor_total) || 0;
-        const desconto = parseFloat(newData.desconto_manual) || 0;
-        const acrescimo = parseFloat(newData.acrescimo_manual) || 0;
-        newData.valor_final = Math.max(0, valorBase - desconto + acrescimo).toFixed(2).toString();
-      }
-
-      return newData;
+      const nd = { ...prev, [field]: value };
+      if ((field === 'medico_id' || field === 'tipo_servico') && nd.tipo_servico === 'Consulta' && nd.medico_id) {
+        const m = medicos.find(x => x.id === nd.medico_id); const eN = m ? normalizeString(m.especialidade) : '';
+        const pc = m ? procedimentos.find(p => { const n = normalizeString(p.nome); return n.includes('CONSULTA') && (n.includes(eN) || (p.especialidade && normalizeString(p.especialidade) === eN)); }) : null;
+        nd.procedimento_id = pc?.id || '';
+      } else if (field === 'tipo_servico' && nd.tipo_servico !== 'Consulta') { nd.procedimento_id = ''; }
+      if (field === 'medico_id' && value) { const m = medicos.find(x => x.id === value); if (m?.tempo_consulta_minutos) nd.duracao_minutos = m.tempo_consulta_minutos.toString(); }
+      if (field === 'desconto_manual' || field === 'acrescimo_manual') { const vb = parseFloat(nd.valor_total) || 0; const d = parseFloat(nd.desconto_manual) || 0; const a = parseFloat(nd.acrescimo_manual) || 0; nd.valor_final = Math.max(0, vb - d + a).toFixed(2).toString(); }
+      return nd;
     });
   };
 
