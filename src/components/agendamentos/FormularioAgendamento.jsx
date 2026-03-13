@@ -2054,126 +2054,42 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
                                return null;
                              })()}
 
-                             {/* Seletor de especialidade para médicos com múltiplas especialidades (Dr. Ruben e Dr. Marco) */}
+                             {/* Seletor de especialidade para médicos com múltiplas especialidades */}
                              {(() => {
-                               const medicoSelecionado = medicos.find(m => m.id === formData.medico_id);
-
-                               // Encontrar médicos com nome "Ruben" que têm múltiplas especialidades
-                               const medicosRuben = medicos.filter(m => 
-                                 normalizeString(m.nome).includes('RUBEN') && 
-                                 m.status === 'Ativo'
+                               const ms = medicos.find(m => m.id === formData.medico_id);
+                               const mR = medicos.filter(m => normalizeString(m.nome).includes('RUBEN') && m.status === 'Ativo');
+                               const mM = medicos.filter(m => (normalizeString(m.nome).includes('MARCO ANTONIO DELAZERI') || normalizeString(m.nome).includes('MARCO ANTÔNIO DELAZERI')) && m.status === 'Ativo');
+                               const isR = ms && normalizeString(ms.nome).includes('RUBEN') && mR.length > 1;
+                               const isM = ms && (normalizeString(ms.nome).includes('MARCO ANTONIO DELAZERI') || normalizeString(ms.nome).includes('MARCO ANTÔNIO DELAZERI')) && mM.length > 1;
+                               if (!(isR || isM) || !(formData.tipo_servico === 'Consulta' || formData.tipo_servico === 'Retorno')) return null;
+                               const mList = isR ? mR : mM;
+                               const nomeM = isR ? 'Dr. Ruben' : 'Dr. Marco Antônio';
+                               const espObs = formData.observacoes?.match(/Especialidade:\s*(.+?)(\n|$)/)?.[1]?.trim();
+                               const espAtual = espObs || ms.especialidade || '';
+                               return (
+                                 <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                                   <Label htmlFor="especialidade_multipla" className="text-green-800 font-medium flex items-center gap-2">🩺 Selecione a Especialidade *</Label>
+                                   <Select value={espAtual} onValueChange={(value) => {
+                                     const mEsp = mList.find(m => m.especialidade === value);
+                                     if (!mEsp) return;
+                                     const obsAtual = formData.observacoes || '';
+                                     const obsLimpa = obsAtual.replace(/Especialidade:.*(\n|$)/g, '').trim();
+                                     const novaObs = obsLimpa ? `${obsLimpa}\nEspecialidade: ${value}` : `Especialidade: ${value}`;
+                                     const espNorm = normalizeString(mEsp.especialidade);
+                                     const procC = procedimentos.find(p => { const n = normalizeString(p.nome); return n.includes('CONSULTA') && p.especialidade && normalizeString(p.especialidade) === espNorm; });
+                                     let preco = 0;
+                                     if (procC) { const tp = tabelaPrecos.find(t => t.procedimento_id === procC.id && t.categoria_id === formData.categoria_preco_id); if (tp) preco = tp.valor; }
+                                     const desc = parseFloat(formData.desconto_manual) || 0;
+                                     const acre = parseFloat(formData.acrescimo_manual) || 0;
+                                     setSkipNextPriceRecalc(true);
+                                     setFormData(prev => ({ ...prev, medico_id: mEsp.id, observacoes: novaObs, valor_total: preco.toFixed(2).toString(), valor_final: Math.max(0, preco - desc + acre).toFixed(2).toString() }));
+                                   }}>
+                                     <SelectTrigger id="especialidade_multipla" className="mt-2 bg-white"><SelectValue placeholder="Escolha a especialidade..." /></SelectTrigger>
+                                     <SelectContent>{mList.map(m => <SelectItem key={m.id} value={m.especialidade}>{m.especialidade}</SelectItem>)}</SelectContent>
+                                   </Select>
+                                   <p className="text-xs text-green-600 mt-2">{nomeM} atende em múltiplas especialidades com preços diferentes.</p>
+                                 </div>
                                );
-
-                               // Encontrar médicos com nome "Marco Antônio Delazeri" que têm múltiplas especialidades
-                               const medicosMarco = medicos.filter(m => 
-                                 (normalizeString(m.nome).includes('MARCO ANTONIO DELAZERI') || normalizeString(m.nome).includes('MARCO ANTÔNIO DELAZERI')) && 
-                                 m.status === 'Ativo'
-                               );
-
-                               // Verificar se o médico selecionado é um dos "Ruben" ou "Marco" com múltiplos cadastros
-                               const isRuben = medicoSelecionado && normalizeString(medicoSelecionado.nome).includes('RUBEN') && medicosRuben.length > 1;
-                               const isMarco = medicoSelecionado && (normalizeString(medicoSelecionado.nome).includes('MARCO ANTONIO DELAZERI') || normalizeString(medicoSelecionado.nome).includes('MARCO ANTÔNIO DELAZERI')) && medicosMarco.length > 1;
-
-                               if ((isRuben || isMarco) && (formData.tipo_servico === 'Consulta' || formData.tipo_servico === 'Retorno')) {
-                                 const medicosMultiplos = isRuben ? medicosRuben : medicosMarco;
-                                 const nomeMedico = isRuben ? 'Dr. Ruben' : 'Dr. Marco Antônio';
-
-                                 // Extrair especialidade das observações OU usar a especialidade atual do médico selecionado
-                                 const especialidadeObs = formData.observacoes?.match(/Especialidade:\s*(.+?)(\n|$)/)?.[1]?.trim();
-                                 const especialidadeAtual = especialidadeObs || medicoSelecionado.especialidade || '';
-
-                                 return (
-                                   <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                                     <Label htmlFor="especialidade_multipla" className="text-green-800 font-medium flex items-center gap-2">
-                                       🩺 Selecione a Especialidade para este agendamento *
-                                     </Label>
-                                     <Select 
-                                       value={especialidadeAtual} 
-                                       onValueChange={(value) => {
-                                         // Encontrar o médico correspondente à especialidade
-                                         const medicoEspecialidade = medicosMultiplos.find(m => m.especialidade === value);
-                                         if (medicoEspecialidade) {
-                                           console.log(`🩺 ========================================`);
-                                           console.log(`🩺 Alterando para especialidade: ${value}`);
-                                           console.log(`🩺 Novo médico ID: ${medicoEspecialidade.id}`);
-                                           console.log(`🩺 Especialidade do médico: ${medicoEspecialidade.especialidade}`);
-
-                                           // Salvar a especialidade selecionada nas observações
-                                           const obsAtual = formData.observacoes || '';
-                                           const obsLimpa = obsAtual.replace(/Especialidade:.*(\n|$)/g, '').trim();
-                                           const novaObs = obsLimpa ? `${obsLimpa}\nEspecialidade: ${value}` : `Especialidade: ${value}`;
-
-                                           // Buscar o procedimento correto para esta especialidade
-                                           // IMPORTANTE: Usar a especialidade do médico selecionado, não a string "value"
-                                           const especialidadeNormValue = normalizeString(medicoEspecialidade.especialidade);
-                                           console.log(`🔍 Buscando procedimento para especialidade normalizada: ${especialidadeNormValue}`);
-
-                                           const procedimentoConsulta = procedimentos.find(p => {
-                                             const nomeNorm = normalizeString(p.nome);
-                                             const temConsulta = nomeNorm.includes('CONSULTA');
-                                             const especialidadeExata = p.especialidade && normalizeString(p.especialidade) === especialidadeNormValue;
-                                             if (temConsulta && especialidadeExata) {
-                                               console.log(`✅ Procedimento encontrado: ${p.nome} (especialidade: ${p.especialidade})`);
-                                             }
-                                             return temConsulta && especialidadeExata;
-                                           });
-
-                                           let novoPreco = 0;
-                                           if (procedimentoConsulta) {
-                                             console.log(`🔍 Buscando preço para procedimento ID: ${procedimentoConsulta.id} e categoria ID: ${formData.categoria_preco_id}`);
-                                             const preco = tabelaPrecos.find(tp => 
-                                               tp.procedimento_id === procedimentoConsulta.id && 
-                                               tp.categoria_id === formData.categoria_preco_id
-                                             );
-                                             if (preco) {
-                                               novoPreco = preco.valor;
-                                               console.log(`✅ Preço encontrado: R$ ${preco.valor}`);
-                                             } else {
-                                               console.log(`❌ Preço NÃO encontrado na tabela`);
-                                             }
-                                           } else {
-                                             console.log(`❌ Procedimento de consulta NÃO encontrado para especialidade: ${especialidadeNormValue}`);
-                                           }
-
-                                           console.log(`💰 NOVO PREÇO FINAL: R$ ${novoPreco}`);
-                                           console.log(`🩺 ========================================`);
-
-                                           const desconto = parseFloat(formData.desconto_manual) || 0;
-                                           const acrescimo = parseFloat(formData.acrescimo_manual) || 0;
-                                           const valorFinal = Math.max(0, novoPreco - desconto + acrescimo);
-
-                                           // CRÍTICO: Marcar para pular o próximo recálculo automático
-                                           setSkipNextPriceRecalc(true);
-
-                                           // Atualizar TUDO de uma vez, mantendo o medico_id do registro correto
-                                           setFormData(prev => ({
-                                             ...prev,
-                                             medico_id: medicoEspecialidade.id,
-                                             observacoes: novaObs,
-                                             valor_total: novoPreco.toFixed(2).toString(),
-                                             valor_final: valorFinal.toFixed(2).toString()
-                                           }));
-                                         }
-                                       }}
-                                     >
-                                       <SelectTrigger id="especialidade_multipla" className="mt-2 bg-white">
-                                         <SelectValue placeholder="Escolha a especialidade..." />
-                                       </SelectTrigger>
-                                       <SelectContent>
-                                         {medicosMultiplos.map(m => (
-                                           <SelectItem key={m.id} value={m.especialidade}>
-                                             {m.especialidade}
-                                           </SelectItem>
-                                         ))}
-                                       </SelectContent>
-                                     </Select>
-                                     <p className="text-xs text-green-600 mt-2">
-                                       {nomeMedico} atende em múltiplas especialidades com preços diferentes. Selecione qual será este atendimento.
-                                     </p>
-                                   </div>
-                                 );
-                               }
-                               return null;
                              })()}
 
                              <div className="flex items-center space-x-6 pt-2">
