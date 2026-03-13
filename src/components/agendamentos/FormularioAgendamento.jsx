@@ -93,13 +93,8 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
   const [pagamento1, setPagamento1] = useState({ forma: '', valor: '' });
   const [pagamento2, setPagamento2] = useState({ forma: '', valor: '' });
 
-  // NOVO: Estado para cadastro rápido de paciente
   const [cadastroRapidoAberto, setCadastroRapidoAberto] = useState(false);
-  const [novoPacienteRapido, setNovoPacienteRapido] = useState({
-    nome: '',
-    telefone: '',
-    convenio: 'Particular'
-  });
+  const [novoPacienteRapido, setNovoPacienteRapido] = useState({ nome: '', cpf: '', telefone: '', convenio: 'Particular' });
   const [salvandoPacienteRapido, setSalvandoPacienteRapido] = useState(false);
 
   // Estados para seleção de serviços adicionais em múltiplos serviços
@@ -232,58 +227,29 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
     }
   };
 
-  // MELHORADA: Função para criar paciente rápido
   const handleCriarPacienteRapido = async () => {
-    if (!novoPacienteRapido.nome || !novoPacienteRapido.telefone) {
-      toast({
-        title: "Campos obrigatórios",
-        description: "Preencha nome e telefone",
-        variant: "destructive"
-      });
+    if (!novoPacienteRapido.nome || !novoPacienteRapido.cpf || !novoPacienteRapido.telefone) {
+      toast({ title: "Campos obrigatórios", description: "Preencha nome, CPF e telefone", variant: "destructive" });
       return;
     }
-
     setSalvandoPacienteRapido(true);
     try {
-      console.log('🆕 Criando paciente rápido:', novoPacienteRapido);
-      
       const novoPaciente = await Paciente.create({
         nome: novoPacienteRapido.nome,
+        cpf: novoPacienteRapido.cpf,
         telefone: novoPacienteRapido.telefone,
-        cpf: '', // CPF vazio por padrão
-        convenio: novoPacienteRapido.convenio || 'Particular' // Use the state value
+        convenio: novoPacienteRapido.convenio || 'Particular'
       });
-
-      console.log('✅ Paciente criado:', novoPaciente);
-
-      toast({
-        title: "Sucesso!",
-        description: `Paciente ${novoPaciente.nome} cadastrado com sucesso! Complete os dados depois na página de Pacientes.`
-      });
-
-      // Adicionar à lista e selecionar automaticamente
+      toast({ title: "Sucesso!", description: `Paciente ${novoPaciente.nome} cadastrado com sucesso! Complete os dados depois na página de Pacientes.` });
       setPacientesEncontrados([novoPaciente]);
       setBuscaPaciente(novoPaciente.nome);
       handleChange('paciente_id', novoPaciente.id);
-
-      // Limpar e fechar
-      setNovoPacienteRapido({ nome: '', telefone: '', convenio: 'Particular' });
+      setNovoPacienteRapido({ nome: '', cpf: '', telefone: '', convenio: 'Particular' });
       setCadastroRapidoAberto(false);
-
-      // Forçar uma nova busca após 500ms para garantir que o paciente recém-criado esteja na lista para futuras buscas
-      setTimeout(() => {
-        console.log('🔄 Recarregando lista de pacientes para incluir o novo...');
-        buscarPacientesPorNome();
-      }, 500);
-
-
+      setTimeout(() => buscarPacientesPorNome(), 500);
     } catch (error) {
       console.error('❌ Erro ao criar paciente:', error);
-      toast({
-        title: "Erro",
-        description: error.message || "Erro ao criar paciente",
-        variant: "destructive"
-      });
+      toast({ title: "Erro", description: error.message || "Erro ao criar paciente", variant: "destructive" });
     } finally {
       setSalvandoPacienteRapido(false);
     }
@@ -3208,79 +3174,34 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
           <div className="space-y-4">
             <div>
               <Label htmlFor="novo_nome">Nome Completo *</Label>
-              <Input
-                id="novo_nome"
-                value={novoPacienteRapido.nome}
-                onChange={(e) => setNovoPacienteRapido(prev => ({ ...prev, nome: e.target.value }))}
-                placeholder="Ex: João da Silva"
-                disabled={salvandoPacienteRapido}
-              />
+              <Input id="novo_nome" value={novoPacienteRapido.nome} onChange={(e) => setNovoPacienteRapido(prev => ({ ...prev, nome: e.target.value }))} placeholder="Ex: João da Silva" disabled={salvandoPacienteRapido} />
             </div>
-
+            <div>
+              <Label htmlFor="novo_cpf">CPF *</Label>
+              <Input id="novo_cpf" value={novoPacienteRapido.cpf} onChange={(e) => setNovoPacienteRapido(prev => ({ ...prev, cpf: e.target.value }))} placeholder="Ex: 123.456.789-00" disabled={salvandoPacienteRapido} />
+            </div>
             <div>
               <Label htmlFor="novo_telefone">Telefone *</Label>
-              <Input
-                id="novo_telefone"
-                value={novoPacienteRapido.telefone}
-                onChange={(e) => setNovoPacienteRapido(prev => ({ ...prev, telefone: e.target.value }))}
-                placeholder="Ex: (51) 99999-9999"
-                disabled={salvandoPacienteRapido}
-              />
+              <Input id="novo_telefone" value={novoPacienteRapido.telefone} onChange={(e) => setNovoPacienteRapido(prev => ({ ...prev, telefone: e.target.value }))} placeholder="Ex: (51) 99999-9999" disabled={salvandoPacienteRapido} />
             </div>
-
             <div>
               <Label htmlFor="novo_convenio">Convênio *</Label>
-              <Select 
-                value={novoPacienteRapido.convenio} 
-                onValueChange={(value) => setNovoPacienteRapido(prev => ({ ...prev, convenio: value }))}
-                disabled={salvandoPacienteRapido}
-              >
-                <SelectTrigger id="novo_convenio">
-                  <SelectValue placeholder="Selecione o convênio" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categorias.map(categoria => (
-                    <SelectItem key={categoria.id} value={categoria.nome}>
-                      {categoria.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
+              <Select value={novoPacienteRapido.convenio} onValueChange={(value) => setNovoPacienteRapido(prev => ({ ...prev, convenio: value }))} disabled={salvandoPacienteRapido}>
+                <SelectTrigger id="novo_convenio"><SelectValue placeholder="Selecione o convênio" /></SelectTrigger>
+                <SelectContent>{categorias.map(categoria => <SelectItem key={categoria.id} value={categoria.nome}>{categoria.nome}</SelectItem>)}</SelectContent>
               </Select>
-              <p className="text-xs text-gray-500 mt-1">
-                💡 O convênio define automaticamente a categoria de preço nos agendamentos
-              </p>
+              <p className="text-xs text-gray-500 mt-1">💡 O convênio define automaticamente a categoria de preço nos agendamentos</p>
             </div>
-
             <Alert className="bg-blue-50 border-blue-200">
               <AlertCircle className="w-4 h-4 text-blue-600" />
-              <AlertDescription className="text-blue-800 text-sm">
-                Após salvar, complete o cadastro com CPF, endereço e outras informações na página <strong>Pacientes</strong>.
-              </AlertDescription>
+              <AlertDescription className="text-blue-800 text-sm">Após salvar, complete o cadastro com endereço e outras informações na página <strong>Pacientes</strong>.</AlertDescription>
             </Alert>
           </div>
 
           <DialogFooter>
-            <DialogClose asChild>
-              <Button type="button" variant="outline" disabled={salvandoPacienteRapido}>
-                Cancelar
-              </Button>
-            </DialogClose>
-            <Button 
-              type="button" 
-              onClick={handleCriarPacienteRapido}
-              disabled={salvandoPacienteRapido || !novoPacienteRapido.nome || !novoPacienteRapido.telefone}
-            >
-              {salvandoPacienteRapido ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Salvando...
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4 mr-2" />
-                  Salvar e Selecionar
-                </>
-              )}
+            <DialogClose asChild><Button type="button" variant="outline" disabled={salvandoPacienteRapido}>Cancelar</Button></DialogClose>
+            <Button type="button" onClick={handleCriarPacienteRapido} disabled={salvandoPacienteRapido || !novoPacienteRapido.nome || !novoPacienteRapido.cpf || !novoPacienteRapido.telefone}>
+              {salvandoPacienteRapido ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Salvando...</> : <><Save className="w-4 h-4 mr-2" />Salvar e Selecionar</>}
             </Button>
           </DialogFooter>
         </DialogContent>
