@@ -30,9 +30,6 @@ const normalizeString = (str) => {
     return String(str).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
 }
 
-const compressImage = (file, maxWidth = 1200, quality = 0.8) => new Promise((resolve) => { const canvas = document.createElement('canvas'), ctx = canvas.getContext('2d'), img = new Image(); img.onload = () => { const ratio = Math.min(maxWidth / img.width, maxWidth / img.height); canvas.width = img.width * ratio; canvas.height = img.height * ratio; ctx.drawImage(img, 0, 0, canvas.width, canvas.height); canvas.toBlob(resolve, file.type, quality); }; img.src = URL.createObjectURL(file); });
-const uploadWithRetry = async (file, maxRetries = 3, delay = 2000) => { for (let attempt = 1; attempt <= maxRetries; attempt++) { try { return await base44.integrations.Core.UploadFile({ file }); } catch (error) { if (attempt === maxRetries) throw error; await new Promise(resolve => setTimeout(resolve, delay)); delay *= 1.5; } } };
-
 export default function FormularioAgendamento({ agendamento, dadosIniciais, todosAgendamentos, medicos, pacientes: pacientesProps, procedimentos, exames, categorias, tabelaPrecos, onSave, onClose }) {
   const { toast } = useToast();
   const [formData, setFormData] = useState({
