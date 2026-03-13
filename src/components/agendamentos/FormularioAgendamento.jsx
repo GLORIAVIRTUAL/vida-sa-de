@@ -79,11 +79,8 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStatus, setUploadStatus] = useState(''); // Para mostrar status detalhado
 
-  // Estado para controlar altura da lista de exames
-  const [alturaListaExames, setAlturaListaExames] = useState(200); // altura inicial em pixels
+  const [alturaListaExames, setAlturaListaExames] = useState(200);
   const [redimensionandoExames, setRedimensionandoExames] = useState(false);
-
-  // NOVO: Estado para busca de procedimentos
   const [buscaProcedimento, setBuscaProcedimento] = useState('');
 
   // Estado para busca de exames
