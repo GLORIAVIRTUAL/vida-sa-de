@@ -1602,65 +1602,17 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
     handleChange('exames_ids', formData.exames_ids.filter(id => id !== exameId));
   };
 
-  // NOVO: Funções para gerenciar múltiplos serviços
   const adicionarItemServico = (tipo, itemId = null, medicoId = null) => {
-    const particularCategory = Array.isArray(categorias) ? categorias.find(c => normalizeString(c.nome) === 'PARTICULAR') : null;
-    const isParticular = formData.categoria_preco_id === particularCategory?.id;
-    
-    let novoItem = {
-      id: Date.now().toString(), // ID temporário para o frontend
-      tipo: tipo,
-      medico_id: null,
-      procedimento_id: null,
-      exame_id: null,
-      descricao: '',
-      valor: 0
-    };
-
-    if (tipo === 'Consulta' && medicoId) {
-      const medico = medicos.find(m => m.id === medicoId);
-      if (medico) {
-        novoItem.medico_id = medicoId;
-        novoItem.descricao = `Consulta ${medico.especialidade} - Dr(a). ${medico.nome}`;
-        novoItem.valor = buscarPrecoConsulta(medicoId, formData.categoria_preco_id);
-      }
-    } else if (tipo === 'Procedimento' && itemId) {
-      const proc = procedimentos.find(p => p.id === itemId);
-      if (proc) {
-        novoItem.procedimento_id = itemId;
-        novoItem.descricao = proc.nome;
-        const preco = tabelaPrecos.find(tp => 
-          tp.procedimento_id === itemId && 
-          tp.categoria_id === formData.categoria_preco_id
-        );
-        novoItem.valor = preco?.valor || 0;
-      }
-    } else if (tipo === 'Exame' && itemId) {
-      const exame = exames.find(e => e.id === itemId);
-      if (exame) {
-        novoItem.exame_id = itemId;
-        novoItem.descricao = exame.nome;
-        novoItem.valor = isParticular ? (exame.valor_particular || 0) : (exame.valor_convenio || exame.valor_particular || 0);
-      }
-    }
-
-    if (novoItem.descricao) {
-      const novosItens = [...formData.itens_servico, novoItem];
-      handleChange('itens_servico', novosItens);
-      recalcularTotalMultiplosServicos(novosItens);
-    }
+    const pc = Array.isArray(categorias) ? categorias.find(c => normalizeString(c.nome) === 'PARTICULAR') : null;
+    const isPart = formData.categoria_preco_id === pc?.id;
+    let ni = { id: Date.now().toString(), tipo, medico_id: null, procedimento_id: null, exame_id: null, descricao: '', valor: 0 };
+    if (tipo === 'Consulta' && medicoId) { const m = medicos.find(x => x.id === medicoId); if (m) { ni.medico_id = medicoId; ni.descricao = `Consulta ${m.especialidade} - Dr(a). ${m.nome}`; ni.valor = buscarPrecoConsulta(medicoId, formData.categoria_preco_id); } }
+    else if (tipo === 'Procedimento' && itemId) { const p = procedimentos.find(x => x.id === itemId); if (p) { ni.procedimento_id = itemId; ni.descricao = p.nome; const pr = tabelaPrecos.find(t => t.procedimento_id === itemId && t.categoria_id === formData.categoria_preco_id); ni.valor = pr?.valor || 0; } }
+    else if (tipo === 'Exame' && itemId) { const e = exames.find(x => x.id === itemId); if (e) { ni.exame_id = itemId; ni.descricao = e.nome; ni.valor = isPart ? (e.valor_particular || 0) : (e.valor_convenio || e.valor_particular || 0); } }
+    if (ni.descricao) { const novos = [...formData.itens_servico, ni]; handleChange('itens_servico', novos); recalcularTotalMultiplosServicos(novos); }
   };
-
-  const removerItemServico = (itemId) => {
-    const novosItens = formData.itens_servico.filter(item => item.id !== itemId);
-    handleChange('itens_servico', novosItens);
-    recalcularTotalMultiplosServicos(novosItens);
-  };
-
-  const recalcularTotalMultiplosServicos = (itens) => {
-    const total = itens.reduce((soma, item) => soma + (item.valor || 0), 0);
-    setFormData(prev => ({ ...prev, valor_total: total.toFixed(2).toString() }));
-  };
+  const removerItemServico = (itemId) => { const novos = formData.itens_servico.filter(i => i.id !== itemId); handleChange('itens_servico', novos); recalcularTotalMultiplosServicos(novos); };
+  const recalcularTotalMultiplosServicos = (itens) => { const total = itens.reduce((s, i) => s + (i.valor || 0), 0); setFormData(prev => ({ ...prev, valor_total: total.toFixed(2).toString() })); };
 
   const handleMouseDownResize = (e) => { e.preventDefault(); setRedimensionandoExames(true); const startY = e.clientY; const startH = alturaListaExames; const onMove = (ev) => setAlturaListaExames(Math.max(100, Math.min(400, startH + (ev.clientY - startY)))); const onUp = () => { setRedimensionandoExames(false); document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); }; document.addEventListener('mousemove', onMove); document.addEventListener('mouseup', onUp); };
 
