@@ -1817,22 +1817,13 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
                                          return formData.tipo_servico === 'Procedimento' ? 'Médico (Opcional)' : 'Médico *';
                                        })()}
                                      </Label>
-                                     <Select 
-                                       name="medico_id" 
-                                       value={(() => {
-                                         // Para médicos com múltiplas especialidades, mostrar sempre o primeiro ID no select principal
-                                         const medicosRuben = medicos.filter(m => normalizeString(m.nome).includes('RUBEN'));
-                                         if (medicosRuben.length > 1 && medicosRuben.some(m => m.id === formData.medico_id)) {
-                                           return medicosRuben[0].id; // Sempre mostrar o primeiro para o select principal
-                                         }
-                                         const medicosMarco = medicos.filter(m => normalizeString(m.nome).includes('MARCO ANTONIO DELAZERI') || normalizeString(m.nome).includes('MARCO ANTÔNIO DELAZERI'));
-                                         if (medicosMarco.length > 1 && medicosMarco.some(m => m.id === formData.medico_id)) {
-                                           return medicosMarco[0].id; // Sempre mostrar o primeiro para o select principal
-                                         }
+                                     <Select name="medico_id" value={(() => {
+                                         const mR = medicos.filter(m => normalizeString(m.nome).includes('RUBEN'));
+                                         if (mR.length > 1 && mR.some(m => m.id === formData.medico_id)) return mR[0].id;
+                                         const mM = medicos.filter(m => normalizeString(m.nome).includes('MARCO ANTONIO DELAZERI') || normalizeString(m.nome).includes('MARCO ANTÔNIO DELAZERI'));
+                                         if (mM.length > 1 && mM.some(m => m.id === formData.medico_id)) return mM[0].id;
                                          return formData.medico_id;
-                                       })()} 
-                                       onValueChange={(value) => handleChange('medico_id', value)}
-                                     >
+                                       })()} onValueChange={(value) => handleChange('medico_id', value)}>
                                        <SelectTrigger id="medico_id" className="mt-1"><SelectValue placeholder="Selecione..." /></SelectTrigger>
                                        <SelectContent>
                                          {(() => {
