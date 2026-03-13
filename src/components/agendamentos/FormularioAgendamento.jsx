@@ -490,31 +490,10 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
         initialFormData.lembrete_dias_antes = 1;
         setModoMultiplosServicos(false);
 
-        // Restaurar pré-configuração do último agendamento deste usuário (síncrono do localStorage)
         try {
-          // Usar email do usuário se disponível, senão 'default'
-          // Não fazer await aqui para evitar re-renders - usar valor do localStorage diretamente
-          const allKeys = Object.keys(localStorage);
-          const preconfigKey = allKeys.find(k => k.startsWith('agendamento_preconfig_'));
-          if (preconfigKey) {
-            const savedConfig = localStorage.getItem(preconfigKey);
-            if (savedConfig) {
-              const preConfig = JSON.parse(savedConfig);
-              console.log('🔄 Restaurando pré-configuração do usuário:', preConfig);
-              if (preConfig.data_agendamento) initialFormData.data_agendamento = preConfig.data_agendamento;
-              if (preConfig.tipo_servico) initialFormData.tipo_servico = preConfig.tipo_servico;
-              if (preConfig.medico_id) {
-                // Verificar se o médico ainda existe
-                const medicoExiste = medicos.find(m => m.id === preConfig.medico_id);
-                if (medicoExiste) {
-                  initialFormData.medico_id = preConfig.medico_id;
-                }
-              }
-            }
-          }
-        } catch (e) {
-          console.warn('⚠️ Erro ao restaurar pré-configuração:', e);
-        }
+          const pk = Object.keys(localStorage).find(k => k.startsWith('agendamento_preconfig_'));
+          if (pk) { const pc = JSON.parse(localStorage.getItem(pk) || '{}'); if (pc.data_agendamento) initialFormData.data_agendamento = pc.data_agendamento; if (pc.tipo_servico) initialFormData.tipo_servico = pc.tipo_servico; if (pc.medico_id && medicos.find(m => m.id === pc.medico_id)) initialFormData.medico_id = pc.medico_id; }
+        } catch (e) {}
 
         // Handle dadosIniciais from navigation (e.g., from Chat or Dashboard)
         if (dadosIniciais) {
