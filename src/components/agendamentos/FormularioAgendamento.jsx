@@ -1318,31 +1318,9 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
       if (formData.tipo_servico === 'Múltiplos Serviços' && (!formData.itens_servico || formData.itens_servico.length === 0)) { erroValidacao("Adicione ao menos um serviço"); return; }
       if (formData.is_recorrente && (!formData.recorrencia_tipo || !formData.recorrencia_data_fim)) { erroValidacao("Para recorrentes, selecione frequência e data final."); return; }
 
-      // Preparar dados - GARANTIR QUE CATEGORIA ESTÁ INCLUÍDA
-      // Buscar nome do paciente para salvar no snapshot
       const pacienteSelecionado = pacientesEncontrados.find(p => p.id === formData.paciente_id);
-
-      const dados = {
-      paciente_id: formData.paciente_id,
-      paciente_nome: pacienteSelecionado ? pacienteSelecionado.nome : '',
-      data_agendamento: formData.data_agendamento,
-      horario: formData.horario,
-      tipo_servico: formData.tipo_servico,
-      categoria_preco_id: formData.categoria_preco_id, // CRÍTICO
-      valor_total: parseFloat(formData.valor_total) || 0,
-      desconto_manual: parseFloat(formData.desconto_manual) || 0,
-      acrescimo_manual: parseFloat(formData.acrescimo_manual) || 0,
-      valor_final: parseFloat(formData.valor_final) || parseFloat(formData.valor_total) || 0,
-      status: formData.status || 'Agendado',
-      forma_pagamento: formData.forma_pagamento || 'Dinheiro',
-      is_encaixe: formData.is_encaixe || false,
-      is_reserva: formData.paciente_id ? false : true,
-      is_recorrente: formData.is_recorrente || false,
-      lembrete_equipe: formData.lembrete_equipe || false,
-      lembrete_dias_antes: parseInt(formData.lembrete_dias_antes) || 0
-      };
-
-      // Adicionar campos opcionais - CORREÇÃO ODONTOLOGIA: usar medico_id do dentista selecionado
+      const dados = { paciente_id: formData.paciente_id, paciente_nome: pacienteSelecionado?.nome || '', data_agendamento: formData.data_agendamento, horario: formData.horario, tipo_servico: formData.tipo_servico, categoria_preco_id: formData.categoria_preco_id, valor_total: parseFloat(formData.valor_total) || 0, desconto_manual: parseFloat(formData.desconto_manual) || 0, acrescimo_manual: parseFloat(formData.acrescimo_manual) || 0, valor_final: parseFloat(formData.valor_final) || parseFloat(formData.valor_total) || 0, status: formData.status || 'Agendado', forma_pagamento: formData.forma_pagamento || 'Dinheiro', is_encaixe: formData.is_encaixe || false, is_reserva: !formData.paciente_id, is_recorrente: formData.is_recorrente || false, lembrete_equipe: formData.lembrete_equipe || false, lembrete_dias_antes: parseInt(formData.lembrete_dias_antes) || 0 };
+      if (formData.duracao_minutos) dados.duracao_minutos = parseInt(formData.duracao_minutos);
       const _dn=formData.observacoes?.match(/Dentista:\s*(.+?)(\n|$)/)?.[1]?.trim(),_dm=_dn&&medicos.find(m=>m.nome===_dn);dados.medico_id=_dm?_dm.id:(formData.medico_id||null);
       if (formData.observacoes) dados.observacoes = formData.observacoes;
       if (formData.procedimento_id) dados.procedimento_id = formData.procedimento_id;
