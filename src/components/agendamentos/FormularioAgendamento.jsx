@@ -1052,127 +1052,17 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
     checkSelectedHorarioAvailability();
   }, [checkSelectedHorarioAvailability]);
   
-  // Lógica de cálculo de preços mais precisa e com debug melhorado
-  // IMPORTANTE: Não recalcular se o valor já foi definido manualmente (ex: seleção de especialidade do Dr. Ruben)
   const [skipNextPriceRecalc, setSkipNextPriceRecalc] = useState(false);
-  
   useEffect(() => {
-    // Se o valor já foi setado manualmente, pular este recálculo
-    if (skipNextPriceRecalc) {
-      console.log('💰 ===== PULANDO RECÁLCULO (valor já definido manualmente) =====');
-      setSkipNextPriceRecalc(false);
-      return;
-    }
-    
-    console.log('💰 ===== RECALCULANDO PREÇOS - NOVA LÓGICA DE CONSULTA =====');
-    console.log('📝 Dados atuais:', {
-      tipo_servico: formData.tipo_servico,
-      medico_id: formData.medico_id,
-      categoria_preco_id: formData.categoria_preco_id,
-      exames_ids: formData.exames_ids,
-      procedimento_id: formData.procedimento_id
-    });
-
+    if (skipNextPriceRecalc) { setSkipNextPriceRecalc(false); return; }
     let total = 0;
-    const particularCategory = Array.isArray(categorias) ? categorias.find(c => normalizeString(c.nome) === 'PARTICULAR') : null;
-    
-    console.log('🏷️ Categoria Particular encontrada:', particularCategory);
-    console.log('🏷️ Categoria Selecionada ID:', formData.categoria_preco_id);
-
-    if (formData.tipo_servico === 'Consulta') {
-      if (formData.medico_id && formData.categoria_preco_id) {
-        // Usa a nova função para buscar o preço da consulta
-        total = buscarPrecoConsulta(formData.medico_id, formData.categoria_preco_id);
-        console.log('💰 Consulta - Valor via buscarPrecoConsulta:', { valor_final: total });
-      }
-    } else if (formData.tipo_servico === 'Procedimento') {
-      if (formData.procedimento_id && formData.categoria_preco_id) {
-        const preco = tabelaPrecos.find(tp => 
-          tp.procedimento_id === formData.procedimento_id && 
-          tp.categoria_id === formData.categoria_preco_id
-        );
-        total = preco?.valor || 0;
-        console.log('💰 Procedimento:', {
-          procedimento_id: formData.procedimento_id,
-          categoria_id: formData.categoria_preco_id,
-          preco_encontrado: preco,
-          valor_final: total
-        });
-      }
-    } else if (formData.tipo_servico === 'Exame') {
-      if (formData.exames_ids?.length > 0) {
-          console.log('🧪 Calculando exames...');
-          total = formData.exames_ids.reduce((soma, exameId) => {
-              const exameInfo = exames.find(e => e.id === exameId);
-              
-              if (!exameInfo) {
-                console.warn(`⚠️ Exame não encontrado: ${exameId}`);
-                return soma;
-              }
-              
-              // LÓGICA CRÍTICA: Decidir entre valor particular ou convênio
-              const isParticular = formData.categoria_preco_id === particularCategory?.id;
-              let valorExame;
-              
-              if (isParticular) {
-                // Para categoria PARTICULAR, usar sempre valor_particular
-                valorExame = exameInfo.valor_particular || 0;
-                console.log(`🧪 ${exameInfo.nome} (PARTICULAR):`, {
-                  valor_particular: exameInfo.valor_particular,
-                  valor_convenio: exameInfo.valor_convenio,
-                  valor_usado: valorExame
-                });
-              } else {
-                // Para outras categorias, usar valor_convenio se existir, senão valor_particular
-                valorExame = exameInfo.valor_convenio || exameInfo.valor_particular || 0;
-                console.log(`🧪 ${exameInfo.nome} (CONVÊNIO):`, {
-                  valor_particular: exameInfo.valor_particular,
-                  valor_convenio: exameInfo.valor_convenio,
-                  valor_usado: valorExame
-                });
-              }
-              
-              return soma + valorExame;
-          }, 0);
-          
-          console.log('🧪 TOTAL EXAMES:', {
-            quantidade_exames: formData.exames_ids.length,
-            categoria_eh_particular: formData.categoria_preco_id === particularCategory?.id,
-            total_calculado: total
-          });
-      }
-    } else if (formData.tipo_servico === 'Retorno') {
-      total = 0; // Retornos sempre gratuitos
-      console.log('💰 Retorno - valor zero');
-    }
-    
-    console.log('💰 ===== VALOR FINAL CALCULADO: R$', total.toFixed(2), '=====');
-    // Only update if the value has actually changed to avoid unnecessary re-renders
-    if (parseFloat(formData.valor_total).toFixed(2) !== total.toFixed(2)) {
-      setFormData(prev => {
-        const desconto = parseFloat(prev.desconto_manual) || 0;
-        const acrescimo = parseFloat(prev.acrescimo_manual) || 0;
-        const valorFinal = Math.max(0, total - desconto + acrescimo);
-        return { 
-          ...prev, 
-          valor_total: total.toFixed(2).toString(),
-          valor_final: valorFinal.toFixed(2).toString()
-        };
-      });
-    }
-    }, [
-    formData.tipo_servico,
-    formData.medico_id,
-    formData.procedimento_id,
-    formData.exames_ids,
-    formData.categoria_preco_id,
-    medicos,
-    procedimentos,
-    exames,
-    tabelaPrecos,
-    categorias,
-    buscarPrecoConsulta
-  ]);
+    const pc = Array.isArray(categorias) ? categorias.find(c => normalizeString(c.nome) === 'PARTICULAR') : null;
+    if (formData.tipo_servico === 'Consulta') { if (formData.medico_id && formData.categoria_preco_id) total = buscarPrecoConsulta(formData.medico_id, formData.categoria_preco_id); }
+    else if (formData.tipo_servico === 'Procedimento') { if (formData.procedimento_id && formData.categoria_preco_id) { const p = tabelaPrecos.find(tp => tp.procedimento_id === formData.procedimento_id && tp.categoria_id === formData.categoria_preco_id); total = p?.valor || 0; } }
+    else if (formData.tipo_servico === 'Exame') { if (formData.exames_ids?.length > 0) { total = formData.exames_ids.reduce((s, id) => { const e = exames.find(x => x.id === id); if (!e) return s; const isPart = formData.categoria_preco_id === pc?.id; return s + (isPart ? (e.valor_particular || 0) : (e.valor_convenio || e.valor_particular || 0)); }, 0); } }
+    else if (formData.tipo_servico === 'Retorno') { total = 0; }
+    if (parseFloat(formData.valor_total).toFixed(2) !== total.toFixed(2)) { setFormData(prev => { const d = parseFloat(prev.desconto_manual) || 0; const a = parseFloat(prev.acrescimo_manual) || 0; return { ...prev, valor_total: total.toFixed(2).toString(), valor_final: Math.max(0, total - d + a).toFixed(2).toString() }; }); }
+  }, [formData.tipo_servico, formData.medico_id, formData.procedimento_id, formData.exames_ids, formData.categoria_preco_id, medicos, procedimentos, exames, tabelaPrecos, categorias, buscarPrecoConsulta]);
   
   const handleChange = (field, value) => {
     console.log(`📝 Campo alterado: ${field} = ${value}`);
