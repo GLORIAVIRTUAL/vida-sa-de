@@ -525,13 +525,13 @@ export default function Relatorios() {
       if (os.agendamento_id) agendamentoIdsComOS.add(os.agendamento_id);
     });
 
-    // Para agendamentos com status "Pago" que não têm vínculo direto,
-    // construir Set de paciente_ids que possuem OS para verificação extra
-    const osPorPaciente = {};
+    // Para verificação extra, construir mapa de OS por paciente+data
+    const osPorPacienteData = {};
     ordensServico.forEach((os) => {
-      if (os.paciente_id) {
-        if (!osPorPaciente[os.paciente_id]) osPorPaciente[os.paciente_id] = [];
-        osPorPaciente[os.paciente_id].push(os);
+      if (os.paciente_id && os.data_execucao) {
+        const chave = `${os.paciente_id}_${os.data_execucao}`;
+        if (!osPorPacienteData[chave]) osPorPacienteData[chave] = [];
+        osPorPacienteData[chave].push(os);
       }
     });
 
@@ -539,15 +539,10 @@ export default function Relatorios() {
       // 1. Verificação direta pelo agendamento_id (mais confiável)
       if (agendamentoIdsComOS.has(ag.id)) return true;
 
-      // 2. Se o agendamento está como "Pago", buscar OS do mesmo paciente com data próxima
-      if (ag.status === 'Pago' && ag.paciente_id && osPorPaciente[ag.paciente_id]) {
-        return osPorPaciente[ag.paciente_id].some((os) => {
-          const dataAg = ag.data_agendamento || '';
-          const dataOS = os.data_execucao || '';
-          if (!dataAg || !dataOS) return false;
-          const diffDias = Math.abs((new Date(`${dataAg}T00:00:00`) - new Date(`${dataOS}T00:00:00`)) / 86400000);
-          return diffDias <= 2;
-        });
+      // 2. Buscar OS do mesmo paciente na mesma data (match exato)
+      if (ag.paciente_id && ag.data_agendamento) {
+        const chaveExata = `${ag.paciente_id}_${ag.data_agendamento}`;
+        if (osPorPacienteData[chaveExata] && osPorPacienteData[chaveExata].length > 0) return true;
       }
 
       return false;
