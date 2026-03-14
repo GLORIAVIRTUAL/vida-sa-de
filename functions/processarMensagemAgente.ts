@@ -1049,142 +1049,43 @@ O cliente está ESCOLHENDO/RESPONDENDO. Ele disse: "${messageText}"
           }
 
         const disponibilidadesEncontradas = [];
-        const diasAfrente = 15;
-        const diasSemanaMap = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
+        const diasAfrente = 30;
+        const _hojeI = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
 
-        // SEMPRE mostrar TODOS os médicos da especialidade escolhida (sem limite)
-        const limitemedicos = medicosParaBuscar.length;
-
-        // CORREÇÃO FUSO HORÁRIO: Usar UTC para gerar datas consistentes
-        const hojeUTC = new Date();
-        const offsetBrasil = -3 * 60; // UTC-3
-        const agoraBrasil = new Date(hojeUTC.getTime() + (offsetBrasil + hojeUTC.getTimezoneOffset()) * 60000);
-
-        for (const medico of medicosParaBuscar.slice(0, limitemedicos)) {
-          const horariosAtendimento = medico.horarios_atendimento || [];
-          if (horariosAtendimento.length === 0) continue;
-
+        for (const medico of medicosParaBuscar) {
           const disponibilidadesMedico = [];
-
           for (let i = 0; i < diasAfrente; i++) {
-            // CORREÇÃO: Usar data baseada no fuso de Brasil (UTC-3) para evitar erros de dia da semana
-            const dataConsulta = new Date(agoraBrasil);
-            dataConsulta.setDate(dataConsulta.getDate() + i);
-            
-            const ano = dataConsulta.getFullYear();
-            const mes = String(dataConsulta.getMonth() + 1).padStart(2, '0');
-            const dia = String(dataConsulta.getDate()).padStart(2, '0');
-            const dataFormatada = `${ano}-${mes}-${dia}`;
-            const diaSemana = dataConsulta.getDay();
-
-            // Verificar se há horários com data específica para este dia
-            const horariosDataEspecifica = horariosAtendimento.filter(h => h.data_especifica === dataFormatada);
-            
-            // Verificar se a data está BLOQUEADA (feriado/clínica fechada)
-            const dataBloqueada = horariosDataEspecifica.some(h => h.bloqueado === true);
-            if (dataBloqueada) continue; // Pular dia bloqueado
-            
-            // Se houver horários com data específica, usar eles; senão, usar horários recorrentes
-            // IMPORTANTE: converter dia_semana para inteiro pois pode vir como float (3.0)
-            // Também verificar recorrência do horário
-            const horariosDoDia = horariosDataEspecifica.length > 0 
-              ? horariosDataEspecifica.filter(h => !h.bloqueado)
-              : horariosAtendimento.filter(h => {
-                  if (h.bloqueado) return false;
-                  if (h.data_especifica) return false;
-                  if (Math.floor(h.dia_semana) !== diaSemana) return false;
-                  
-                  // Verificar recorrência
-                  const recorrencia = h.recorrencia || 'Toda Semana';
-                  if (recorrencia === 'Toda Semana') return true;
-                  if (recorrencia === 'Apenas uma vez') return false;
-                  
-                  // Calcular semana do mês
-                  const primeiroDiaMes = new Date(dataConsulta.getFullYear(), dataConsulta.getMonth(), 1);
-                  const semanaMes = Math.ceil((dataConsulta.getDate() + primeiroDiaMes.getDay()) / 7);
-                  
-                  if (recorrencia === '1ª e 3ª Semana do Mês') return semanaMes === 1 || semanaMes === 3;
-                  if (recorrencia === '2ª e 4ª Semana do Mês') return semanaMes === 2 || semanaMes === 4;
-                  if (recorrencia === 'Apenas 1ª Semana do Mês') return semanaMes === 1;
-                  if (recorrencia === 'Apenas 2ª Semana do Mês') return semanaMes === 2;
-                  if (recorrencia === 'Apenas 3ª Semana do Mês') return semanaMes === 3;
-                  if (recorrencia === 'Apenas 4ª Semana do Mês') return semanaMes === 4;
-                  return true;
-                });
-
-            if (horariosDoDia.length === 0) continue;
-
-                    let agendamentosExistentes = [];
-            try { const _agEx = await Promise.race([base44.asServiceRole.entities.Agendamento.filter({medico_id:medico.id,data_agendamento:dataFormatada}),new Promise((_,r)=>setTimeout(()=>r(new Error('Timeout')),2000))]); agendamentosExistentes = _agEx.filter(a => a.status !== 'Cancelado'); } catch(e){}
-            const horariosOcupados=agendamentosExistentes.map(ag=>ag.horario);const horariosDisponiveis=[];const tempoConsulta=medico.tempo_consulta_minutos||30;
-            for(const periodo of horariosDoDia){const [ih,im]=periodo.horario_inicio.split(':').map(Number);const [fh,fm]=periodo.horario_fim.split(':').map(Number);for(let m=ih*60+im;m<fh*60+fm;m+=tempoConsulta){const hs=`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;const hdt=new Date(`${dataFormatada}T${hs}:00`);if(!(dataConsulta.toDateString()===new Date().toDateString()&&hdt<new Date())&&!horariosOcupados.includes(hs))horariosDisponiveis.push(hs);}}
-
-            if (horariosDisponiveis.length > 0) {
-              disponibilidadesMedico.push({
-                data: dataFormatada,
-                data_formatada: dataConsulta.toLocaleDateString('pt-BR', { 
-                  weekday: 'long', 
-                  day: '2-digit', 
-                  month: '2-digit'
-                }),
-                horarios: horariosDisponiveis.sort().slice(0, 5)
-              });
-
-              if (disponibilidadesMedico.length >= 5) break;
-            }
+            const dc = new Date(); dc.setDate(dc.getDate()+i);
+            const df = dc.toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+            try {
+              const slotRes = await Promise.race([base44.asServiceRole.functions.invoke('getAvailableSlots',{medico_id:medico.id,data:df}),new Promise((_,r)=>setTimeout(()=>r(new Error('T')),3000))]);
+              const slots = slotRes?.data?.available_slots || [];
+              // Filtrar horários passados se for hoje
+              const slotsValidos = df===_hojeI ? slots.filter(h=>{const[hh,mm]=h.split(':').map(Number);const agora=new Date();const slotDate=new Date();slotDate.setHours(hh,mm,0,0);return slotDate>agora;}) : slots;
+              if(slotsValidos.length>0){
+                disponibilidadesMedico.push({data:df,data_formatada:dc.toLocaleDateString('pt-BR',{timeZone:'America/Sao_Paulo',weekday:'long',day:'2-digit',month:'2-digit'}),horarios:slotsValidos.slice(0,5)});
+                if(disponibilidadesMedico.length>=5) break;
+              }
+            } catch(e){ console.warn('⚠️ Slot err:',e.message); }
           }
-
-          if (disponibilidadesMedico.length > 0) {
-            disponibilidadesEncontradas.push({
-              medico_id: medico.id,
-              medico_nome: medico.nome,
-              especialidade: medico.especialidade,
-              disponibilidades: disponibilidadesMedico
-            });
+          if(disponibilidadesMedico.length>0){
+            disponibilidadesEncontradas.push({medico_id:medico.id,medico_nome:medico.nome,especialidade:medico.especialidade,disponibilidades:disponibilidadesMedico});
           }
         }
 
         if (disponibilidadesEncontradas.length > 0) {
-        const _am=new Date(agoraBrasil);_am.setDate(_am.getDate()+1);const _amI=`${_am.getFullYear()}-${String(_am.getMonth()+1).padStart(2,'0')}-${String(_am.getDate()).padStart(2,'0')}`;
-        const _hojeI = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+        const _amD=new Date();_amD.setDate(_amD.getDate()+1);const _amI=_amD.toLocaleDateString('en-CA',{timeZone:'America/Sao_Paulo'});
         infoDisponibilidade = `\n\n📅 DISPONIBILIDADES ENCONTRADAS:\n🚨HOJE=${_hojeI} AMANHÃ=${_amI}. Se perguntam "amanhã?" e ${_amI} NÃO está abaixo→"NÃO há amanhã, próximo é [1º abaixo]".\n`;
         for(const medico of disponibilidadesEncontradas){infoDisponibilidade+=`\n👨‍⚕️ *${medico.medico_nome}* (${medico.especialidade}) [ID: ${medico.medico_id}]\n`;for(const d of medico.disponibilidades.slice(0,3)){if(!d.horarios?.length)continue;const mn=d.horarios.find(h=>parseInt(h.split(':')[0])<12);const td=d.horarios.find(h=>parseInt(h.split(':')[0])>=12);const ts=[mn?`Manhã: ${mn}`:null,td?`Tarde: ${td}`:null].filter(Boolean).join(' | ');infoDisponibilidade+=`   📅 ${d.data_formatada}: ${ts}\n`;}}
           infoDisponibilidade+=disponibilidadesEncontradas.length>1?'\n⚠️ Apresente médicos e PRÓXIMO horário de cada turno. Pergunte qual prefere.':'\n⚠️ Apresente PRÓXIMO horário de cada turno. Pergunte qual prefere.';
           infoDisponibilidade+='\n⚠️ Para confirmar: nome completo e data nascimento.';
           console.log('✅ Disponibilidades:', disponibilidadesEncontradas.length, 'médicos');
         } else if (medicosParaBuscar.length > 0) {
-          console.log('⚠️ Buscando horários além dos 15 dias iniciais (até 60 dias)...');
-          const disponibilidadesEstendidas = [];
-          for (const medico of medicosParaBuscar.slice(0, 5)) {
-            const horariosAtend = medico.horarios_atendimento || [];
-            if (!horariosAtend.length) continue;
-            let pDisp = null;
-            for (let i = 0; i < 60 && !pDisp; i++) {
-              const dc = new Date(); dc.setHours(0,0,0,0); dc.setDate(dc.getDate()+i);
-              const df = dc.toISOString().split('T')[0]; const ds = dc.getDay();
-              if (horariosAtend.some(h => h.data_especifica === df && h.bloqueado)) continue;
-              const hdd = horariosAtend.filter(h => { if(h.bloqueado) return false; if(h.data_especifica===df) return true; if(h.data_especifica) return false; if(Math.floor(h.dia_semana)!==ds) return false; const r=h.recorrencia||'Toda Semana'; if(r==='Toda Semana') return true; const pm=new Date(dc.getFullYear(),dc.getMonth(),1); const sm=Math.ceil((dc.getDate()+pm.getDay())/7); if(r==='1ª e 3ª Semana do Mês') return sm===1||sm===3; if(r==='2ª e 4ª Semana do Mês') return sm===2||sm===4; if(r.includes('1ª')) return sm===1; if(r.includes('2ª')) return sm===2; if(r.includes('3ª')) return sm===3; if(r.includes('4ª')) return sm===4; return false; });
-              if(!hdd.length) continue;
-              let agEx=[]; try { const _agEx = await base44.asServiceRole.entities.Agendamento.filter({medico_id:medico.id, data_agendamento:df}); agEx = _agEx.filter(a => a.status !== 'Cancelado'); } catch(e){}
-              const occ = agEx.map(a=>a.horario); const tc = medico.tempo_consulta_minutos||30;
-              for(const p of hdd){ const [ih,im]=p.horario_inicio.split(':').map(Number); const [fh,fm]=p.horario_fim.split(':').map(Number); for(let m=ih*60+im; m<fh*60+fm; m+=tc){ const hs=`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`; if(new Date(`${df}T${hs}:00`)>new Date() && !occ.includes(hs)){ pDisp={data:df,data_formatada:dc.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit'}),horario:hs}; break; } } if(pDisp)break; }
-            }
-            if(pDisp) disponibilidadesEstendidas.push({medico_id:medico.id,medico_nome:medico.nome,especialidade:medico.especialidade,primeira_disponibilidade:pDisp});
-          }
-          if (disponibilidadesEstendidas.length > 0) {
-            infoDisponibilidade = '\n\n📅 DISPONIBILIDADES ENCONTRADAS (próximos 60 dias):\n';
-            for (const m of disponibilidadesEstendidas) { infoDisponibilidade += `\n👨‍⚕️ ${m.medico_nome} (${m.especialidade}) [ID: ${m.medico_id}]\n   • Primeiro horário: ${m.primeira_disponibilidade.data_formatada} às ${m.primeira_disponibilidade.horario}\n`; }
-            infoDisponibilidade += '\n⚠️ Para confirmar agendamento, preciso: nome completo e data de nascimento.';
-          } else {
-            const diasMap=["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
-            let infoM=''; medicosParaBuscar.slice(0,3).forEach(m=>{ const h=m.horarios_atendimento||[]; if(h.length) infoM+=`\n   - ${m.nome}: ${[...new Set(h.map(x=>diasMap[Math.floor(x.dia_semana)]))].join(', ')}`; });
-            infoDisponibilidade = `\n\n⚠️ AGENDA LOTADA: Profissionais de ${especialidadeDetectada} com todos horários ocupados (60 dias).${infoM}\nSugira ligar 51 3661-5991 para lista de espera.`;
-          }
+          infoDisponibilidade = `\n\n⚠️ AGENDA LOTADA: Profissionais de ${especialidadeDetectada||'esta especialidade'} com todos horários ocupados nos próximos 30 dias.\nSugira ligar 51 3661-5991 para lista de espera.`;
         } else if (medicosParaBuscar.length === 0 && especialidadeDetectada) {
           infoDisponibilidade = `\n\n❌ ESPECIALIDADE NÃO DISPONÍVEL: "${especialidadeDetectada}"\nNão temos profissionais de ${especialidadeDetectada} cadastrados. Informe ao cliente e sugira ligar 51 3661-5991.`;
         } else {
-          let espCH=[]; medicosParaBuscar.forEach(m=>{ if(m.horarios_atendimento?.length) espCH.push(`${m.nome} (${m.especialidade})`); });
-          infoDisponibilidade = espCH.length > 0 ? `\n\n⚠️ Médicos sem horários disponíveis: ${espCH.join(', ')}` : '\n\n⚠️ Sem disponibilidades. Sugira ligar 51 3661-5991.';
+          infoDisponibilidade = '\n\n⚠️ Sem disponibilidades. Sugira ligar 51 3661-5991.';
         }
       } catch (e) {
         console.error('⚠️ Erro ao buscar disponibilidades:', e.message);
