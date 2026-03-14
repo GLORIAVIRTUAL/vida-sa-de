@@ -1702,7 +1702,7 @@ Retorne JSON.`;
     
 
     const _tcm=(messageText+' '+(historicoConversa||'')).toLowerCase();
-    const motivoIdentificado=_tcm.includes('cancelar')||_tcm.includes('desmarcar')?'Cancelamento':_tcm.includes('resultado')||_tcm.includes('laudo')?'Resultado de Exames':_tcm.includes('orçamento')||_tcm.includes('orcamento')||_tcm.includes('quanto custa')?'Orçamento':_tcm.includes('cartão')||_tcm.includes('mais vida')?'Cartão Mais Vida':_tcm.includes('turma')||_tcm.includes('hidrogin')||_tcm.includes('pilates')?'Turmas':_tcm.includes('procedimento')?'Procedimentos':_tcm.includes('agendar')||_tcm.includes('marcar')||_tcm.includes('consulta')?'Agendamento':null;
+    const motivoIdentificado=_tcm.includes('cancelar')||_tcm.includes('desmarcar')?'Cancelamento':_tcm.includes('resultado')||_tcm.includes('laudo')?'Resultado de Exames':_tcm.includes('orçamento')||_tcm.includes('orcamento')||_tcm.includes('quanto custa')?'Orçamento':_tcm.includes('cartão')||_tcm.includes('mais vida')?'Cartão Mais Vida':_tcm.includes('turma')||_tcm.includes('hidrogin')||_tcm.includes('pilates')||_tcm.includes('natac')||_tcm.includes('nataç')?'Turmas':_tcm.includes('procedimento')?'Procedimentos':_tcm.includes('agendar')||_tcm.includes('marcar')||_tcm.includes('consulta')?'Agendamento':null;
 
     // Salvar conversa no histórico (user + assistant juntos para evitar duplicação)
     try {
@@ -1804,6 +1804,12 @@ Retorne JSON.`;
         // Adicionar motivo se identificado
         if (motivoIdentificado) {
           novoContatoData.interesses = [motivoIdentificado];
+        }
+
+        // TURMAS: Se o cliente perguntou sobre pilates/hidroginástica/natação, criar já com status "Turmas"
+        if (motivoIdentificado === 'Turmas') {
+          novoContatoData.status = 'Turmas';
+          console.log('🏊 Novo contato criado no pipeline Turmas');
         }
 
         await base44.asServiceRole.entities.Contato.create(novoContatoData);
