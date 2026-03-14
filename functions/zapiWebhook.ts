@@ -426,10 +426,13 @@ async function processarMensagemRecebida(base44, payload) {
                         conversa_finalizada: false
                     });
                     
-                    console.log(`⏳ Mensagem adicionada ao buffer (${mensagensPendentes.length} pendentes). meuTimestamp=${meuTimestamp}. Aguardando 5s...`);
+                    // Se tem mídia, esperar mais tempo para dar chance do cliente digitar texto junto
+                    const temMidiaNoBuffer = mensagensPendentes.some(m => m.mediaType && m.mediaType !== 'text');
+                    const tempoDebounce = temMidiaNoBuffer ? 6000 : 3000;
+                    console.log(`⏳ Mensagem adicionada ao buffer (${mensagensPendentes.length} pendentes). meuTimestamp=${meuTimestamp}. Aguardando ${tempoDebounce/1000}s...${temMidiaNoBuffer ? ' (mídia detectada, debounce estendido)' : ''}`);
                     
-                    // Esperar 3 segundos para acumular mais mensagens
-                    await new Promise(resolve => setTimeout(resolve, 3000));
+                    // Esperar para acumular mais mensagens (6s com mídia, 3s sem)
+                    await new Promise(resolve => setTimeout(resolve, tempoDebounce));
                     
                     // Recarregar contato para ver se mais mensagens chegaram
                     let contatoAtualizado = null;
