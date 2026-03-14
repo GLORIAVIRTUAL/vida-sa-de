@@ -1779,6 +1779,12 @@ Retorne JSON.`;
           }
         }
 
+        // TURMAS: Se o cliente perguntou sobre pilates/hidroginástica/natação, mover para pipeline "Turmas"
+        if (motivoIdentificado === 'Turmas') {
+          updateData.status = 'Turmas';
+          console.log('🏊 Contato movido para pipeline Turmas');
+        }
+
         await base44.asServiceRole.entities.Contato.update(contato.id, updateData);
         console.log('✅ Contato atualizado:', contato.id.substring(0, 8));
       } else {
