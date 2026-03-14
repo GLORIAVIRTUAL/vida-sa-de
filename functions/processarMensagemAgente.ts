@@ -1665,28 +1665,12 @@ Retorne JSON.`;
         let cleanMessageText = messageText || '(sem texto)';
         if (mediaUrl) cleanMessageText = cleanMessageText.replace(mediaUrl, '').trim();
         let userContent = [{ type: 'text', text: cleanMessageText || '(sem texto)' }];
-        let forcarGpt4o = false;
         if (mediaUrl && mediaType === 'image') {
-          console.log('📷 Extraindo texto da imagem via GPT-4o Vision...');
-          let txtImg = null;
-          let ocrValido = false;
-          try {
-            const vR = await Promise.race([fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{'Authorization':`Bearer ${Deno.env.get('OPENAI_API_KEY')}`,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-4o-mini',messages:[{role:'system',content:'Você é um motor de OCR. Sua única tarefa é transcrever fielmente o texto visível da imagem, sem resumir e sem responder perguntas.'},{role:'user',content:[{type:'text',text:'Transcreva TODO o texto visível desta imagem, linha por linha. Inclua nomes, exames, datas, CRM e cabeçalhos. NÃO interprete. Se algo estiver ilegível, escreva [ilegível].'},{type:'image_url',image_url:{url:mediaUrl,detail:'low'}}]}],max_tokens:1500,temperature:0})}),new Promise((_,r)=>setTimeout(()=>r(new Error('Timeout')),15000))]);
-            if(vR.ok){
-              const vD=await vR.json();
-              txtImg=vD.choices?.[0]?.message?.content||null;
-              console.log('✅ Vision OCR:',(txtImg||'').substring(0,200));
-              ocrValido=!!(txtImg&&txtImg.length>20&&!/i'?m sorry|cannot assist|can't assist|desculpe|não posso ajudar|nao posso ajudar/i.test(txtImg));
-            } else console.warn('⚠️ Vision erro:',vR.status);
-          } catch(e){console.warn('⚠️ Vision:',e.message);}
-          if(ocrValido){
-            userContent[0].text+=`\n\n🚨 CONTEÚDO DA IMAGEM 🚨\n${txtImg}\n\n🚨 REGRAS: 1.LISTE APENAS exames acima. 2.PROIBIDO inventar. 3.Cruze com tabela. 4.Calcule TOTAL Particular E Cartão. 5.SE ALGUM EXAME NÃO ESTIVER NO TEXTO, NÃO INCLUA. 6."Doppler" NÃO é exame separado! É complemento (ex: "Ecocardiograma bidimensional + Doppler" = 1 exame "Ecocardiograma com Doppler"). NUNCA liste Doppler como item separado.`;
-          } else {
-            console.warn('⚠️ OCR inválido/recusado - usando análise direta da imagem');
-            userContent.push({type:'image_url',image_url:{url:mediaUrl,detail:'low'}});
-            userContent[0].text+=`\n\n🚨 LEIA A IMAGEM DIRETAMENTE. Liste TODOS os exames escritos nela, exatamente como aparecem. PROIBIDO inventar, resumir ou completar com exames não visíveis. Se não conseguir ler algum item, diga que a imagem precisa estar mais nítida.\n⚠️ "Doppler" NÃO é exame separado! É complemento (ex: "Ecocardiograma + Doppler" = 1 exame). NUNCA liste Doppler como item separado.`;
-            forcarGpt4o=true;
-          }
+          // OTIMIZADO: Enviar imagem DIRETAMENTE ao LLM principal (1 chamada ao invés de 2)
+          // gpt-4o-mini suporta vision - elimina etapa OCR separada que levava 10-15s extras
+          console.log('📷 Imagem será analisada diretamente pelo LLM principal (sem OCR separado)');
+          userContent.push({type:'image_url',image_url:{url:mediaUrl,detail:'low'}});
+          userContent[0].text+=`\n\n🚨 ANALISE A IMAGEM ANEXADA. Leia TODO o texto visível (nomes de exames, médico, CRM, datas). LISTE APENAS os exames que aparecem na imagem. PROIBIDO inventar. Cruze com a tabela de preços. Calcule TOTAL Particular E Cartão Mais Vida. Se não conseguir ler, peça foto mais nítida.\n⚠️ "Doppler" NÃO é exame separado! É complemento (ex: "Ecocardiograma + Doppler" = 1 exame "Ecocardiograma com Doppler"). NUNCA liste Doppler como item separado.`;
         } else if (mediaUrl && mediaType === 'document') {
           try {
             const eR = await base44.asServiceRole.functions.invoke('extractPdfText', { fileUrl: mediaUrl });
@@ -1695,14 +1679,15 @@ Retorne JSON.`;
           } catch(e){userContent[0].text+=`\n\n⚠️ PDF ilegível. Peça foto nítida.`;}
         }
         messages.push({ role: 'user', content: userContent });
-        const body = { model: forcarGpt4o?'gpt-4o':modeloLLM, messages, max_tokens: 1500, temperature: config.temperatura || 0.7 };
+        // Para imagens, usar gpt-4o-mini com vision (rápido e suporta imagem)
+        const body = { model: modeloLLM, messages, max_tokens: 1000, temperature: config.temperatura || 0.7 };
         const openaiResp = await Promise.race([
           fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
             body: JSON.stringify(body)
           }),
-          new Promise((_, r) => setTimeout(() => r(new Error('Timeout OpenAI 70s')), 70000))
+          new Promise((_, r) => setTimeout(() => r(new Error('Timeout OpenAI 45s')), 45000))
         ]);
         if (openaiResp.ok) {
           const data = await openaiResp.json();
