@@ -1766,7 +1766,7 @@ Retorne JSON.`;
           let txtImg = null;
           let ocrValido = false;
           try {
-            const vR = await Promise.race([fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{'Authorization':`Bearer ${Deno.env.get('OPENAI_API_KEY')}`,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-4o',messages:[{role:'system',content:'Você é um motor de OCR. Sua única tarefa é transcrever fielmente o texto visível da imagem, sem resumir e sem responder perguntas.'},{role:'user',content:[{type:'text',text:'Transcreva TODO o texto visível desta imagem, linha por linha. Inclua nomes, exames, datas, CRM e cabeçalhos. NÃO interprete. Se algo estiver ilegível, escreva [ilegível].'},{type:'image_url',image_url:{url:mediaUrl,detail:'high'}}]}],max_tokens:2000,temperature:0})}),new Promise((_,r)=>setTimeout(()=>r(new Error('Timeout')),30000))]);
+            const vR = await Promise.race([fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{'Authorization':`Bearer ${Deno.env.get('OPENAI_API_KEY')}`,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-4o-mini',messages:[{role:'system',content:'Você é um motor de OCR. Sua única tarefa é transcrever fielmente o texto visível da imagem, sem resumir e sem responder perguntas.'},{role:'user',content:[{type:'text',text:'Transcreva TODO o texto visível desta imagem, linha por linha. Inclua nomes, exames, datas, CRM e cabeçalhos. NÃO interprete. Se algo estiver ilegível, escreva [ilegível].'},{type:'image_url',image_url:{url:mediaUrl,detail:'low'}}]}],max_tokens:1500,temperature:0})}),new Promise((_,r)=>setTimeout(()=>r(new Error('Timeout')),15000))]);
             if(vR.ok){
               const vD=await vR.json();
               txtImg=vD.choices?.[0]?.message?.content||null;
@@ -1778,7 +1778,7 @@ Retorne JSON.`;
             userContent[0].text+=`\n\n🚨 CONTEÚDO DA IMAGEM 🚨\n${txtImg}\n\n🚨 REGRAS: 1.LISTE APENAS exames acima. 2.PROIBIDO inventar. 3.Cruze com tabela. 4.Calcule TOTAL Particular E Cartão. 5.SE ALGUM EXAME NÃO ESTIVER NO TEXTO, NÃO INCLUA.`;
           } else {
             console.warn('⚠️ OCR inválido/recusado - usando análise direta da imagem');
-            userContent.push({type:'image_url',image_url:{url:mediaUrl,detail:'high'}});
+            userContent.push({type:'image_url',image_url:{url:mediaUrl,detail:'low'}});
             userContent[0].text+=`\n\n🚨 LEIA A IMAGEM DIRETAMENTE. Liste TODOS os exames escritos nela, exatamente como aparecem. PROIBIDO inventar, resumir ou completar com exames não visíveis. Se não conseguir ler algum item, diga que a imagem precisa estar mais nítida.`;
             forcarGpt4o=true;
           }
