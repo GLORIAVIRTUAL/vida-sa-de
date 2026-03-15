@@ -510,6 +510,31 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
     }
   };
 
+  const toggleAlarmeSupervisor = async () => {
+    if (!contatoSelecionado) return;
+    try {
+      const novoValor = !(contatoSelecionado.dados_extras?.alarme_supervisor === true);
+      const dadosExtrasAtualizados = {
+        ...(contatoSelecionado.dados_extras || {}),
+        alarme_supervisor: novoValor,
+        alarme_supervisor_data: novoValor ? new Date().toISOString() : null
+      };
+
+      await base44.entities.Contato.update(contatoSelecionado.id, {
+        dados_extras: dadosExtrasAtualizados
+      });
+
+      setContatoSelecionado(prev => prev ? { ...prev, dados_extras: dadosExtrasAtualizados } : prev);
+      setContatos(prev => prev.map(contato =>
+        contato.id === contatoSelecionado.id
+          ? { ...contato, dados_extras: dadosExtrasAtualizados }
+          : contato
+      ));
+    } catch (error) {
+      alert('Erro ao ativar alarme: ' + error.message);
+    }
+  };
+
   const getMensagens = (contato) => {
     if (!contato) return [];
     if (contato.historico_mensagens?.length > 0) return contato.historico_mensagens;
@@ -622,6 +647,7 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
   }
 
   const mensagens = getMensagens(contatoSelecionado);
+  const alarmeAtivo = contatoSelecionado?.dados_extras?.alarme_supervisor === true;
 
   // Filtrar contatos
   const contatosFiltrados = contatos.filter(contato => {
@@ -712,15 +738,18 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
                       ? format(new Date(contato.ultima_interacao), 'dd/MM HH:mm', { locale: ptBR })
                       : '-';
                    const numMensagens = contato.historico_mensagens?.length || 0;
+                   const alarmeContatoAtivo = contato.dados_extras?.alarme_supervisor === true;
 
                    return (
                      <button
                        key={contato.id}
                        onClick={() => setContatoSelecionado(contato)}
                        className={`w-full text-left p-3 hover:bg-gray-50 transition border-l-4 ${
-                         contatoSelecionado?.id === contato.id 
-                           ? 'bg-blue-50 border-l-blue-600 border-blue-200' 
-                           : 'border-l-transparent'
+                         alarmeContatoAtivo
+                           ? 'bg-yellow-50 border-l-yellow-500 border-yellow-200 animate-pulse'
+                           : contatoSelecionado?.id === contato.id 
+                             ? 'bg-blue-50 border-l-blue-600 border-blue-200' 
+                             : 'border-l-transparent'
                        } ${contato.conversa_finalizada ? 'opacity-50' : ''}`}
                      >
                        <div className="flex items-center gap-2 mb-1">
@@ -731,6 +760,9 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
                          <p className="text-xs text-gray-500 truncate flex-1">{contato.telefone}</p>
                          {numMensagens > 0 && (
                            <Badge className="bg-blue-100 text-blue-700 text-[9px] px-1 py-0">{numMensagens}</Badge>
+                         )}
+                         {alarmeContatoAtivo && (
+                           <Badge className="bg-yellow-200 text-yellow-900 text-[9px] px-1 py-0 animate-pulse">Alarme</Badge>
                          )}
                          {/* Ícones de status do atendimento */}
                          {contato.atendimento_humano && !contato.conversa_finalizada && contato.atendente_atual ? (
@@ -759,7 +791,7 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
         <Card className="h-[500px] flex flex-col">
           {contatoSelecionado ? (
             <>
-              <CardHeader className="border-b bg-gradient-to-r from-blue-50 to-sky-50 py-3">
+              <CardHeader className={`border-b py-3 ${alarmeAtivo ? 'bg-gradient-to-r from-yellow-100 to-amber-100 animate-pulse' : 'bg-gradient-to-r from-blue-50 to-sky-50'}`}>
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-semibold">{contatoSelecionado.nome || 'Cliente'}</p>
@@ -795,6 +827,15 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
                       <User className="w-3 h-3 mr-1" />
                       {modoHumano ? "Humano Ativo" : "Assumir"}
                     </Button>
+                    <Button
+                      variant={alarmeAtivo ? "default" : "outline"}
+                      size="sm"
+                      onClick={toggleAlarmeSupervisor}
+                      className={alarmeAtivo ? "bg-yellow-500 hover:bg-yellow-600 text-slate-900" : "text-yellow-700 border-yellow-300 hover:bg-yellow-50"}
+                    >
+                      <Bell className="w-3 h-3 mr-1" />
+                      {alarmeAtivo ? "Alarme Ativo" : "Alarme"}
+                    </Button>
                     <Button 
                       variant="outline" 
                       size="sm"
@@ -820,6 +861,12 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
                       )}
                       {' '}- A IA está pausada. Clique em "Assumir" novamente para reativar a Glória.
                     </span>
+                  </div>
+                )}
+                {alarmeAtivo && (
+                  <div className="mt-2 p-2 bg-yellow-100 border border-yellow-300 rounded-lg text-xs text-yellow-900 flex items-center gap-2 animate-pulse">
+                    <Bell className="w-4 h-4" />
+                    <span><strong>Alarme ativo:</strong> este cliente está destacado para o supervisor.</span>
                   </div>
                 )}
               </CardHeader>
