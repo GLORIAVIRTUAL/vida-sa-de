@@ -1216,9 +1216,15 @@ Retorne JSON.`;
         const _nV=extracao.nome_paciente&&extracao.nome_paciente.trim().split(/\s+/).length>=2&&extracao.nome_paciente.trim().length>=5;
         const _dV=extracao.data_nascimento&&/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(extracao.data_nascimento.trim());
         if(!_nV||!_dV){console.log('⚠️ Dados paciente insuficientes:',{nome:extracao.nome_paciente,nV:_nV,dn:extracao.data_nascimento,dV:_dV});extracao.dados_completos=false;if(!_nV&&!dadosFaltantes.includes('nome completo'))dadosFaltantes.push('nome completo');if(!_dV&&!dadosFaltantes.includes('data de nascimento'))dadosFaltantes.push('data de nascimento');}
-        if (_nV && _dV && (extracao.medico_nome || extracao.medico_id) && extracao.data_agendamento && extracao.horario) {
+        const mensagemEhPerguntaNova=/\?|quanto custa|qual valor|pre[cç]o|valor da consulta|valor do exame|onde fica|endere[cç]o|telefone|conv[eê]nio|convenio/i.test(messageText||'');
+        const assistentePediuConfirmacaoHorario=/você gostaria de agendar esse horário|gostaria de agendar esse horário|quer agendar esse horário|posso confirmar esse horário/i.test(ultimaMsgAssistenteFull||'');
+        const assistentePediuDadosParaFinalizar=/nome completo|data de nascimento|dd\/mm\/aaaa|para finalizar|para confirmar|para prosseguir/i.test(ultimaMsgAssistenteFull||'');
+        const clienteConfirmouOuEscolheu=/^(sim|s|ok|quero|pode|claro|isso|esse|essa|confirmo|pode ser|vamos|fechado|certo|correto)$/i.test((messageText||'').trim())||/\d{1,2}[:h]\d{2}|\d{1,2}\/\d{1,2}|segunda|ter[cç]a|quarta|quinta|sexta|s[áa]bado|amanh[ãa]|hoje/i.test(messageText||'');
+        const clienteEnviouDadosPessoaisNaMensagem=/\d{1,2}\/\d{1,2}\/\d{4}/.test(messageText||'')&&/[A-Za-zÀ-ÿ]{2,}.*\d{1,2}\/\d{1,2}\/\d{4}/.test(messageText||'');
+        const podeCriarAgendamentoAgora=!mensagemEhPerguntaNova&&((assistentePediuConfirmacaoHorario&&clienteConfirmouOuEscolheu)||(assistentePediuDadosParaFinalizar&&clienteEnviouDadosPessoaisNaMensagem));
+        if (_nV && _dV && (extracao.medico_nome || extracao.medico_id) && extracao.data_agendamento && extracao.horario && podeCriarAgendamentoAgora) {
           
-          console.log('✅ Todos os dados coletados, criando agendamento...');
+          console.log('✅ Todos os dados coletados e cliente confirmou, criando agendamento...');
           console.log('📋 Médico extraído:', extracao.medico_nome, '| ID:', extracao.medico_id);
           
           // Buscar médico - primeiro por ID se disponível, depois por nome (com timeout)
