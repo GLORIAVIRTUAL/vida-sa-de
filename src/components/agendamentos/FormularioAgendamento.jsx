@@ -1442,6 +1442,12 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
                                {(formData.tipo_servico === 'Retorno' || formData.tipo_servico === 'Consulta' || formData.tipo_servico === 'Procedimento') && (
                                    <div>
                                      <Label htmlFor="medico_id">{medicos.some(m => normalizeString(m.especialidade) === 'ODONTOLOGIA') && formData.tipo_servico !== 'Procedimento' ? 'Especialidade *' : formData.tipo_servico === 'Procedimento' ? 'Médico (Opcional)' : 'Médico *'}</Label>
+                                     <Input
+                                       placeholder="Buscar médico ou especialidade..."
+                                       value={buscaMedico}
+                                       onChange={(e) => setBuscaMedico(e.target.value)}
+                                       className="mt-1"
+                                     />
                                      <Select name="medico_id" value={(() => {
                                          const mR = medicos.filter(m => normalizeString(m.nome).includes('RUBEN'));
                                          if (mR.length > 1 && mR.some(m => m.id === formData.medico_id)) return mR[0].id;
@@ -1449,23 +1455,15 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
                                          if (mM.length > 1 && mM.some(m => m.id === formData.medico_id)) return mM[0].id;
                                          return formData.medico_id;
                                        })()} onValueChange={(value) => handleChange('medico_id', value)}>
-                                       <SelectTrigger id="medico_id" className="mt-1"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                                       <SelectTrigger id="medico_id" className="mt-2"><SelectValue placeholder="Selecione..." /></SelectTrigger>
                                        <SelectContent>
-                                         {(() => {
-                                           const mO = medicos.filter(m => normalizeString(m.especialidade) === 'ODONTOLOGIA');
-                                           const mRu = medicos.filter(m => normalizeString(m.nome).includes('RUBEN'));
-                                           const mMa = medicos.filter(m => normalizeString(m.nome).includes('MARCO ANTONIO DELAZERI') || normalizeString(m.nome).includes('MARCO ANTÔNIO DELAZERI'));
-                                           const outros = medicos.filter(m => normalizeString(m.especialidade) !== 'ODONTOLOGIA' && !normalizeString(m.nome).includes('RUBEN') && !normalizeString(m.nome).includes('MARCO ANTONIO DELAZERI') && !normalizeString(m.nome).includes('MARCO ANTÔNIO DELAZERI'));
-                                           const r = [];
-                                           if (mO.length > 1) r.push(<SelectItem key="odonto-u" value={mO[0].id}>🦷 Odontologia (Agenda Unificada)</SelectItem>);
-                                           else mO.forEach(m => r.push(<SelectItem key={m.id} value={m.id}>Dr(a). {m.nome} - {m.especialidade}</SelectItem>));
-                                           if (mRu.length > 1) r.push(<SelectItem key="ruben-u" value={mRu[0].id}>🩺 Dr. Ruben Hurtado (Múltiplas Esp.)</SelectItem>);
-                                           else if (mRu.length === 1) r.push(<SelectItem key={mRu[0].id} value={mRu[0].id}>Dr(a). {mRu[0].nome} - {mRu[0].especialidade}</SelectItem>);
-                                           if (mMa.length > 1) r.push(<SelectItem key="marco-u" value={mMa[0].id}>🩺 Dr. Marco A. Delazeri (Múltiplas Esp.)</SelectItem>);
-                                           else if (mMa.length === 1) r.push(<SelectItem key={mMa[0].id} value={mMa[0].id}>Dr(a). {mMa[0].nome} - {mMa[0].especialidade}</SelectItem>);
-                                           outros.forEach(m => r.push(<SelectItem key={m.id} value={m.id}>Dr(a). {m.nome} - {m.especialidade}</SelectItem>));
-                                           return r;
-                                         })()}
+                                         {medicosFiltradosBusca.length === 0 ? (
+                                           <SelectItem value="none" disabled>Nenhum médico encontrado</SelectItem>
+                                         ) : (
+                                           medicosFiltradosBusca.map((medico) => (
+                                             <SelectItem key={medico.id} value={medico.id}>{medico.label}</SelectItem>
+                                           ))
+                                         )}
                                        </SelectContent>
                                      </Select>
                                    </div>
