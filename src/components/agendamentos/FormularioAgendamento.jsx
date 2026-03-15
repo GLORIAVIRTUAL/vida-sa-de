@@ -85,6 +85,7 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
 
   // Estado para busca de exames
   const [buscaExame, setBuscaExame] = useState('');
+  const [buscaMedico, setBuscaMedico] = useState('');
 
   // NOVO: Estados para múltiplas formas de pagamento
   const [pagamento1, setPagamento1] = useState({ forma: '', valor: '' });
@@ -235,6 +236,31 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
       e.tipo?.toLowerCase().includes(termo)
     );
   }, [exames, buscaExame]);
+
+  const medicosFiltradosBusca = useMemo(() => {
+    const medicosOdontologia = medicos.filter(m => normalizeString(m.especialidade) === 'ODONTOLOGIA');
+    const medicosRuben = medicos.filter(m => normalizeString(m.nome).includes('RUBEN'));
+    const medicosMarco = medicos.filter(m => normalizeString(m.nome).includes('MARCO ANTONIO DELAZERI') || normalizeString(m.nome).includes('MARCO ANTÔNIO DELAZERI'));
+    const outros = medicos.filter(m => normalizeString(m.especialidade) !== 'ODONTOLOGIA' && !normalizeString(m.nome).includes('RUBEN') && !normalizeString(m.nome).includes('MARCO ANTONIO DELAZERI') && !normalizeString(m.nome).includes('MARCO ANTÔNIO DELAZERI'));
+
+    const resultado = [];
+
+    if (medicosOdontologia.length > 1) resultado.push({ id: medicosOdontologia[0].id, label: '🦷 Odontologia (Agenda Unificada)' });
+    else medicosOdontologia.forEach(m => resultado.push({ id: m.id, label: `Dr(a). ${m.nome} - ${m.especialidade}` }));
+
+    if (medicosRuben.length > 1) resultado.push({ id: medicosRuben[0].id, label: '🩺 Dr. Ruben Hurtado (Múltiplas Esp.)' });
+    else if (medicosRuben.length === 1) resultado.push({ id: medicosRuben[0].id, label: `Dr(a). ${medicosRuben[0].nome} - ${medicosRuben[0].especialidade}` });
+
+    if (medicosMarco.length > 1) resultado.push({ id: medicosMarco[0].id, label: '🩺 Dr. Marco A. Delazeri (Múltiplas Esp.)' });
+    else if (medicosMarco.length === 1) resultado.push({ id: medicosMarco[0].id, label: `Dr(a). ${medicosMarco[0].nome} - ${medicosMarco[0].especialidade}` });
+
+    outros.forEach(m => resultado.push({ id: m.id, label: `Dr(a). ${m.nome} - ${m.especialidade}` }));
+
+    if (!buscaMedico.trim()) return resultado;
+
+    const termo = normalizeString(buscaMedico.trim());
+    return resultado.filter(medico => normalizeString(medico.label).includes(termo));
+  }, [medicos, buscaMedico]);
 
   // Helper: verificar se uma data está bloqueada (feriado) em QUALQUER médico
   const isDataBloqueada = useCallback((date) => {
