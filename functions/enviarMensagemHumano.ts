@@ -67,16 +67,14 @@ Deno.serve(async (req) => {
         };
         console.log('📄 Enviando DOCUMENTO via Z-API');
       } else if (messageType === 'audio' && mediaUrl) {
-        // Z-API usa send-audio para áudios normais ou send-ptv para mensagens de voz
         url = `https://api.z-api.io/instances/${instanceId}/token/${zapiToken}/send-audio`;
         body = {
           phone: numero,
           audio: mediaUrl,
-          waveform: true // Mostra como mensagem de voz
+          waveform: true
         };
         console.log('🎤 Enviando ÁUDIO via Z-API:', mediaUrl);
       } else {
-        // Texto simples
         url = `https://api.z-api.io/instances/${instanceId}/token/${zapiToken}/send-text`;
         body = {
           phone: numero,
@@ -88,18 +86,43 @@ Deno.serve(async (req) => {
       console.log('📤 URL:', url);
       console.log('📤 Body:', JSON.stringify(body));
 
-      const response = await fetch(url, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(body)
-      });
+      const enviarParaZapi = async (payload) => {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(payload)
+        });
+        const rawText = await response.text();
+        let parsed;
+        try {
+          parsed = JSON.parse(rawText);
+        } catch {
+          parsed = { raw: rawText };
+        }
+        return { response, parsed, rawText };
+      };
 
-      const result = await response.json();
-      console.log('📤 Z-API response:', result);
+      let tentativa = await enviarParaZapi(body);
+      console.log('📤 Z-API response status:', tentativa.response.status);
+      console.log('📤 Z-API response body:', tentativa.parsed);
+
+      if (!tentativa.response.ok && !messageType) {
+        console.warn('⚠️ Primeira tentativa falhou, reenviando texto sem identificação do atendente');
+        tentativa = await enviarParaZapi({
+          phone: numero,
+          message: messageText || ''
+        });
+        console.log('📤 Retry status:', tentativa.response.status);
+        console.log('📤 Retry body:', tentativa.parsed);
+      }
       
-      if (!response.ok) {
-        console.error('❌ Erro Z-API:', result);
-        return Response.json({ error: 'Erro ao enviar via Z-API', details: result }, { status: 400 });
+      if (!tentativa.response.ok) {
+        console.error('❌ Erro Z-API:', tentativa.parsed);
+        return Response.json({
+          error: 'Erro ao enviar via Z-API',
+          details: tentativa.parsed,
+          status: tentativa.response.status
+        }, { status: 400 });
       }
       console.log('✅ Mensagem enviada via Z-API com sucesso');
     } catch (error) {
