@@ -131,50 +131,54 @@ Deno.serve(async (req) => {
     }
 
     // Atualizar histórico do contato
+    let historicoSalvo = true;
     if (contatoId) {
-      const contatos = await base44.asServiceRole.entities.Contato.filter({ id: contatoId });
-      if (contatos.length > 0) {
-        const contato = contatos[0];
-        const historicoAtual = contato.historico_mensagens || [];
-        const timestamp = new Date().toISOString();
-        
-        // Salvar conteúdo da mensagem - incluir URL da mídia para exibição
-        let conteudoMensagem = '';
-        if (messageType === 'image' && mediaUrl) {
-          conteudoMensagem = `📷 Imagem: ${mediaUrl}`;
-        } else if (messageType === 'document' && mediaUrl) {
-          conteudoMensagem = `📄 ${fileName || 'Documento'}: ${mediaUrl}`;
-        } else if (messageType === 'audio' && mediaUrl) {
-          conteudoMensagem = `🎤 Áudio: ${mediaUrl}`;
-        } else {
-          conteudoMensagem = messageText || '';
-        }
-        
-        historicoAtual.push({
-          role: 'assistant',
-          content: `[👤 ${user.display_name || user.full_name || 'Recepção'}]: ${conteudoMensagem}`,
-          timestamp,
-          humano: true,
-          mediaType: messageType || 'text',
-          mediaUrl: mediaUrl || null
-        });
+      try {
+        const contatos = await base44.asServiceRole.entities.Contato.filter({ id: contatoId });
+        if (contatos.length > 0) {
+          const contato = contatos[0];
+          const historicoAtual = contato.historico_mensagens || [];
+          const timestamp = new Date().toISOString();
+          
+          // Salvar conteúdo da mensagem - incluir URL da mídia para exibição
+          let conteudoMensagem = '';
+          if (messageType === 'image' && mediaUrl) {
+            conteudoMensagem = `📷 Imagem: ${mediaUrl}`;
+          } else if (messageType === 'document' && mediaUrl) {
+            conteudoMensagem = `📄 ${fileName || 'Documento'}: ${mediaUrl}`;
+          } else if (messageType === 'audio' && mediaUrl) {
+            conteudoMensagem = `🎤 Áudio: ${mediaUrl}`;
+          } else {
+            conteudoMensagem = messageText || '';
+          }
+          
+          historicoAtual.push({
+            role: 'assistant',
+            content: `[👤 ${user.display_name || user.full_name || 'Recepção'}]: ${conteudoMensagem}`,
+            timestamp,
+            humano: true,
+            mediaType: messageType || 'text',
+            mediaUrl: mediaUrl || null
+          });
 
-        // Atualizar contato - incluindo quem está atendendo (ao enviar mensagem)
-        // Usar display_name se existir, senão full_name
-        const nomeAtendente = user.display_name || user.full_name || user.email || 'Atendente';
-        await base44.asServiceRole.entities.Contato.update(contatoId, {
-          historico_mensagens: historicoAtual.slice(-50),
-          ultima_resposta: conteudoMensagem,
-          ultima_interacao: timestamp,
-          total_mensagens: (contato.total_mensagens || 0) + 1,
-          atendimento_humano: true,
-          atendente_atual: nomeAtendente,
-          atendente_id: user.id
-        });
+          const nomeAtendente = user.display_name || user.full_name || user.email || 'Atendente';
+          await base44.asServiceRole.entities.Contato.update(contatoId, {
+            historico_mensagens: historicoAtual.slice(-50),
+            ultima_resposta: conteudoMensagem,
+            ultima_interacao: timestamp,
+            total_mensagens: (contato.total_mensagens || 0) + 1,
+            atendimento_humano: true,
+            atendente_atual: nomeAtendente,
+            atendente_id: user.id
+          });
+        }
+      } catch (historyError) {
+        historicoSalvo = false;
+        console.error('⚠️ Mensagem enviada, mas falhou ao salvar histórico:', historyError.message);
       }
     }
 
-    return Response.json({ success: true, message: 'Mensagem enviada' });
+    return Response.json({ success: true, message: 'Mensagem enviada', history_saved: historicoSalvo });
 
   } catch (error) {
     console.error('❌ Erro:', error);
