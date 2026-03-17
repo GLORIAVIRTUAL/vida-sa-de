@@ -16,7 +16,7 @@ import { format, startOfMonth, endOfMonth, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import ProtectedRoute from '../components/auth/ProtectedRoute';
-import { OrdemServico, Medico, CategoriaPreco, Paciente, Agendamento, Lancamento } from '@/entities/all';
+import { OrdemServico, Medico, CategoriaPreco, Agendamento, Lancamento } from '@/entities/all';
 import { filtrarLancamentosPorPeriodo, somarLancamentos } from '../components/financeiro/financeiroUtils';
 
 const CORES_GRAFICO = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
