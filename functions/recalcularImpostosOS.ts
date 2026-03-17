@@ -116,13 +116,13 @@ Deno.serve(async (req) => {
               percentual = repasseEspecifico.valor;
             }
           } else if (tipoRepasse === 'valor_fixo') {
-            repasseFixo = isParticular
-              ? (medico.valor_repasse_fixo || 0)
-              : (medico.valor_repasse_fixo_convenio || 0);
+            const fixoConvenio = medico.valor_repasse_fixo_convenio || 0;
+            const fixoParticular = medico.valor_repasse_fixo || 0;
+            repasseFixo = isParticular ? fixoParticular : (fixoConvenio || fixoParticular);
           } else {
-            percentual = isParticular
-              ? (medico.percentual_repasse || 0)
-              : (medico.percentual_repasse_convenio || medico.percentual_repasse || 0);
+            const percConvenio = medico.percentual_repasse_convenio || 0;
+            const percParticular = medico.percentual_repasse || 0;
+            percentual = isParticular ? percParticular : (percConvenio || percParticular);
           }
         }
 
