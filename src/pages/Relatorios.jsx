@@ -57,7 +57,7 @@ export default function Relatorios() {
       }
     } catch (e) {}
     return {
-      dataInicio: format(new Date(new Date().setFullYear(new Date().getFullYear() - 2)), 'yyyy-MM-dd'),
+      dataInicio: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
       dataFim: format(new Date(), 'yyyy-MM-dd'),
       medicoId: 'todos',
       categoriaNome: 'todos',
