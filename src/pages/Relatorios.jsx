@@ -1032,13 +1032,54 @@ export default function Relatorios() {
             </CardContent>
           </Card>
 
-          {/* Cards de Resumo */}
+          {/* Cards Financeiros (baseado em Lançamentos - igual Gestão Financeira) */}
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
+            <Card className="relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-20 h-20 transform translate-x-6 -translate-y-6 bg-green-500 rounded-full opacity-10" />
+              <CardContent className="p-4">
+                <p className="text-xs font-medium text-gray-500 mb-1">Receita (Entradas)</p>
+                <p className="text-2xl font-bold">{formatCurrency(estatisticasFinanceiras.entradas)}</p>
+              </CardContent>
+            </Card>
+            <Card className="relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-20 h-20 transform translate-x-6 -translate-y-6 bg-red-500 rounded-full opacity-10" />
+              <CardContent className="p-4">
+                <p className="text-xs font-medium text-gray-500 mb-1">Despesas (Saídas)</p>
+                <p className="text-2xl font-bold">{formatCurrency(estatisticasFinanceiras.saidas)}</p>
+              </CardContent>
+            </Card>
+            <Card className="relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-20 h-20 transform translate-x-6 -translate-y-6 bg-amber-500 rounded-full opacity-10" />
+              <CardContent className="p-4">
+                <p className="text-xs font-medium text-gray-500 mb-1">Impostos OS (10%)</p>
+                <p className="text-2xl font-bold">{formatCurrency(estatisticas.totalImposto)}</p>
+              </CardContent>
+            </Card>
+            <Card className="relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-20 h-20 transform translate-x-6 -translate-y-6 bg-emerald-500 rounded-full opacity-10" />
+              <CardContent className="p-4">
+                <p className="text-xs font-medium text-gray-500 mb-1">Lucro Líquido</p>
+                <p className={`text-2xl font-bold ${(estatisticasFinanceiras.saldo - estatisticas.totalImposto) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                  {formatCurrency(estatisticasFinanceiras.saldo - estatisticas.totalImposto)}
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-20 h-20 transform translate-x-6 -translate-y-6 bg-blue-500 rounded-full opacity-10" />
+              <CardContent className="p-4">
+                <p className="text-xs font-medium text-gray-500 mb-1">Ordens de Serviço</p>
+                <p className="text-2xl font-bold">{estatisticas.totalAtendimentos}</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Cards de Resumo OS (detalhamento das ordens de serviço) */}
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
             <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-emerald-100 text-sm">Total Vendido</p>
+                    <p className="text-emerald-100 text-sm">Total Vendido (OS)</p>
                     <p className="text-2xl font-bold">{formatCurrency(estatisticas.totalVendido)}</p>
                   </div>
                   <TrendingUp className="w-10 h-10 text-emerald-200" />
@@ -1074,7 +1115,7 @@ export default function Relatorios() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-blue-100 text-sm">Receita Clínica</p>
+                    <p className="text-blue-100 text-sm">Receita Clínica (OS)</p>
                     <p className="text-2xl font-bold">{formatCurrency(estatisticas.totalClinica)}</p>
                   </div>
                   <DollarSign className="w-10 h-10 text-blue-200" />
