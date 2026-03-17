@@ -95,7 +95,8 @@ export default function FormularioOS({
     valor_repasse_laboratorio: 0,
     valor_clinica: 0,
     cobrar_taxa: false,
-    pagamentos_detalhados: []
+    pagamentos_detalhados: [],
+    valor_imposto: 0
   });
   
   // Estados para múltiplas formas de pagamento
@@ -432,16 +433,31 @@ export default function FormularioOS({
         }
       }
 
+      // REGRA FISCAL: Para convênios, descontar 10% de imposto do valor bruto ANTES de calcular repasse
+      // Particular e Cartão Mais Vida NÃO descontam imposto
+      const valorFinalVenda = valorTotal - descontoAgendamento + acrescimoAgendamento;
+      const percentualImposto = isentoImposto ? 0 : 10;
+      const valorImposto = valorFinalVenda * (percentualImposto / 100);
+      const valorBaseRepasse = valorFinalVenda - valorImposto;
+
       if (repasseFixo > 0) {
-        // Se for valor fixo, usar diretamente
+        // Se for valor fixo, usar diretamente (não depende da base)
         repasseMedico = repasseFixo;
       } else if (percentual > 0) {
-        // Calcular repasse sobre o valor final da venda (com desconto/acréscimo)
-        const valorFinalVenda = valorTotal - descontoAgendamento + acrescimoAgendamento;
-        // O valor cadastrado é o valor líquido do repasse
-        repasseMedico = valorFinalVenda * (percentual / 100);
+        // Calcular repasse sobre a base APÓS imposto
+        repasseMedico = valorBaseRepasse * (percentual / 100);
       }
       }
+
+      // Variáveis de imposto para uso fora do bloco do médico
+      const categoriaNomeFiscal = categorias?.find(c => c.id === agendamento.categoria_preco_id)?.nome || '';
+      const categoriaNormFiscal = normalizeString(categoriaNomeFiscal);
+      const isParticularFiscal = categoriaNormFiscal === 'PARTICULAR';
+      const isCartaoMaisVidaFiscal = categoriaNormFiscal.includes('CARTAO') && categoriaNormFiscal.includes('MAIS') && categoriaNormFiscal.includes('VIDA');
+      const isentoImpostoFiscal = isParticularFiscal || isCartaoMaisVidaFiscal;
+      const valorFinalVendaFiscal = valorTotal - descontoAgendamento + acrescimoAgendamento;
+      const percentualImpostoFiscal = isentoImpostoFiscal ? 0 : 10;
+      const valorImpostoFiscal = valorFinalVendaFiscal * (percentualImpostoFiscal / 100);
 
       if (agendamento.tipo_servico === 'Exame' && agendamento.exames_ids && exames) {
       agendamento.exames_ids.forEach(exameId => {
@@ -457,11 +473,10 @@ export default function FormularioOS({
       });
     }
 
-    const valorClinica = valorTotal - repasseMedico - repasseLab;
-
     // Calcular valor final considerando desconto/acréscimo do agendamento
     const valorFinalCalculado = valorTotal - descontoAgendamento + acrescimoAgendamento;
-    const valorClinicaAjustado = valorFinalCalculado - repasseMedico - repasseLab;
+    // Valor clínica = valor final - imposto - repasse médico - repasse lab
+    const valorClinicaAjustado = valorFinalCalculado - valorImpostoFiscal - repasseMedico - repasseLab;
 
     setDados(prev => ({
       ...prev,
@@ -469,9 +484,10 @@ export default function FormularioOS({
       desconto: descontoAgendamento,
       valor_final: valorFinalCalculado,
       itens: itensOS,
+      valor_imposto: valorImpostoFiscal,
       valor_repasse_medico: repasseMedico,
       valor_repasse_laboratorio: repasseLab,
-      valor_clinica: valorClinicaAjustado > 0 ? valorClinicaAjustado : valorFinalCalculado - repasseMedico - repasseLab
+      valor_clinica: valorClinicaAjustado > 0 ? valorClinicaAjustado : 0
     }));
   }, [agendamento, medico, procedimento, procedimentos, exames, categorias, medicoSelecionadoId, medicos]);
 
