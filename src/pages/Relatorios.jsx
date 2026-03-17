@@ -17,7 +17,7 @@ import { ptBR } from 'date-fns/locale';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import ProtectedRoute from '../components/auth/ProtectedRoute';
 import { OrdemServico, Medico, CategoriaPreco, Agendamento, Lancamento } from '@/entities/all';
-import { filtrarLancamentosPorPeriodo, somarLancamentos } from '../components/financeiro/financeiroUtils';
+import { filtrarLancamentosPorPeriodo, somarLancamentos, excluirLancamentosDeOSCanceladas } from '../components/financeiro/financeiroUtils';
 
 const CORES_GRAFICO = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
 
@@ -104,8 +104,6 @@ export default function Relatorios() {
       (osData || []).forEach(os => {
         if (os.forma_pagamento === 'Múltiplas Formas' && os.pagamentos_detalhados && os.pagamentos_detalhados.length > 0) {
           const totalDetalhado = os.pagamentos_detalhados.reduce((sum, p) => sum + (p.valor || 0), 0);
-          // Usar valor_final da OS como referência (já inclui desconto/acréscimo)
-          const valorFinalOS = os.valor_final || 0;
           
           os.pagamentos_detalhados.forEach((pg, index) => {
             const proporcao = totalDetalhado > 0 ? (pg.valor || 0) / totalDetalhado : 0;
@@ -115,10 +113,9 @@ export default function Relatorios() {
               id: `${os.id}_split_${index}`,
               original_id: os.id,
               forma_pagamento: pg.forma || 'Não informado',
-              valor_final: valorFinalOS * proporcao,
+              valor_final: pg.valor || 0,
               valor_total: (os.valor_total || 0) * proporcao,
               valor_repasse_medico: (os.valor_repasse_medico || 0) * proporcao,
-              valor_imposto: (os.valor_imposto || 0) * proporcao,
               valor_clinica: (os.valor_clinica || 0) * proporcao,
               is_desmembrada: true,
               forma_pagamento_original: 'Múltiplas Formas'

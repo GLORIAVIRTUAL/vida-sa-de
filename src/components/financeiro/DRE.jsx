@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { TrendingUp, TrendingDown, Calculator, Percent } from "lucide-react";
 import { format, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { agruparLancamentosPorCategoria, filtrarLancamentosPorPeriodo, somarLancamentos } from "./financeiroUtils";
+import { agruparLancamentosPorCategoria, filtrarLancamentosPorPeriodo, somarLancamentos, excluirLancamentosDeOSCanceladas } from "./financeiroUtils";
 
 export default function DRE({ lancamentos, ordensServico = [], loading }) {
   const [mesAno, setMesAno] = useState(format(new Date(), "yyyy-MM"));
@@ -13,9 +13,12 @@ export default function DRE({ lancamentos, ordensServico = [], loading }) {
     const [ano, mes] = mesAno.split('-');
     const mesAnoFiltro = `${ano}-${mes.padStart(2, '0')}`;
 
-    const lancamentosPeriodo = filtrarLancamentosPorPeriodo(lancamentos, {
+    const lancamentosPeriodoRaw = filtrarLancamentosPorPeriodo(lancamentos, {
       mesAno: mesAnoFiltro
     });
+
+    // Excluir lançamentos de receita vinculados a OS canceladas para que a receita bata com o Total Vendido
+    const lancamentosPeriodo = excluirLancamentosDeOSCanceladas(lancamentosPeriodoRaw, ordensServico);
 
     const resumo = somarLancamentos(lancamentosPeriodo);
     const entradasPorCategoria = agruparLancamentosPorCategoria(lancamentosPeriodo, 'Entrada');
