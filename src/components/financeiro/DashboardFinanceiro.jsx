@@ -29,15 +29,27 @@ export default function DashboardFinanceiro({ lancamentos = [], ordensServico = 
 
     const receitaMesAtual = parseFloat(resumoMesAtual.entradas.toFixed(2));
     const despesaMesAtual = parseFloat(resumoMesAtual.saidas.toFixed(2));
-    const lucroMesAtual = parseFloat(resumoMesAtual.saldo.toFixed(2));
+
+    // Calcular imposto das OS do mês atual e anterior
+    const mesAtualStr = format(inicioMesAtual, 'yyyy-MM');
+    const mesAnteriorStr = format(inicioMesAnterior, 'yyyy-MM');
+    const impostoMesAtual = ordensServico
+      .filter(os => os.data_execucao?.substring(0, 7) === mesAtualStr && os.status_pagamento !== 'Cancelado')
+      .reduce((acc, os) => acc + (os.valor_imposto || 0), 0);
+    const impostoMesAnterior = ordensServico
+      .filter(os => os.data_execucao?.substring(0, 7) === mesAnteriorStr && os.status_pagamento !== 'Cancelado')
+      .reduce((acc, os) => acc + (os.valor_imposto || 0), 0);
+
+    const lucroMesAtual = parseFloat((resumoMesAtual.saldo - impostoMesAtual).toFixed(2));
 
     const receitaMesAnterior = parseFloat(resumoMesAnterior.entradas.toFixed(2));
     const despesaMesAnterior = parseFloat(resumoMesAnterior.saidas.toFixed(2));
-    const lucroMesAnterior = parseFloat(resumoMesAnterior.saldo.toFixed(2));
+    const lucroMesAnterior = parseFloat((resumoMesAnterior.saldo - impostoMesAnterior).toFixed(2));
 
     return {
       receitaMesAtual,
       despesaMesAtual,
+      impostoMesAtual: parseFloat(impostoMesAtual.toFixed(2)),
       lucroMesAtual,
       totalOS: ordensServico.length,
       crescimentoReceita: receitaMesAnterior ? parseFloat(((receitaMesAtual - receitaMesAnterior) / receitaMesAnterior * 100).toFixed(1)) : 0,
@@ -64,6 +76,13 @@ export default function DashboardFinanceiro({ lancamentos = [], ordensServico = 
       textColor: "text-red-600"
     },
     {
+      title: "Impostos OS (10%)",
+      value: `R$ ${stats.impostoMesAtual.toFixed(2)}`,
+      icon: DollarSign,
+      bgColor: "bg-amber-500",
+      textColor: "text-amber-600"
+    },
+    {
       title: "Lucro Líquido",
       value: `R$ ${stats.lucroMesAtual.toFixed(2)}`,
       icon: Calculator,
@@ -82,7 +101,7 @@ export default function DashboardFinanceiro({ lancamentos = [], ordensServico = 
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         {cards.map((card, index) => (
           <Card key={index} className="relative overflow-hidden">
             <div className={`absolute top-0 right-0 w-20 h-20 transform translate-x-6 -translate-y-6 ${card.bgColor} rounded-full opacity-10`} />
