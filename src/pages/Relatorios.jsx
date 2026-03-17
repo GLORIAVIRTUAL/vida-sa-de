@@ -83,14 +83,21 @@ export default function Relatorios() {
   const carregarDados = async () => {
     setLoading(true);
     try {
-      const [osData, lancamentosData, medicosData, categoriasData] = await Promise.all([
+      const [osData, lancamentosData, medicosData, categoriasData, agendamentosData] = await Promise.all([
         OrdemServico.list('-data_execucao', 5000),
         Lancamento.list('-data_lancamento', 5000),
         Medico.list(),
-        CategoriaPreco.list()
+        CategoriaPreco.list(),
+        Agendamento.list('-data_agendamento', 5000)
       ]);
       
       console.log('Dados carregados:', { os: osData?.length, lancamentos: lancamentosData?.length, medicos: medicosData?.length });
+      
+      // Criar mapa de agendamentos por ID para cruzamento rápido
+      const agMap = {};
+      (agendamentosData || []).forEach(ag => { agMap[ag.id] = ag; });
+      setAgendamentos(agendamentosData || []);
+      setAgendamentosMap(agMap);
       
       // Desmembrar OS com Múltiplas Formas
       const osDesmembradas = [];
