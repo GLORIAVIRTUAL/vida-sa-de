@@ -6,7 +6,7 @@ import { format, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { agruparLancamentosPorCategoria, filtrarLancamentosPorPeriodo, somarLancamentos } from "./financeiroUtils";
 
-export default function DRE({ lancamentos, loading }) {
+export default function DRE({ lancamentos, ordensServico = [], loading }) {
   const [mesAno, setMesAno] = useState(format(new Date(), "yyyy-MM"));
 
   const processarDRE = () => {
@@ -41,9 +41,17 @@ export default function DRE({ lancamentos, loading }) {
       .filter(([categoria]) => !['Repasse Médico', 'Repasse Laboratório', 'Aluguel', 'Água/Luz', 'Material Médico', 'Equipamentos', 'Salários', 'Marketing', 'Impostos'].includes(categoria))
       .reduce((total, [, valor]) => total + valor, 0);
 
+    // Calcular imposto das OS do período (10% convênios)
+    const osPeriodo = ordensServico.filter(os => {
+      if (!os.data_execucao) return false;
+      const osYM = os.data_execucao.substring(0, 7);
+      return osYM === mesAnoFiltro && os.status_pagamento !== 'Cancelado';
+    });
+    const impostoOS = osPeriodo.reduce((acc, os) => acc + (os.valor_imposto || 0), 0);
+
     const receitaBruta = resumo.entradas;
     const totalDespesas = resumo.saidas;
-    const lucroLiquido = resumo.saldo;
+    const lucroLiquido = resumo.saldo - impostoOS;
     const margemLiquida = receitaBruta > 0 ? (lucroLiquido / receitaBruta) * 100 : 0;
 
     return {
@@ -65,8 +73,9 @@ export default function DRE({ lancamentos, loading }) {
         salarios,
         marketing,
         impostos,
+        impostoOS,
         outros,
-        total: totalDespesas
+        total: totalDespesas + impostoOS
       },
       resultado: {
         lucroLiquido,
@@ -235,8 +244,12 @@ export default function DRE({ lancamentos, loading }) {
               <span className="font-semibold text-red-600">R$ {dre.despesas.marketing.toFixed(2)}</span>
             </div>
             <div className="flex justify-between items-center p-2 bg-red-50 rounded-lg">
-              <span className="text-sm">Impostos</span>
+              <span className="text-sm">Impostos (Lançamentos)</span>
               <span className="font-semibold text-red-600">R$ {dre.despesas.impostos.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between items-center p-2 bg-amber-50 rounded-lg border border-amber-200">
+              <span className="text-sm font-medium">Impostos OS (10% Convênios)</span>
+              <span className="font-semibold text-amber-600">R$ {dre.despesas.impostoOS.toFixed(2)}</span>
             </div>
             <div className="flex justify-between items-center p-2 bg-red-50 rounded-lg">
               <span className="text-sm">Outros</span>
