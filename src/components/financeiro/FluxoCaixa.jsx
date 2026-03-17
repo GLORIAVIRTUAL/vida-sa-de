@@ -18,6 +18,7 @@ import {
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Lancamento } from "@/entities/all";
+import { excluirLancamentosDeOSCanceladas } from "./financeiroUtils";
 
 import FormularioLancamento from "./FormularioLancamento";
 
@@ -126,7 +127,7 @@ export default function FluxoCaixa({ lancamentos, ordensServico, pacientes, onUp
   const dataInicioApp = new Date('2026-01-20T13:40:00');
   
   const lancamentosFiltrados = useMemo(() => {
-    return lancamentos.filter(l => {
+    const filtrados = lancamentos.filter(l => {
       if (!l.data_lancamento) return false;
       // Ignora lançamentos criados antes da duplicação do app
       if (l.created_date && new Date(l.created_date) < dataInicioApp) return false;
@@ -134,7 +135,9 @@ export default function FluxoCaixa({ lancamentos, ordensServico, pacientes, onUp
       const formaMatch = formaPagamentoFiltro === "todas" || l.forma_pagamento === formaPagamentoFiltro;
       return dentroData && formaMatch;
     });
-  }, [lancamentos, dataInicio, dataFim, formaPagamentoFiltro]);
+    // Excluir lançamentos cancelados e vinculados a OS canceladas
+    return excluirLancamentosDeOSCanceladas(filtrados, ordensServico);
+  }, [lancamentos, ordensServico, dataInicio, dataFim, formaPagamentoFiltro]);
 
   const { totalEntradas, totalSaidas, saldo } = useMemo(() => {
     const entradas = lancamentosFiltrados.filter(l => l.tipo === "Entrada").reduce((sum, l) => sum + l.valor, 0);
