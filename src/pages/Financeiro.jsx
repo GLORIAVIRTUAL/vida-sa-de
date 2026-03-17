@@ -186,6 +186,7 @@ export default function Financeiro() {
                 ordensServico={ordensServico}
                 loading={false}
               />
+
             </TabsContent>
 
             <TabsContent value="repasses">
