@@ -1356,13 +1356,18 @@ export default function Relatorios() {
                         <TableHead className="text-center">Atendimentos</TableHead>
                         <TableHead className="text-right">Faturado</TableHead>
                         <TableHead className="text-right">Repasse</TableHead>
+                        <TableHead className="text-right">Imposto</TableHead>
+                        <TableHead className="text-right">Clínica</TableHead>
                         <TableHead className="text-right">% do Total</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {Object.entries(estatisticas.porCategoria)
                         .sort((a, b) => b[1].valor - a[1].valor)
-                        .map(([nome, dados]) => (
+                        .map(([nome, dados]) => {
+                          const osCat = dadosFiltrados.filter(os => obterNomeCategoria(os) === nome);
+                          const impostoCat = osCat.reduce((acc, os) => acc + (os.valor_imposto || 0), 0);
+                          return (
                           <TableRow key={nome}>
                             <TableCell className="font-medium">
                               <Badge variant="outline">{nome}</Badge>
@@ -1370,6 +1375,8 @@ export default function Relatorios() {
                             <TableCell className="text-center">{dados.quantidade}</TableCell>
                             <TableCell className="text-right">{formatCurrency(dados.valor)}</TableCell>
                             <TableCell className="text-right text-purple-600">{formatCurrency(dados.repasse)}</TableCell>
+                            <TableCell className="text-right text-amber-600">{formatCurrency(impostoCat)}</TableCell>
+                            <TableCell className="text-right text-green-600">{formatCurrency(dados.valor - dados.repasse - impostoCat)}</TableCell>
                             <TableCell className="text-right">
                               {estatisticas.totalVendido > 0 
                                 ? ((dados.valor / estatisticas.totalVendido) * 100).toFixed(1) + '%'
@@ -1377,7 +1384,8 @@ export default function Relatorios() {
                               }
                             </TableCell>
                           </TableRow>
-                        ))}
+                          );
+                        })}
                     </TableBody>
                   </Table>
                 </CardContent>
