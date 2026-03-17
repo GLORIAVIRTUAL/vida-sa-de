@@ -154,6 +154,12 @@ export default function DashboardFinanceiro({ lancamentos = [], ordensServico = 
                   R$ {stats.despesaMesAtual.toFixed(2)}
                 </span>
               </div>
+              <div className="flex justify-between items-center p-3 bg-amber-50 rounded-lg">
+                <span className="font-medium text-amber-800">Impostos OS (10% Convênios)</span>
+                <span className="font-bold text-amber-600">
+                  R$ {stats.impostoMesAtual.toFixed(2)}
+                </span>
+              </div>
               <div className={`flex justify-between items-center p-3 rounded-lg ${
                 stats.lucroMesAtual >= 0 ? 'bg-emerald-50' : 'bg-red-50'
               }`}>
