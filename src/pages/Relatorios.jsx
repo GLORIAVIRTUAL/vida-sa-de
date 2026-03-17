@@ -822,6 +822,10 @@ export default function Relatorios() {
               <span class="valor" style="color: #9333ea;">R$ ${estatisticas.totalRepasse.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
             </div>
             <div class="stat-card">
+              <strong>Impostos (10%)</strong><br/>
+              <span class="valor" style="color: #d97706;">R$ ${estatisticas.totalImposto.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+            </div>
+            <div class="stat-card">
               <strong>Atendimentos</strong><br/>
               <span class="valor">${estatisticas.totalAtendimentos}</span>
             </div>
@@ -838,6 +842,7 @@ export default function Relatorios() {
                 <th>Pagamento</th>
                 <th class="text-right">Valor</th>
                 <th class="text-right">Repasse</th>
+                <th class="text-right">Imposto</th>
                 <th class="text-right">Clínica</th>
               </tr>
             </thead>
@@ -853,6 +858,7 @@ export default function Relatorios() {
                   <td>${os.forma_pagamento || '-'}</td>
                   <td class="text-right">R$ ${(os.valor_final || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                   <td class="text-right">R$ ${(os.valor_repasse_medico || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                  <td class="text-right">R$ ${(os.valor_imposto || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                   <td class="text-right">R$ ${obterValorClinicaCalculado(os).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                 </tr>`;
               }).join('')}
@@ -862,6 +868,7 @@ export default function Relatorios() {
                 <td colspan="5"><strong>TOTAL</strong></td>
                 <td class="text-right"><strong>R$ ${estatisticas.totalVendido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong></td>
                 <td class="text-right"><strong>R$ ${estatisticas.totalRepasse.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong></td>
+                <td class="text-right"><strong>R$ ${estatisticas.totalImposto.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong></td>
                 <td class="text-right"><strong>R$ ${estatisticas.totalClinica.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong></td>
               </tr>
             </tfoot>
