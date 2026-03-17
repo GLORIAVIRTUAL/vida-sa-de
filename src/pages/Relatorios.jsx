@@ -267,7 +267,7 @@ export default function Relatorios() {
   };
 
   const obterValorClinicaCalculado = (os) => {
-    return (os.valor_final || 0) - (os.valor_repasse_medico || 0) - (os.valor_repasse_laboratorio || 0);
+    return (os.valor_final || 0) - (os.valor_repasse_medico || 0) - (os.valor_repasse_laboratorio || 0) - (os.valor_imposto || 0);
   };
 
   // Obter o ID real do médico da OS (considerando agendas unificadas)
@@ -434,6 +434,7 @@ export default function Relatorios() {
   const estatisticas = useMemo(() => {
     const totalVendido = dadosFiltrados.reduce((acc, os) => acc + (os.valor_final || 0), 0);
     const totalRepasse = dadosFiltrados.reduce((acc, os) => acc + (os.valor_repasse_medico || 0), 0);
+    const totalImposto = dadosFiltrados.reduce((acc, os) => acc + (os.valor_imposto || 0), 0);
     const totalClinica = dadosFiltrados.reduce((acc, os) => acc + obterValorClinicaCalculado(os), 0);
     const totalAtendimentos = new Set(dadosFiltrados.map(os => os.original_id || os.id)).size;
     
@@ -509,6 +510,7 @@ export default function Relatorios() {
     return {
       totalVendido,
       totalRepasse,
+      totalImposto,
       totalClinica,
       totalAtendimentos,
       porFormaPagamento,
