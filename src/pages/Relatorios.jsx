@@ -1026,12 +1026,12 @@ export default function Relatorios() {
           </Card>
 
           {/* Cards de Resumo */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
             <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-emerald-100 text-sm">{filtros.medicoId !== 'todos' ? 'Total Vendido' : 'Total Vendido'}</p>
+                    <p className="text-emerald-100 text-sm">Total Vendido</p>
                     <p className="text-2xl font-bold">{formatCurrency(estatisticas.totalVendido)}</p>
                   </div>
                   <TrendingUp className="w-10 h-10 text-emerald-200" />
@@ -1047,6 +1047,18 @@ export default function Relatorios() {
                     <p className="text-2xl font-bold">{formatCurrency(estatisticas.totalRepasse)}</p>
                   </div>
                   <AlertCircle className="w-10 h-10 text-red-200" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-amber-500 to-amber-600 text-white">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-amber-100 text-sm">Impostos (10%)</p>
+                    <p className="text-2xl font-bold">{formatCurrency(estatisticas.totalImposto)}</p>
+                  </div>
+                  <CreditCard className="w-10 h-10 text-amber-200" />
                 </div>
               </CardContent>
             </Card>
@@ -1216,6 +1228,7 @@ export default function Relatorios() {
                           <TableHead>Status</TableHead>
                           <TableHead className="text-right">Valor</TableHead>
                           <TableHead className="text-right">Repasse</TableHead>
+                          <TableHead className="text-right">Imposto</TableHead>
                           <TableHead className="text-right">Clínica</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -1239,13 +1252,14 @@ export default function Relatorios() {
                               </TableCell>
                               <TableCell className="text-right font-medium">{formatCurrency(os.valor_final)}</TableCell>
                               <TableCell className="text-right text-purple-600">{formatCurrency(os.valor_repasse_medico)}</TableCell>
+                              <TableCell className="text-right text-amber-600">{formatCurrency(os.valor_imposto)}</TableCell>
                               <TableCell className="text-right text-green-600">{formatCurrency(obterValorClinicaCalculado(os))}</TableCell>
                             </TableRow>
                           );
                         })}
                         {dadosFiltrados.length > 200 && (
                           <TableRow>
-                            <TableCell colSpan={9} className="text-center text-gray-500">
+                            <TableCell colSpan={10} className="text-center text-gray-500">
                               Mostrando 200 de {dadosFiltrados.length} registros. Use os filtros para refinar.
                             </TableCell>
                           </TableRow>
@@ -1263,6 +1277,10 @@ export default function Relatorios() {
                     <div className="text-right">
                       <p className="text-sm text-gray-500">Total Repasse</p>
                       <p className="text-xl font-bold text-purple-600">{formatCurrency(estatisticas.totalRepasse)}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-gray-500">Impostos</p>
+                      <p className="text-xl font-bold text-amber-600">{formatCurrency(estatisticas.totalImposto)}</p>
                     </div>
                     <div className="text-right">
                       <p className="text-sm text-gray-500">Receita Clínica</p>
