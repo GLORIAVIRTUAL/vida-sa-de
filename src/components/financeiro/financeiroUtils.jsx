@@ -23,18 +23,26 @@ export function filtrarLancamentosPorPeriodo(lancamentos = [], filtros = {}) {
 }
 
 /**
- * Exclui lançamentos de Entrada cujo ordem_servico_id aponta para uma OS cancelada.
+ * Exclui lançamentos de Entrada cujo ordem_servico_id aponta para uma OS cancelada,
+ * e também lançamentos com status próprio "Cancelado".
  * Isso garante que a receita do DRE e relatórios bata com o Total Vendido das OS.
  */
 export function excluirLancamentosDeOSCanceladas(lancamentos = [], ordensServico = []) {
-  const osCanceladasIds = new Set(
-    ordensServico
-      .filter(os => os.status_pagamento === 'Cancelado')
-      .map(os => os.id)
-  );
-  if (osCanceladasIds.size === 0) return lancamentos;
+  // Coletar IDs originais e desmembrados de OS canceladas
+  const osCanceladasIds = new Set();
+  ordensServico.forEach(os => {
+    if (os.status_pagamento === 'Cancelado') {
+      osCanceladasIds.add(os.id);
+      // Se é desmembrada, incluir o original_id também
+      if (os.original_id) osCanceladasIds.add(os.original_id);
+    }
+  });
 
   return lancamentos.filter((lancamento) => {
+    // Excluir lançamentos com status próprio "Cancelado"
+    if (lancamento.status === 'Cancelado') return false;
+
+    // Excluir lançamentos de Entrada vinculados a OS canceladas
     if (lancamento.tipo === 'Entrada' && lancamento.ordem_servico_id && osCanceladasIds.has(lancamento.ordem_servico_id)) {
       return false;
     }
