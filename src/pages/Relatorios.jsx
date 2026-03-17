@@ -1342,7 +1342,8 @@ export default function Relatorios() {
                               }
                             </TableCell>
                           </TableRow>
-                        ))}
+                          );
+                        })}
                     </TableBody>
                   </Table>
                 </CardContent>
