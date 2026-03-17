@@ -584,6 +584,7 @@ export default function FormularioOS({
         status_pagamento: dados.status_pagamento,
         observacoes: dados.observacoes,
         itens: dados.itens,
+        valor_imposto: dados.valor_imposto,
         valor_repasse_medico: dados.valor_repasse_medico,
         valor_repasse_laboratorio: dados.valor_repasse_laboratorio,
         valor_clinica: dados.valor_clinica,

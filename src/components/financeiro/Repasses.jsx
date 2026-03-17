@@ -65,6 +65,7 @@ export default function Repasses() {
         ordens: [],
         totais: {
           valor_total_os: 0,
+          imposto_total: 0,
           repasse_total: 0,
           valor_clinica_total: 0,
           quantidade_atendimentos: 0
@@ -76,6 +77,7 @@ export default function Repasses() {
     
     // Somar totais
     acc[medicoId].totais.valor_total_os += os.valor_final;
+    acc[medicoId].totais.imposto_total += os.valor_imposto || 0;
     acc[medicoId].totais.repasse_total += os.valor_repasse_medico || 0;
     acc[medicoId].totais.valor_clinica_total += os.valor_clinica || 0;
     acc[medicoId].totais.quantidade_atendimentos += 1;
@@ -488,45 +490,60 @@ export default function Repasses() {
 
                     <CardContent className="p-6 space-y-6">
                       {/* Totais do Médico */}
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500">
-                          <div className="flex items-center gap-2 mb-2">
-                            <DollarSign className="w-5 h-5 text-blue-600" />
-                            <span className="text-xs font-semibold text-blue-900">VALOR TOTAL OS</span>
-                          </div>
-                          <p className="text-2xl font-bold text-blue-600">
-                            R$ {totais.valor_total_os.toFixed(2)}
-                          </p>
-                          <p className="text-xs text-blue-700 mt-1">
-                            {totais.quantidade_atendimentos} atendimento(s)
-                          </p>
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500">
+                        <div className="flex items-center gap-2 mb-2">
+                          <DollarSign className="w-5 h-5 text-blue-600" />
+                          <span className="text-xs font-semibold text-blue-900">VALOR BRUTO</span>
                         </div>
+                        <p className="text-2xl font-bold text-blue-600">
+                          R$ {totais.valor_total_os.toFixed(2)}
+                        </p>
+                        <p className="text-xs text-blue-700 mt-1">
+                          {totais.quantidade_atendimentos} atendimento(s)
+                        </p>
+                      </div>
 
-                        <div className="bg-purple-50 p-4 rounded-lg border-l-4 border-purple-500">
+                      {totais.imposto_total > 0 && (
+                        <div className="bg-red-50 p-4 rounded-lg border-l-4 border-red-500">
                           <div className="flex items-center gap-2 mb-2">
-                            <TrendingDown className="w-5 h-5 text-purple-600" />
-                            <span className="text-xs font-semibold text-purple-900">REPASSE MÉDICO</span>
+                            <TrendingDown className="w-5 h-5 text-red-600" />
+                            <span className="text-xs font-semibold text-red-900">IMPOSTOS (10%)</span>
                           </div>
-                          <p className="text-2xl font-bold text-purple-600">
-                            R$ {totais.repasse_total.toFixed(2)}
+                          <p className="text-2xl font-bold text-red-600">
+                            - R$ {totais.imposto_total.toFixed(2)}
                           </p>
-                          <p className="text-xs text-purple-700 mt-1">
-                            Valor líquido
+                          <p className="text-xs text-red-700 mt-1">
+                            Sobre convênios
                           </p>
                         </div>
+                      )}
 
-                        <div className="bg-green-50 p-4 rounded-lg border-l-4 border-green-500">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Building2 className="w-5 h-5 text-green-600" />
-                            <span className="text-xs font-semibold text-green-900">VALOR CLÍNICA</span>
-                          </div>
-                          <p className="text-2xl font-bold text-green-600">
-                            R$ {totais.valor_clinica_total.toFixed(2)}
-                          </p>
-                          <p className="text-xs text-green-700 mt-1">
-                            Valor líquido
-                          </p>
+                      <div className="bg-purple-50 p-4 rounded-lg border-l-4 border-purple-500">
+                        <div className="flex items-center gap-2 mb-2">
+                          <TrendingDown className="w-5 h-5 text-purple-600" />
+                          <span className="text-xs font-semibold text-purple-900">REPASSE MÉDICO</span>
                         </div>
+                        <p className="text-2xl font-bold text-purple-600">
+                          R$ {totais.repasse_total.toFixed(2)}
+                        </p>
+                        <p className="text-xs text-purple-700 mt-1">
+                          Valor líquido
+                        </p>
+                      </div>
+
+                      <div className="bg-green-50 p-4 rounded-lg border-l-4 border-green-500">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Building2 className="w-5 h-5 text-green-600" />
+                          <span className="text-xs font-semibold text-green-900">VALOR CLÍNICA</span>
+                        </div>
+                        <p className="text-2xl font-bold text-green-600">
+                          R$ {totais.valor_clinica_total.toFixed(2)}
+                        </p>
+                        <p className="text-xs text-green-700 mt-1">
+                          Valor líquido
+                        </p>
+                      </div>
                       </div>
 
                       <Separator />
@@ -540,7 +557,8 @@ export default function Repasses() {
                               <TableHead>OS</TableHead>
                               <TableHead>Paciente</TableHead>
                               <TableHead>Serviço</TableHead>
-                              <TableHead className="text-right">Valor Total</TableHead>
+                              <TableHead className="text-right">Valor Bruto</TableHead>
+                              <TableHead className="text-right">Impostos</TableHead>
                               <TableHead className="text-right">Repasse Médico</TableHead>
                               <TableHead className="text-right">Valor Clínica</TableHead>
                             </TableRow>
@@ -565,6 +583,9 @@ export default function Repasses() {
                                   </TableCell>
                                   <TableCell className="text-right font-semibold">
                                     R$ {os.valor_final.toFixed(2)}
+                                  </TableCell>
+                                  <TableCell className="text-right text-red-600">
+                                    {(os.valor_imposto || 0) > 0 ? `- R$ ${(os.valor_imposto).toFixed(2)}` : '-'}
                                   </TableCell>
                                   <TableCell className="text-right text-purple-600 font-bold">
                                     R$ {(os.valor_repasse_medico || 0).toFixed(2)}
