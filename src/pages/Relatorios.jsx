@@ -363,11 +363,14 @@ export default function Relatorios() {
   }, [ordensServico, filtros, medicos, agendamentosMap]);
 
   const lancamentosFinanceiros = useMemo(() => {
-    const lancamentosBase = filtrarLancamentosPorPeriodo(lancamentos, {
+    const lancamentosBaseRaw = filtrarLancamentosPorPeriodo(lancamentos, {
       dataInicio: filtros.dataInicio,
       dataFim: filtros.dataFim,
       formaPagamento: filtros.formaPagamento
     });
+
+    // Excluir lançamentos de receita vinculados a OS canceladas
+    const lancamentosBase = excluirLancamentosDeOSCanceladas(lancamentosBaseRaw, ordensServico);
 
     const temFiltrosExtras =
       filtros.medicoId !== 'todos' ||
