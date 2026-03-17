@@ -1,123 +1,127 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
 
-// Recalcula APENAS valor_imposto e valor_clinica para OS de um mês específico
-// Regra: Convênios = 10% imposto sobre valor bruto. Particular e Cartão Mais Vida = SEM imposto
-// O repasse do médico (valor_repasse_medico) é MANTIDO como está - NÃO é recalculado.
-// Apenas o imposto é adicionado e o valor_clinica é ajustado.
-
-const normalizeString = (str) => {
-  if (!str) return '';
-  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
-};
-
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
-    
-    if (!user || user.role !== 'admin') {
-      return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
+    if (user?.role !== 'admin') {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const { mes, dryRun } = await req.json();
-    
-    if (!mes || !/^\d{4}-\d{2}$/.test(mes)) {
-      return Response.json({ error: 'Informe o mês no formato YYYY-MM (ex: 2026-03)' }, { status: 400 });
+    const { mes, dryRun = true } = await req.json();
+    if (!mes) {
+      return Response.json({ error: 'Informe o parâmetro "mes" (ex: 2025-10)' }, { status: 400 });
     }
 
-    console.log(`🔄 Recalculando impostos para OS de ${mes} | dryRun: ${dryRun || false}`);
+    const [ano, mesNum] = mes.split('-').map(Number);
+    const inicioMes = `${mes}-01`;
+    const fimMes = new Date(ano, mesNum, 0).toISOString().split('T')[0];
 
-    const [todasOS, categorias] = await Promise.all([
-      base44.asServiceRole.entities.OrdemServico.list('-data_execucao', 10000),
-      base44.asServiceRole.entities.CategoriaPreco.list()
-    ]);
-
-    const osMes = todasOS.filter(os => os.data_execucao && os.data_execucao.startsWith(mes));
-    console.log(`📋 Encontradas ${osMes.length} OS no mês ${mes}`);
-
-    const resultados = [];
-    let totalAtualizado = 0;
-    let totalSemAlteracao = 0;
-
-    for (const os of osMes) {
-      if (os.status_pagamento === 'Cancelado') { totalSemAlteracao++; continue; }
-
-      const categoria = categorias.find(c => c.id === os.categoria_preco_id);
-      const categoriaNorm = normalizeString(categoria?.nome || '');
-      const isParticular = categoriaNorm === 'PARTICULAR';
-      const isCartaoMaisVida = categoriaNorm.includes('CARTAO') && categoriaNorm.includes('MAIS') && categoriaNorm.includes('VIDA');
-      const isentoImposto = isParticular || isCartaoMaisVida;
-
-      const valorFinal = os.valor_final || 0;
-      const novoImposto = isentoImposto ? 0 : parseFloat((valorFinal * 0.10).toFixed(2));
-      
-      // Manter repasse do médico e lab como estão
-      const repasseMedico = os.valor_repasse_medico || 0;
-      const repasseLab = os.valor_repasse_laboratorio || 0;
-      
-      // Recalcular valor_clinica = valor_final - imposto - repasse_medico - repasse_lab
-      const novoClinica = parseFloat(Math.max(0, valorFinal - novoImposto - repasseMedico - repasseLab).toFixed(2));
-
-      const antigoImposto = os.valor_imposto || 0;
-      const antigoClinica = os.valor_clinica || 0;
-
-      const mudou = Math.abs(novoImposto - antigoImposto) > 0.01 || Math.abs(novoClinica - antigoClinica) > 0.01;
-
-      if (mudou) {
-        resultados.push({
-          os_id: os.id,
-          numero_os: os.numero_os,
-          paciente_nome: os.paciente_nome,
-          categoria: categoria?.nome || 'N/A',
-          isento_imposto: isentoImposto,
-          valor_final: valorFinal,
-          repasse_medico: repasseMedico,
-          imposto_antigo: antigoImposto,
-          imposto_novo: novoImposto,
-          clinica_antigo: antigoClinica,
-          clinica_novo: novoClinica
-        });
-
-        if (!dryRun) {
-          // Retry com backoff para evitar rate limit
-          for (let tentativa = 1; tentativa <= 3; tentativa++) {
-            try {
-              await base44.asServiceRole.entities.OrdemServico.update(os.id, {
-                valor_imposto: novoImposto,
-                valor_clinica: novoClinica
-              });
-              break;
-            } catch (e) {
-              if (tentativa < 3 && e.status === 429) {
-                console.log(`⏳ Rate limit, aguardando ${tentativa * 5}s...`);
-                await new Promise(r => setTimeout(r, tentativa * 5000));
-              } else {
-                throw e;
-              }
-            }
-          }
-          totalAtualizado++;
-          // Delay entre atualizações
-          await new Promise(r => setTimeout(r, 500));
-        }
-      } else {
-        totalSemAlteracao++;
+    // Buscar categorias isentas (Particular e Cartão Mais Vida)
+    const categorias = await base44.asServiceRole.entities.CategoriaPreco.filter({});
+    const categoriasIsentas = new Set();
+    for (const cat of categorias) {
+      const nomeUpper = (cat.nome || '').toUpperCase();
+      if (nomeUpper.includes('PARTICULAR') || nomeUpper.includes('MAIS VIDA')) {
+        categoriasIsentas.add(cat.id);
       }
     }
 
-    console.log(`✅ Concluído: ${totalAtualizado} atualizadas, ${totalSemAlteracao} sem alteração, ${resultados.length} com diferenças`);
+    // Buscar todas as OS do mês
+    let todasOS = [];
+    let skip = 0;
+    const limit = 100;
+    while (true) {
+      const lote = await base44.asServiceRole.entities.OrdemServico.filter(
+        { data_execucao: { $gte: inicioMes, $lte: fimMes } },
+        '-data_execucao',
+        limit,
+        skip
+      );
+      todasOS = todasOS.concat(lote);
+      if (lote.length < limit) break;
+      skip += limit;
+    }
+
+    console.log(`📋 Encontradas ${todasOS.length} OS no mês ${mes}`);
+    console.log(`🔄 Recalculando impostos para OS de ${mes} | dryRun: ${dryRun}`);
+
+    let totalAtualizado = 0;
+    let totalSemAlteracao = 0;
+    let totalComDiferenca = 0;
+    const detalhes = [];
+
+    for (const os of todasOS) {
+      const isento = categoriasIsentas.has(os.categoria_preco_id);
+      const valorFinal = os.valor_final || 0;
+      const repasseMedico = os.valor_repasse_medico || 0;
+      const repasseLab = os.valor_repasse_laboratorio || 0;
+
+      let novoImposto = 0;
+      if (!isento && valorFinal > 0) {
+        novoImposto = Math.round(valorFinal * 0.10 * 100) / 100;
+      }
+
+      let novoClinica = Math.round((valorFinal - repasseMedico - repasseLab - novoImposto) * 100) / 100;
+      if (novoClinica < 0) novoClinica = 0;
+
+      const impostoAtual = os.valor_imposto || 0;
+      const clinicaAtual = os.valor_clinica || 0;
+
+      if (Math.abs(impostoAtual - novoImposto) < 0.01 && Math.abs(clinicaAtual - novoClinica) < 0.01) {
+        totalSemAlteracao++;
+        continue;
+      }
+
+      totalComDiferenca++;
+      detalhes.push({
+        os_id: os.id,
+        numero_os: os.numero_os,
+        paciente_nome: os.paciente_nome,
+        categoria: isento ? 'ISENTO' : 'N/A',
+        isento_imposto: isento,
+        valor_final: valorFinal,
+        repasse_medico: repasseMedico,
+        imposto_antigo: impostoAtual,
+        imposto_novo: novoImposto,
+        clinica_antigo: clinicaAtual,
+        clinica_novo: novoClinica
+      });
+
+      if (!dryRun) {
+        for (let tentativa = 1; tentativa <= 3; tentativa++) {
+          try {
+            await base44.asServiceRole.entities.OrdemServico.update(os.id, {
+              valor_imposto: novoImposto,
+              valor_clinica: novoClinica
+            });
+            break;
+          } catch (e) {
+            if (tentativa < 3 && e.status === 429) {
+              console.log(`⏳ Rate limit, aguardando ${tentativa * 5}s...`);
+              await new Promise(r => setTimeout(r, tentativa * 5000));
+            } else {
+              throw e;
+            }
+          }
+        }
+        totalAtualizado++;
+        await new Promise(r => setTimeout(r, 500));
+      }
+    }
+
+    console.log(`✅ Concluído: ${totalAtualizado} atualizadas, ${totalSemAlteracao} sem alteração, ${totalComDiferenca} com diferenças`);
 
     return Response.json({
       success: true,
       mes,
-      dryRun: dryRun || false,
-      total_os_mes: osMes.length,
+      dryRun,
+      total_os_mes: todasOS.length,
       total_atualizado: totalAtualizado,
       total_sem_alteracao: totalSemAlteracao,
-      total_com_diferenca: resultados.length,
-      detalhes: resultados.slice(0, 50) // Limitar para não estourar resposta
+      total_com_diferenca: totalComDiferenca,
+      detalhes: detalhes.slice(0, 20)
     });
-
   } catch (error) {
     console.error('❌ Erro:', error);
     return Response.json({ error: error.message }, { status: 500 });
