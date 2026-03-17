@@ -79,15 +79,26 @@ Deno.serve(async (req) => {
         });
 
         if (!dryRun) {
-          await base44.asServiceRole.entities.OrdemServico.update(os.id, {
-            valor_imposto: novoImposto,
-            valor_clinica: novoClinica
-          });
-          totalAtualizado++;
-          // Delay para evitar rate limit
-          if (totalAtualizado % 5 === 0) {
-            await new Promise(r => setTimeout(r, 2000));
+          // Retry com backoff para evitar rate limit
+          for (let tentativa = 1; tentativa <= 3; tentativa++) {
+            try {
+              await base44.asServiceRole.entities.OrdemServico.update(os.id, {
+                valor_imposto: novoImposto,
+                valor_clinica: novoClinica
+              });
+              break;
+            } catch (e) {
+              if (tentativa < 3 && e.status === 429) {
+                console.log(`⏳ Rate limit, aguardando ${tentativa * 5}s...`);
+                await new Promise(r => setTimeout(r, tentativa * 5000));
+              } else {
+                throw e;
+              }
+            }
           }
+          totalAtualizado++;
+          // Delay entre atualizações
+          await new Promise(r => setTimeout(r, 500));
         }
       } else {
         totalSemAlteracao++;
