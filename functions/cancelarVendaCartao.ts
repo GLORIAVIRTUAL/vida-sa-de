@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.7.1';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
 
 // Senha de cancelamento configurada
 const SENHA_CANCELAMENTO = Deno.env.get('SENHA_CANCELAMENTO_CARTAO') || '123123';
