@@ -406,7 +406,7 @@ export default function Relatorios() {
 
       return filtros.categoriaNome === 'todos';
     });
-  }, [lancamentos, dadosFiltrados, filtros.dataInicio, filtros.dataFim, filtros.formaPagamento, filtros.medicoId, filtros.categoriaNome, filtros.statusPagamento]);
+  }, [lancamentos, ordensServico, dadosFiltrados, filtros.dataInicio, filtros.dataFim, filtros.formaPagamento, filtros.medicoId, filtros.categoriaNome, filtros.statusPagamento]);
 
   const estatisticasFinanceiras = useMemo(() => {
     const resumo = somarLancamentos(lancamentosFinanceiros);
