@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.7.1';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
 
 // Helper to normalize names for comparison - versão melhorada
 const normalizeName = (name) => {

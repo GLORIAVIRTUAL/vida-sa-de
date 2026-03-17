@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
 
 // Admin utility to persist institutional information into ChatbotConfig.informacoes_institucionais
 // Usage: invoke with no payload; it will upsert the active config with the embedded text below.

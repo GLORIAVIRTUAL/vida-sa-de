@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
 
 // ID da automação de lembrete
 const LEMBRETE_AUTOMATION_ID = "696f7a5dd606fabf44640881";
