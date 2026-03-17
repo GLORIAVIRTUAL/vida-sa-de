@@ -410,11 +410,16 @@ export default function Relatorios() {
 
   const estatisticasFinanceiras = useMemo(() => {
     const resumo = somarLancamentos(lancamentosFinanceiros);
+    // Usar o Total Vendido das OS como Receita para garantir consistência perfeita
+    // (elimina qualquer discrepância entre lançamentos e OS)
+    const totalVendidoOS = dadosFiltrados.reduce((acc, os) => acc + (os.valor_final || 0), 0);
     return {
       ...resumo,
+      entradas: totalVendidoOS,
+      saldo: totalVendidoOS - resumo.saidas,
       movimentacoes: lancamentosFinanceiros.length
     };
-  }, [lancamentosFinanceiros]);
+  }, [lancamentosFinanceiros, dadosFiltrados]);
 
   // Calcular estatísticas
   const estatisticas = useMemo(() => {
