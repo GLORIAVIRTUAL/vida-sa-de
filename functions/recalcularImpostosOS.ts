@@ -84,6 +84,10 @@ Deno.serve(async (req) => {
             valor_clinica: novoClinica
           });
           totalAtualizado++;
+          // Delay para evitar rate limit
+          if (totalAtualizado % 10 === 0) {
+            await new Promise(r => setTimeout(r, 1000));
+          }
         }
       } else {
         totalSemAlteracao++;
