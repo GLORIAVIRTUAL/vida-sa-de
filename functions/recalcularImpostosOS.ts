@@ -92,11 +92,11 @@ Deno.serve(async (req) => {
             repasseFixo = procedimento.valor_repasse_medico;
           } else if (procedimento.percentual_repasse_medico > 0) {
             percentual = procedimento.percentual_repasse_medico;
-          } else if (repasseEspecifico && (repasseEspecifico.valor_procedimento > 0 || repasseEspecifico.tipo_repasse === 'valor_fixo')) {
+          } else if (repasseEspecifico && repasseEspecifico.valor_procedimento > 0) {
             if (repasseEspecifico.tipo_repasse === 'valor_fixo') {
-              repasseFixo = repasseEspecifico.valor_procedimento || 0;
+              repasseFixo = repasseEspecifico.valor_procedimento;
             } else {
-              percentual = repasseEspecifico.valor_procedimento || 0;
+              percentual = repasseEspecifico.valor_procedimento;
             }
           } else if (tipoRepasse === 'valor_fixo') {
             repasseFixo = isParticular
@@ -109,11 +109,11 @@ Deno.serve(async (req) => {
           }
         } else {
           // Consultas / Retornos
-          if (repasseEspecifico) {
+          if (repasseEspecifico && repasseEspecifico.valor > 0) {
             if (repasseEspecifico.tipo_repasse === 'valor_fixo') {
-              repasseFixo = repasseEspecifico.valor || 0;
+              repasseFixo = repasseEspecifico.valor;
             } else {
-              percentual = repasseEspecifico.valor || 0;
+              percentual = repasseEspecifico.valor;
             }
           } else if (tipoRepasse === 'valor_fixo') {
             repasseFixo = isParticular
