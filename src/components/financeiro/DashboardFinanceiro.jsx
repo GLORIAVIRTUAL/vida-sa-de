@@ -31,24 +31,24 @@ export default function DashboardFinanceiro({ lancamentos = [], ordensServico = 
     const resumoMesAtual = somarLancamentos(lancamentosMesAtual);
     const resumoMesAnterior = somarLancamentos(lancamentosMesAnterior);
 
-    const receitaMesAtual = parseFloat(resumoMesAtual.entradas.toFixed(2));
     const despesaMesAtual = parseFloat(resumoMesAtual.saidas.toFixed(2));
+    const despesaMesAnterior = parseFloat(resumoMesAnterior.saidas.toFixed(2));
 
-    // Calcular imposto das OS do mês atual e anterior
+    // Calcular receita e impostos diretamente das OS (não dos lançamentos) para consistência com Relatórios
     const mesAtualStr = format(inicioMesAtual, 'yyyy-MM');
     const mesAnteriorStr = format(inicioMesAnterior, 'yyyy-MM');
-    const impostoMesAtual = ordensServico
-      .filter(os => os.data_execucao?.substring(0, 7) === mesAtualStr && os.status_pagamento !== 'Cancelado')
-      .reduce((acc, os) => acc + (os.valor_imposto || 0), 0);
-    const impostoMesAnterior = ordensServico
-      .filter(os => os.data_execucao?.substring(0, 7) === mesAnteriorStr && os.status_pagamento !== 'Cancelado')
-      .reduce((acc, os) => acc + (os.valor_imposto || 0), 0);
 
-    const lucroMesAtual = parseFloat((resumoMesAtual.saldo - impostoMesAtual).toFixed(2));
+    const osNaoCanceladasMesAtual = ordensServico.filter(os => os.data_execucao?.substring(0, 7) === mesAtualStr && os.status_pagamento !== 'Cancelado');
+    const osNaoCanceladasMesAnterior = ordensServico.filter(os => os.data_execucao?.substring(0, 7) === mesAnteriorStr && os.status_pagamento !== 'Cancelado');
 
-    const receitaMesAnterior = parseFloat(resumoMesAnterior.entradas.toFixed(2));
-    const despesaMesAnterior = parseFloat(resumoMesAnterior.saidas.toFixed(2));
-    const lucroMesAnterior = parseFloat((resumoMesAnterior.saldo - impostoMesAnterior).toFixed(2));
+    const receitaMesAtual = parseFloat(osNaoCanceladasMesAtual.reduce((acc, os) => acc + (os.valor_final || 0), 0).toFixed(2));
+    const receitaMesAnterior = parseFloat(osNaoCanceladasMesAnterior.reduce((acc, os) => acc + (os.valor_final || 0), 0).toFixed(2));
+
+    const impostoMesAtual = osNaoCanceladasMesAtual.reduce((acc, os) => acc + (os.valor_imposto || 0), 0);
+    const impostoMesAnterior = osNaoCanceladasMesAnterior.reduce((acc, os) => acc + (os.valor_imposto || 0), 0);
+
+    const lucroMesAtual = parseFloat((receitaMesAtual - despesaMesAtual - impostoMesAtual).toFixed(2));
+    const lucroMesAnterior = parseFloat((receitaMesAnterior - despesaMesAnterior - impostoMesAnterior).toFixed(2));
 
     return {
       receitaMesAtual,
