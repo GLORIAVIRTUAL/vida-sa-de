@@ -4,7 +4,7 @@ import { TrendingUp, TrendingDown, DollarSign, FileText, Calculator, Users } fro
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { filtrarLancamentosPorPeriodo, somarLancamentos } from "./financeiroUtils";
+import { filtrarLancamentosPorPeriodo, somarLancamentos, excluirLancamentosDeOSCanceladas } from "./financeiroUtils";
 
 export default function DashboardFinanceiro({ lancamentos = [], ordensServico = [], loading }) {
   const hoje = new Date();
@@ -14,15 +14,19 @@ export default function DashboardFinanceiro({ lancamentos = [], ordensServico = 
   const fimMesAnterior = endOfMonth(subMonths(hoje, 1));
 
   const calcularEstatisticas = () => {
-    const lancamentosMesAtual = filtrarLancamentosPorPeriodo(lancamentos, {
+    const lancamentosMesAtualRaw = filtrarLancamentosPorPeriodo(lancamentos, {
       dataInicio: format(inicioMesAtual, 'yyyy-MM-dd'),
       dataFim: format(fimMesAtual, 'yyyy-MM-dd')
     });
 
-    const lancamentosMesAnterior = filtrarLancamentosPorPeriodo(lancamentos, {
+    const lancamentosMesAnteriorRaw = filtrarLancamentosPorPeriodo(lancamentos, {
       dataInicio: format(inicioMesAnterior, 'yyyy-MM-dd'),
       dataFim: format(fimMesAnterior, 'yyyy-MM-dd')
     });
+
+    // Excluir lançamentos de receita vinculados a OS canceladas
+    const lancamentosMesAtual = excluirLancamentosDeOSCanceladas(lancamentosMesAtualRaw, ordensServico);
+    const lancamentosMesAnterior = excluirLancamentosDeOSCanceladas(lancamentosMesAnteriorRaw, ordensServico);
 
     const resumoMesAtual = somarLancamentos(lancamentosMesAtual);
     const resumoMesAnterior = somarLancamentos(lancamentosMesAnterior);
