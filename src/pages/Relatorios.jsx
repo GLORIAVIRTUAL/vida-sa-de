@@ -83,37 +83,14 @@ export default function Relatorios() {
   const carregarDados = async () => {
     setLoading(true);
     try {
-      // Carregar agendamentos paginando para garantir que todos sejam buscados
-      const carregarTodosAgendamentos = async () => {
-        let todos = [];
-        let skip = 0;
-        const batchSize = 500;
-        while (true) {
-          const batch = await Agendamento.list('-data_agendamento', batchSize, skip);
-          if (!batch || batch.length === 0) break;
-          todos = [...todos, ...batch];
-          if (batch.length < batchSize) break;
-          skip += batchSize;
-        }
-        return todos;
-      };
-      
-      const [osData, lancamentosData, medicosData, categoriasData, pacientesData, agendamentosData] = await Promise.all([
+      const [osData, lancamentosData, medicosData, categoriasData] = await Promise.all([
         OrdemServico.list('-data_execucao', 5000),
         Lancamento.list('-data_lancamento', 5000),
         Medico.list(),
-        CategoriaPreco.list(),
-        Paciente.list('nome', 5000),
-        carregarTodosAgendamentos()
+        CategoriaPreco.list()
       ]);
       
-      console.log('Dados carregados:', { os: osData?.length, agendamentos: agendamentosData?.length, medicos: medicosData?.length });
-      
-      // Criar mapa de agendamentos por ID para cruzamento rápido
-      const agMap = {};
-      (agendamentosData || []).forEach(ag => { agMap[ag.id] = ag; });
-      setAgendamentos(agendamentosData || []);
-      setAgendamentosMap(agMap);
+      console.log('Dados carregados:', { os: osData?.length, lancamentos: lancamentosData?.length, medicos: medicosData?.length });
       
       // Desmembrar OS com Múltiplas Formas
       const osDesmembradas = [];
@@ -146,7 +123,6 @@ export default function Relatorios() {
       setLancamentos(lancamentosData || []);
       setMedicos(medicosData || []);
       setCategorias(categoriasData || []);
-      setPacientes(pacientesData || []);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
     } finally {
