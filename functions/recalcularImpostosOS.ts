@@ -85,8 +85,8 @@ Deno.serve(async (req) => {
           });
           totalAtualizado++;
           // Delay para evitar rate limit
-          if (totalAtualizado % 10 === 0) {
-            await new Promise(r => setTimeout(r, 1000));
+          if (totalAtualizado % 5 === 0) {
+            await new Promise(r => setTimeout(r, 2000));
           }
         }
       } else {
