@@ -22,6 +22,26 @@ export function filtrarLancamentosPorPeriodo(lancamentos = [], filtros = {}) {
   });
 }
 
+/**
+ * Exclui lançamentos de Entrada cujo ordem_servico_id aponta para uma OS cancelada.
+ * Isso garante que a receita do DRE e relatórios bata com o Total Vendido das OS.
+ */
+export function excluirLancamentosDeOSCanceladas(lancamentos = [], ordensServico = []) {
+  const osCanceladasIds = new Set(
+    ordensServico
+      .filter(os => os.status_pagamento === 'Cancelado')
+      .map(os => os.id)
+  );
+  if (osCanceladasIds.size === 0) return lancamentos;
+
+  return lancamentos.filter((lancamento) => {
+    if (lancamento.tipo === 'Entrada' && lancamento.ordem_servico_id && osCanceladasIds.has(lancamento.ordem_servico_id)) {
+      return false;
+    }
+    return true;
+  });
+}
+
 export function somarLancamentos(lancamentos = []) {
   const entradas = lancamentos
     .filter((lancamento) => lancamento.tipo === 'Entrada')
