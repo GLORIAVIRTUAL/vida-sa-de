@@ -280,6 +280,7 @@ export default function Repasses() {
 
     // Totais gerais
     let totalGeralOS = 0;
+    let totalGeralImpostos = 0;
     let totalGeralRepasses = 0;
     let totalGeralClinica = 0;
     let totalGeralAtendimentos = 0;
@@ -289,6 +290,7 @@ export default function Repasses() {
       if (!medico) return;
 
       totalGeralOS += totais.valor_total_os;
+      totalGeralImpostos += totais.imposto_total;
       totalGeralRepasses += totais.repasse_total;
       totalGeralClinica += totais.valor_clinica_total;
       totalGeralAtendimentos += totais.quantidade_atendimentos;
@@ -309,6 +311,15 @@ export default function Repasses() {
                   ${totais.quantidade_atendimentos} atendimento(s)
                 </div>
               </div>
+              
+              ${totais.imposto_total > 0 ? `
+              <div class="total-item imposto">
+                <div class="total-label">🏛️ IMPOSTOS (10%)</div>
+                <div class="total-value">- R$ ${totais.imposto_total.toFixed(2)}</div>
+                <div style="font-size: 11px; color: #6b7280; margin-top: 5px;">
+                  Sobre convênios
+                </div>
+              </div>` : ''}
               
               <div class="total-item repasse">
                 <div class="total-label">👨‍⚕️ REPASSE MÉDICO</div>
@@ -336,7 +347,8 @@ export default function Repasses() {
                   <th>OS</th>
                   <th>Paciente</th>
                   <th>Serviço</th>
-                  <th class="text-right">Valor Total</th>
+                  <th class="text-right">Valor Bruto</th>
+                  <th class="text-right">Impostos</th>
                   <th class="text-right">Repasse Médico</th>
                   <th class="text-right">Valor Clínica</th>
                 </tr>
@@ -354,6 +366,7 @@ export default function Repasses() {
             <td>${paciente?.nome || "N/A"}</td>
             <td>${os.tipo_servico}</td>
             <td class="text-right">R$ ${os.valor_final.toFixed(2)}</td>
+            <td class="text-right" style="color: #ef4444;">${(os.valor_imposto || 0) > 0 ? `- R$ ${(os.valor_imposto).toFixed(2)}` : '-'}</td>
             <td class="text-right" style="color: #8b5cf6; font-weight: bold;">R$ ${(os.valor_repasse_medico || 0).toFixed(2)}</td>
             <td class="text-right" style="color: #10b981; font-weight: bold;">R$ ${(os.valor_clinica || 0).toFixed(2)}</td>
           </tr>
@@ -377,6 +390,11 @@ export default function Repasses() {
             <div class="resumo-label">TOTAL OS</div>
             <div class="resumo-value">R$ ${totalGeralOS.toFixed(2)}</div>
           </div>
+          ${totalGeralImpostos > 0 ? `
+          <div class="resumo-item">
+            <div class="resumo-label">IMPOSTOS</div>
+            <div class="resumo-value">- R$ ${totalGeralImpostos.toFixed(2)}</div>
+          </div>` : ''}
           <div class="resumo-item">
             <div class="resumo-label">REPASSES</div>
             <div class="resumo-value">R$ ${totalGeralRepasses.toFixed(2)}</div>

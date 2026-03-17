@@ -50,6 +50,7 @@ export default function RepasseMedicos({ ordensServico, medicos, pacientes, onRe
           gerado_por: os.gerado_por || null,
           ordens: [],
           total_bruto: 0,
+          total_imposto: 0,
           total_repasse: 0,
           total_clinica: 0,
           quantidade: 0
@@ -58,6 +59,7 @@ export default function RepasseMedicos({ ordensServico, medicos, pacientes, onRe
 
       grupos[chaveGrupo].ordens.push(os);
       grupos[chaveGrupo].total_bruto += os.valor_final || 0;
+      grupos[chaveGrupo].total_imposto += os.valor_imposto || 0;
       grupos[chaveGrupo].total_repasse += os.valor_repasse_medico || 0;
       grupos[chaveGrupo].total_clinica += os.valor_clinica || 0;
       grupos[chaveGrupo].quantidade += 1;
@@ -402,7 +404,7 @@ export default function RepasseMedicos({ ordensServico, medicos, pacientes, onRe
                         </h3>
                         <p className="text-sm text-gray-600">{grupo.medico.especialidade} - CRM: {grupo.medico.crm}</p>
 
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-4">
                           <div className="bg-blue-50 p-3 rounded">
                             <p className="text-xs text-blue-600 font-semibold">ATENDIMENTOS</p>
                             <p className="text-2xl font-bold text-blue-900">{grupo.quantidade}</p>
@@ -411,6 +413,12 @@ export default function RepasseMedicos({ ordensServico, medicos, pacientes, onRe
                             <p className="text-xs text-gray-600 font-semibold">VALOR BRUTO</p>
                             <p className="text-lg font-bold text-gray-900">R$ {grupo.total_bruto.toFixed(2)}</p>
                           </div>
+                          {grupo.total_imposto > 0 && (
+                            <div className="bg-red-50 p-3 rounded">
+                              <p className="text-xs text-red-600 font-semibold">IMPOSTOS (10%)</p>
+                              <p className="text-lg font-bold text-red-900">- R$ {grupo.total_imposto.toFixed(2)}</p>
+                            </div>
+                          )}
                           <div className="bg-green-50 p-3 rounded">
                             <p className="text-xs text-green-600 font-semibold">REPASSE</p>
                             <p className="text-2xl font-bold text-green-900">R$ {grupo.total_repasse.toFixed(2)}</p>
