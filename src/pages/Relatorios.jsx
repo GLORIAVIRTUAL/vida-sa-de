@@ -58,7 +58,7 @@ export default function Relatorios() {
     } catch (e) {}
     return {
       dataInicio: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
-      dataFim: format(new Date(), 'yyyy-MM-dd'),
+      dataFim: format(endOfMonth(new Date()), 'yyyy-MM-dd'),
       medicoId: 'todos',
       categoriaNome: 'todos',
       formaPagamento: 'todos',
