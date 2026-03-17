@@ -391,12 +391,12 @@ export default function FormularioOS({
         else if (procedimentoAtual.percentual_repasse_medico > 0) {
           percentual = procedimentoAtual.percentual_repasse_medico;
         }
-        // 2. Prioridade: Repasse específico por categoria para procedimentos
-        else if (repasseEspecifico && (repasseEspecifico.valor_procedimento > 0 || repasseEspecifico.tipo_repasse === 'valor_fixo')) {
+        // 2. Prioridade: Repasse específico por categoria para procedimentos (só se valor > 0)
+        else if (repasseEspecifico && repasseEspecifico.valor_procedimento > 0) {
           if (repasseEspecifico.tipo_repasse === 'valor_fixo') {
-            repasseFixo = repasseEspecifico.valor_procedimento || 0;
+            repasseFixo = repasseEspecifico.valor_procedimento;
           } else {
-            percentual = repasseEspecifico.valor_procedimento || 0;
+            percentual = repasseEspecifico.valor_procedimento;
           }
         }
         // 3. Fallback: Configuração do Médico para Procedimentos
@@ -411,12 +411,12 @@ export default function FormularioOS({
         }
       } else {
         // Lógica para Consultas
-        // 1. Prioridade: Repasse específico por categoria para consultas
-        if (repasseEspecifico) {
+        // 1. Prioridade: Repasse específico por categoria para consultas (só se valor > 0)
+        if (repasseEspecifico && repasseEspecifico.valor > 0) {
           if (repasseEspecifico.tipo_repasse === 'valor_fixo') {
-            repasseFixo = repasseEspecifico.valor || 0;
+            repasseFixo = repasseEspecifico.valor;
           } else {
-            percentual = repasseEspecifico.valor || 0;
+            percentual = repasseEspecifico.valor;
           }
         }
         // 2. Fallback: Configuração do Médico para Consultas
