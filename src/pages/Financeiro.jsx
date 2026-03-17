@@ -3,15 +3,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProtectedRoute from '../components/auth/ProtectedRoute';
 import { Loader2, AlertCircle, BarChart3, TrendingUp, FileText, Users } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { safeApiCall } from '@/components/shared/apiThrottle';
+import { format, subMonths, startOfMonth } from 'date-fns';
 
 import DashboardFinanceiro from '../components/financeiro/DashboardFinanceiro';
 import FluxoCaixa from '../components/financeiro/FluxoCaixa';
 import DRE from '../components/financeiro/DRE';
-import Repasses from '../components/financeiro/Repasses'; // This component will be replaced in the TabContent
-import RepasseMedicos from '../components/financeiro/RepasseMedicos'; // New component to be used
+import Repasses from '../components/financeiro/Repasses';
+import RepasseMedicos from '../components/financeiro/RepasseMedicos';
 import FormularioLancamento from '../components/financeiro/FormularioLancamento';
-import Faturas from '../components/financeiro/Faturas'; // New component import
+import Faturas from '../components/financeiro/Faturas';
 import { Lancamento, OrdemServico, Medico, Paciente, Procedimento, Exame, CategoriaPreco } from '@/entities/all';
 
 export default function Financeiro() {
@@ -33,9 +33,11 @@ export default function Financeiro() {
   const carregarDados = async () => {
     setLoading(true);
     setError(null);
-    console.log("🔄 [Financeiro] Iniciando carregamento de dados...");
 
     try {
+      // Carregar apenas últimos 3 meses de dados transacionais para performance
+      const dataLimite = format(startOfMonth(subMonths(new Date(), 2)), 'yyyy-MM-dd');
+
       const [
         lancamentosData,
         ordensServicoData,
@@ -44,15 +46,15 @@ export default function Financeiro() {
         procedimentosData,
         examesData,
         categoriasPrecoData,
-      ] = await safeApiCall(async () => Promise.all([
-        Lancamento.list('-data_lancamento', 5000),
-        OrdemServico.list('-data_execucao', 5000),
+      ] = await Promise.all([
+        Lancamento.filter({ data_lancamento: { $gte: dataLimite } }, '-data_lancamento', 5000),
+        OrdemServico.filter({ data_execucao: { $gte: dataLimite } }, '-data_execucao', 5000),
         Medico.list(),
-        Paciente.list('nome', 5000),
+        Paciente.list('nome', 500),
         Procedimento.list(),
         Exame.list(),
         CategoriaPreco.list()
-      ]));
+      ]);
 
       setData({
         lancamentos: lancamentosData || [],
@@ -63,8 +65,6 @@ export default function Financeiro() {
         exames: examesData || [],
         categoriasPreco: categoriasPrecoData || [],
       });
-      
-      console.log("✅ [Financeiro] Dados carregados com sucesso.");
 
     } catch (e) {
       console.error("❌ Erro ao carregar dados financeiros:", e);

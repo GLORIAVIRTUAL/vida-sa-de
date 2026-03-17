@@ -12,7 +12,7 @@ import {
   Users, CreditCard, Building2, BarChart3, PieChart as PieChartIcon,
   Calendar, RefreshCw, AlertCircle, CheckCircle
 } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, parseISO } from 'date-fns';
+import { format, startOfMonth, endOfMonth, subMonths, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import ProtectedRoute from '../components/auth/ProtectedRoute';
@@ -83,12 +83,16 @@ export default function Relatorios() {
   const carregarDados = async () => {
     setLoading(true);
     try {
+      // Usar filtro de data para carregar apenas dados relevantes ao período selecionado
+      // Expandir 1 mês antes do início para ter contexto suficiente
+      const dataLimite = filtros.dataInicio || format(startOfMonth(subMonths(new Date(), 2)), 'yyyy-MM-dd');
+      
       const [osData, lancamentosData, medicosData, categoriasData, agendamentosData] = await Promise.all([
-        OrdemServico.list('-data_execucao', 5000),
-        Lancamento.list('-data_lancamento', 5000),
+        OrdemServico.filter({ data_execucao: { $gte: dataLimite } }, '-data_execucao', 5000),
+        Lancamento.filter({ data_lancamento: { $gte: dataLimite } }, '-data_lancamento', 5000),
         Medico.list(),
         CategoriaPreco.list(),
-        Agendamento.list('-data_agendamento', 5000)
+        Agendamento.filter({ data_agendamento: { $gte: dataLimite } }, '-data_agendamento', 5000)
       ]);
       
       console.log('Dados carregados:', { os: osData?.length, lancamentos: lancamentosData?.length, medicos: medicosData?.length });
