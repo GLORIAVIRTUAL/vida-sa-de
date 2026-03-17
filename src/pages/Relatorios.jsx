@@ -51,7 +51,7 @@ export default function Relatorios() {
   // Filtros - restaurar do localStorage ou iniciar com padrão
   const [filtros, setFiltros] = useState(() => {
     try {
-      const salvos = localStorage.getItem('relatorios_filtros');
+      const salvos = localStorage.getItem('relatorios_filtros_v2');
       if (salvos) {
         return JSON.parse(salvos);
       }
@@ -70,7 +70,7 @@ export default function Relatorios() {
   // Salvar filtros no localStorage sempre que mudarem
   useEffect(() => {
     try {
-      localStorage.setItem('relatorios_filtros', JSON.stringify(filtros));
+      localStorage.setItem('relatorios_filtros_v2', JSON.stringify(filtros));
     } catch (e) {}
   }, [filtros]);
   
