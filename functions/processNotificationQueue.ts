@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.7.0';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
 
 // Esta função é o "robô" que processa a fila
 // Ela deve ser chamada por um serviço de CRON externo
