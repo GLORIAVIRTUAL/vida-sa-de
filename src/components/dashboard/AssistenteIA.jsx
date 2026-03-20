@@ -817,6 +817,76 @@ ${dados.mes_atual.lancamentos_por_forma.length > 0 ?
   - Saldo: R$ ${f.saldo.toFixed(2)}`
   ).join('\n') : 'Nenhum lançamento com forma de pagamento especificada'}
 
+═══════════════════════════════════════════════════════════
+📊 DADOS DE CONSULTORIA EMPRESARIAL (ANÁLISES AVANÇADAS)
+═══════════════════════════════════════════════════════════
+
+🏆 RANKING DE SERVIÇOS (MAIS VENDIDOS → MENOS VENDIDOS):
+${dados.consultoria.ranking_servicos.map((s, i) => 
+  `${i+1}. ${s.tipo}: ${s.quantidade} vendas | Faturamento: R$ ${s.faturamento.toFixed(2)} | Lucro Clínica: R$ ${s.lucro_clinica.toFixed(2)} | Ticket Médio: R$ ${s.ticket_medio.toFixed(2)}`
+).join('\n')}
+
+🏥 RANKING DE ESPECIALIDADES POR RENTABILIDADE:
+${dados.consultoria.ranking_especialidades.map((e, i) => 
+  `${i+1}. ${e.especialidade}: ${e.quantidade} atend. | ${e.pacientes_unicos} pacientes únicos | Faturamento: R$ ${e.faturamento.toFixed(2)} | Lucro Clínica: R$ ${e.lucro_clinica.toFixed(2)} | Ticket Médio: R$ ${e.ticket_medio.toFixed(2)}`
+).join('\n')}
+
+📈 COMPARATIVO ÚLTIMOS 4 MESES (TENDÊNCIA):
+${dados.consultoria.comparativo_mensal.map(m => 
+  `• ${m.mes_label} (${m.mes}): ${m.total_os} OS | Faturamento: R$ ${m.faturamento_bruto.toFixed(2)} | Lucro: R$ ${m.lucro_clinica.toFixed(2)} | Resultado Líquido: R$ ${m.resultado_liquido.toFixed(2)} | Agend: ${m.agendamentos} | Cancel: ${m.cancelados} (${m.taxa_cancelamento}%) | Ticket Médio: R$ ${m.ticket_medio.toFixed(2)} | Cartões: ${m.vendas_cartao}`
+).join('\n')}
+
+💸 RANKING DE DESPESAS (MAIORES GASTOS):
+${dados.consultoria.ranking_despesas.map((d, i) => 
+  `${i+1}. ${d.categoria}: R$ ${d.valor.toFixed(2)}`
+).join('\n') || 'Sem despesas categorizadas'}
+
+📋 TOP PROCEDIMENTOS MAIS VENDIDOS:
+${dados.consultoria.ranking_procedimentos.slice(0, 15).map((p, i) => 
+  `${i+1}. ${p.nome}: ${p.quantidade}x | R$ ${p.faturamento.toFixed(2)}`
+).join('\n') || 'Sem dados de procedimentos'}
+
+⏰ HORÁRIOS DE PICO (mais agendamentos):
+${dados.consultoria.horarios_pico.slice(0, 5).map(h => 
+  `• ${h.hora}: ${h.quantidade} agendamentos`
+).join('\n')}
+
+📅 DIAS DA SEMANA MAIS MOVIMENTADOS:
+${dados.consultoria.dias_mais_movimentados.map(d => 
+  `• ${d.dia}: ${d.quantidade} agendamentos`
+).join('\n')}
+
+📢 ORIGEM DOS PACIENTES (MARKETING - COMO CONHECERAM A CLÍNICA):
+${dados.consultoria.ranking_origens_pacientes.map(o => 
+  `• ${o.origem}: ${o.quantidade} pacientes`
+).join('\n')}
+
+🔄 FIDELIZAÇÃO DE PACIENTES:
+- Total de pacientes atendidos: ${dados.consultoria.fidelizacao.total_pacientes_atendidos}
+- Pacientes recorrentes (voltaram +1x): ${dados.consultoria.fidelizacao.pacientes_recorrentes}
+- Taxa de retorno: ${dados.consultoria.fidelizacao.taxa_retorno}%
+
+📊 INDICADORES-CHAVE DE PERFORMANCE (KPIs):
+- Ticket Médio Geral: R$ ${dados.consultoria.indicadores_chave.ticket_medio_geral}
+- Margem da Clínica: ${dados.consultoria.indicadores_chave.margem_clinica_percentual}%
+- Custo Fixo / Receita: ${dados.consultoria.indicadores_chave.custo_fixo_percentual}%
+- Receita por Médico Ativo: R$ ${dados.consultoria.indicadores_chave.receita_por_medico_ativo}
+
+═══════════════════════════════════════════════════════════
+🎯 INSTRUÇÕES PARA A RESPOSTA DE CONSULTORIA
+═══════════════════════════════════════════════════════════
+
+Ao responder, SEMPRE inclua:
+1. **DIAGNÓSTICO**: Análise clara dos números com pontos fortes e fracos
+2. **TENDÊNCIAS**: Compare meses e identifique crescimento ou queda
+3. **OPORTUNIDADES**: Serviços/especialidades com potencial inexplorado
+4. **AMEAÇAS**: Indicadores preocupantes (cancelamentos altos, despesas crescentes, etc.)
+5. **PLANO DE AÇÃO**: Recomendações PRÁTICAS com prioridade, prazo e impacto estimado
+6. **MARKETING**: Sugestões específicas de marketing baseadas nos dados de origem dos pacientes
+7. **GESTÃO**: Recomendações de otimização operacional (horários, agenda, equipe)
+
+Use os DADOS REAIS para embasar cada recomendação. Não seja genérico.
+
 ${precisaTabela ? `
 🔥 ATENÇÃO: A pergunta solicita um RELATÓRIO DETALHADO COM TABELA.
 Você DEVE incluir uma tabela HTML formatada com os dados.
