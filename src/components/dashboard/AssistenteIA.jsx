@@ -1050,18 +1050,20 @@ ${precisaTabela ? 'OBRIGATÓRIO: Inclua tabela HTML com os dados detalhados' : '
 Responda em JSON com:
 {
   "report_title": "Título executivo do relatório",
-  "summary": "Análise detalhada (3-5 parágrafos)",
+  "summary": "Análise detalhada como consultor empresarial (5-8 parágrafos). Analise tendências, compare meses, identifique problemas e oportunidades com base nos números reais. Seja específico e direto.",
   ${precisaTabela ? '"html_table": "Tabela HTML completa formatada com os dados",' : ''}
   "key_metrics": [
-    {"label": "Nome da métrica", "value": "Valor", "icon": "Users|DollarSign|Calendar|BarChart|TrendingUp"}
+    {"label": "Nome do KPI", "value": "Valor com R$ ou %", "icon": "Users|DollarSign|Calendar|BarChart|TrendingUp"}
   ],
   "insights": [
-    {"type": "positive|warning|critical", "title": "Título", "description": "Descrição"}
+    {"type": "positive|warning|critical", "title": "Título do insight", "description": "Descrição detalhada baseada nos dados, citando números específicos"}
   ],
   "recommendations": [
-    {"priority": "high|medium|low", "action": "Ação", "impact": "Impacto", "effort": "Esforço"}
+    {"priority": "high|medium|low", "action": "Ação concreta e específica (ex: 'Criar campanha no Instagram focada em Dermatologia')", "impact": "Impacto estimado com números (ex: 'Potencial de aumento de 15% no faturamento da especialidade')", "effort": "Esforço/investimento necessário (ex: 'R$ 500/mês em tráfego pago + 2h/semana de gestão')"}
   ]
-}`;
+}
+
+IMPORTANTE: Gere no MÍNIMO 5 insights e 5 recomendações. Seja um consultor de verdade - vá além do óbvio.`;
 
       console.log('🧠 [AssistenteIA] Enviando para LLM...');
       
