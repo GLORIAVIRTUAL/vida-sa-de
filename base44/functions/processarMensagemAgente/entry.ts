@@ -1508,6 +1508,15 @@ Retorne JSON.`;
     const horaNumero = parseInt(new Date().toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', hour12: false }));
     const dataAtualCompleta = new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     const dataAtualISO = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+    // Calcular dia da semana REAL pelo código (0=Dom, 6=Sáb) para evitar alucinação do LLM
+    const diaSemanaHoje = new Date().toLocaleDateString('en-US', { timeZone: 'America/Sao_Paulo', weekday: 'long' });
+    const diaSemanaNum = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'].indexOf(diaSemanaHoje);
+    const clinicaAbertaHoje = diaSemanaNum >= 1 && diaSemanaNum <= 5; // Seg-Sex
+    const diasSemPt = ['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
+    const statusClinicaHoje = clinicaAbertaHoje
+      ? `🏥 A CLÍNICA ESTÁ ABERTA HOJE (${diasSemPt[diaSemanaNum]}), das 08:00 às 19:00. NÃO diga que está fechada!`
+      : `🚫 A CLÍNICA ESTÁ FECHADA HOJE (${diasSemPt[diaSemanaNum]}). Funciona segunda a sexta, 08:00 às 19:00.`;
+    console.log('📅 Status clínica:', statusClinicaHoje);
     let saudacaoHorario = 'Bom-dia';
     if (horaNumero >= 12 && horaNumero < 18) saudacaoHorario = 'Boa-tarde';
     else if (horaNumero >= 18 || horaNumero < 5) saudacaoHorario = 'Boa-noite';
