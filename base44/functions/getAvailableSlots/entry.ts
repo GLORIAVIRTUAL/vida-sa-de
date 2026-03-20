@@ -119,15 +119,45 @@ Deno.serve(async (req) => {
                 });
             }
             
-            // Se houver horários com data específica, usar eles; senão, usar horários recorrentes
-            const horariosDoDia = horariosDataEspecifica.length > 0 
-                ? horariosDataEspecifica.filter(h => !h.bloqueado)
-                : horariosAtendimento.filter(h => 
-                    h.dia_semana === diaSemana && 
+            // Se houver horários com data específica EXATA para este dia, usar eles prioritariamente.
+            // Senão, usar horários recorrentes (incluindo os que têm data_especifica mas recorrência != "Apenas uma vez",
+            // pois esses representam padrões recorrentes com referência de data inicial)
+            let horariosDoDia;
+            if (horariosDataEspecifica.length > 0) {
+                horariosDoDia = horariosDataEspecifica.filter(h => !h.bloqueado);
+            } else {
+                // Horários sem data_especifica que batem com o dia da semana
+                const horariosRecorrentes = horariosAtendimento.filter(h => 
+                    Math.floor(h.dia_semana) === diaSemana && 
                     !h.data_especifica && 
                     !h.bloqueado &&
                     checkRecorrencia(h.recorrencia, dataObj)
                 );
+                
+                if (horariosRecorrentes.length > 0) {
+                    horariosDoDia = horariosRecorrentes;
+                } else {
+                    // FALLBACK: Horários com data_especifica E recorrência != "Apenas uma vez"
+                    // que batem com o mesmo dia da semana (ex: médico com data_especifica preenchida
+                    // mas recorrência "Toda Semana" — padrão de agenda semanal com referência de data)
+                    const horariosRecorrentesComData = horariosAtendimento.filter(h =>
+                        h.data_especifica &&
+                        !h.bloqueado &&
+                        Math.floor(h.dia_semana) === diaSemana &&
+                        h.recorrencia && h.recorrencia !== 'Apenas uma vez' &&
+                        checkRecorrencia(h.recorrencia, dataObj)
+                    );
+                    // Usar o horário mais recente como referência (último cadastrado)
+                    if (horariosRecorrentesComData.length > 0) {
+                        // Pegar o que tem data_especifica mais recente
+                        horariosRecorrentesComData.sort((a, b) => (b.data_especifica || '').localeCompare(a.data_especifica || ''));
+                        horariosDoDia = [horariosRecorrentesComData[0]];
+                        console.log('🔄 Usando fallback: horário recorrente com data_especifica como referência');
+                    } else {
+                        horariosDoDia = [];
+                    }
+                }
+            }
             
             console.log('📋 Horários filtrados:', {
                 data_especifica_encontrada: horariosDataEspecifica.length > 0,
