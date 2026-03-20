@@ -1099,7 +1099,15 @@ O cliente está ESCOLHENDO/RESPONDENDO. Ele disse: "${messageText}"
           infoDisponibilidade+='\n⚠️ Para confirmar: nome completo e data nascimento.';
           console.log('✅ Disponibilidades:', disponibilidadesEncontradas.length, 'médicos');
         } else if (medicosParaBuscar.length > 0) {
-          infoDisponibilidade = `\n\n⚠️ AGENDA LOTADA: Profissionais de ${especialidadeDetectada||'esta especialidade'} com todos horários ocupados nos próximos 30 dias.\nSugira ligar 51 3661-5991 para lista de espera.`;
+          // Montar info dos dias que cada médico atende para dar resposta mais útil
+          let infoMedicos = medicosParaBuscar.map(m => {
+            const dias = (m.horarios_atendimento || []).filter(h => !h.bloqueado).map(h => {
+              const nomesDias = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+              return h.data_especifica ? h.data_especifica : nomesDias[Math.floor(h.dia_semana)] || '';
+            }).filter(Boolean);
+            return `${m.nome} (atende: ${[...new Set(dias)].join(', ')})`;
+          }).join('\n');
+          infoDisponibilidade = `\n\n⚠️ HORÁRIOS ESGOTADOS NOS PRÓXIMOS 30 DIAS para ${especialidadeDetectada||'esta especialidade'}.\nProfissionais disponíveis:\n${infoMedicos}\n\n🚨 REGRA: NÃO diga que "todos os horários estão ocupados nos próximos 30 dias". Em vez disso, diga que os horários nos próximos dias estão preenchidos e sugira que o cliente entre em contato pelo telefone (51) 3661-5991 para verificar vagas, encaixes ou lista de espera. Seja POSITIVO e acolhedor.`;
         } else if (medicosParaBuscar.length === 0 && especialidadeDetectada) {
           infoDisponibilidade = `\n\n❌ ESPECIALIDADE NÃO DISPONÍVEL: "${especialidadeDetectada}"\nNão temos profissionais de ${especialidadeDetectada} cadastrados. Informe ao cliente e sugira ligar 51 3661-5991.`;
         } else {
