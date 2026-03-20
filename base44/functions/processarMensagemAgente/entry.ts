@@ -1677,6 +1677,8 @@ Retorne JSON.`;
       console.warn('⚠️ Erro ao gerar prompt:', e.message);
       promptCompleto = config.prompt_sistema;
     }
+    // Injetar status de funcionamento da clínica calculado pelo CÓDIGO (não pelo LLM)
+    promptCompleto += `\n\n🚨🚨 REGRA ABSOLUTA - STATUS DA CLÍNICA HOJE (calculado pelo sistema, NÃO pela IA):\n${statusClinicaHoje}\n⚠️ NUNCA contradiga esta informação. Se o sistema diz que está ABERTA, ela está ABERTA. Se diz FECHADA, está FECHADA. Não tente adivinhar o dia da semana - CONFIE nesta informação.`;
 
     const modeloLLM = config.modelo_llm || 'gpt-4o';
     let llmResponse = null;
