@@ -1485,10 +1485,10 @@ IMPORTANTE: Gere no MÍNIMO 5 insights e 5 recomendações. Seja um consultor de
       <CardHeader className="border-b">
         <CardTitle className="flex items-center gap-2 text-xl">
           <Brain className="w-6 h-6 text-purple-600" />
-          Assistente IA - Consultor de Gestão
+          Consultor IA - Gestão & Marketing
         </CardTitle>
         <p className="text-sm text-gray-600">
-          Análises profundas com relatórios detalhados, tabelas e recomendações estratégicas
+          Seu consultor particular: analisa vendas, despesas, tendências e gera planos de ação com base nos dados reais da clínica
         </p>
       </CardHeader>
       
