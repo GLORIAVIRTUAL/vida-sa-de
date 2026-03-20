@@ -1685,13 +1685,30 @@ Retorne JSON.`;
 
     let promptCompleto = '';
     try {
+      // Gerar lista de médicos ativos para incluir no prompt (evitar alucinações)
+      let listaMedicosAtivosParaPrompt = '';
+      try {
+        const medicosAtivosPrompt = todosMedicosParaDeteccao.length > 0 
+          ? todosMedicosParaDeteccao 
+          : await Promise.race([
+              base44.asServiceRole.entities.Medico.filter({ status: 'Ativo' }),
+              new Promise((_, r) => setTimeout(() => r(new Error('T')), 3000))
+            ]).then(ms => ms.filter(m => !/(cart[aã]o\s*mais\s*vida|dr\.?\s*exame\b|exame\s*laborat|eletrocardio)/i.test(m.nome || '')));
+        listaMedicosAtivosParaPrompt = medicosAtivosPrompt.map(m => 
+          `- ${m.nome} (${m.especialidade}${m.especialidades?.length > 0 ? ' / ' + m.especialidades.join(', ') : ''})`
+        ).join('\n');
+      } catch (e) {
+        console.warn('⚠️ Erro ao gerar lista médicos para prompt:', e.message);
+      }
+
       const promptResult = await base44.asServiceRole.functions.invoke('gerarPromptChat', {
         promptSistema: config.prompt_sistema,
         informacoesInstitucionais: config.informacoes_institucionais || '',
         dataAtualCompleta, dataAtualISO, horaAtual, saudacaoHorario,
         historicoConversa, historicoParaPrompt, ehPrimeiraMensagem, senderName,
         dadosFaltantes, infoDisponibilidade, infoProcedimentosExames,
-        instrucoesMidia, infoCancelamento, infoResultadoExame, infoAgendamentosCliente
+        instrucoesMidia, infoCancelamento, infoResultadoExame, infoAgendamentosCliente,
+        listaMedicosAtivos: listaMedicosAtivosParaPrompt
       });
       promptCompleto = promptResult.data.prompt;
     } catch (e) {
