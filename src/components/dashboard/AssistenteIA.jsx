@@ -1117,7 +1117,8 @@ IMPORTANTE: Gere no MÍNIMO 5 insights e 5 recomendações. Seja um consultor de
       const resultado = await InvokeLLM({
         prompt: prompt,
         add_context_from_internet: false,
-        response_json_schema: schema
+        response_json_schema: schema,
+        model: "gpt_5"
       });
 
       console.log('✅ [AssistenteIA] Resposta recebida:', resultado);
