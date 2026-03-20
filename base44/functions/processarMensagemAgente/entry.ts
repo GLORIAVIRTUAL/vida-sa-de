@@ -951,11 +951,11 @@ O cliente está ESCOLHENDO/RESPONDENDO. Ele disse: "${messageText}"
 🚨 REGRAS ABSOLUTAS:
 1. NÃO diga que não há horários! O cliente está respondendo à lista que você já apresentou.
 2. NÃO diga "infelizmente não temos horários disponíveis" - você ACABOU de mostrar horários!
-3. Se ele mencionou um médico e horário/data, CONFIRME usando EXATAMENTE o horário que VOCÊ ofereceu para aquele dia. Ex: se você ofereceu "Sexta 06/03: 10:00" e cliente disse "sexta dia 6", confirme "Vou agendar sexta dia 6 às 10:00". NUNCA use um horário que não foi oferecido!
-4. DEPOIS peça: "Preciso do seu nome completo e data de nascimento (DD/MM/AAAA) para finalizar."
-5. O SISTEMA vai criar o agendamento automaticamente quando tiver todos os dados.
+3. Se ele mencionou um médico e horário/data, REPITA usando EXATAMENTE o horário que VOCÊ ofereceu para aquele dia. Ex: se você ofereceu "Sexta 06/03: 10:00" e cliente disse "sexta dia 6", responda "Perfeito, horário escolhido: sexta dia 6 às 10:00". NUNCA use um horário que não foi oferecido!
+4. DEPOIS peça: "Preciso do seu nome completo e data de nascimento (DD/MM/AAAA) para prosseguir no sistema."
+5. O SISTEMA só cria o agendamento depois da validação real dos dados. NUNCA prometa que já agendou.
 6. NÃO repita a lista de disponibilidades! O cliente JÁ viu a lista.
-7. 🚨 NUNCA diga "sua presença está confirmada" ou "agendamento confirmado" - APENAS o sistema pode confirmar!
+7. 🚨 NUNCA diga "sua presença está confirmada", "agendamento confirmado", "agendamento realizado" ou "te aguardamos" sem retorno real do sistema.
 8. Se o cliente disse "sim" após você perguntar "Você gostaria de confirmar o horário?", isso significa que ele QUER aquele horário. NÃO mostre horários novamente, PEÇA nome e data de nascimento.
 
 ⚠️ IMPORTANTE: O cliente está se referindo aos horários que VOCÊ mostrou na mensagem anterior. Consulte o HISTÓRICO para ver quais horários foram oferecidos e confirme a escolha do cliente.`;
@@ -1523,6 +1523,13 @@ Retorne JSON.`;
       return Response.json({success:true,resposta:mensagemAgendamento,conversationId:null,agendamento_criado:true});
     }
 
+    if(mensagemAgendamento && !agendamentoCriado){
+      console.log('🛑 Bloqueando resposta fictícia e retornando status real do sistema');
+      try{const c=await buscarContatoPorTelefone(phoneNumber);const ts=new Date().toISOString();if(c){const h=c.historico_mensagens||[];h.push({role:'user',content:messageText,timestamp:ts},{role:'assistant',content:mensagemAgendamento,timestamp:ts});await base44.asServiceRole.entities.Contato.update(c.id,{ultima_mensagem:messageText,ultima_resposta:mensagemAgendamento,historico_mensagens:h.slice(-50),ultima_interacao:ts,total_mensagens:(c.total_mensagens||0)+2,processando_ia_lock:null});}}catch(e){console.error('⚠️ Erro:',e.message);}
+      await liberarLock(base44,phoneNumber);
+      return Response.json({success:true,resposta:mensagemAgendamento,conversationId:null,agendamento_criado:false});
+    }
+
     console.log('🤖 Chamando LLM...');
     const agoraBrasilia = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
     const horaAtual = new Date().toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' });
@@ -1734,6 +1741,7 @@ ${listaMedicosAtivosParaPrompt}
     }
     // Injetar status de funcionamento da clínica calculado pelo CÓDIGO (não pelo LLM)
     promptCompleto += `\n\n🚨🚨 REGRA ABSOLUTA - STATUS DA CLÍNICA HOJE (calculado pelo sistema, NÃO pela IA):\n${statusClinicaHoje}\n⚠️ NUNCA contradiga esta informação. Se o sistema diz que está ABERTA, ela está ABERTA. Se diz FECHADA, está FECHADA. Não tente adivinhar o dia da semana - CONFIE nesta informação.`;
+    promptCompleto += `\n\n🚨🚨 REGRA ABSOLUTA SOBRE CONFIRMAÇÃO DE AGENDAMENTO 🚨🚨\nVocê NUNCA pode dizer que agendou, confirmou, realizou ou concluiu um agendamento por conta própria.\nSe o sistema não retornou uma confirmação real, responda apenas com o próximo passo necessário ou com a indisponibilidade real.\nSão PROIBIDAS frases como: "agendamento confirmado", "agendamento realizado com sucesso", "te esperamos", "te aguardamos", "vou finalizar o agendamento agora".\nSe ainda faltar qualquer validação do sistema, diga somente o que falta ou informe que o horário não está disponível.`;
 
     const modeloLLM = config.modelo_llm || 'gpt-4o';
     let llmResponse = null;
