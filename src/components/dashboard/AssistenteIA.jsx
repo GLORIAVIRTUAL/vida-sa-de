@@ -14,13 +14,16 @@ import { ptBR } from "date-fns/locale";
 import { Separator } from "@/components/ui/separator";
 
 const exemplosPergunta = [
-  "Relatório completo de repasses médicos hoje",
-  "Me dê o fluxo do caixa de hoje",
-  "Análise de desempenho financeiro do mês",
-  "Relatório detalhado de atendimentos por médico",
-  "Como melhorar a taxa de comparecimento dos pacientes?",
-  "Quais estratégias para aumentar o faturamento?",
-  "Análise de rentabilidade por especialidade médica",
+  "Análise completa de vendas e faturamento do mês com indicações de marketing",
+  "Quais serviços mais vendem e quais estão em queda? Sugestões para aumentar vendas",
+  "Análise de despesas vs receitas com recomendações de corte de custos",
+  "Ranking de especialidades por rentabilidade e estratégias de crescimento",
+  "Diagnóstico completo da clínica como consultor de gestão empresarial",
+  "Análise de ticket médio por especialidade e oportunidades de upsell",
+  "Plano de marketing baseado nos dados: onde investir para crescer?",
+  "Análise de sazonalidade e tendências dos últimos meses",
+  "Taxa de retorno de pacientes e estratégias de fidelização",
+  "Comparativo de performance entre médicos e especialidades",
 ];
 
 const DynamicIcon = ({ name, ...props }) => {
