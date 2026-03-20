@@ -361,6 +361,140 @@ export default function AssistenteIA() {
       console.log(`  - Saídas (Lançamentos): R$ ${totalSaidasMes.toFixed(2)}`);
       console.log(`  - Resultado: R$ ${(totalEntradasMes - totalSaidasMes).toFixed(2)}`);
 
+      // ═══════════ ANÁLISES AVANÇADAS DE CONSULTORIA ═══════════
+      
+      // 1. SERVIÇOS MAIS E MENOS VENDIDOS (por tipo de serviço nas OS)
+      const servicosPorTipo = {};
+      ordensServico.filter(os => os.status_pagamento === "Pago").forEach(os => {
+        const tipo = os.tipo_servico || 'Não classificado';
+        if (!servicosPorTipo[tipo]) servicosPorTipo[tipo] = { quantidade: 0, faturamento: 0, repasse: 0 };
+        servicosPorTipo[tipo].quantidade += 1;
+        servicosPorTipo[tipo].faturamento += (os.valor_final || 0);
+        servicosPorTipo[tipo].repasse += (os.valor_repasse_medico || 0);
+      });
+      const rankingServicos = Object.entries(servicosPorTipo)
+        .map(([tipo, d]) => ({ tipo, ...d, lucro_clinica: d.faturamento - d.repasse, ticket_medio: d.quantidade > 0 ? d.faturamento / d.quantidade : 0 }))
+        .sort((a, b) => b.faturamento - a.faturamento);
+
+      // 2. RANKING POR ESPECIALIDADE
+      const especialidadeStats = {};
+      ordensMes.forEach(os => {
+        const med = medicos.find(m => m.id === os.medico_id);
+        const esp = med?.especialidade || 'Não informada';
+        if (!especialidadeStats[esp]) especialidadeStats[esp] = { quantidade: 0, faturamento: 0, repasse: 0, pacientes: new Set() };
+        especialidadeStats[esp].quantidade += 1;
+        especialidadeStats[esp].faturamento += (os.valor_final || 0);
+        especialidadeStats[esp].repasse += (os.valor_repasse_medico || 0);
+        if (os.paciente_id) especialidadeStats[esp].pacientes.add(os.paciente_id);
+      });
+      const rankingEspecialidades = Object.entries(especialidadeStats)
+        .map(([esp, d]) => ({ especialidade: esp, ...d, pacientes_unicos: d.pacientes.size, lucro_clinica: d.faturamento - d.repasse, ticket_medio: d.quantidade > 0 ? d.faturamento / d.quantidade : 0 }))
+        .sort((a, b) => b.faturamento - a.faturamento);
+
+      // 3. COMPARATIVO MENSAL (últimos 4 meses)
+      const mesesComparativo = [mesAnterior3Str, mesAnterior2Str, mesAnterior1Str, mesAtual];
+      const comparativoMensal = mesesComparativo.map(mes => {
+        const osDoMes = ordensServico.filter(os => os.data_execucao?.startsWith(mes) && os.status_pagamento === "Pago");
+        const agDoMes = agendamentos.filter(a => a.data_agendamento?.startsWith(mes));
+        const lancDoMes = lancamentos.filter(l => l.data_lancamento?.startsWith(mes));
+        const entradasMesComp = lancDoMes.filter(l => l.tipo === "Entrada").reduce((s, l) => s + (l.valor || 0), 0);
+        const saidasMesComp = lancDoMes.filter(l => l.tipo === "Saída").reduce((s, l) => s + (l.valor || 0), 0);
+        const faturamento = osDoMes.reduce((s, os) => s + (os.valor_final || 0), 0);
+        const cancelados = agDoMes.filter(a => a.status === "Cancelado").length;
+        const naoCompareceu = agDoMes.filter(a => a.status === "Não Compareceu").length;
+        const vendasCartMes = vendasCartao.filter(v => v.data_venda?.startsWith(mes));
+        return {
+          mes,
+          mes_label: mes === mesAtual ? 'Mês Atual' : format(new Date(mes + '-01'), "MMM/yy", { locale: ptBR }),
+          total_os: osDoMes.length,
+          faturamento_bruto: faturamento,
+          total_repasses: osDoMes.reduce((s, os) => s + (os.valor_repasse_medico || 0), 0),
+          lucro_clinica: faturamento - osDoMes.reduce((s, os) => s + (os.valor_repasse_medico || 0), 0),
+          agendamentos: agDoMes.length,
+          cancelados,
+          nao_compareceu: naoCompareceu,
+          taxa_cancelamento: agDoMes.length > 0 ? ((cancelados / agDoMes.length) * 100).toFixed(1) : '0',
+          entradas_financeiras: entradasMesComp,
+          saidas_financeiras: saidasMesComp,
+          resultado_liquido: entradasMesComp - saidasMesComp,
+          vendas_cartao: vendasCartMes.length,
+          ticket_medio: osDoMes.length > 0 ? faturamento / osDoMes.length : 0
+        };
+      });
+
+      // 4. ANÁLISE DE DESPESAS POR CATEGORIA
+      const despesasPorCategoria = {};
+      saidas.filter(s => s.data_lancamento?.startsWith(mesAtual)).forEach(s => {
+        const cat = s.categoria || 'Outros';
+        if (!despesasPorCategoria[cat]) despesasPorCategoria[cat] = 0;
+        despesasPorCategoria[cat] += (s.valor || 0);
+      });
+      const rankingDespesas = Object.entries(despesasPorCategoria)
+        .map(([categoria, valor]) => ({ categoria, valor }))
+        .sort((a, b) => b.valor - a.valor);
+
+      // 5. TAXA DE RETORNO DE PACIENTES
+      const pacientesComMultiplos = {};
+      agendamentos.filter(a => a.paciente_id && a.status !== 'Cancelado').forEach(a => {
+        if (!pacientesComMultiplos[a.paciente_id]) pacientesComMultiplos[a.paciente_id] = 0;
+        pacientesComMultiplos[a.paciente_id] += 1;
+      });
+      const totalPacientesAtendidos = Object.keys(pacientesComMultiplos).length;
+      const pacientesRecorrentes = Object.values(pacientesComMultiplos).filter(v => v > 1).length;
+      const taxaRetorno = totalPacientesAtendidos > 0 ? ((pacientesRecorrentes / totalPacientesAtendidos) * 100).toFixed(1) : '0';
+
+      // 6. PROCEDIMENTOS MAIS VENDIDOS (cruzando com tabela de procedimentos)
+      const procVendidos = {};
+      ordensServico.filter(os => os.status_pagamento === "Pago" && os.procedimento_id).forEach(os => {
+        const proc = procedimentos.find(p => p.id === os.procedimento_id);
+        const nome = proc?.nome || 'Procedimento não identificado';
+        if (!procVendidos[nome]) procVendidos[nome] = { quantidade: 0, faturamento: 0 };
+        procVendidos[nome].quantidade += 1;
+        procVendidos[nome].faturamento += (os.valor_final || 0);
+      });
+      const rankingProcedimentos = Object.entries(procVendidos)
+        .map(([nome, d]) => ({ nome, ...d }))
+        .sort((a, b) => b.quantidade - a.quantidade);
+
+      // 7. HORÁRIOS DE PICO (análise de agendamentos por hora)
+      const horariosPico = {};
+      agendamentosMes.forEach(a => {
+        if (a.horario) {
+          const hora = a.horario.split(':')[0] + ':00';
+          if (!horariosPico[hora]) horariosPico[hora] = 0;
+          horariosPico[hora] += 1;
+        }
+      });
+      const horariosMaisMovimentados = Object.entries(horariosPico)
+        .map(([hora, qtd]) => ({ hora, quantidade: qtd }))
+        .sort((a, b) => b.quantidade - a.quantidade);
+
+      // 8. DIAS DA SEMANA MAIS MOVIMENTADOS
+      const diasSemanaStats = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+      const diasNomes = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+      agendamentosMes.forEach(a => {
+        if (a.data_agendamento) {
+          const d = new Date(a.data_agendamento + 'T12:00:00');
+          diasSemanaStats[d.getDay()] += 1;
+        }
+      });
+      const diasMaisMovimentados = Object.entries(diasSemanaStats)
+        .map(([dia, qtd]) => ({ dia: diasNomes[dia], quantidade: qtd }))
+        .sort((a, b) => b.quantidade - a.quantidade);
+
+      // 9. ORIGEM DOS PACIENTES (como conheceu)
+      const origensMap = {};
+      pacientes.forEach(p => {
+        const origem = p.como_conheceu || 'Não informado';
+        if (!origensMap[origem]) origensMap[origem] = 0;
+        origensMap[origem] += 1;
+      });
+      const rankingOrigens = Object.entries(origensMap)
+        .map(([origem, qtd]) => ({ origem, quantidade: qtd }))
+        .sort((a, b) => b.quantidade - a.quantidade);
+
+      console.log('📊 [AssistenteIA] Análises de consultoria calculadas');
+
       const resumo = {
         totais: {
           pacientes: pacientes.length,
