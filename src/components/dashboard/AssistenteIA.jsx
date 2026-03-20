@@ -591,6 +591,28 @@ export default function AssistenteIA() {
           total_agendamentos_sistema: agendamentos?.length || 0,
           total_ordens_servico: ordensServico?.length || 0,
           total_lancamentos: lancamentos?.length || 0
+        },
+        // ═══ DADOS DE CONSULTORIA EMPRESARIAL ═══
+        consultoria: {
+          ranking_servicos: rankingServicos,
+          ranking_especialidades: rankingEspecialidades,
+          comparativo_mensal: comparativoMensal,
+          ranking_despesas: rankingDespesas,
+          ranking_procedimentos: rankingProcedimentos.slice(0, 20),
+          horarios_pico: horariosMaisMovimentados.slice(0, 10),
+          dias_mais_movimentados: diasMaisMovimentados,
+          ranking_origens_pacientes: rankingOrigens,
+          fidelizacao: {
+            total_pacientes_atendidos: totalPacientesAtendidos,
+            pacientes_recorrentes: pacientesRecorrentes,
+            taxa_retorno: taxaRetorno
+          },
+          indicadores_chave: {
+            ticket_medio_geral: ordensMes.length > 0 ? (faturamentoBrutoMes / ordensMes.length).toFixed(2) : '0',
+            margem_clinica_percentual: faturamentoBrutoMes > 0 ? ((totalClinicaMes / faturamentoBrutoMes) * 100).toFixed(1) : '0',
+            custo_fixo_percentual: totalEntradasMes > 0 ? ((totalSaidasMes / totalEntradasMes) * 100).toFixed(1) : '0',
+            receita_por_medico_ativo: medicos.filter(m => m.status === 'Ativo').length > 0 ? (faturamentoBrutoMes / medicos.filter(m => m.status === 'Ativo').length).toFixed(2) : '0'
+          }
         }
       };
 
