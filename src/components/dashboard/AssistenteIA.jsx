@@ -79,6 +79,14 @@ export default function AssistenteIA() {
       const inicioSemana = new Date();
       inicioSemana.setDate(inicioSemana.getDate() - inicioSemana.getDay());
       const semanaAtual = inicioSemana.toISOString().split('T')[0];
+      
+      // Meses anteriores para comparativo
+      const mesAnterior1 = new Date(); mesAnterior1.setMonth(mesAnterior1.getMonth() - 1);
+      const mesAnterior1Str = mesAnterior1.toISOString().substring(0, 7);
+      const mesAnterior2 = new Date(); mesAnterior2.setMonth(mesAnterior2.getMonth() - 2);
+      const mesAnterior2Str = mesAnterior2.toISOString().substring(0, 7);
+      const mesAnterior3 = new Date(); mesAnterior3.setMonth(mesAnterior3.getMonth() - 3);
+      const mesAnterior3Str = mesAnterior3.toISOString().substring(0, 7);
 
       // ORDENS DE SERVIÇO COM DETALHES - USAR TODAS AS PAGAS
       const ordensHoje = ordensServico.filter(os => os.data_execucao === hoje && os.status_pagamento === "Pago");
