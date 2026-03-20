@@ -1099,15 +1099,28 @@ O cliente está ESCOLHENDO/RESPONDENDO. Ele disse: "${messageText}"
           infoDisponibilidade+='\n⚠️ Para confirmar: nome completo e data nascimento.';
           console.log('✅ Disponibilidades:', disponibilidadesEncontradas.length, 'médicos');
         } else if (medicosParaBuscar.length > 0) {
-          // Montar info dos dias que cada médico atende para dar resposta mais útil
-          let infoMedicos = medicosParaBuscar.map(m => {
-            const dias = (m.horarios_atendimento || []).filter(h => !h.bloqueado).map(h => {
-              const nomesDias = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
-              return h.data_especifica ? h.data_especifica : nomesDias[Math.floor(h.dia_semana)] || '';
-            }).filter(Boolean);
-            return `${m.nome} (atende: ${[...new Set(dias)].join(', ')})`;
-          }).join('\n');
-          infoDisponibilidade = `\n\n⚠️ HORÁRIOS ESGOTADOS NOS PRÓXIMOS 30 DIAS para ${especialidadeDetectada||'esta especialidade'}.\nProfissionais disponíveis:\n${infoMedicos}\n\n🚨 REGRA: NÃO diga que "todos os horários estão ocupados nos próximos 30 dias". Em vez disso, diga que os horários nos próximos dias estão preenchidos e sugira que o cliente entre em contato pelo telefone (51) 3661-5991 para verificar vagas, encaixes ou lista de espera. Seja POSITIVO e acolhedor.`;
+          // FALLBACK: getAvailableSlots retornou vazio - calcular disponibilidade diretamente dos horários de atendimento
+          console.log('⚠️ getAvailableSlots vazio. Fallback direto...');
+          const _nDs=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+          let _fbDisp=[];
+          for(const med of medicosParaBuscar){const hc=med.horarios_atendimento||[];if(!hc.length)continue;const diasM=[];
+            for(let i=0;i<30&&diasM.length<5;i++){const dc=new Date();dc.setDate(dc.getDate()+i);const df=dc.toLocaleDateString('en-CA',{timeZone:'America/Sao_Paulo'});const ds=dc.getDay();
+              const hEsp=hc.filter(h=>h.data_especifica===df&&!h.bloqueado);const hRec=hc.filter(h=>!h.data_especifica&&!h.bloqueado&&Math.floor(h.dia_semana)===ds);
+              const hV=hEsp.length>0?hEsp:hRec;if(!hV.length)continue;
+              const tc=med.tempo_consulta_minutos||30;let sl=0;for(const p of hV){const[ih,im]=p.horario_inicio.split(':').map(Number);const[fh,fm]=p.horario_fim.split(':').map(Number);sl+=Math.floor(((fh*60+fm)-(ih*60+im))/tc);}
+              try{const ag=await Promise.race([base44.asServiceRole.entities.Agendamento.filter({medico_id:med.id,data_agendamento:df}),new Promise((_,r)=>setTimeout(()=>r(new Error('T')),2000))]);sl=Math.max(0,sl-ag.filter(a=>a.status!=='Cancelado').length);}catch(e){}
+              if(sl>0){diasM.push({df,fmt:dc.toLocaleDateString('pt-BR',{timeZone:'America/Sao_Paulo',weekday:'long',day:'2-digit',month:'2-digit'}),hi:hV[0].horario_inicio,hf:hV[0].horario_fim,sl});}
+            }
+            if(diasM.length>0)_fbDisp.push({id:med.id,nome:med.nome,esp:med.especialidade,dias:diasM});
+          }
+          if(_fbDisp.length>0){console.log('✅ Fallback:',_fbDisp.length,'médicos');const _am2=new Date();_am2.setDate(_am2.getDate()+1);const _amI2=_am2.toLocaleDateString('en-CA',{timeZone:'America/Sao_Paulo'});
+            infoDisponibilidade=`\n\n📅 DISPONIBILIDADES ENCONTRADAS:\n🚨HOJE=${_hojeI} AMANHÃ=${_amI2}.\n`;
+            for(const m of _fbDisp){infoDisponibilidade+=`\n👨‍⚕️ *${m.nome}* (${m.esp}) [ID: ${m.id}]\n`;for(const d of m.dias.slice(0,3)){infoDisponibilidade+=`   📅 ${d.fmt}: ${d.hi} às ${d.hf} (~${d.sl} vagas)\n`;}}
+            infoDisponibilidade+=_fbDisp.length>1?'\n⚠️ Apresente médicos e próximos dias. Pergunte qual prefere.':'\n⚠️ Apresente próximos dias. Pergunte qual prefere.';
+            infoDisponibilidade+='\n⚠️ Para confirmar: nome completo e data nascimento.';
+          }else{
+            infoDisponibilidade=`\n\n⚠️ HORÁRIOS ESGOTADOS para ${especialidadeDetectada||'esta especialidade'}.\n🚨 NÃO diga "todos os horários estão ocupados nos próximos 30 dias". Diga que os horários estão preenchidos e sugira ligar (51) 3661-5991 para encaixes. Seja POSITIVO.`;
+          }
         } else if (medicosParaBuscar.length === 0 && especialidadeDetectada) {
           infoDisponibilidade = `\n\n❌ ESPECIALIDADE NÃO DISPONÍVEL: "${especialidadeDetectada}"\nNão temos profissionais de ${especialidadeDetectada} cadastrados. Informe ao cliente e sugira ligar 51 3661-5991.`;
         } else {
