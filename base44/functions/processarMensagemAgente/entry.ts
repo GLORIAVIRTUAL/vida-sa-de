@@ -1707,10 +1707,27 @@ Retorne JSON.`;
         dataAtualCompleta, dataAtualISO, horaAtual, saudacaoHorario,
         historicoConversa, historicoParaPrompt, ehPrimeiraMensagem, senderName,
         dadosFaltantes, infoDisponibilidade, infoProcedimentosExames,
-        instrucoesMidia, infoCancelamento, infoResultadoExame, infoAgendamentosCliente,
-        listaMedicosAtivos: listaMedicosAtivosParaPrompt
+        instrucoesMidia, infoCancelamento, infoResultadoExame, infoAgendamentosCliente
       });
       promptCompleto = promptResult.data.prompt;
+      
+      // INJETAR LISTA DE MÉDICOS ATIVOS NO PROMPT (evitar alucinações de médicos inexistentes)
+      if (listaMedicosAtivosParaPrompt) {
+        promptCompleto += `\n\n🚨🚨🚨 REGRA ABSOLUTAMENTE CRÍTICA - LISTA DE MÉDICOS DA CLÍNICA 🚨🚨🚨
+        
+Os ÚNICOS médicos e profissionais que trabalham nesta clínica são os listados abaixo.
+NUNCA mencione, ofereça ou agende com médicos que NÃO estejam nesta lista.
+Se um nome de médico aparecer no histórico da conversa mas NÃO estiver na lista abaixo, esse médico NÃO faz mais parte da clínica.
+
+📋 MÉDICOS ATIVOS CADASTRADOS NO SISTEMA:
+${listaMedicosAtivosParaPrompt}
+
+⛔ PROIBIDO:
+- Inventar nomes de médicos que não estão na lista acima
+- Mencionar médicos que saíram da clínica (ex: se alguém aparece no histórico mas não está na lista, NÃO o mencione)
+- Agendar com profissionais inexistentes
+- Se o cliente perguntar por um médico que NÃO está na lista, diga que esse profissional não faz mais parte da equipe e ofereça os médicos disponíveis da mesma especialidade`;
+      }
     } catch (e) {
       console.warn('⚠️ Erro ao gerar prompt:', e.message);
       promptCompleto = config.prompt_sistema;
