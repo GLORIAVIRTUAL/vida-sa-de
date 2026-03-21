@@ -1729,9 +1729,11 @@ ${listaMedicosAtivosParaPrompt}
 
 ⛔ PROIBIDO:
 - Inventar nomes de médicos que não estão na lista acima
-- Mencionar médicos que saíram da clínica (ex: se alguém aparece no histórico mas não está na lista, NÃO o mencione)
+- Mencionar médicos que saíram da clínica
 - Agendar com profissionais inexistentes
-- Se o cliente perguntar por um médico que NÃO está na lista, diga que esse profissional não faz mais parte da equipe e ofereça os médicos disponíveis da mesma especialidade`;
+- 🚨 OFERECER DIAS QUE O MÉDICO NÃO ATENDE! Cada médico acima tem [Agenda: ...] com os dias EXATOS. Se Dr. João atende só Qua, NUNCA ofereça segunda/terça/quinta/sexta para ele. SEMPRE consulte a agenda antes de sugerir um dia.
+- Se o cliente pedir um dia que o médico NÃO atende, diga: "O(a) Dr(a). X atende apenas nas [dias]. Posso verificar os próximos horários disponíveis?"
+- Se o cliente perguntar por um médico que NÃO está na lista, diga que esse profissional não faz mais parte da equipe`;
       }
     } catch (e) {
       console.warn('⚠️ Erro ao gerar prompt:', e.message);
