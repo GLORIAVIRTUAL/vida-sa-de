@@ -839,15 +839,13 @@ Deno.serve(async (req) => {
     const msgLower = normalizarTexto(messageText);
     const historicoLower = normalizarTexto(historicoConversa || '');
 
-    // IMPORTANTE: Primeiro buscar ESPECIALIDADE na MENSAGEM, depois médico na mensagem, depois histórico
-    // Isso evita que um médico do histórico sobrescreva a especialidade que o cliente pediu AGORA
-
-    // Carregar médicos ativos (com timeout) - excluir fictícios
-    let todosMedicosParaDeteccao = [];
+    let todosMedicosParaDeteccao = [], respostaQuemAtendeDia = null;
     try {
       const _raw = await Promise.race([base44.asServiceRole.entities.Medico.filter({ status: 'Ativo' }), new Promise((_, r) => setTimeout(() => r(new Error('Timeout')), 3000))]);
       todosMedicosParaDeteccao = _raw.filter(m => !/(cart[aã]o\s*mais\s*vida|dr\.?\s*exame\b|exame\s*laborat|eletrocardio)/i.test(m.nome || ''));
     } catch (e) { console.warn('⚠️ Timeout médicos:', e.message); }
+    const _pqad=/quem\s+(vai\s+)?atender|quem\s+atende|quais?\s+(m[eé]dicos?|profissionais?).*(atendem|atender)|qual\s+(m[eé]dico|profissional).*(atende|vai atender)/i.test(messageText||'')&&/segunda|terça|terca|quarta|quinta|sexta|s[áa]bado|domingo|hoje|amanh[ãa]/i.test(messageText||'');
+    if(_pqad){const n=normalizarTexto(messageText||''),mapa=[['domingo',0,'domingo'],['segunda',1,'segunda-feira'],['terca',2,'terça-feira'],['terça',2,'terça-feira'],['quarta',3,'quarta-feira'],['quinta',4,'quinta-feira'],['sexta',5,'sexta-feira'],['sabado',6,'sábado'],['sábado',6,'sábado']];let dia=null,rot='';if(n.includes('amanha')){const d=new Date();d.setDate(d.getDate()+1);dia=d.getDay();rot='amanhã';}else if(n.includes('hoje')){dia=new Date().getDay();rot='hoje';}else{const ach=mapa.find(([t])=>n.includes(t));if(ach){dia=ach[1];rot=ach[2];}}if(dia!==null){const lista=todosMedicosParaDeteccao.filter(m=>(m.horarios_atendimento||[]).some(h=>!h.bloqueado&&!h.data_especifica&&Math.floor(h.dia_semana)===dia&&(h.recorrencia||'Toda Semana')!=='Apenas uma vez'));respostaQuemAtendeDia=lista.length?`Na ${rot}, temos estes profissionais com agenda cadastrada:\n\n${lista.map(m=>`• ${m.nome} (${m.especialidade||'Especialidade não informada'})`).join('\n')}`:`No momento, não há profissionais com agenda cadastrada para ${rot}.`;}}
 
     // ======= PASSO 1: Buscar ESPECIALIDADE na MENSAGEM do cliente =======
     for (const esp of especialidades) {
@@ -1745,7 +1743,9 @@ ${listaMedicosAtivosParaPrompt}
 
     const modeloLLM = config.modelo_llm || 'gpt-4o';
     let llmResponse = null;
-    if (arquivoParaEnviar) {
+    if (respostaQuemAtendeDia) {
+      llmResponse = respostaQuemAtendeDia;
+    } else if (arquivoParaEnviar) {
       llmResponse = "Encontrei seu resultado! Enviando o arquivo PDF agora mesmo. 📄";
     } else {
       try {
