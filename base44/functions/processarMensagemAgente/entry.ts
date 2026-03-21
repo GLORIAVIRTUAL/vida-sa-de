@@ -1700,9 +1700,8 @@ Retorne JSON.`;
               base44.asServiceRole.entities.Medico.filter({ status: 'Ativo' }),
               new Promise((_, r) => setTimeout(() => r(new Error('T')), 3000))
             ]).then(ms => ms.filter(m => !/(cart[aã]o\s*mais\s*vida|dr\.?\s*exame\b|exame\s*laborat|eletrocardio)/i.test(m.nome || '')));
-        listaMedicosAtivosParaPrompt = medicosAtivosPrompt.map(m => 
-          `- ${m.nome} (${m.especialidade}${m.especialidades?.length > 0 ? ' / ' + m.especialidades.join(', ') : ''})`
-        ).join('\n');
+        const _dN=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+        listaMedicosAtivosParaPrompt=medicosAtivosPrompt.map(m=>{const hA=(m.horarios_atendimento||[]).filter(h=>!h.bloqueado&&!h.data_especifica);const ds=[...new Set(hA.map(h=>Math.floor(h.dia_semana)))].sort();const dS=ds.length>0?ds.map(d=>{const hs=hA.filter(h=>Math.floor(h.dia_semana)===d);return `${_dN[d]} ${hs.map(h=>h.horario_inicio+'-'+h.horario_fim).join('/')}`;}).join(', '):'SEM AGENDA';return `- ${m.nome} (${m.especialidade}${m.especialidades?.length>0?' / '+m.especialidades.join(', '):''})[Agenda: ${dS}]`;}).join('\n');
       } catch (e) {
         console.warn('⚠️ Erro ao gerar lista médicos para prompt:', e.message);
       }
