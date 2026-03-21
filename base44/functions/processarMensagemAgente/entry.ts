@@ -1258,7 +1258,8 @@ Retorne JSON.`;
         const assistentePediuDadosParaFinalizar=/nome completo|data de nascimento|dd\/mm\/aaaa|para finalizar|para confirmar|para prosseguir/i.test(ultimaMsgAssistenteFull||'');
         const clienteConfirmouOuEscolheu=/^(sim|s|ok|quero|pode|claro|isso|esse|essa|confirmo|pode ser|vamos|fechado|certo|correto)$/i.test((messageText||'').trim())||/\d{1,2}[:h]\d{2}|\d{1,2}\/\d{1,2}|segunda|ter[cç]a|quarta|quinta|sexta|s[áa]bado|amanh[ãa]|hoje/i.test(messageText||'');
         const clienteEnviouDadosPessoaisNaMensagem=/\d{1,2}\/\d{1,2}\/\d{4}/.test(messageText||'')&&/[A-Za-zÀ-ÿ]{2,}.*\d{1,2}\/\d{1,2}\/\d{4}/.test(messageText||'');
-        const podeCriarAgendamentoAgora=!mensagemEhPerguntaNova&&((assistentePediuConfirmacaoHorario&&clienteConfirmouOuEscolheu)||(assistentePediuDadosParaFinalizar&&clienteEnviouDadosPessoaisNaMensagem));
+        const clienteEnviouComplementoDadosNaMensagem=clienteEnviouDadosPessoaisNaMensagem||/^\d{1,2}\/\d{1,2}\/\d{4}$/.test((messageText||'').trim())||(/^[A-Za-zÀ-ÿ\s]+$/.test((messageText||'').trim())&&(messageText||'').trim().split(/\s+/).length>=2);
+        const podeCriarAgendamentoAgora=!mensagemEhPerguntaNova&&((assistentePediuConfirmacaoHorario&&clienteConfirmouOuEscolheu)||(assistentePediuDadosParaFinalizar&&clienteEnviouComplementoDadosNaMensagem&&_nV&&_dV));
         if (_nV && _dV && (extracao.medico_nome || extracao.medico_id) && extracao.data_agendamento && extracao.horario && podeCriarAgendamentoAgora) {
           
           console.log('✅ Todos os dados coletados e cliente confirmou, criando agendamento...');
