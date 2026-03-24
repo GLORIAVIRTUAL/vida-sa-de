@@ -331,13 +331,16 @@ async function processarMensagemRecebida(base44, payload) {
                 const ultimaInteracao = new Date(contato.ultima_interacao || contato.created_date).getTime();
                 const tempoInativo = Date.now() - ultimaInteracao;
                 const expirouTimeout = tempoInativo > (HORAS_TIMEOUT * 60 * 60 * 1000);
+                
+                // Correção: Contatos criados manualmente estavam vindo com atendimento_humano=false por padrão
+                const isNovoContatoManual = contato.atendimento_humano === false && (!contato.historico_mensagens || contato.historico_mensagens.length === 0);
 
-                if (contato.conversa_finalizada || (contato.atendimento_humano === false && expirouTimeout)) {
-                    console.log('🔄 [zapiWebhook] Reativando em modo Humano (finalizada ou timeout)');
+                if (contato.conversa_finalizada || (contato.atendimento_humano === false && expirouTimeout) || isNovoContatoManual) {
+                    console.log('🔄 [zapiWebhook] Reativando em modo Humano (finalizada, timeout ou novo manual)');
                     const historicoExistente = contato.historico_mensagens || [];
                     const separador = {
                         role: 'assistant',
-                        content: contato.conversa_finalizada ? '── Conversa anterior finalizada ──' : '── Conversa expirada (timeout) ──',
+                        content: contato.conversa_finalizada ? '── Conversa anterior finalizada ──' : (isNovoContatoManual ? '── Início de conversa ──' : '── Conversa expirada (timeout) ──'),
                         timestamp: agora,
                         sistema: true
                     };
