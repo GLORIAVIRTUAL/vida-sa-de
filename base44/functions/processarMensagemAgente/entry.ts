@@ -917,7 +917,10 @@ Deno.serve(async (req) => {
 
     console.log('📋 Detecção agendamento:', { querAgendar, ehPerguntaDisponibilidadeMedico, especialidadeDetectada, medicoEspecificoDetectado: !!medicoEspecificoDetectado, deveBuscarDisponibilidades });
     
-    if (deveBuscarDisponibilidades) {
+    if (querAgendar && !temEspecialidadeOuMedico && !deveBuscarDisponibilidades) {
+      infoDisponibilidade = `\n\n⚠️ O cliente quer agendar, mas NÃO informou a especialidade ou médico.
+🚨 REGRA CRÍTICA: PERGUNTE para qual especialidade ou médico o cliente deseja agendar ANTES de confirmar ou negar qualquer horário. NÃO invente horários nem diga que não há vagas. Diga algo como: "Para qual especialidade você gostaria de agendar?"`;
+    } else if (deveBuscarDisponibilidades) {
       // Verificar se já mostramos disponibilidades recentemente
       const historico = historicoConversa || '';
       
