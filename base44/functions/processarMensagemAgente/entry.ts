@@ -530,7 +530,7 @@ Deno.serve(async (req) => {
     const _pqad=(/(quem|que)\s+(vai\s+)?(atender|estar)|quem\s+atende|quais?\s+(m[eé]dicos?|profissionais?).*(atendem|atender)|qual\s+(m[eé]dico|profissional).*(atende|vai atender)/i.test(messageText||'')||/vai\s+ter\s+(m[eé]dicos?|profissionais?|atendimento)/i.test(messageText||'')||/(ter[aá]|tem)\s+(m[eé]dicos?|profissionais?|atendimento)\s+(amanh[ãa]|hoje|segunda|ter[çc]a|quarta|quinta|sexta|s[áa]bado)/i.test(messageText||'')||/(m[eé]dicos?|profissionais?)\s+(atendendo|que\s+atendem|dispon[ií]veis?)\s+(amanh[ãa]|hoje|segunda|ter[çc]a|quarta|quinta|sexta|s[áa]bado)/i.test(messageText||''))&&/segunda|ter[çc]a|terca|quarta|quinta|sexta|s[áa]bado|domingo|hoje|amanh[ãa]/i.test(messageText||'');
     if(_pqad){
       try {
-        console.log('🔍 _pqad é true, chamando getDoctorsAgendaByDate via fetch...');
+        // Chamando getDoctorsAgendaByDate via fetch para evitar erro 403
         const appId = Deno.env.get('BASE44_APP_ID');
         const url = `https://base44.app/api/apps/${appId}/functions/getDoctorsAgendaByDate`;
         const agendaResp = await Promise.race([
