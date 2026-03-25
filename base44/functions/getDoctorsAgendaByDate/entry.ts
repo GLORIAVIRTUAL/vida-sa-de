@@ -179,17 +179,19 @@ const matchesDoctorQuery = (queryText, medico) => {
   const normalizedQuery = normalizeText(queryText);
   if (!normalizedQuery) return false;
 
+  const specialties = [medico.especialidade, ...(medico.especialidades || [])]
+    .filter(Boolean)
+    .map((specialty) => normalizeText(specialty));
+  const specialtyMatch = specialties.some((specialty) => specialty && normalizedQuery.includes(specialty));
+  if (specialtyMatch) return true;
+
+  if (!shouldTryDoctorNameFilter(normalizedQuery)) return false;
+
   const nameParts = normalizeText(medico.nome)
     .split(' ')
     .filter((part) => part.length > 3 && !STOPWORDS.has(part));
   const nameMatches = nameParts.filter((part) => normalizedQuery.includes(part));
-  if (nameMatches.length >= 2 || nameMatches.some((part) => part.length >= 6)) return true;
-
-  const specialties = [medico.especialidade, ...(medico.especialidades || [])]
-    .filter(Boolean)
-    .map((specialty) => normalizeText(specialty));
-
-  return specialties.some((specialty) => specialty && normalizedQuery.includes(specialty));
+  return nameMatches.length >= 2 || nameMatches.some((part) => part.length >= 6);
 };
 
 Deno.serve(async (req) => {
