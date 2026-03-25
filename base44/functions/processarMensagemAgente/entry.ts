@@ -310,7 +310,7 @@ Deno.serve(async (req) => {
           for(const ag of aF){const md=mm[ag.medico_id];if(md){const pn=md.nome.toLowerCase().split(' ').filter(p=>p.length>3&&!/^(dr\.?|dra\.?)$/i.test(p));if(pn.some(p=>_mlc.includes(p))){_agIm=ag.id;break;}}}
           if(!_agIm){const _dm=messageText.match(/(\d{1,2})\/(\d{1,2})|dia\s*(\d{1,2})/i);if(_dm){const _d=_dm[1]||_dm[3],_m=_dm[2]||String(new Date().getMonth()+1),_dr=`${new Date().getFullYear()}-${String(_m).padStart(2,'0')}-${String(_d).padStart(2,'0')}`;const _c=aF.find(a=>a.data_agendamento===_dr);if(_c){_agIm=_c.id;}}}
           if(!_agIm){const _hm=messageText.match(/(?:às|as)?\s*(\d{1,2})[h:](\d{2})/i);if(_hm){const _hr=`${String(_hm[1]).padStart(2,'0')}:${_hm[2]}`;const _c=aF.find(a=>a.horario===_hr);if(_c){_agIm=_c.id;}}}
-          if(!_agIm&&aF.length===1){_agIm=aF[0].id;}
+          // if(!_agIm&&aF.length===1){_agIm=aF[0].id;} // Removido para evitar cancelamento automatico sem confirmacao
           if(_agIm){const _ac=aF.find(a=>a.id===_agIm);const _mc=_ac?mm[_ac.medico_id]:null;
             try{await base44.asServiceRole.entities.Agendamento.update(_agIm,{status:'Cancelado',observacoes:`Cancelado via WhatsApp em ${new Date().toLocaleString('pt-BR')}`});
             try{const cs=await base44.asServiceRole.entities.Contato.filter({telefone:phoneNumber});if(cs.length>0)await base44.asServiceRole.entities.Contato.update(cs[0].id,{status:'Cancelou'});}catch(e){}
