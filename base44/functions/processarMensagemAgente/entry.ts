@@ -530,11 +530,13 @@ Deno.serve(async (req) => {
     const _pqad=(/(quem|que)\s+(vai\s+)?(atender|estar)|quem\s+atende|quais?\s+(m[eé]dicos?|profissionais?).*(atendem|atender)|qual\s+(m[eé]dico|profissional).*(atende|vai atender)/i.test(messageText||'')||/vai\s+ter\s+(m[eé]dicos?|profissionais?|atendimento)/i.test(messageText||'')||/(ter[aá]|tem)\s+(m[eé]dicos?|profissionais?|atendimento)\s+(amanh[ãa]|hoje|segunda|ter[çc]a|quarta|quinta|sexta|s[áa]bado)/i.test(messageText||'')||/(m[eé]dicos?|profissionais?)\s+(atendendo|que\s+atendem|dispon[ií]veis?)\s+(amanh[ãa]|hoje|segunda|ter[çc]a|quarta|quinta|sexta|s[áa]bado)/i.test(messageText||''))&&/segunda|ter[çc]a|terca|quarta|quinta|sexta|s[áa]bado|domingo|hoje|amanh[ãa]/i.test(messageText||'');
     if(_pqad){
       try {
+        console.log('🔍 _pqad é true, chamando getDoctorsAgendaByDate...');
         const agendaResp = await Promise.race([
           base44.asServiceRole.functions.invoke('getDoctorsAgendaByDate', { queryText: messageText }),
           new Promise((_, r) => setTimeout(() => r(new Error('Timeout agenda real')), 12000))
         ]);
         const agendaData = agendaResp?.data;
+        console.log('🔍 agendaData:', JSON.stringify(agendaData).substring(0, 200));
         if (agendaData?.doctors?.length > 0) {
           const dataFmt = new Date(`${agendaData.date}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' });
           const doctorsWithSlots = agendaData.doctors.filter(d => d.total_horarios_disponiveis > 0);
@@ -547,7 +549,9 @@ Deno.serve(async (req) => {
         } else if (agendaData?.date) {
           respostaQuemAtendeDia = `No momento, não há profissionais com agenda cadastrada para ${agendaData.reference_label || agendaData.date}.`;
         }
-      } catch (e) {}
+      } catch (e) {
+        console.log('❌ Erro no _pqad:', e.message);
+      }
     }
 
     for (const esp of especialidades) {
