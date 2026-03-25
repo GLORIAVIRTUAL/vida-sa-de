@@ -537,7 +537,13 @@ Deno.serve(async (req) => {
         const agendaData = agendaResp?.data;
         if (agendaData?.doctors?.length > 0) {
           const dataFmt = new Date(`${agendaData.date}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' });
-          respostaQuemAtendeDia = `Para ${agendaData.reference_label || dataFmt}, estes são os profissionais com agenda real cadastrada:\n\n${agendaData.doctors.map((m) => `• ${m.nome} (${m.especialidade || 'Especialidade não informada'}) — ${m.agenda_do_dia.map((p) => `${p.inicio} às ${p.fim}`).join(' | ')}`).join('\n')}\n\nCom qual especialidade você gostaria de agendar?`;
+          const doctorsWithSlots = agendaData.doctors.filter(d => d.total_horarios_disponiveis > 0);
+          
+          if (doctorsWithSlots.length > 0) {
+            respostaQuemAtendeDia = `Para ${agendaData.reference_label || dataFmt}, estes são os profissionais com horários disponíveis:\n\n${doctorsWithSlots.map((m) => `• ${m.nome} (${m.especialidade || 'Especialidade não informada'}) — ${m.agenda_do_dia.map((p) => `${p.inicio} às ${p.fim}`).join(' | ')}`).join('\n')}\n\nCom qual especialidade você gostaria de agendar?`;
+          } else {
+            respostaQuemAtendeDia = `Para ${agendaData.reference_label || dataFmt}, os profissionais que atendem neste dia já estão com a agenda lotada.`;
+          }
         } else if (agendaData?.date) {
           respostaQuemAtendeDia = `No momento, não há profissionais com agenda cadastrada para ${agendaData.reference_label || agendaData.date}.`;
         }
