@@ -13,10 +13,11 @@ Deno.serve(async (req) => {
     }
 
     const agendamentos = await base44.asServiceRole.entities.Agendamento.filter({ paciente_id: thiago.id });
+    const futuros = agendamentos.filter(a => a.data_agendamento >= "2026-03-25" && ['Agendado', 'Confirmado', 'Pago'].includes(a.status));
     
     return Response.json({ 
         paciente: thiago,
-        agendamentos: agendamentos.map(a => ({ 
+        futuros: futuros.map(a => ({ 
             id: a.id, 
             data: a.data_agendamento, 
             horario: a.horario, 
