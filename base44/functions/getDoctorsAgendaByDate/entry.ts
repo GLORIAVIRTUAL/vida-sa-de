@@ -267,7 +267,8 @@ Deno.serve(async (req) => {
     return Response.json({
       date: targetDate,
       reference_label,
-      doctors: doctorsToReturn
+      doctors: doctorsToReturn,
+      is_booked_only: shouldUseBookedDoctorsOnly(queryText)
     });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
