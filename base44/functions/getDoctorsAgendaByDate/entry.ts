@@ -80,13 +80,10 @@ const resolveDateFromQuery = (queryText = '', explicitDate = null) => {
 
   const normalized = normalizeText(queryText);
   const todayIso = formatIsoInTz(new Date());
-  const [baseYear, baseMonth, baseDay] = todayIso.split('-').map(Number);
-  const baseDate = new Date(Date.UTC(baseYear, baseMonth - 1, baseDay));
+  const [baseYear] = todayIso.split('-').map(Number);
 
   if (normalized.includes('amanha')) {
-    const nextDate = new Date(baseDate);
-    nextDate.setUTCDate(nextDate.getUTCDate() + 1);
-    return { date: formatIsoInTz(nextDate), reference_label: 'amanhã' };
+    return { date: addDaysToIso(todayIso, 1), reference_label: 'amanhã' };
   }
 
   if (normalized.includes('hoje')) {
@@ -106,12 +103,7 @@ const resolveDateFromQuery = (queryText = '', explicitDate = null) => {
 
   const weekdayIndex = WEEKDAYS.findIndex((weekday) => normalized.includes(weekday));
   if (weekdayIndex >= 0) {
-    const currentWeekday = baseDate.getUTCDay();
-    let diff = weekdayIndex - currentWeekday;
-    if (diff < 0) diff += 7;
-    const targetDate = new Date(baseDate);
-    targetDate.setUTCDate(targetDate.getUTCDate() + diff);
-    return { date: formatIsoInTz(targetDate), reference_label: WEEKDAYS[weekdayIndex] };
+    return { date: nextWeekdayFromIso(todayIso, weekdayIndex), reference_label: WEEKDAYS[weekdayIndex] };
   }
 
   return { date: todayIso, reference_label: 'hoje' };
