@@ -1184,6 +1184,10 @@ ${listaMedicosAtivosParaPrompt}
       } catch (e) {}
     }
     
+    if (!llmResponse) {
+      llmResponse = 'Olá! Recebi sua mensagem, mas estou com uma instabilidade no atendimento automático agora. Pode me enviar novamente em instantes ou falar com a recepção pelo (51) 3661-5991.';
+    }
+
     const _tcm=(messageText+' '+(historicoConversa||'')).toLowerCase();
     const motivoIdentificado=_tcm.includes('cancelar')||_tcm.includes('desmarcar')?'Cancelamento':_tcm.includes('resultado')||_tcm.includes('laudo')?'Resultado de Exames':_tcm.includes('orçamento')||_tcm.includes('orcamento')||_tcm.includes('quanto custa')?'Orçamento':_tcm.includes('cartão')||_tcm.includes('mais vida')?'Cartão Mais Vida':_tcm.includes('turma')||_tcm.includes('hidrogin')||_tcm.includes('pilates')||_tcm.includes('natac')||_tcm.includes('nataç')?'Turmas':_tcm.includes('procedimento')?'Procedimentos':_tcm.includes('agendar')||_tcm.includes('marcar')||_tcm.includes('consulta')?'Agendamento':null;
 
