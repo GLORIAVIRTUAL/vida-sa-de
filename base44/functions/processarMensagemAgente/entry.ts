@@ -1207,7 +1207,8 @@ ${listaMedicosAtivosParaPrompt}
         const ultimasRespostasAssistente = historicoCompleto.slice(-5);
 
         const ultimaResposta = ultimasRespostasAssistente[ultimasRespostasAssistente.length - 1];
-        const respostaIdentica = ultimaResposta?.content && llmResponse && ultimaResposta.content.trim() === (llmResponse||'').trim();
+        const ehFallbackMsg = llmResponse && /instabilidade no atendimento autom/i.test(llmResponse);
+        const respostaIdentica = !ehFallbackMsg && ultimaResposta?.content && llmResponse && ultimaResposta.content.trim() === (llmResponse||'').trim();
         const jaEnviouMsgOrcamento = ultimasRespostasAssistente.some(m => m.content && /já enviei o orçamento/i.test(m.content));
         if (respostaIdentica || (jaEnviouMsgOrcamento && llmResponse && /já enviei o orçamento/i.test(llmResponse))) {
           await liberarLock(base44, phoneNumber);
