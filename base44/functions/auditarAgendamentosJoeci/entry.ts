@@ -35,13 +35,19 @@ Deno.serve(async (req) => {
     const agendamentos = toArray(agendamentosResposta);
     const ordens = toArray(ordensResposta);
 
-    const agendamentosJoeci = agendamentos
-      .map((item) => ({ id: item.id, ...(item.data || item) }))
-      .filter((item) => item.medico_id === joeci.id || (item.itens_servico || []).some((servico) => servico.medico_id === joeci.id));
-
     const ordensJoeci = ordens
       .map((item) => ({ id: item.id, ...(item.data || item) }))
       .filter((item) => item.medico_id === joeci.id);
+
+    const agendamentoIdsDasOs = new Set(ordensJoeci.map((item) => item.agendamento_id).filter(Boolean));
+
+    const agendamentosJoeci = agendamentos
+      .map((item) => ({ id: item.id, ...(item.data || item) }))
+      .filter((item) => (
+        item.medico_id === joeci.id ||
+        (item.itens_servico || []).some((servico) => servico.medico_id === joeci.id) ||
+        agendamentoIdsDasOs.has(item.id)
+      ));
 
     const datas = new Set([
       ...agendamentosJoeci.map((item) => item.data_agendamento).filter(Boolean),
