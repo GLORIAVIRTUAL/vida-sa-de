@@ -1180,8 +1180,12 @@ ${listaMedicosAtivosParaPrompt}
         if (openaiResp.ok) {
           const data = await openaiResp.json();
           llmResponse = data.choices?.[0]?.message?.content || null;
+          if (!llmResponse) console.log('⚠️ OpenAI retornou sem conteúdo:', JSON.stringify(data).substring(0, 500));
+        } else {
+          const errBody = await openaiResp.text().catch(() => '');
+          console.log('❌ OpenAI erro:', openaiResp.status, errBody.substring(0, 500));
         }
-      } catch (e) {}
+      } catch (e) { console.log('❌ OpenAI exception:', e.message); }
     }
     
     if (!llmResponse) {
