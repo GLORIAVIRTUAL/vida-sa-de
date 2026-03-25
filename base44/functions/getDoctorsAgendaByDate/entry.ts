@@ -269,12 +269,7 @@ Deno.serve(async (req) => {
     return Response.json({
       date: targetDate,
       reference_label,
-      debug_agendamentos: agendamentos.length,
-      debug_agendamentos_map: agendamentos.map(a => ({
-        ag_id: a.id,
-        medico_id: a.medico_id,
-        nome_mapped: nomePorMedicoId[a.medico_id]
-      })),
+      debug_luis: doctors.find(d => d.nome === 'Luis Xavier'),
       doctors: doctorsToReturn
     });
   } catch (error) {
