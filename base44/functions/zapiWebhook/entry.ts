@@ -643,14 +643,14 @@ async function processarMensagemRecebida(base44, payload) {
                     telefone: telefoneComPrefixo,
                     origem: 'WhatsApp',
                     status: 'Novo',
-                    atendimento_humano: false,
+                    atendimento_humano: true,
                     atendente_atual: null,
                     atendente_id: null,
                     historico_mensagens: historicoInicial,
                     ultima_interacao: agora
                 });
 
-                console.log('🤖 Novo contato criado em modo IA');
+                console.log('👤 Novo contato criado em modo HUMANO');
                 return new Response(JSON.stringify({ message: "Novo contato criado em modo IA", status: "ia" }), { status: 200 });
             }
         } catch (contatoError) {
