@@ -268,6 +268,7 @@ Deno.serve(async (req) => {
       date: targetDate,
       reference_label,
       debug_agendamentos: agendamentos.length,
+      debug_first_agendamento: agendamentos.length > 0 ? agendamentos[0] : null,
       doctors: doctorsToReturn
     });
   } catch (error) {
