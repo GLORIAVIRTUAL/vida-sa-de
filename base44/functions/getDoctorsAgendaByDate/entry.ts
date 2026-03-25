@@ -270,7 +270,7 @@ Deno.serve(async (req) => {
       date: targetDate,
       reference_label,
       debug_agendamentos: agendamentos.length,
-      debug_agendamentos_map: agendamentos.slice(0, 5).map(a => ({
+      debug_agendamentos_map: agendamentos.map(a => ({
         ag_id: a.id,
         medico_id: a.medico_id,
         nome_mapped: nomePorMedicoId[a.medico_id]
