@@ -197,7 +197,9 @@ const matchesDoctorQuery = (queryText, medico) => {
 const shouldUseBookedDoctorsOnly = (queryText = '') => {
   const normalizedQuery = normalizeText(queryText);
   return /(quem|quais).*(vai|vao|vão|est[aã]o|estar).*(atender|atendendo|na clinica|ai na clinica)/.test(normalizedQuery)
-    || /(medicos|m[eé]dicos|profissionais).*(vai|vao|vão|est[aã]o|estar).*(amanha|amanhã|hoje)/.test(normalizedQuery);
+    || /(medicos|m[eé]dicos|profissionais).*(vai|vao|vão|est[aã]o|estar).*(amanha|amanhã|hoje)/.test(normalizedQuery)
+    || /(vai|vao|vão|est[aã]o|estar).*(ter\s+)?(medicos|m[eé]dicos|profissionais).*(atender|atendendo|amanha|amanhã|hoje)/.test(normalizedQuery)
+    || /(tem|vai ter).*(medico|médico|profissional).*(atendendo|amanha|amanhã|hoje)/.test(normalizedQuery);
 };
 
 Deno.serve(async (req) => {
@@ -208,10 +210,10 @@ Deno.serve(async (req) => {
     const { date: targetDate, reference_label } = resolveDateFromQuery(queryText, date);
     const medicosRaw = await base44.asServiceRole.entities.Medico.filter({ status: 'Ativo' });
     const medicos = medicosRaw.filter((medico) => !/(cart[aã]o\s*mais\s*vida|dr\.?\s*exame\b|exame\s*laborat|eletrocardio)/i.test(medico.nome || ''));
-    const agendamentos = await base44.asServiceRole.entities.Agendamento.filter({
-      data_agendamento: targetDate,
-      status: { $ne: 'Cancelado' }
+    const agendamentosRaw = await base44.asServiceRole.entities.Agendamento.filter({
+      data_agendamento: targetDate
     });
+    const agendamentos = agendamentosRaw.filter(a => a.status !== 'Cancelado');
 
     const nomePorMedicoId = Object.fromEntries(medicos.map((medico) => [medico.id, normalizeText(medico.nome)]));
     const medicosFiltradosPorConsulta = medicos.filter((medico) => matchesDoctorQuery(queryText, medico));
