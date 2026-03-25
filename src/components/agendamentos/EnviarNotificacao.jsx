@@ -11,7 +11,8 @@ import { ScheduledNotification } from "@/entities/ScheduledNotification";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { useToast } from "@/components/ui/use-toast"; // Adicionado import para useToast
+import { useToast } from "@/components/ui/use-toast";
+import { base44 } from "@/api/base44Client";
 
 const modelosMensagens = {
   lembrete_consulta: {
@@ -35,8 +36,13 @@ export default function EnviarNotificacao({
   aberto, 
   onFechar 
 }) {
-  const { toast } = useToast(); // Inicializado useToast
+  const { toast } = useToast();
   const [tipoCanal, setTipoCanal] = useState('whatsapp');
+  const [currentUser, setCurrentUser] = useState(null);
+
+  useEffect(() => {
+    base44.auth.me().then(u => setCurrentUser(u)).catch(() => {});
+  }, []);
   const [modeloSelecionado, setModeloSelecionado] = useState('lembrete_consulta');
   const [mensagem, setMensagem] = useState('');
   const [enviando, setEnviando] = useState(false);
@@ -162,7 +168,8 @@ export default function EnviarNotificacao({
           mensagem: mensagem.trim(),
           tipo: tipoCanal,
           agendamento_id: agendamento.id,
-          paciente_nome: paciente.nome
+          paciente_nome: paciente.nome,
+          enviado_por_nome: currentUser?.display_name || currentUser?.full_name || 'Equipe'
         });
 
         if (resultado.data?.sucesso) {

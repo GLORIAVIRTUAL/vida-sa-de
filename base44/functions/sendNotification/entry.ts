@@ -15,8 +15,12 @@ Deno.serve(async (req) => {
             mensagem, 
             tipo = 'whatsapp',
             agendamento_id,
-            paciente_nome
+            paciente_nome,
+            enviado_por_nome
         } = body;
+
+        // Nome de quem enviou: usar o parâmetro ou o nome do usuário logado
+        const nomeRemetente = enviado_por_nome || user.display_name || user.full_name || 'Equipe';
 
         if (!telefone || !mensagem) {
             return new Response(JSON.stringify({ error: 'Telefone e mensagem são obrigatórios' }), { status: 400 });
@@ -113,7 +117,7 @@ Deno.serve(async (req) => {
                         const historico = contato.historico_mensagens || [];
                         historico.push({
                             role: 'assistant',
-                            content: `📢 [Notificação Manual]\n${mensagem}`,
+                            content: `[👤 ${nomeRemetente}]: ${mensagem}`,
                             timestamp: timestamp,
                             humano: true
                         });
@@ -122,6 +126,8 @@ Deno.serve(async (req) => {
                             ultima_resposta: mensagem,
                             ultima_interacao: timestamp,
                             atendimento_humano: true,
+                            atendente_atual: nomeRemetente,
+                            atendente_id: user.id,
                             conversa_finalizada: false
                         });
                         console.log(`✅ Mensagem registrada no histórico do contato ${contato.id}`);
@@ -134,9 +140,11 @@ Deno.serve(async (req) => {
                             origem: 'Manual',
                             status: 'Cliente',
                             atendimento_humano: true,
+                            atendente_atual: nomeRemetente,
+                            atendente_id: user.id,
                             historico_mensagens: [{
                                 role: 'assistant',
-                                content: `📢 [Notificação Manual]\n${mensagem}`,
+                                content: `[👤 ${nomeRemetente}]: ${mensagem}`,
                                 timestamp: timestamp,
                                 humano: true
                             }],
