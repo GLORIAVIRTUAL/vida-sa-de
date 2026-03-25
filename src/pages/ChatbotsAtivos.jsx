@@ -773,6 +773,8 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
                            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-red-100" title="Aguardando resposta"><User className="w-3 h-3 text-red-600" /></span>
                          ) : contato.atendimento_humano === false ? (
                            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-100" title="Atendimento por IA"><Bot className="w-3 h-3 text-blue-600" /></span>
+                         ) : !contato.conversa_finalizada ? (
+                           <Badge className="bg-red-100 text-red-700 text-[9px] px-1 py-0">Aguardando</Badge>
                          ) : null}
                          {contato.conversa_finalizada && (
                            <Badge className="bg-gray-200 text-gray-600 text-[9px] px-1 py-0">✓</Badge>
