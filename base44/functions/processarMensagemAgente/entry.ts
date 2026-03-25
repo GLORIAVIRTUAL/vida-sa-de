@@ -322,7 +322,7 @@ Deno.serve(async (req) => {
             await liberarLock(base44,phoneNumber);return Response.json({success:true,resposta:_rc,cancelamento_executado:true});
             }catch(ce){}
           }
-        }else{infoCancelamento='\n\n❌ Sem agendamentos futuros p/ este telefone.';}
+        }else{infoCancelamento='\n\n❌ CANCELAMENTO: Sem agendamentos futuros p/ este telefone. 🚨 REGRA CRÍTICA E ABSOLUTA: O cliente NÃO TEM consultas marcadas. Diga EXATAMENTE que não encontrou nenhuma consulta para cancelar. NUNCA, SOB NENHUMA HIPÓTESE, invente ou liste consultas fictícias usando os nomes dos médicos da clínica.';}
       }catch(e){}}
 
     const executarCancelamento = async (agendamentoId) => {
