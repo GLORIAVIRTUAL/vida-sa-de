@@ -262,7 +262,7 @@ Deno.serve(async (req) => {
       .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
 
     const bookedDoctors = doctors.filter((doctor) => doctor.total_agendamentos > 0);
-    const doctorsToReturn = shouldUseBookedDoctorsOnly(queryText) && bookedDoctors.length > 0 ? bookedDoctors : doctors;
+    const doctorsToReturn = shouldUseBookedDoctorsOnly(queryText) ? bookedDoctors : doctors;
 
     return Response.json({
       date: targetDate,
