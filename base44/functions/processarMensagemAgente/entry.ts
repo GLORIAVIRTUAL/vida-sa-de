@@ -1137,6 +1137,7 @@ ${listaMedicosAtivosParaPrompt}
 
     const modeloLLM = config.modelo_llm || 'gpt-4o';
     let llmResponse = null;
+    console.log('🔍 Checkpoint: chegou na chamada LLM. modelo:', modeloLLM, 'respostaQuemAtendeDia:', !!respostaQuemAtendeDia, 'arquivoParaEnviar:', !!arquivoParaEnviar);
     if (respostaQuemAtendeDia) {
       llmResponse = respostaQuemAtendeDia;
     } else if (arquivoParaEnviar) {
@@ -1189,6 +1190,7 @@ ${listaMedicosAtivosParaPrompt}
     }
     
     if (!llmResponse) {
+      console.log('⚠️ llmResponse é null/vazio - usando fallback');
       llmResponse = 'Olá! Recebi sua mensagem, mas estou com uma instabilidade no atendimento automático agora. Pode me enviar novamente em instantes ou falar com a recepção pelo (51) 3661-5991.';
     }
 
