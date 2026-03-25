@@ -25,8 +25,8 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Joeci de Oliveira não encontrada' }, { status: 404 });
     }
 
-    const ordensResposta = await base44.asServiceRole.entities.OrdemServico.list();
-    const agendamentosResposta = await base44.asServiceRole.entities.Agendamento.list();
+    const ordensResposta = await base44.asServiceRole.entities.OrdemServico.list('-created_date', 5000);
+    const agendamentosResposta = await base44.asServiceRole.entities.Agendamento.list('-created_date', 5000);
 
     const toArray = (value) => {
       if (Array.isArray(value)) return value;
