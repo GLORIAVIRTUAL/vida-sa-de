@@ -267,6 +267,7 @@ Deno.serve(async (req) => {
     return Response.json({
       date: targetDate,
       reference_label,
+      debug_agendamentos: agendamentos.length,
       doctors: doctorsToReturn
     });
   } catch (error) {
