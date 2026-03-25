@@ -7,11 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2, Save, Calendar } from "lucide-react";
+import { Loader2, Save, Calendar, Users } from "lucide-react";
 
 export default function FormularioTurma({ turma, medicos, onClose, onSave }) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [qtdAlunos, setQtdAlunos] = useState(null);
   const [formData, setFormData] = useState({
     nome: '',
     modalidade: 'Hidroginástica',
@@ -29,6 +30,11 @@ export default function FormularioTurma({ turma, medicos, onClose, onSave }) {
         ...turma,
         dias_semana: turma.dias_semana || []
       });
+      // Carregar contagem de alunos
+      base44.entities.AlunoTurma.filter({ turma_id: turma.id }).then(vinculos => {
+        const ativos = vinculos.filter(v => !v.status || v.status === 'Ativo');
+        setQtdAlunos(ativos.length);
+      }).catch(() => setQtdAlunos(0));
     }
   }, [turma]);
 
@@ -95,6 +101,12 @@ export default function FormularioTurma({ turma, medicos, onClose, onSave }) {
         <DialogHeader>
           <DialogTitle>{turma ? 'Editar Turma' : 'Nova Turma'}</DialogTitle>
           <DialogDescription>Defina os detalhes da turma e horários.</DialogDescription>
+          {turma && qtdAlunos !== null && (
+            <div className="mt-2 flex items-center gap-2 text-sm font-medium text-blue-700 bg-blue-50 px-3 py-1.5 rounded-md w-fit">
+              <Users className="w-4 h-4" />
+              {qtdAlunos} aluno{qtdAlunos !== 1 ? 's' : ''} matriculado{qtdAlunos !== 1 ? 's' : ''}
+            </div>
+          )}
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
