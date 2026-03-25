@@ -23,8 +23,17 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Joeci de Oliveira não encontrada' }, { status: 404 });
     }
 
-    const agendamentos = await base44.asServiceRole.entities.Agendamento.list();
-    const ordens = await base44.asServiceRole.entities.OrdemServico.list();
+    const agendamentosResposta = await base44.asServiceRole.entities.Agendamento.list();
+    const ordensResposta = await base44.asServiceRole.entities.OrdemServico.list();
+    const toArray = (value) => {
+      if (Array.isArray(value)) return value;
+      if (Array.isArray(value?.items)) return value.items;
+      if (Array.isArray(value?.data)) return value.data;
+      return [];
+    };
+
+    const agendamentos = toArray(agendamentosResposta);
+    const ordens = toArray(ordensResposta);
 
     const agendamentosJoeci = agendamentos
       .map((item) => ({ id: item.id, ...(item.data || item) }))
