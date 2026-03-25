@@ -2,7 +2,32 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
 
 const TIME_ZONE = 'America/Sao_Paulo';
 const WEEKDAYS = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
-const STOPWORDS = new Set(['dr', 'dra', 'de', 'da', 'do', 'dos', 'das']);
+const STOPWORDS = new Set(['dr', 'dra', 'de', 'da', 'do', 'dos', 'das', 'clinica', 'centro', 'vida', 'saude', 'exames', 'eletrocardio']);
+
+const formatIsoUtc = (date) => `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
+
+const addDaysToIso = (isoDate, days) => {
+  const [year, month, day] = isoDate.split('-').map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day, 12));
+  date.setUTCDate(date.getUTCDate() + days);
+  return formatIsoUtc(date);
+};
+
+const nextWeekdayFromIso = (isoDate, targetWeekday) => {
+  const [year, month, day] = isoDate.split('-').map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day, 12));
+  const currentWeekday = date.getUTCDay();
+  let diff = targetWeekday - currentWeekday;
+  if (diff < 0) diff += 7;
+  date.setUTCDate(date.getUTCDate() + diff);
+  return formatIsoUtc(date);
+};
+
+const shouldTryDoctorNameFilter = (normalizedQuery) => {
+  if (/\b(dr|dra|doutor|doutora)\b/.test(normalizedQuery)) return true;
+  if (/\b(quem|quais|profissionais|medicos|clinica)\b/.test(normalizedQuery)) return false;
+  return /\b(atende|atender|agenda|horario|manha|tarde|noite|hoje|amanha)\b/.test(normalizedQuery);
+};
 
 const normalizeText = (value = '') => value
   .toLowerCase()
