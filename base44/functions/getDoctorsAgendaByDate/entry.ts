@@ -147,16 +147,28 @@ const getSchedulesForDate = (medico, cleanDate) => {
   return [horariosRecorrentesComData[0]];
 };
 
-const getAvailableSlots = (medico, periods, appointments) => {
+const getAvailableSlots = (medico, periods, appointments, targetDate) => {
   const occupied = appointments.map((appointment) => appointment.horario);
   const tempoConsulta = medico.tempo_consulta_minutos || 30;
   const tipoAtendimento = medico.tipo_atendimento || 'Horários Marcados';
+  
+  const todayIso = formatIsoInTz(new Date());
+  const isToday = targetDate === todayIso;
+  const now = new Date();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
   if (tipoAtendimento === 'Ordem de Chegada') {
     const horarioInicio = periods[0]?.horario_inicio;
+    if (!horarioInicio) return [];
+    
+    if (isToday) {
+      const [h, m] = horarioInicio.split(':').map(Number);
+      if (h * 60 + m <= currentMinutes) return [];
+    }
+    
     const limite = medico.limite_ordem_chegada || 1;
     const ocupadas = appointments.filter((appointment) => appointment.horario === horarioInicio).length;
-    return ocupadas < limite && horarioInicio ? [horarioInicio] : [];
+    return ocupadas < limite ? [horarioInicio] : [];
   }
 
   const slots = new Set();
@@ -167,6 +179,8 @@ const getAvailableSlots = (medico, periods, appointments) => {
     const end = endHour * 60 + endMinute;
 
     for (let minute = start; minute <= end - tempoConsulta; minute += tempoConsulta) {
+      if (isToday && minute <= currentMinutes) continue;
+      
       const slot = `${String(Math.floor(minute / 60)).padStart(2, '0')}:${String(minute % 60).padStart(2, '0')}`;
       if (!occupied.includes(slot)) slots.add(slot);
     }
@@ -226,7 +240,7 @@ Deno.serve(async (req) => {
 
         const medicoKey = normalizeText(medico.nome);
         const relatedAppointments = agendamentos.filter((agendamento) => nomePorMedicoId[agendamento.medico_id] === medicoKey);
-        const availableSlots = getAvailableSlots(medico, periods, relatedAppointments);
+        const availableSlots = getAvailableSlots(medico, periods, relatedAppointments, targetDate);
 
         return {
           medico_id: medico.id,
