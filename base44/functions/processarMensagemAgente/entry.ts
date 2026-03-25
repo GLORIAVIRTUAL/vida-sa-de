@@ -528,7 +528,21 @@ Deno.serve(async (req) => {
       todosMedicosParaDeteccao = _raw.filter(m => !/(cart[aã]o\s*mais\s*vida|dr\.?\s*exame\b|exame\s*laborat|eletrocardio)/i.test(m.nome || ''));
     } catch (e) {}
     const _pqad=/(quem|que)\s+(vai\s+)?(atender|estar)|quem\s+atende|quais?\s+(m[eé]dicos?|profissionais?).*(atendem|atender)|qual\s+(m[eé]dico|profissional).*(atende|vai atender)/i.test(messageText||'')&&/segunda|terça|terca|quarta|quinta|sexta|s[áa]bado|domingo|hoje|amanh[ãa]/i.test(messageText||'');
-    if(_pqad){const n=normalizarTexto(messageText||''),mapa=[['domingo',0,'domingo'],['segunda',1,'segunda-feira'],['terca',2,'terça-feira'],['terça',2,'terça-feira'],['quarta',3,'quarta-feira'],['quinta',4,'quinta-feira'],['sexta',5,'sexta-feira'],['sabado',6,'sábado'],['sábado',6,'sábado']];let dia=null,rot='';if(n.includes('amanha')){const d=new Date();d.setDate(d.getDate()+1);dia=d.getDay();rot='amanhã';}else if(n.includes('hoje')){dia=new Date().getDay();rot='hoje';}else{const ach=mapa.find(([t])=>n.includes(t));if(ach){dia=ach[1];rot=ach[2];}}if(dia!==null){const lista=todosMedicosParaDeteccao.filter(m=>(m.horarios_atendimento||[]).some(h=>!h.bloqueado&&!h.data_especifica&&Math.floor(h.dia_semana)===dia&&(h.recorrencia||'Toda Semana')!=='Apenas uma vez'));respostaQuemAtendeDia=lista.length?`Para ${rot}, temos estes profissionais com agenda cadastrada:\n\n${lista.map(m=>`• ${m.nome} (${m.especialidade||'Especialidade não informada'})`).join('\n')}\n\nCom qual especialidade você gostaria de agendar?`:`No momento, não há profissionais com agenda cadastrada para ${rot}.`;}}
+    if(_pqad){
+      try {
+        const agendaResp = await Promise.race([
+          base44.asServiceRole.functions.invoke('getDoctorsAgendaByDate', { queryText: messageText }),
+          new Promise((_, r) => setTimeout(() => r(new Error('Timeout agenda real')), 12000))
+        ]);
+        const agendaData = agendaResp?.data;
+        if (agendaData?.doctors?.length > 0) {
+          const dataFmt = new Date(`${agendaData.date}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' });
+          respostaQuemAtendeDia = `Para ${agendaData.reference_label || dataFmt}, estes são os profissionais com agenda real cadastrada:\n\n${agendaData.doctors.map((m) => `• ${m.nome} (${m.especialidade || 'Especialidade não informada'}) — ${m.agenda_do_dia.map((p) => `${p.inicio} às ${p.fim}`).join(' | ')}`).join('\n')}\n\nCom qual especialidade você gostaria de agendar?`;
+        } else if (agendaData?.date) {
+          respostaQuemAtendeDia = `No momento, não há profissionais com agenda cadastrada para ${agendaData.reference_label || agendaData.date}.`;
+        }
+      } catch (e) {}
+    }
 
     for (const esp of especialidades) {
       if (msgLower.includes(normalizarTexto(esp))) { especialidadeDetectada = esp; break; }
