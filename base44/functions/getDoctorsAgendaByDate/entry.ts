@@ -194,6 +194,12 @@ const matchesDoctorQuery = (queryText, medico) => {
   return nameMatches.length >= 2 || nameMatches.some((part) => part.length >= 6);
 };
 
+const shouldUseBookedDoctorsOnly = (queryText = '') => {
+  const normalizedQuery = normalizeText(queryText);
+  return /(quem|quais).*(vai|vao|vão|est[aã]o|estar).*(atender|atendendo|na clinica|ai na clinica)/.test(normalizedQuery)
+    || /(medicos|m[eé]dicos|profissionais).*(vai|vao|vão|est[aã]o|estar).*(amanha|amanhã|hoje)/.test(normalizedQuery);
+};
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
