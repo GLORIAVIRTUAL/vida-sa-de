@@ -12,7 +12,7 @@ import {
   Users, CreditCard, Building2, BarChart3, PieChart as PieChartIcon,
   Calendar, RefreshCw, AlertCircle, CheckCircle
 } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, subMonths, parseISO } from 'date-fns';
+import { format, startOfMonth, endOfMonth, subMonths, subDays, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import ProtectedRoute from '../components/auth/ProtectedRoute';
@@ -600,13 +600,29 @@ export default function Relatorios() {
       .slice(0, 10);
   }, [estatisticas]);
 
+  const dataOntem = format(subDays(new Date(), 1), 'yyyy-MM-dd');
+  const repassesEmAberto = useMemo(() => {
+    return dadosFiltrados.filter(os => !os.repasse_realizado && (os.valor_repasse_medico || 0) > 0 && os.status_pagamento === 'Pago');
+  }, [dadosFiltrados]);
+  const repassesRealizados = useMemo(() => {
+    return dadosFiltrados.filter(os => os.repasse_realizado && (os.valor_repasse_medico || 0) > 0);
+  }, [dadosFiltrados]);
+  const repassesOntem = useMemo(() => {
+    return repassesEmAberto.filter(os => os.data_execucao === dataOntem);
+  }, [repassesEmAberto, dataOntem]);
+  const totalRepassesEmAberto = repassesEmAberto.reduce((acc, os) => acc + (os.valor_repasse_medico || 0), 0);
+  const totalRepassesRealizados = repassesRealizados.reduce((acc, os) => acc + (os.valor_repasse_medico || 0), 0);
+  const totalRepassesOntem = repassesOntem.reduce((acc, os) => acc + (os.valor_repasse_medico || 0), 0);
+
   const handlePrintRepasses = () => {
     const printWindow = window.open('', '_blank');
     
-    const osEmAberto = dadosFiltrados.filter(os => !os.repasse_realizado && os.valor_repasse_medico > 0);
-    const osRealizados = dadosFiltrados.filter(os => os.repasse_realizado);
-    const totalEmAberto = osEmAberto.reduce((acc, os) => acc + (os.valor_repasse_medico || 0), 0);
-    const totalRealizados = osRealizados.reduce((acc, os) => acc + (os.valor_repasse_medico || 0), 0);
+    const osEmAberto = repassesEmAberto;
+    const osRealizados = repassesRealizados;
+    const osOntem = repassesOntem;
+    const totalEmAberto = totalRepassesEmAberto;
+    const totalRealizados = totalRepassesRealizados;
+    const totalOntem = totalRepassesOntem;
     
     // Montar filtros aplicados
     const filtrosAplicados = [];
@@ -669,6 +685,10 @@ export default function Relatorios() {
               <span class="valor" style="color: #7c3aed;">R$ ${estatisticas.totalRepasse.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
             </div>
             <div class="stat-card">
+              <strong>Ontem</strong>
+              <span class="valor" style="color: #2563eb;">R$ ${totalOntem.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+            </div>
+            <div class="stat-card">
               <strong>Em Aberto</strong>
               <span class="valor" style="color: #ea580c;">R$ ${totalEmAberto.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
             </div>
@@ -677,6 +697,36 @@ export default function Relatorios() {
               <span class="valor" style="color: #16a34a;">R$ ${totalRealizados.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
             </div>
           </div>
+          
+          <h3>Repasses de Ontem em Aberto (${new Set(osOntem.map(os => os.original_id || os.id)).size})</h3>
+          <table class="em-aberto">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Paciente</th>
+                <th>Médico</th>
+                <th>Categoria</th>
+                <th class="text-right">Valor Total</th>
+                <th class="text-right">Repasse</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${osOntem.map(os => `
+                <tr>
+                  <td>${os.data_execucao ? format(parseISO(os.data_execucao), 'dd/MM/yy') : '-'}</td>
+                  <td>${os.paciente_nome || '-'}</td>
+                  <td>${obterNomeMedico(os).split(' ').slice(0, 2).join(' ')}</td>
+                  <td>${obterNomeCategoria(os)}</td>
+                  <td class="text-right">R$ ${(os.valor_final || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                  <td class="text-right"><strong>R$ ${(os.valor_repasse_medico || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong></td>
+                </tr>
+              `).join('')}
+              <tr class="total">
+                <td colspan="5" class="text-right"><strong>TOTAL DE ONTEM</strong></td>
+                <td class="text-right"><strong>R$ ${totalOntem.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong></td>
+              </tr>
+            </tbody>
+          </table>
           
           <h3>Repasses em Aberto (${new Set(osEmAberto.map(os => os.original_id || os.id)).size})</h3>
           <table class="em-aberto">
@@ -1622,35 +1672,29 @@ export default function Relatorios() {
                 </div>
                 
                 {/* Resumo de Repasses */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white">
                     <CardContent className="p-6">
                       <p className="text-purple-100 text-sm">Total de Repasses</p>
                       <p className="text-3xl font-bold">{formatCurrency(estatisticas.totalRepasse)}</p>
                     </CardContent>
                   </Card>
+                  <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+                    <CardContent className="p-6">
+                      <p className="text-blue-100 text-sm">Ontem</p>
+                      <p className="text-3xl font-bold">{formatCurrency(totalRepassesOntem)}</p>
+                    </CardContent>
+                  </Card>
                   <Card className="bg-gradient-to-br from-yellow-500 to-orange-500 text-white">
                     <CardContent className="p-6">
                       <p className="text-orange-100 text-sm">Em Aberto</p>
-                      <p className="text-3xl font-bold">
-                        {formatCurrency(
-                          dadosFiltrados
-                            .filter(os => !os.repasse_realizado && os.valor_repasse_medico > 0)
-                            .reduce((acc, os) => acc + (os.valor_repasse_medico || 0), 0)
-                        )}
-                      </p>
+                      <p className="text-3xl font-bold">{formatCurrency(totalRepassesEmAberto)}</p>
                     </CardContent>
                   </Card>
                   <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white">
                     <CardContent className="p-6">
                       <p className="text-green-100 text-sm">Realizados</p>
-                      <p className="text-3xl font-bold">
-                        {formatCurrency(
-                          dadosFiltrados
-                            .filter(os => os.repasse_realizado)
-                            .reduce((acc, os) => acc + (os.valor_repasse_medico || 0), 0)
-                        )}
-                      </p>
+                      <p className="text-3xl font-bold">{formatCurrency(totalRepassesRealizados)}</p>
                     </CardContent>
                   </Card>
                 </div>
@@ -1702,12 +1746,58 @@ export default function Relatorios() {
                   </CardContent>
                 </Card>
 
+                {/* Lista Detalhada de Repasses de Ontem */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <AlertCircle className="w-5 h-5 text-blue-500" />
+                      Repasses de Ontem em Aberto - {new Set(repassesOntem.map(os => os.original_id || os.id)).size} pendentes
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="max-h-[300px] overflow-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Data</TableHead>
+                            <TableHead>Paciente</TableHead>
+                            <TableHead>Médico</TableHead>
+                            <TableHead>Categoria</TableHead>
+                            <TableHead className="text-right">Valor Total</TableHead>
+                            <TableHead className="text-right">Repasse</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {repassesOntem.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={6} className="text-center text-gray-500">
+                                Nenhum repasse pendente de ontem.
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            repassesOntem.map(os => (
+                              <TableRow key={os.id}>
+                                <TableCell>{os.data_execucao ? format(parseISO(os.data_execucao), 'dd/MM/yy') : '-'}</TableCell>
+                                <TableCell className="font-medium">{os.paciente_nome || '-'}</TableCell>
+                                <TableCell>{obterNomeMedico(os).split(' ').slice(0, 2).join(' ')}</TableCell>
+                                <TableCell><Badge variant="outline" className="text-xs">{obterNomeCategoria(os)}</Badge></TableCell>
+                                <TableCell className="text-right">{formatCurrency(os.valor_final)}</TableCell>
+                                <TableCell className="text-right font-bold text-blue-600">{formatCurrency(os.valor_repasse_medico)}</TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+
                 {/* Lista Detalhada de Repasses Em Aberto */}
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <AlertCircle className="w-5 h-5 text-orange-500" />
-                      Repasses em Aberto - {new Set(dadosFiltrados.filter(os => !os.repasse_realizado && os.valor_repasse_medico > 0).map(os => os.original_id || os.id)).size} pendentes
+                      Repasses em Aberto - {new Set(repassesEmAberto.map(os => os.original_id || os.id)).size} pendentes
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -1725,8 +1815,7 @@ export default function Relatorios() {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {dadosFiltrados
-                            .filter(os => !os.repasse_realizado && os.valor_repasse_medico > 0)
+                          {repassesEmAberto
                             .sort((a, b) => (b.data_execucao || '').localeCompare(a.data_execucao || ''))
                             .slice(0, 100)
                             .map(os => (
@@ -1738,8 +1827,8 @@ export default function Relatorios() {
                                 <TableCell className="text-right">{formatCurrency(os.valor_final)}</TableCell>
                                 <TableCell className="text-right font-bold text-orange-600">{formatCurrency(os.valor_repasse_medico)}</TableCell>
                                 <TableCell>
-                                  <Badge className={os.status_pagamento === 'Pago' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}>
-                                    {os.status_pagamento || 'Pendente'}
+                                  <Badge className="bg-green-100 text-green-800">
+                                    {os.status_pagamento || 'Pago'}
                                   </Badge>
                                 </TableCell>
                               </TableRow>
