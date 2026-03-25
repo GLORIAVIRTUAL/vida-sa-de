@@ -208,16 +208,6 @@ const matchesDoctorQuery = (queryText, medico) => {
   return nameMatches.length >= 2 || nameMatches.some((part) => part.length >= 6);
 };
 
-const shouldUseBookedDoctorsOnly = (queryText = '') => {
-  const normalizedQuery = normalizeText(queryText);
-  const timeWords = 'amanha|amanhã|hoje|segunda|terca|quarta|quinta|sexta|sabado|domingo';
-  return new RegExp(`(quem|quais).*(vai|vao|vão|est[aã]o|estar|tem|t[eê]m).*(atender|atendendo|na clinica|ai na clinica|agenda|hor[aá]rio)`).test(normalizedQuery)
-    || new RegExp(`(medicos|m[eé]dicos|profissionais).*(vai|vao|vão|est[aã]o|estar|tem|t[eê]m).*(${timeWords}|agenda|hor[aá]rio)`).test(normalizedQuery)
-    || new RegExp(`(vai|vao|vão|est[aã]o|estar).*(ter\\s+)?(medicos|m[eé]dicos|profissionais).*(atender|atendendo).*(${timeWords})`).test(normalizedQuery)
-    || new RegExp(`(tem|vai ter).*(medico|m[eé]dico|profissional).*(atendendo|agenda|hor[aá]rio).*(${timeWords})`).test(normalizedQuery)
-    || new RegExp(`(quais|qual).*(medico|m[eé]dico|profissional).*(atende|atendem|atendendo).*(${timeWords})`).test(normalizedQuery);
-};
-
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
