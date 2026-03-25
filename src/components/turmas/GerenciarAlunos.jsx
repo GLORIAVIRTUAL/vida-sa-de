@@ -63,6 +63,12 @@ export default function GerenciarAlunos({ turma, onClose }) {
     }
   };
 
+  const atualizarContagemTurma = async () => {
+    const vinculos = await base44.entities.AlunoTurma.filter({ turma_id: turma.id });
+    const ativos = vinculos.filter(v => !v.status || v.status === 'Ativo');
+    await base44.entities.Turma.update(turma.id, { qtd_alunos: ativos.length });
+  };
+
   const adicionarAluno = async (paciente) => {
     // Verificar se já está na turma
     if (alunos.some(a => a.paciente_id === paciente.id)) {
@@ -77,6 +83,7 @@ export default function GerenciarAlunos({ turma, onClose }) {
         data_inicio: new Date().toISOString().split('T')[0],
         status: 'Ativo'
       });
+      await atualizarContagemTurma();
       toast({ title: "Aluno adicionado!" });
       setBusca('');
       setResultadosBusca([]);
@@ -90,6 +97,7 @@ export default function GerenciarAlunos({ turma, onClose }) {
     if (!confirm("Remover aluno da turma?")) return;
     try {
       await base44.entities.AlunoTurma.delete(idVinculo);
+      await atualizarContagemTurma();
       toast({ title: "Aluno removido" });
       carregarAlunos();
     } catch (error) {
