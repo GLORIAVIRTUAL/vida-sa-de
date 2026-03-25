@@ -364,8 +364,9 @@ async function processarMensagemRecebida(base44, payload) {
                     }
                 }
                 
-                // Só fica em modo humano quando houver um atendente humano realmente assumindo a conversa.
-                const estaEmModoHumano = contato.atendimento_humano === true && !!(contato.atendente_atual || contato.atendente_id);
+                // A IA só responde quando atendimento_humano === false (IA explicitamente ativada)
+                // Se atendimento_humano é true ou undefined, fica em modo humano (aguardando atendimento)
+                const estaEmModoHumano = contato.atendimento_humano !== false;
                 
                 if (estaEmModoHumano) {
                     // Modo HUMANO: salvar mensagem no histórico aqui
