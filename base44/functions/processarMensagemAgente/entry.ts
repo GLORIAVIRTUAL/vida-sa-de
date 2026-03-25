@@ -527,7 +527,7 @@ Deno.serve(async (req) => {
       const _raw = await Promise.race([base44.asServiceRole.entities.Medico.filter({ status: 'Ativo' }), new Promise((_, r) => setTimeout(() => r(new Error('Timeout')), 3000))]);
       todosMedicosParaDeteccao = _raw.filter(m => !/(cart[aã]o\s*mais\s*vida|dr\.?\s*exame\b|exame\s*laborat|eletrocardio)/i.test(m.nome || ''));
     } catch (e) {}
-    const _pqad=/(quem|que)\s+(vai\s+)?(atender|estar)|quem\s+atende|quais?\s+(m[eé]dicos?|profissionais?).*(atendem|atender)|qual\s+(m[eé]dico|profissional).*(atende|vai atender)/i.test(messageText||'')&&/segunda|terça|terca|quarta|quinta|sexta|s[áa]bado|domingo|hoje|amanh[ãa]/i.test(messageText||'');
+    const _pqad=(/(quem|que)\s+(vai\s+)?(atender|estar)|quem\s+atende|quais?\s+(m[eé]dicos?|profissionais?).*(atendem|atender)|qual\s+(m[eé]dico|profissional).*(atende|vai atender)/i.test(messageText||'')||/vai\s+ter\s+(m[eé]dicos?|profissionais?|atendimento)/i.test(messageText||'')||/(ter[aá]|tem)\s+(m[eé]dicos?|profissionais?|atendimento)\s+(amanh[ãa]|hoje|segunda|ter[çc]a|quarta|quinta|sexta|s[áa]bado)/i.test(messageText||'')||/(m[eé]dicos?|profissionais?)\s+(atendendo|que\s+atendem|dispon[ií]veis?)\s+(amanh[ãa]|hoje|segunda|ter[çc]a|quarta|quinta|sexta|s[áa]bado)/i.test(messageText||''))&&/segunda|ter[çc]a|terca|quarta|quinta|sexta|s[áa]bado|domingo|hoje|amanh[ãa]/i.test(messageText||'');
     if(_pqad){
       try {
         const agendaResp = await Promise.race([
