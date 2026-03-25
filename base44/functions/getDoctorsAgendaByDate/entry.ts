@@ -229,8 +229,6 @@ Deno.serve(async (req) => {
       data_agendamento: targetDate
     });
     const agendamentos = agendamentosRaw.filter(a => a.status !== 'Cancelado');
-    
-    console.log(`Found ${agendamentos.length} appointments for ${targetDate}`);
 
     const nomePorMedicoId = Object.fromEntries(medicos.map((medico) => [medico.id, normalizeText(medico.nome)]));
     const medicosFiltradosPorConsulta = medicos.filter((medico) => matchesDoctorQuery(queryText, medico));
@@ -246,8 +244,6 @@ Deno.serve(async (req) => {
         const availableSlots = getAvailableSlots(medico, periods, relatedAppointments, targetDate);
 
         return {
-          debug_medicoKey: medicoKey,
-          debug_related_count: relatedAppointments.length,
           medico_id: medico.id,
           nome: medico.nome,
           especialidade: medico.especialidade || null,
@@ -270,7 +266,6 @@ Deno.serve(async (req) => {
     return Response.json({
       date: targetDate,
       reference_label,
-      debug_luis: doctors.find(d => d.nome === 'Luis Xavier'),
       doctors: doctorsToReturn
     });
   } catch (error) {
