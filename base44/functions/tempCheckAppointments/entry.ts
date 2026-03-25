@@ -4,27 +4,17 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     
-    // Search for patient
-    const pacientes = await base44.asServiceRole.entities.Paciente.filter({ nome: { $regex: "Thiago", $options: "i" } });
-    const thiago = pacientes.find(p => p.nome.toLowerCase().includes("cavalcanti"));
+    const tPacs = await base44.asServiceRole.entities.Paciente.list('-created_date', 5000);
+    const pF = tPacs.filter(p => (p.telefone || '').replace(/\D/g, '').slice(-8) === "88020504");
     
-    if (!thiago) {
-        return Response.json({ error: "Patient not found" });
-    }
-
-    const agendamentos = await base44.asServiceRole.entities.Agendamento.filter({ paciente_id: thiago.id });
-    const futuros = agendamentos.filter(a => a.data_agendamento >= "2026-03-25" && ['Agendado', 'Confirmado', 'Pago'].includes(a.status));
+    const pIds = pF.map(p => p.id);
+    const hj = "2026-03-25";
+    const tAgs = await base44.asServiceRole.entities.Agendamento.filter({data_agendamento: {$gte: hj}});
+    const aC = tAgs.filter(a => pIds.includes(a.paciente_id) && ['Agendado', 'Confirmado', 'Pago'].includes(a.status));
     
     return Response.json({ 
-        paciente: thiago,
-        futuros: futuros.map(a => ({ 
-            id: a.id, 
-            data: a.data_agendamento, 
-            horario: a.horario, 
-            medico_id: a.medico_id, 
-            status: a.status,
-            paciente_nome: a.paciente_nome 
-        }))
+        pacientes_encontrados: pF.map(p => ({ id: p.id, nome: p.nome, telefone: p.telefone })),
+        agendamentos: aC.map(a => ({ id: a.id, paciente_nome: a.paciente_nome, data: a.data_agendamento, horario: a.horario }))
     });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
