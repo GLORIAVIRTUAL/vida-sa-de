@@ -228,6 +228,8 @@ Deno.serve(async (req) => {
       data_agendamento: targetDate
     });
     const agendamentos = agendamentosRaw.filter(a => a.status !== 'Cancelado');
+    
+    console.log(`Found ${agendamentos.length} appointments for ${targetDate}`);
 
     const nomePorMedicoId = Object.fromEntries(medicos.map((medico) => [medico.id, normalizeText(medico.nome)]));
     const medicosFiltradosPorConsulta = medicos.filter((medico) => matchesDoctorQuery(queryText, medico));
