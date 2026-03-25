@@ -168,7 +168,7 @@ Deno.serve(async (req) => {
     let contatosCheck = [];
     const contatoVerificado = await buscarContatoPorTelefone(phoneNumber);
     if (contatoVerificado) contatosCheck = [contatoVerificado];
-    if (contatosCheck.length > 0 && contatosCheck[0].atendimento_humano !== false && !isBufferMessage) {
+    if (contatosCheck.length > 0 && contatosCheck[0].atendimento_humano === true && !!(contatosCheck[0].atendente_atual || contatosCheck[0].atendente_id) && !isBufferMessage) {
       const contato = contatosCheck[0];
       const historicoAtual = contato.historico_mensagens || [];
       const timestamp = new Date().toISOString();
@@ -188,7 +188,7 @@ Deno.serve(async (req) => {
       return Response.json({ success: true, resposta: null, atendimento_humano: true, message: 'Mensagem salva - atendimento humano ativo' });
     }
     
-    if (isBufferMessage && contatosCheck.length > 0 && contatosCheck[0].atendimento_humano !== false) {
+    if (isBufferMessage && contatosCheck.length > 0 && contatosCheck[0].atendimento_humano === true && !!(contatosCheck[0].atendente_atual || contatosCheck[0].atendente_id)) {
       await liberarLock(base44, phoneNumber);
       return Response.json({ success: true, resposta: null, atendimento_humano: true, message: 'Buffer ignorado - atendimento humano ativo' });
     }
@@ -249,7 +249,7 @@ Deno.serve(async (req) => {
       if (mediaType && mediaType !== 'text') userEntry.mediaType = mediaType;
       if (mediaUrl) userEntry.mediaUrl = mediaUrl;
       
-      const estaEmModoHumano = !contatoFresh || contatoFresh.atendimento_humano !== false;
+      const estaEmModoHumano = contatoFresh ? contatoFresh.atendimento_humano === true && !!(contatoFresh.atendente_atual || contatoFresh.atendente_id) : false;
       
       if (estaEmModoHumano) {
         if (contatoFresh) {
@@ -267,7 +267,7 @@ Deno.serve(async (req) => {
           let telefoneComPrefixo = phoneNumber.replace(/\D/g, '');
           if (!telefoneComPrefixo.startsWith('55')) telefoneComPrefixo = '55' + telefoneComPrefixo;
           await base44.asServiceRole.entities.Contato.create({
-            nome: senderName, telefone: telefoneComPrefixo, paciente_id: pacienteId, origem: 'WhatsApp', status: 'Novo', atendimento_humano: true, ultima_mensagem: messageText, historico_mensagens: [userEntry], ultima_interacao: timestamp, total_mensagens: 1, conversa_finalizada: false
+            nome: senderName, telefone: telefoneComPrefixo, paciente_id: pacienteId, origem: 'WhatsApp', status: 'Novo', atendimento_humano: false, ultima_mensagem: messageText, historico_mensagens: [userEntry], ultima_interacao: timestamp, total_mensagens: 1, conversa_finalizada: false
           });
         }
         return Response.json({ success: true, resposta: null, atendimento_humano: true, message: 'Primeira mensagem salva - atendimento humano ativo' });
@@ -1243,7 +1243,7 @@ ${listaMedicosAtivosParaPrompt}
           ultima_mensagem: messageText, ultima_resposta: llmResponse,
           historico_mensagens: [{ role: 'user', content: messageText, timestamp, messageId }, { role: 'assistant', content: llmResponse, timestamp }],
           ultima_interacao: timestamp, total_mensagens: 2,
-          origem: 'WhatsApp', status: 'Novo', atendimento_humano: true
+          origem: 'WhatsApp', status: 'Novo', atendimento_humano: false
         };
 
         if (motivoIdentificado) novoContatoData.interesses = [motivoIdentificado];
