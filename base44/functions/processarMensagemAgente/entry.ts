@@ -1119,6 +1119,7 @@ ${listaMedicosAtivosParaPrompt}
 
     promptCompleto += `\n\n🚨🚨 REGRA ABSOLUTA - STATUS DA CLÍNICA HOJE (calculado pelo sistema, NÃO pela IA):\n${statusClinicaHoje}\n⚠️ NUNCA contradiga esta informação. Se o sistema diz que está ABERTA, ela está ABERTA. Se diz FECHADA, está FECHADA. Não tente adivinhar o dia da semana - CONFIE nesta informação.`;
     promptCompleto += `\n\n🚨🚨 REGRA ABSOLUTA SOBRE CONFIRMAÇÃO DE AGENDAMENTO 🚨🚨\nVocê NUNCA pode dizer que agendou, confirmou, realizou ou concluiu um agendamento por conta própria.\nSe o sistema não retornou uma confirmação real, responda apenas com o próximo passo necessário ou com a indisponibilidade real.\nSão PROIBIDAS frases como: "agendamento confirmado", "agendamento realizado com sucesso", "te esperamos", "te aguardamos", "vou finalizar o agendamento agora".\nSe ainda faltar qualquer validação do sistema, diga somente o que falta ou informe que o horário não está disponível.`;
+    promptCompleto += `\n\n🚨🚨 REGRA ABSOLUTA CONTRA ALUCINAÇÃO DE AGENDAMENTOS 🚨🚨\nSe o cliente pedir para cancelar ou verificar agendamentos e o sistema informar "Sem agendamentos futuros", você DEVE dizer EXATAMENTE ISSO. NUNCA, SOB NENHUMA HIPÓTESE, invente consultas fictícias usando os nomes dos médicos da clínica e suas agendas. Você só pode listar consultas que foram explicitamente fornecidas na seção "AGENDAMENTOS FUTUROS" ou "CANCELAMENTO".`;
 
     const modeloLLM = config.modelo_llm || 'gpt-4o';
     let llmResponse = null;
