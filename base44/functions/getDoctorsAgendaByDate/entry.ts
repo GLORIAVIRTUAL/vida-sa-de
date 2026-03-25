@@ -200,7 +200,8 @@ Deno.serve(async (req) => {
     const { queryText = '', date = null } = await req.json();
 
     const { date: targetDate, reference_label } = resolveDateFromQuery(queryText, date);
-    const medicos = await base44.asServiceRole.entities.Medico.filter({ status: 'Ativo' });
+    const medicosRaw = await base44.asServiceRole.entities.Medico.filter({ status: 'Ativo' });
+    const medicos = medicosRaw.filter((medico) => !/(cart[aã]o\s*mais\s*vida|dr\.?\s*exame\b|exame\s*laborat|eletrocardio)/i.test(medico.nome || ''));
     const agendamentos = await base44.asServiceRole.entities.Agendamento.filter({
       data_agendamento: targetDate,
       status: { $ne: 'Cancelado' }
