@@ -176,7 +176,7 @@ export default function FormularioProcedimento({ procedimento, categorias, preco
         <DialogHeader>
           <DialogTitle>{procedimento ? "Editar Procedimento" : "Novo Procedimento"}</DialogTitle>
           <DialogDescription>
-            Preencha os detalhes do procedimento e defina os preços para cada categoria.
+            Preencha os detalhes do procedimento, defina o repasse do procedimento e os preços para cada categoria.
           </DialogDescription>
         </DialogHeader>
 
@@ -209,7 +209,7 @@ export default function FormularioProcedimento({ procedimento, categorias, preco
                 <Input type="number" id="duracao_minutos" name="duracao_minutos" value={formData.duracao_minutos} onChange={handleChange} />
               </div>
               <div className="space-y-1">
-                <Label>Repasse Médico</Label>
+                <Label>Repasse do Procedimento</Label>
                 <div className="flex w-full gap-2">
                   <Select name="tipo_repasse" value={formData.tipo_repasse} onValueChange={(v) => setFormData(p => ({...p, tipo_repasse: v}))}>
                     <SelectTrigger className="w-[120px]">
@@ -226,6 +226,9 @@ export default function FormularioProcedimento({ procedimento, categorias, preco
                     <Input type="number" id="percentual_repasse_medico" name="percentual_repasse_medico" value={formData.percentual_repasse_medico} onChange={handleChange} placeholder="0 a 100" min="0" max="100" className="flex-1 min-w-[80px]" />
                   )}
                 </div>
+                <p className="text-xs text-gray-500">
+                  Todo repasse de procedimento deve ser configurado aqui, não no cadastro do médico.
+                </p>
               </div>
             </div>
              <div>
