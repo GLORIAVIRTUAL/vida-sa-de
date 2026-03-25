@@ -1147,10 +1147,10 @@ ${listaMedicosAtivosParaPrompt}
         const messages = [{ role: 'system', content: promptCompleto }];
         if (historicoMensagensRaw && historicoMensagensRaw.length > 0) {
           historicoMensagensRaw.forEach(m => {
-            if (m.role && m.content) {
+            if (m.role && m.content && typeof m.content === 'string' && m.content.trim().length > 0) {
               let cleanContent = m.content;
               if (m.mediaUrl) cleanContent = cleanContent.replace(m.mediaUrl, '').trim();
-              messages.push({ role: m.role, content: cleanContent });
+              if (cleanContent.length > 0) messages.push({ role: m.role, content: cleanContent });
             }
           });
         }
