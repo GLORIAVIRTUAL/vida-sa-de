@@ -245,6 +245,8 @@ Deno.serve(async (req) => {
         const availableSlots = getAvailableSlots(medico, periods, relatedAppointments, targetDate);
 
         return {
+          debug_medicoKey: medicoKey,
+          debug_related_count: relatedAppointments.length,
           medico_id: medico.id,
           nome: medico.nome,
           especialidade: medico.especialidade || null,
