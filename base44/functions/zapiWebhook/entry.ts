@@ -336,7 +336,8 @@ async function processarMensagemRecebida(base44, payload) {
                 const isNovoContatoManual = contato.atendimento_humano === false && (!contato.historico_mensagens || contato.historico_mensagens.length === 0);
 
                 if (contato.conversa_finalizada || (contato.atendimento_humano === false && expirouTimeout) || isNovoContatoManual) {
-                    console.log('🔄 [zapiWebhook] Reativando em modo Humano (finalizada, timeout ou novo manual)');
+                    // Reativar conversa: manter em modo IA para que Glória continue atendendo
+                    console.log('🔄 [zapiWebhook] Reativando conversa em modo IA (finalizada, timeout ou novo manual)');
                     const historicoExistente = contato.historico_mensagens || [];
                     const separador = {
                         role: 'assistant',
@@ -353,7 +354,7 @@ async function processarMensagemRecebida(base44, payload) {
                         historico_mensagens: historicoComSeparador.slice(-200),
                         mensagens_pendentes: [],
                         ultimo_timestamp_pendente: null,
-                        atendimento_humano: true,
+                        atendimento_humano: false,
                         atendente_atual: null,
                         atendente_id: null
                     });
