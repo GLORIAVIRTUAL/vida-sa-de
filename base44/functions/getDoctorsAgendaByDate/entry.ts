@@ -210,11 +210,12 @@ const matchesDoctorQuery = (queryText, medico) => {
 
 const shouldUseBookedDoctorsOnly = (queryText = '') => {
   const normalizedQuery = normalizeText(queryText);
-  return /(quem|quais).*(vai|vao|vão|est[aã]o|estar|tem|t[eê]m).*(atender|atendendo|na clinica|ai na clinica|agenda|hor[aá]rio)/.test(normalizedQuery)
-    || /(medicos|m[eé]dicos|profissionais).*(vai|vao|vão|est[aã]o|estar|tem|t[eê]m).*(amanha|amanhã|hoje|agenda|hor[aá]rio)/.test(normalizedQuery)
-    || /(vai|vao|vão|est[aã]o|estar).*(ter\s+)?(medicos|m[eé]dicos|profissionais).*(atender|atendendo|amanha|amanhã|hoje)/.test(normalizedQuery)
-    || /(tem|vai ter).*(medico|m[eé]dico|profissional).*(atendendo|amanha|amanhã|hoje|agenda|hor[aá]rio)/.test(normalizedQuery)
-    || /(quais|qual).*(medico|m[eé]dico|profissional).*(atende|atendendo|amanha|amanhã|hoje)/.test(normalizedQuery);
+  const timeWords = 'amanha|amanhã|hoje|segunda|terca|quarta|quinta|sexta|sabado|domingo';
+  return new RegExp(`(quem|quais).*(vai|vao|vão|est[aã]o|estar|tem|t[eê]m).*(atender|atendendo|na clinica|ai na clinica|agenda|hor[aá]rio)`).test(normalizedQuery)
+    || new RegExp(`(medicos|m[eé]dicos|profissionais).*(vai|vao|vão|est[aã]o|estar|tem|t[eê]m).*(${timeWords}|agenda|hor[aá]rio)`).test(normalizedQuery)
+    || new RegExp(`(vai|vao|vão|est[aã]o|estar).*(ter\\s+)?(medicos|m[eé]dicos|profissionais).*(atender|atendendo|${timeWords})`).test(normalizedQuery)
+    || new RegExp(`(tem|vai ter).*(medico|m[eé]dico|profissional).*(atendendo|${timeWords}|agenda|hor[aá]rio)`).test(normalizedQuery)
+    || new RegExp(`(quais|qual).*(medico|m[eé]dico|profissional).*(atende|atendem|atendendo|${timeWords})`).test(normalizedQuery);
 };
 
 Deno.serve(async (req) => {
