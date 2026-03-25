@@ -143,12 +143,14 @@ Deno.serve(async (req) => {
                                 role: 'assistant',
                                 content: `📢 [Lembrete Automático 24h]\n${mensagem}`,
                                 timestamp: timestampEnvio,
-                                humano: false
+                                humano: true
                             });
                             await base44.asServiceRole.entities.Contato.update(contato.id, {
                                 historico_mensagens: historico,
                                 ultima_resposta: mensagem,
-                                ultima_interacao: timestampEnvio
+                                ultima_interacao: timestampEnvio,
+                                atendimento_humano: true,
+                                conversa_finalizada: false
                             });
                         } else {
                             // Criar contato automaticamente se não existir

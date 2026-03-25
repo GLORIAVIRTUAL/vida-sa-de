@@ -120,7 +120,9 @@ Deno.serve(async (req) => {
                         await base44.asServiceRole.entities.Contato.update(contato.id, {
                             historico_mensagens: historico,
                             ultima_resposta: mensagem,
-                            ultima_interacao: timestamp
+                            ultima_interacao: timestamp,
+                            atendimento_humano: true,
+                            conversa_finalizada: false
                         });
                         console.log(`✅ Mensagem registrada no histórico do contato ${contato.id}`);
                     } else {
