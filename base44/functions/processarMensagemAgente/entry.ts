@@ -532,7 +532,7 @@ Deno.serve(async (req) => {
       try {
         console.log('🔍 _pqad é true, chamando getDoctorsAgendaByDate...');
         const agendaResp = await Promise.race([
-          base44.asServiceRole.functions.invoke('getDoctorsAgendaByDate', { queryText: messageText }),
+          base44.functions.invoke('getDoctorsAgendaByDate', { queryText: messageText }),
           new Promise((_, r) => setTimeout(() => r(new Error('Timeout agenda real')), 12000))
         ]);
         const agendaData = agendaResp?.data;
