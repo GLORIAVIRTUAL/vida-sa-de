@@ -553,7 +553,11 @@ Deno.serve(async (req) => {
             respostaQuemAtendeDia = `Para ${agendaData.reference_label || dataFmt}, os profissionais que atendem neste dia já estão com a agenda lotada.`;
           }
         } else if (agendaData?.date) {
-          respostaQuemAtendeDia = `No momento, não há profissionais com agenda cadastrada para ${agendaData.reference_label || agendaData.date}.`;
+          if (agendaData.is_booked_only) {
+            respostaQuemAtendeDia = `No momento, não há profissionais com atendimentos agendados para ${agendaData.reference_label || agendaData.date}.`;
+          } else {
+            respostaQuemAtendeDia = `No momento, não há profissionais com agenda cadastrada para ${agendaData.reference_label || agendaData.date}.`;
+          }
         }
       } catch (e) {
         console.log('❌ Erro no _pqad:', e.message);
