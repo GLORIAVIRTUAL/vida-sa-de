@@ -26,17 +26,19 @@ export default function Turmas() {
     setLoading(true);
     try {
       const [turmasData, medicosData, alunosTurmaData] = await Promise.all([
-      base44.entities.Turma.list(),
-      base44.entities.Medico.list(),
-      base44.entities.AlunoTurma.filter({ status: 'Ativo' })]
-      );
+        base44.entities.Turma.list(),
+        base44.entities.Medico.list(),
+        base44.entities.AlunoTurma.list()
+      ]);
       setTurmas(turmasData);
       setMedicos(medicosData);
 
-      // Contar alunos por turma
+      // Contar alunos ativos por turma
       const contagem = {};
       alunosTurmaData.forEach((at) => {
-        contagem[at.turma_id] = (contagem[at.turma_id] || 0) + 1;
+        if (!at.status || at.status === 'Ativo') {
+          contagem[at.turma_id] = (contagem[at.turma_id] || 0) + 1;
+        }
       });
       setAlunosPorTurma(contagem);
     } catch (error) {
