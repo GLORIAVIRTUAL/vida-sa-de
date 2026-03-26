@@ -203,7 +203,32 @@ Deno.serve(async (req) => {
     } catch (e) { config = null; }
     
     if (!config) {
-      return Response.json({ success: true, resposta: 'Olá! Estou com dificuldades técnicas. Por favor, entre em contato pelo WhatsApp.', conversationId: null });
+      try {
+        const cVerif = await buscarContatoPorTelefone(phoneNumber);
+        const timestamp = new Date().toISOString();
+        if (cVerif) {
+          const historicoAtual = cVerif.historico_mensagens || [];
+          const userMsgJaExiste = messageId && historicoAtual.some(m => m.messageId === messageId && m.role === 'user');
+          if (!userMsgJaExiste) {
+            historicoAtual.push({ role: 'user', content: mediaUrl ? `${messageText}\n${mediaUrl}` : messageText, timestamp, messageId, mediaType, mediaUrl });
+            await base44.asServiceRole.entities.Contato.update(cVerif.id, {
+              ultima_mensagem: messageText,
+              historico_mensagens: historicoAtual.slice(-50),
+              ultima_interacao: timestamp,
+              total_mensagens: (cVerif.total_mensagens || 0) + 1,
+              processando_ia_lock: null
+            });
+          }
+        } else {
+          let telefoneComPrefixo = phoneNumber.replace(/\D/g, '');
+          if (!telefoneComPrefixo.startsWith('55')) telefoneComPrefixo = '55' + telefoneComPrefixo;
+          await base44.asServiceRole.entities.Contato.create({
+            nome: senderName, telefone: telefoneComPrefixo, paciente_id: pacienteId, origem: 'WhatsApp', status: 'Novo', atendimento_humano: false, ultima_mensagem: messageText, historico_mensagens: [{ role: 'user', content: mediaUrl ? `${messageText}\n${mediaUrl}` : messageText, timestamp, messageId, mediaType, mediaUrl }], ultima_interacao: timestamp, total_mensagens: 1, conversa_finalizada: false
+          });
+        }
+      } catch (e) { console.error('Erro ao salvar msg sem config:', e); }
+      await liberarLock(base44, phoneNumber);
+      return Response.json({ success: true, resposta: null, conversationId: null, message: 'Chatbot desativado, mensagem salva' });
     }
     
     let conversaFinalizada = false;
