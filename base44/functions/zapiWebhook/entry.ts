@@ -433,10 +433,10 @@ async function processarMensagemRecebida(base44, payload) {
                     
                     // Se tem mídia, esperar mais tempo para dar chance do cliente digitar texto junto
                     const temMidiaNoBuffer = mensagensPendentes.some(m => m.mediaType && m.mediaType !== 'text');
-                    const tempoDebounce = temMidiaNoBuffer ? 6000 : 3000;
+                    const tempoDebounce = temMidiaNoBuffer ? 6000 : 4000; // Aumentado debounce padrão para 4s para evitar quebra de mensagens
                     console.log(`⏳ Mensagem adicionada ao buffer (${mensagensPendentes.length} pendentes). meuTimestamp=${meuTimestamp}. Aguardando ${tempoDebounce/1000}s...${temMidiaNoBuffer ? ' (mídia detectada, debounce estendido)' : ''}`);
                     
-                    // Esperar para acumular mais mensagens (6s com mídia, 3s sem)
+                    // Esperar para acumular mais mensagens (6s com mídia, 4s sem)
                     await new Promise(resolve => setTimeout(resolve, tempoDebounce));
                     
                     // Recarregar contato para ver se mais mensagens chegaram
@@ -500,6 +500,18 @@ async function processarMensagemRecebida(base44, payload) {
                         text: { message: textosCombinados },
                         body: textosCombinados
                     };
+                    
+                    // Anti-duplicidade extra: verificar se a última mensagem do assistente no histórico é muito recente (< 5s)
+                    // Isso evita que duas instâncias que passaram pelo debounce enviem respostas seguidas
+                    const histAtualizado = contatoAtualizado.historico_mensagens || [];
+                    const ultimaAssistente = [...histAtualizado].reverse().find(m => m.role === 'assistant');
+                    if (ultimaAssistente && ultimaAssistente.timestamp) {
+                        const tempoDesdeUltimaResposta = Date.now() - new Date(ultimaAssistente.timestamp).getTime();
+                        if (tempoDesdeUltimaResposta < 5000) {
+                            console.log(`🚫 Resposta muito recente detectada no webhook (${tempoDesdeUltimaResposta}ms). Abortando processamento para evitar duplicidade.`);
+                            return new Response(JSON.stringify({ message: "Resposta recente detectada, abortando" }), { status: 200 });
+                        }
+                    }
                     if (ultimaComMidia?.mediaType === 'image') payloadCombinado.image = { imageUrl: ultimaComMidia.mediaUrl, caption: textosCombinados };
                     if (ultimaComMidia?.mediaType === 'document') payloadCombinado.document = { documentUrl: ultimaComMidia.mediaUrl };
                     if (ultimaComMidia?.mediaType === 'audio') payloadCombinado.audio = { audioUrl: ultimaComMidia.mediaUrl };

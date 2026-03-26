@@ -104,18 +104,69 @@ Deno.serve(async (req) => {
           
           const lockAtual = contatoVerif.processando_ia_lock || null;
           const agora = Date.now();
+          
+          // Verificar lock existente
           if (lockAtual) {
-            const lockTimestamp = new Date(lockAtual).getTime();
+            const lockTimestamp = new Date(lockAtual.split('_')[0]).getTime(); // Suporta formato ISO_random
             const lockIdadeMs = agora - lockTimestamp;
-            if (lockIdadeMs < 45000) return Response.json({ success: true, status: 'lock_ativo', resposta: null });
+            // Aumentar tempo de validade do lock para evitar sobreposição em processamentos lentos (LLM)
+            if (lockIdadeMs < 60000) { 
+              console.log(`🔒 Lock ativo detectado (${lockIdadeMs}ms). Bloqueando duplicata.`);
+              return Response.json({ success: true, status: 'lock_ativo', resposta: null });
+            }
           }
           
+          // Criar novo lock
           const meuLock = new Date().toISOString() + '_' + Math.random().toString(36).slice(2, 8);
           await base44.asServiceRole.entities.Contato.update(contatoVerif.id, { processando_ia_lock: meuLock });
-          await new Promise(resolve => setTimeout(resolve, 1500));
           
+          // Espera maior para garantir propagação e evitar race condition
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          // Re-verificar se o lock ainda é nosso
           const contatoRecheck = await buscarContatoPorTelefone(phoneNumber);
-          if (contatoRecheck && contatoRecheck.processando_ia_lock !== meuLock) return Response.json({ success: true, status: 'lock_perdido', resposta: null });
+          if (contatoRecheck && contatoRecheck.processando_ia_lock !== meuLock) {
+            console.log('🔒 Lock perdido para outra instância. Abortando.');
+            return Response.json({ success: true, status: 'lock_perdido', resposta: null });
+          }
+          
+          // Anti-duplicidade de mensagem do usuário: se a mensagem que estamos processando já foi inserida no histórico
+          // por outra instância que acabou de rodar, abortar
+          if (contatoRecheck && contatoRecheck.historico_mensagens) {
+             const ultimasUser = contatoRecheck.historico_mensagens.filter(m => m.role === 'user');
+             if (ultimasUser.length > 0) {
+                 const ultimaUser = ultimasUser[ultimasUser.length - 1];
+                 // Se o messageId for igual OU o texto for igual e enviado nos últimos 5 segundos
+                 const ehMesmaMensagem = (messageId && ultimaUser.messageId === messageId) || 
+                                         (ultimaUser.content === messageText && 
+                                          ultimaUser.timestamp && 
+                                          (Date.now() - new Date(ultimaUser.timestamp).getTime() < 5000));
+                 
+                 // E se já tem uma resposta do assistente DEPOIS dessa mensagem do usuário
+                 const indexUltimaUser = contatoRecheck.historico_mensagens.lastIndexOf(ultimaUser);
+                 const jaRespondida = contatoRecheck.historico_mensagens.slice(indexUltimaUser + 1).some(m => m.role === 'assistant');
+                 
+                 if (ehMesmaMensagem && jaRespondida) {
+                     console.log('🚫 Mensagem do usuário já processada e respondida por outra instância. Abortando.');
+                     await liberarLock(base44, phoneNumber);
+                     return Response.json({ success: true, status: 'ja_processado', resposta: null });
+                 }
+             }
+          }
+          
+          // Verificação extra: se a última mensagem do assistente é muito recente (< 10s), abortar
+          if (contatoRecheck && contatoRecheck.historico_mensagens && contatoRecheck.historico_mensagens.length > 0) {
+             const ultimas = contatoRecheck.historico_mensagens;
+             const ultimaAssistente = [...ultimas].reverse().find(m => m.role === 'assistant');
+             if (ultimaAssistente && ultimaAssistente.timestamp) {
+               const tempoDesdeUltimaResposta = agora - new Date(ultimaAssistente.timestamp).getTime();
+               if (tempoDesdeUltimaResposta < 10000) {
+                 console.log(`🚫 Resposta muito recente detectada (${tempoDesdeUltimaResposta}ms). Evitando duplicidade.`);
+                 await liberarLock(base44, phoneNumber);
+                 return Response.json({ success: true, status: 'resposta_recente', resposta: null });
+               }
+             }
+          }
           
           if (contatoRecheck) {
             const histRecheck = contatoRecheck.historico_mensagens || [];
@@ -1301,7 +1352,16 @@ ${listaMedicosAtivosParaPrompt}
         const ehFallbackMsg = llmResponse && /instabilidade no atendimento autom/i.test(llmResponse);
         const respostaIdentica = !ehFallbackMsg && ultimaResposta?.content && llmResponse && ultimaResposta.content.trim() === (llmResponse||'').trim();
         const jaEnviouMsgOrcamento = ultimasRespostasAssistente.some(m => m.content && /já enviei o orçamento/i.test(m.content));
-        if (respostaIdentica || (jaEnviouMsgOrcamento && llmResponse && /já enviei o orçamento/i.test(llmResponse))) {
+        
+        // Anti-duplicidade final: verificar se a resposta gerada já foi enviada recentemente (últimos 30s)
+        const respostaRecenteIdentica = ultimaResposta && 
+                                        ultimaResposta.timestamp && 
+                                        (Date.now() - new Date(ultimaResposta.timestamp).getTime() < 30000) && 
+                                        llmResponse && 
+                                        ultimaResposta.content.trim() === llmResponse.trim();
+
+        if (respostaIdentica || respostaRecenteIdentica || (jaEnviouMsgOrcamento && llmResponse && /já enviei o orçamento/i.test(llmResponse))) {
+          console.log('🚫 Resposta idêntica detectada no final do processamento. Abortando envio.');
           await liberarLock(base44, phoneNumber);
           return Response.json({ success: true, resposta: null, duplicado: true });
         }
