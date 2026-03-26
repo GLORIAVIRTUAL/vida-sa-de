@@ -196,10 +196,16 @@ Deno.serve(async (req) => {
     let config;
     try {
       const configs = await Promise.race([
-        base44.asServiceRole.entities.ChatbotConfig.filter({ ativo: true }),
+        base44.asServiceRole.entities.ChatbotConfig.list(),
         new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout ChatbotConfig')), 5000))
       ]);
-      config = configs[0];
+      config = configs.find(c => c.ativo === true);
+      
+      // Permitir testes apenas para o Thiago Cavalcanti (ignorando se está inativo)
+      const telLimpo = phoneNumber.replace(/\D/g, '');
+      if (!config && (telLimpo.includes('87988020504') || telLimpo.includes('878988020504'))) {
+        config = configs[0];
+      }
     } catch (e) { config = null; }
     
     if (!config) {
