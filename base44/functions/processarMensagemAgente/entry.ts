@@ -78,6 +78,7 @@ Deno.serve(async (req) => {
     }
     
     const isBufferMessage = messageId && messageId.startsWith('buffer_');
+    let lockName = null;
     
     async function buscarContatoPorTelefone(tel) {
       const telNorm = tel.replace(/\D/g, '');
@@ -117,15 +118,15 @@ Deno.serve(async (req) => {
           }
           
           // Criar novo lock
-          const meuLock = new Date().toISOString() + '_' + Math.random().toString(36).slice(2, 8);
-          await base44.asServiceRole.entities.Contato.update(contatoVerif.id, { processando_ia_lock: meuLock });
+          lockName = new Date().toISOString() + '_' + Math.random().toString(36).slice(2, 8);
+          await base44.asServiceRole.entities.Contato.update(contatoVerif.id, { processando_ia_lock: lockName });
           
           // Espera maior para garantir propagação e evitar race condition
           await new Promise(resolve => setTimeout(resolve, 2000));
           
           // Re-verificar se o lock ainda é nosso
           const contatoRecheck = await buscarContatoPorTelefone(phoneNumber);
-          if (contatoRecheck && contatoRecheck.processando_ia_lock !== meuLock) {
+          if (contatoRecheck && contatoRecheck.processando_ia_lock !== lockName) {
             console.log('🔒 Lock perdido para outra instância. Abortando.');
             return Response.json({ success: true, status: 'lock_perdido', resposta: null });
           }
@@ -148,7 +149,7 @@ Deno.serve(async (req) => {
                  
                  if (ehMesmaMensagem && jaRespondida) {
                      console.log('🚫 Mensagem do usuário já processada e respondida por outra instância. Abortando.');
-                     await liberarLock(base44, phoneNumber);
+                     await liberarLock(base44, phoneNumber, lockName);
                      return Response.json({ success: true, status: 'ja_processado', resposta: null });
                  }
              }
@@ -162,7 +163,7 @@ Deno.serve(async (req) => {
                const tempoDesdeUltimaResposta = agora - new Date(ultimaAssistente.timestamp).getTime();
                if (tempoDesdeUltimaResposta < 10000) {
                  console.log(`🚫 Resposta muito recente detectada (${tempoDesdeUltimaResposta}ms). Evitando duplicidade.`);
-                 await liberarLock(base44, phoneNumber);
+                 await liberarLock(base44, phoneNumber, lockName);
                  return Response.json({ success: true, status: 'resposta_recente', resposta: null });
                }
              }
@@ -175,7 +176,7 @@ Deno.serve(async (req) => {
               return histRecheck.slice(idx + 1).some(r => r.role === 'assistant');
             });
             if (jaProcessadoAgora) {
-              await liberarLock(base44, phoneNumber);
+              await liberarLock(base44, phoneNumber, lockName);
               return Response.json({ success: true, status: 'duplicata_pos_lock', resposta: null });
             }
           }
@@ -204,12 +205,12 @@ Deno.serve(async (req) => {
             }
           }
           
-          const meuLockBuffer = new Date().toISOString() + '_buf_' + Math.random().toString(36).slice(2, 8);
-          await base44.asServiceRole.entities.Contato.update(contatoVerif.id, { processando_ia_lock: meuLockBuffer });
+          lockName = new Date().toISOString() + '_buf_' + Math.random().toString(36).slice(2, 8);
+          await base44.asServiceRole.entities.Contato.update(contatoVerif.id, { processando_ia_lock: lockName });
           // Pequena pausa para garantir propagação e verificar se não houve race condition
           await new Promise(resolve => setTimeout(resolve, 500));
           const contatoCheck = await buscarContatoPorTelefone(phoneNumber);
-          if (contatoCheck && contatoCheck.processando_ia_lock === meuLockBuffer) {
+          if (contatoCheck && contatoCheck.processando_ia_lock === lockName) {
             lockAdquirido = true;
             break;
           }
@@ -217,8 +218,33 @@ Deno.serve(async (req) => {
         
         if (!lockAdquirido) {
            console.log('❌ Não foi possível adquirir lock após retries. Mensagem pode ser perdida ou processada concorrentemente.');
-           // Opcional: Salvar mensagem forçadamente aqui se crítico, mas por enquanto vamos confiar no retry
-           // return Response.json({ success: true, status: 'lock_timeout', resposta: null });
+           return Response.json({ success: true, status: 'lock_timeout', resposta: null });
+        }
+        
+        // APÓS ADQUIRIR O LOCK, verificar se a mensagem já foi processada recentemente
+        const contatoPosLock = await buscarContatoPorTelefone(phoneNumber);
+        if (contatoPosLock && contatoPosLock.historico_mensagens) {
+            const ultimasUser = contatoPosLock.historico_mensagens.filter(m => m.role === 'user');
+            if (ultimasUser.length > 0) {
+                const ultimaUser = ultimasUser[ultimasUser.length - 1];
+                // Se o texto for igual e enviado nos últimos 20 segundos
+                if (ultimaUser.content === messageText && ultimaUser.timestamp && (Date.now() - new Date(ultimaUser.timestamp).getTime() < 20000)) {
+                    console.log('🚫 Mensagem de buffer duplicada detectada após lock. Abortando.');
+                    await liberarLock(base44, phoneNumber, lockName);
+                    return Response.json({ success: true, status: 'ja_processado', resposta: null });
+                }
+            }
+            
+            // Verificação extra: se a última mensagem do assistente é muito recente (< 10s), abortar
+            const ultimaAssistente = [...contatoPosLock.historico_mensagens].reverse().find(m => m.role === 'assistant');
+            if (ultimaAssistente && ultimaAssistente.timestamp) {
+               const tempoDesdeUltimaResposta = Date.now() - new Date(ultimaAssistente.timestamp).getTime();
+               if (tempoDesdeUltimaResposta < 10000) {
+                 console.log(`🚫 Resposta muito recente detectada no buffer (${tempoDesdeUltimaResposta}ms). Evitando duplicidade.`);
+                 await liberarLock(base44, phoneNumber, lockName);
+                 return Response.json({ success: true, status: 'resposta_recente', resposta: null });
+               }
+            }
         }
       } catch (e) {
         console.error('Erro no lock buffer:', e);
@@ -236,7 +262,7 @@ Deno.serve(async (req) => {
             const conteudoAtual = (mediaUrl ? `${messageText}\n${mediaUrl}` : messageText).trim();
             const conteudoAnterior = (penultimaMsg.content || '').trim();
             if (conteudoAtual === conteudoAnterior || messageText.trim() === conteudoAnterior) {
-              await liberarLock(base44, phoneNumber);
+              await liberarLock(base44, phoneNumber, lockName);
               return Response.json({ success: true, status: 'duplicata_pos_agendamento', resposta: null });
             }
           }
@@ -268,7 +294,7 @@ Deno.serve(async (req) => {
     }
     
     if (isBufferMessage && contatosCheck.length > 0 && contatosCheck[0].atendimento_humano === true && !!(contatosCheck[0].atendente_atual || contatosCheck[0].atendente_id)) {
-      await liberarLock(base44, phoneNumber);
+      await liberarLock(base44, phoneNumber, lockName);
       return Response.json({ success: true, resposta: null, atendimento_humano: true, message: 'Buffer ignorado - atendimento humano ativo' });
     }
     
@@ -312,7 +338,7 @@ Deno.serve(async (req) => {
           });
         }
       } catch (e) { console.error('Erro ao salvar msg sem config:', e); }
-      await liberarLock(base44, phoneNumber);
+      await liberarLock(base44, phoneNumber, lockName);
       return Response.json({ success: true, resposta: null, conversationId: null, message: 'Chatbot desativado, mensagem salva' });
     }
     
@@ -407,11 +433,11 @@ Deno.serve(async (req) => {
       if(nE&&dE){try{const rv=await base44.asServiceRole.functions.invoke('verificarAgendamento',{nome:nE,data_nascimento:dE});let rV='';
         if(rv.data?.sucesso&&rv.data?.agendamentos?.length>0){rV=`📋 *Seus agendamentos:*\n\n`;rv.data.agendamentos.forEach(ag=>{const se=ag.status==='Cancelado'?'❌':ag.status==='Agendado'?'📅':'✅';const st=ag.status==='Cancelado'?'CANCELADO':ag.status==='Agendado'?'Agendado':ag.status==='Confirmado'?'CONFIRMADO':ag.status;rV+=`${se} *${ag.data_formatada}* às *${ag.horario}*\n👨‍⚕️ ${ag.medico_nome} (${ag.especialidade})\n📌 *${st}*\n\n`;});const tc=rv.data.agendamentos.some(a=>a.status==='Confirmado'||a.status==='Agendado');if(tc)rV+='📍 Tristão Monteiro, 580 – Tramandaí/RS\n⏰ Chegue 10min antes!\n\n';rV+='Posso ajudar em mais algo?';}else{rV=`😔 Não encontramos agendamentos para *${nE}*.\nPosso agendar para você! 😊`;}
         try{const cs=await base44.asServiceRole.entities.Contato.filter({telefone:phoneNumber});if(cs.length>0){const h=cs[0].historico_mensagens||[];const ts=new Date().toISOString();h.push({role:'user',content:messageText,timestamp:ts},{role:'assistant',content:rV,timestamp:ts});await base44.asServiceRole.entities.Contato.update(cs[0].id,{historico_mensagens:h.slice(-50),ultima_interacao:ts});}}catch(e){}
-        await liberarLock(base44,phoneNumber);return Response.json({success:true,resposta:rV,verificado:true,fluxo:'verificacao'});
+        await liberarLock(base44, phoneNumber, lockName);return Response.json({success:true,resposta:rV,verificado:true,fluxo:'verificacao'});
       }catch(e){}}else{
         const rPD=`Para verificar, preciso:\n📝 Nome completo\n📅 Data nascimento (DD/MM/AAAA)\n\nEx: "Antonio Thiago 19/04/1982"`;
         try{const cs=await base44.asServiceRole.entities.Contato.filter({telefone:phoneNumber});if(cs.length>0){const h=cs[0].historico_mensagens||[];const ts=new Date().toISOString();h.push({role:'user',content:messageText,timestamp:ts},{role:'assistant',content:rPD,timestamp:ts});await base44.asServiceRole.entities.Contato.update(cs[0].id,{historico_mensagens:h.slice(-50),ultima_interacao:ts});}}catch(e){}
-        await liberarLock(base44,phoneNumber);return Response.json({success:true,resposta:rPD,fluxo:'verificacao'});}
+        await liberarLock(base44, phoneNumber, lockName);return Response.json({success:true,resposta:rPD,fluxo:'verificacao'});}
     }
 
       if(querCancelar){try{const hj=new Date().toISOString().split('T')[0];let aF=[];let nP='';let pacs=[];const tnC=phoneNumber.replace(/\D/g,'');const vC=[phoneNumber,tnC];if(tnC.startsWith('55')&&tnC.length>=12)vC.push(tnC.slice(2));if(!tnC.startsWith('55')&&tnC.length>=10)vC.push('55'+tnC);for(const v of vC){if(pacs.length>0)break;try{pacs=await base44.asServiceRole.entities.Paciente.filter({telefone:v});}catch(e){}}if(!pacs.length){try{const tp=await base44.asServiceRole.entities.Paciente.list('-created_date',500);const u8=tnC.slice(-8);pacs=tp.filter(p=>(p.telefone||'').replace(/\D/g,'').slice(-8)===u8);}catch(e){}}if(pacs.length>0){nP=pacs[0].nome;for(const p of pacs){const ag=await base44.asServiceRole.entities.Agendamento.filter({paciente_id:p.id});aF.push(...ag.filter(a=>a.data_agendamento>=hj && ['Agendado','Confirmado','Pago'].includes(a.status)));}const ids=new Set();aF=aF.filter(a=>{if(ids.has(a.id))return false;ids.add(a.id);return true;});}
@@ -429,7 +455,7 @@ Deno.serve(async (req) => {
             const _qr=/remarcar|adiar|mudar.*data/i.test(messageText);let _rc=`✅ Agendamento cancelado com sucesso!\n\n❌ *Cancelado:* ${_ac?.tipo_servico||'Consulta'} - ${_df} às ${_ac?.horario||''}${_mc?` com ${_mc.nome} (${_mc.especialidade||''})`:''}\n\n`;
             _rc+=_qr?`Para quando você gostaria de remarcar?${_mc?` Posso ver os próximos horários para ${_mc.especialidade||'essa consulta'}.`:''}`:`Se precisar de mais alguma coisa, estou à disposição! 😊`;
             try{const _ch=await buscarContatoPorTelefone(phoneNumber);if(_ch){const _h=_ch.historico_mensagens||[];const _t=new Date().toISOString();_h.push({role:'user',content:messageText,timestamp:_t,messageId},{role:'assistant',content:_rc,timestamp:_t});await base44.asServiceRole.entities.Contato.update(_ch.id,{historico_mensagens:_h.slice(-50),ultima_interacao:_t,ultima_mensagem:messageText,ultima_resposta:_rc});}}catch(e){}
-            await liberarLock(base44,phoneNumber);return Response.json({success:true,resposta:_rc,cancelamento_executado:true});
+            await liberarLock(base44, phoneNumber, lockName);return Response.json({success:true,resposta:_rc,cancelamento_executado:true});
             }catch(ce){}
           }
         }else{infoCancelamento='\n\n❌ CANCELAMENTO: Sem agendamentos futuros p/ este telefone. 🚨 REGRA CRÍTICA E ABSOLUTA: O cliente NÃO TEM consultas marcadas. Diga EXATAMENTE que não encontrou nenhuma consulta para cancelar. NUNCA, SOB NENHUMA HIPÓTESE, invente ou liste consultas fictícias usando os nomes dos médicos da clínica.';}
@@ -589,13 +615,13 @@ Deno.serve(async (req) => {
                 await base44.asServiceRole.entities.Contato.update(cCancelHist.id, { historico_mensagens: historicoAtualCancel.slice(-50), ultima_interacao: timestampCancel, ultima_mensagem: messageText, ultima_resposta: respostaCancelamento });
               }
             } catch (e) {}
-            await liberarLock(base44, phoneNumber);
+            await liberarLock(base44, phoneNumber, lockName);
             return Response.json({ success: true, resposta: respostaCancelamento, cancelamento_executado: true });
           } else {
-            await liberarLock(base44, phoneNumber); return Response.json({ success: true, resposta: 'Não consegui concluir o cancelamento no sistema agora. Por favor, tente novamente em instantes.', cancelamento_executado: false });
+            await liberarLock(base44, phoneNumber, lockName); return Response.json({ success: true, resposta: 'Não consegui concluir o cancelamento no sistema agora. Por favor, tente novamente em instantes.', cancelamento_executado: false });
           }
         } else {
-          await liberarLock(base44, phoneNumber);
+          await liberarLock(base44, phoneNumber, lockName);
           return Response.json({ success: true, resposta: agendamentosFuturos.length > 1 ? 'Para cancelar corretamente, me responda com o número da opção, a data exata ou o horário exato da consulta.' : 'Para cancelar corretamente, me confirme a data exata ou o horário exato da consulta.', cancelamento_executado: false });
         }
       }
@@ -1104,13 +1130,13 @@ Retorne JSON.`;
     const estaConfirmando = /^(sim|s|ok|certo|correto|confirmo|pode|isso|claro|beleza|tudo bem|confirm|yes)$/i.test(messageText.trim());
     if(agendamentoCriado){
       try{const c=await buscarContatoPorTelefone(phoneNumber);const ts=new Date().toISOString();if(c){const h=c.historico_mensagens||[];h.push({role:'user',content:messageText,timestamp:ts},{role:'assistant',content:mensagemAgendamento,timestamp:ts});await base44.asServiceRole.entities.Contato.update(c.id,{ultima_mensagem:messageText,ultima_resposta:mensagemAgendamento,historico_mensagens:h.slice(-50),ultima_interacao:ts,total_mensagens:(c.total_mensagens||0)+2,agendamentos_realizados:(c.agendamentos_realizados||0)+1,processando_ia_lock:null});}}catch(e){}
-      await liberarLock(base44,phoneNumber);
+      await liberarLock(base44, phoneNumber, lockName);
       return Response.json({success:true,resposta:mensagemAgendamento,conversationId:null,agendamento_criado:true});
     }
 
     if(mensagemAgendamento && !agendamentoCriado){
       try{const c=await buscarContatoPorTelefone(phoneNumber);const ts=new Date().toISOString();if(c){const h=c.historico_mensagens||[];h.push({role:'user',content:messageText,timestamp:ts},{role:'assistant',content:mensagemAgendamento,timestamp:ts});await base44.asServiceRole.entities.Contato.update(c.id,{ultima_mensagem:messageText,ultima_resposta:mensagemAgendamento,historico_mensagens:h.slice(-50),ultima_interacao:ts,total_mensagens:(c.total_mensagens||0)+2,processando_ia_lock:null});}}catch(e){}
-      await liberarLock(base44,phoneNumber);
+      await liberarLock(base44, phoneNumber, lockName);
       return Response.json({success:true,resposta:mensagemAgendamento,conversationId:null,agendamento_criado:false});
     }
 
@@ -1343,6 +1369,13 @@ ${listaMedicosAtivosParaPrompt}
 
       if (cFinal) {
         const contato = cFinal;
+        
+        // Se tínhamos um lock, verificar se ainda é nosso
+        if (lockName && contato.processando_ia_lock && contato.processando_ia_lock !== lockName) {
+            console.log(`🛑 Lock perdido durante o processamento da IA (meu: ${lockName}, atual: ${contato.processando_ia_lock}). Abortando salvamento.`);
+            return Response.json({ success: true, status: 'lock_perdido_pos_ia', resposta: null });
+        }
+        
         const historicoAtual = contato.historico_mensagens || [];
 
         const historicoCompleto = historicoAtual.filter(m => m.role === 'assistant');
@@ -1362,7 +1395,7 @@ ${listaMedicosAtivosParaPrompt}
 
         if (respostaIdentica || respostaRecenteIdentica || (jaEnviouMsgOrcamento && llmResponse && /já enviei o orçamento/i.test(llmResponse))) {
           console.log('🚫 Resposta idêntica detectada no final do processamento. Abortando envio.');
-          await liberarLock(base44, phoneNumber);
+          await liberarLock(base44, phoneNumber, lockName);
           return Response.json({ success: true, resposta: null, duplicado: true });
         }
 
@@ -1426,7 +1459,7 @@ ${listaMedicosAtivosParaPrompt}
       } catch (e) {}
     }
 
-    await liberarLock(base44, phoneNumber);
+    await liberarLock(base44, phoneNumber, lockName);
 
     return Response.json({ 
       success: true, 
@@ -1437,13 +1470,13 @@ ${listaMedicosAtivosParaPrompt}
     
   } catch (error) {
     try {
-      if (typeof phoneNumber !== 'undefined' && phoneNumber) await liberarLock(base44, phoneNumber);
+      if (typeof phoneNumber !== 'undefined' && phoneNumber) await liberarLock(base44, phoneNumber, lockName);
     } catch (e) { }
     return Response.json({ error: error.message, stack: error.stack }, { status: 500 });
   }
 });
 
-async function liberarLock(base44, phoneNumber) {
+async function liberarLock(base44, phoneNumber, lockName = null) {
   try {
     const telNorm = phoneNumber.replace(/\D/g, '');
     const vars = [phoneNumber, telNorm];
@@ -1453,7 +1486,10 @@ async function liberarLock(base44, phoneNumber) {
     for (const v of vars) {
       const contatos = await base44.asServiceRole.entities.Contato.filter({ telefone: v });
       if (contatos.length > 0 && contatos[0].processando_ia_lock) {
-        await base44.asServiceRole.entities.Contato.update(contatos[0].id, { processando_ia_lock: null });
+        // Só liberar se não informou lockName (forçado) ou se o lock atual for o mesmo que o nosso
+        if (!lockName || contatos[0].processando_ia_lock === lockName) {
+          await base44.asServiceRole.entities.Contato.update(contatos[0].id, { processando_ia_lock: null });
+        }
         return;
       }
     }
