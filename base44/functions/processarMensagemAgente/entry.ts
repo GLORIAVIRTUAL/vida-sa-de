@@ -203,7 +203,7 @@ Deno.serve(async (req) => {
       
       // Permitir testes apenas para o Thiago Cavalcanti (ignorando se está inativo)
       const telLimpo = phoneNumber.replace(/\D/g, '');
-      if (!config && (telLimpo.includes('87988020504') || telLimpo.includes('878988020504'))) {
+      if (!config && (telLimpo.includes('87988020504') || telLimpo.includes('878988020504') || telLimpo.includes('8788020504'))) {
         config = configs[0];
       }
     } catch (e) { config = null; }
