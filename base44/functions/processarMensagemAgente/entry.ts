@@ -132,18 +132,46 @@ Deno.serve(async (req) => {
       } catch (e) {}
     } else if (isBufferMessage) {
       try {
-        const contatoVerif = await buscarContatoPorTelefone(phoneNumber);
-        if (contatoVerif) {
+        // Tentar adquirir lock com retries (espera até 12s)
+        let lockAdquirido = false;
+        for (let i = 0; i < 6; i++) {
+          const contatoVerif = await buscarContatoPorTelefone(phoneNumber);
+          if (!contatoVerif) break;
+          
           const lockAtual = contatoVerif.processando_ia_lock || null;
           const agora = Date.now();
+          
           if (lockAtual) {
             const lockIdadeMs = agora - new Date(lockAtual.split('_')[0]).getTime();
-            if (lockIdadeMs < 45000) return Response.json({ success: true, status: 'lock_ativo_buffer', resposta: null });
+            // Se lock for recente (< 25s), esperar. Se for antigo, assumir que travou e sobrescrever.
+            if (lockIdadeMs < 25000) {
+              console.log(`⏳ Lock ativo (${lockIdadeMs}ms). Esperando... (tentativa ${i+1}/6)`);
+              await new Promise(resolve => setTimeout(resolve, 2000));
+              continue;
+            } else {
+              console.log(`🔓 Lock expirado (${lockIdadeMs}ms). Sobrescrevendo.`);
+            }
           }
+          
           const meuLockBuffer = new Date().toISOString() + '_buf_' + Math.random().toString(36).slice(2, 8);
           await base44.asServiceRole.entities.Contato.update(contatoVerif.id, { processando_ia_lock: meuLockBuffer });
+          // Pequena pausa para garantir propagação e verificar se não houve race condition
+          await new Promise(resolve => setTimeout(resolve, 500));
+          const contatoCheck = await buscarContatoPorTelefone(phoneNumber);
+          if (contatoCheck && contatoCheck.processando_ia_lock === meuLockBuffer) {
+            lockAdquirido = true;
+            break;
+          }
         }
-      } catch (e) {}
+        
+        if (!lockAdquirido) {
+           console.log('❌ Não foi possível adquirir lock após retries. Mensagem pode ser perdida ou processada concorrentemente.');
+           // Opcional: Salvar mensagem forçadamente aqui se crítico, mas por enquanto vamos confiar no retry
+           // return Response.json({ success: true, status: 'lock_timeout', resposta: null });
+        }
+      } catch (e) {
+        console.error('Erro no lock buffer:', e);
+      }
     }
     
     try {
