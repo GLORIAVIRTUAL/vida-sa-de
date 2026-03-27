@@ -319,7 +319,62 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
       const comHistorico = (todosContatos || []).filter(c => 
         (c.historico_mensagens && c.historico_mensagens.length > 0) || c.ultima_mensagem
       );
-      const ordenados = [...comHistorico].sort((a, b) => {
+
+      // Deduplicar contatos pelo número de telefone (usando os últimos 8 dígitos)
+      const contatosUnicosMap = new Map();
+      
+      comHistorico.forEach(c => {
+        const telNorm = (c.telefone || '').replace(/\D/g, '');
+        const telKey = telNorm.length >= 8 ? telNorm.slice(-8) : telNorm;
+        
+        if (telKey) {
+          if (!contatosUnicosMap.has(telKey)) {
+            // Clonar para não alterar o objeto original e permitir merge de histórico
+            contatosUnicosMap.set(telKey, { ...c, historico_mensagens: [...(c.historico_mensagens || [])] });
+          } else {
+            const existente = contatosUnicosMap.get(telKey);
+            
+            // Mesclar histórico de mensagens
+            const histExistente = existente.historico_mensagens || [];
+            const histNovo = c.historico_mensagens || [];
+            
+            histNovo.forEach(msg => {
+              const jaExiste = histExistente.some(m => 
+                m.timestamp === msg.timestamp && m.content === msg.content
+              );
+              if (!jaExiste) {
+                histExistente.push(msg);
+              }
+            });
+            
+            // Reordenar histórico mesclado
+            histExistente.sort((a, b) => new Date(a.timestamp || 0) - new Date(b.timestamp || 0));
+            existente.historico_mensagens = histExistente;
+
+            const dataAtual = new Date(c.ultima_interacao || c.updated_date || c.created_date || 0).getTime();
+            const dataExistente = new Date(existente.ultima_interacao || existente.updated_date || existente.created_date || 0).getTime();
+            
+            // Se o atual for mais recente, atualizar os metadados principais
+            if (dataAtual > dataExistente) {
+              existente.ultima_interacao = c.ultima_interacao;
+              existente.ultima_mensagem = c.ultima_mensagem;
+              existente.ultima_resposta = c.ultima_resposta;
+              existente.status = c.status;
+              existente.conversa_finalizada = c.conversa_finalizada;
+              existente.atendimento_humano = c.atendimento_humano;
+              existente.atendente_atual = c.atendente_atual;
+              existente.nome = c.nome || existente.nome;
+              existente.id = c.id; // Importante: usar o ID do mais recente para interações
+            }
+          }
+        } else {
+          contatosUnicosMap.set(c.id, c);
+        }
+      });
+      
+      const contatosUnicos = Array.from(contatosUnicosMap.values());
+
+      const ordenados = [...contatosUnicos].sort((a, b) => {
         const aFinalizado = a.conversa_finalizada === true;
         const bFinalizado = b.conversa_finalizada === true;
         if (aFinalizado && !bFinalizado) return 1;
