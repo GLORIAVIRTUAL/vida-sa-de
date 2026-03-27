@@ -383,12 +383,12 @@ export default function FormularioOS({
       );
 
       // Lógica diferenciada para Procedimentos vs Consultas
-      if (agendamento.tipo_servico === 'Procedimento' && procedimentoAtual) {
+      if (agendamento.tipo_servico === 'Procedimento') {
         // 1. Prioridade: Definição no próprio Procedimento
-        if (procedimentoAtual.valor_repasse_medico > 0) {
+        if (procedimentoAtual && procedimentoAtual.valor_repasse_medico > 0) {
           repasseFixo = procedimentoAtual.valor_repasse_medico;
         }
-        else if (procedimentoAtual.percentual_repasse_medico > 0) {
+        else if (procedimentoAtual && procedimentoAtual.percentual_repasse_medico > 0) {
           percentual = procedimentoAtual.percentual_repasse_medico;
         }
         // 2. Prioridade: Repasse específico por categoria para procedimentos (só se valor > 0)

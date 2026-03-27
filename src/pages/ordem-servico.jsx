@@ -226,11 +226,11 @@ export default function OrdemDeServico() {
       if (modoRapido) {
         console.log('⚡ Modo rápido: carregando apenas procedimentos e exames');
         
-        const procedimentosData = await Procedimento.list("-created_date", 100);
+        const procedimentosData = await Procedimento.list("-created_date", 500);
         setProcedimentos(procedimentosData || []);
         await delay(200);
         
-        const examesData = await Exame.list("-created_date", 100);
+        const examesData = await Exame.list("-created_date", 500);
         setExames(examesData || []);
         
         // Não carregar ordens antigas no modo rápido
@@ -267,12 +267,12 @@ export default function OrdemDeServico() {
         await delay(300);
 
         // Etapa 4: Procedimentos
-        const procedimentosData = await Procedimento.list("-created_date", 200);
+        const procedimentosData = await Procedimento.list("-created_date", 500);
         setProcedimentos(procedimentosData || []);
         await delay(300);
         
         // Etapa 5: Exames
-        const examesData = await Exame.list("-created_date", 200);
+        const examesData = await Exame.list("-created_date", 500);
         setExames(examesData || []);
         await delay(300);
 
