@@ -881,7 +881,7 @@ O cliente está ESCOLHENDO/RESPONDENDO. Ele disse: "${messageText}"
               const slots = slotRes?.data?.available_slots || [];
               const slotsValidos = df===_hojeI ? slots.filter(h=>{const[hh,mm]=h.split(':').map(Number);const agora=new Date();const slotDate=new Date();slotDate.setHours(hh,mm,0,0);return slotDate>agora;}) : slots;
               if(slotsValidos.length>0){
-                disponibilidadesMedico.push({data:df,data_formatada:dc.toLocaleDateString('pt-BR',{timeZone:'America/Sao_Paulo',weekday:'long',day:'2-digit',month:'2-digit'}),horarios:slotsValidos.slice(0,5)});
+                disponibilidadesMedico.push({data:df,data_formatada:dc.toLocaleDateString('pt-BR',{timeZone:'America/Sao_Paulo',weekday:'long',day:'2-digit',month:'2-digit'}),horarios:slotsValidos.slice(0,10)});
                 if(disponibilidadesMedico.length>=5) break;
               }
             } catch(e){}
@@ -892,8 +892,14 @@ O cliente está ESCOLHENDO/RESPONDENDO. Ele disse: "${messageText}"
         if (disponibilidadesEncontradas.length > 0) {
         const _amD=new Date();_amD.setDate(_amD.getDate()+1);const _amI=_amD.toLocaleDateString('en-CA',{timeZone:'America/Sao_Paulo'});
         infoDisponibilidade = `\n\n📅 DISPONIBILIDADES ENCONTRADAS:\n🚨HOJE=${_hojeI} AMANHÃ=${_amI}.\n`;
-        for(const medico of disponibilidadesEncontradas){infoDisponibilidade+=`\n👨‍⚕️ *${medico.medico_nome}* (${medico.especialidade}) [ID: ${medico.medico_id}]\n`;for(const d of medico.disponibilidades.slice(0,3)){if(!d.horarios?.length)continue;const mn=d.horarios.find(h=>parseInt(h.split(':')[0])<12);const td=d.horarios.find(h=>parseInt(h.split(':')[0])>=12);const ts=[mn?`Manhã: ${mn}`:null,td?`Tarde: ${td}`:null].filter(Boolean).join(' | ');infoDisponibilidade+=`   📅 ${d.data_formatada}: ${ts}\n`;}}
-          infoDisponibilidade+=disponibilidadesEncontradas.length>1?'\n⚠️ Apresente médicos e PRÓXIMO horário de cada turno. Pergunte qual prefere.':'\n⚠️ Apresente PRÓXIMO horário de cada turno. Pergunte qual prefere.';
+        for(const medico of disponibilidadesEncontradas){
+          infoDisponibilidade+=`\n👨‍⚕️ *${medico.medico_nome}* (${medico.especialidade}) [ID: ${medico.medico_id}]\n`;
+          for(const d of medico.disponibilidades.slice(0,3)){
+            if(!d.horarios?.length)continue;
+            infoDisponibilidade+=`   📅 ${d.data_formatada}: ${d.horarios.join(', ')}\n`;
+          }
+        }
+          infoDisponibilidade+=disponibilidadesEncontradas.length>1?'\n⚠️ Apresente os médicos e liste de 3 a 5 horários disponíveis para cada um. Pergunte qual prefere.':'\n⚠️ Apresente de 3 a 5 horários disponíveis para o cliente escolher. Pergunte qual prefere.';
           infoDisponibilidade+='\n⚠️ Para confirmar: nome completo e data nascimento.';
         } else if (medicosParaBuscar.length > 0) {
           const _nDs=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
