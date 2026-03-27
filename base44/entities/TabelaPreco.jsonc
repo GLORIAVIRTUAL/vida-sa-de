@@ -1,0 +1,40 @@
+{
+  "name": "TabelaPreco",
+  "type": "object",
+  "properties": {
+    "procedimento_id": {
+      "type": "string",
+      "description": "ID do procedimento relacionado."
+    },
+    "categoria_id": {
+      "type": "string",
+      "description": "ID da categoria de pre\u00e7o relacionada."
+    },
+    "valor": {
+      "type": "number",
+      "description": "Valor do procedimento para a categoria especificada."
+    },
+    "tipo_repasse": {
+      "type": "string",
+      "enum": [
+        "valor_fixo",
+        "percentual"
+      ],
+      "default": "valor_fixo",
+      "description": "Define se o repasse \u00e9 por valor fixo ou percentual"
+    },
+    "valor_repasse": {
+      "type": "number",
+      "description": "Valor fixo de repasse ao m\u00e9dico para esta categoria (R$)"
+    },
+    "percentual_repasse": {
+      "type": "number",
+      "description": "Percentual de repasse ao m\u00e9dico para esta categoria (%)"
+    }
+  },
+  "required": [
+    "procedimento_id",
+    "categoria_id",
+    "valor"
+  ]
+}

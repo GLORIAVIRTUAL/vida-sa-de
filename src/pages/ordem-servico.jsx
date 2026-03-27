@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Agendamento, Paciente, Medico, Lancamento, Procedimento, Exame, CategoriaPreco } from "@/entities/all";
+import { Agendamento, Paciente, Medico, Lancamento, Procedimento, Exame, CategoriaPreco, TabelaPreco } from "@/entities/all";
 import { OrdemServico } from "@/entities/OrdemServico";
 import { Button } from "@/components/ui/button";
 import { FileText, Plus, Search, RefreshCw, Calendar } from "lucide-react";
@@ -49,6 +49,7 @@ export default function OrdemDeServico() {
   const [exames, setExames] = useState([]);
   const [agendamentos, setAgendamentos] = useState([]);
   const [categorias, setCategorias] = useState([]);
+  const [tabelaPrecos, setTabelaPrecos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [osSelecionada, setOsSelecionada] = useState(null);
   const [agendamentoParaOS, setAgendamentoParaOS] = useState(null);
@@ -279,6 +280,11 @@ export default function OrdemDeServico() {
         // Etapa 6: Agendamentos
         const agendamentosData = await Agendamento.list("-data_agendamento", 200);
         setAgendamentos(agendamentosData || []);
+        await delay(300);
+
+        // Etapa 7: Tabela de Preços
+        const tabelaPrecosData = await TabelaPreco.list();
+        setTabelaPrecos(tabelaPrecosData || []);
       }
 
     } catch (error) {
@@ -477,6 +483,7 @@ export default function OrdemDeServico() {
           categorias={categorias}
           medicos={medicos}
           procedimentos={procedimentos}
+          tabelaPrecos={tabelaPrecos}
           onSalvar={handleSalvarOS}
           onCancelar={handleCancelarForm} />
 

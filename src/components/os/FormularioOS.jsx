@@ -57,6 +57,7 @@ export default function FormularioOS({
   categorias,
   medicos = [],
   procedimentos = [],
+  tabelaPrecos = [],
   onSalvar,
   onCancelar
 }) {
@@ -384,8 +385,19 @@ export default function FormularioOS({
 
       // Lógica diferenciada para Procedimentos vs Consultas
       if (agendamento.tipo_servico === 'Procedimento') {
+        const tabelaPrecoAtual = tabelaPrecos?.find(tp => tp.procedimento_id === procedimentoAtual?.id && tp.categoria_id === agendamento.categoria_preco_id);
+        
+        // 0. Prioridade Máxima: Definição na Tabela de Preços para esta categoria
+        if (tabelaPrecoAtual && tabelaPrecoAtual.valor_repasse > 0) {
+          repasseFixo = tabelaPrecoAtual.valor_repasse;
+          percentual = 0;
+        }
+        else if (tabelaPrecoAtual && tabelaPrecoAtual.percentual_repasse > 0) {
+          percentual = tabelaPrecoAtual.percentual_repasse;
+          repasseFixo = 0;
+        }
         // 1. Prioridade: Definição no próprio Procedimento
-        if (procedimentoAtual && procedimentoAtual.valor_repasse_medico > 0) {
+        else if (procedimentoAtual && procedimentoAtual.valor_repasse_medico > 0) {
           repasseFixo = procedimentoAtual.valor_repasse_medico;
         }
         else if (procedimentoAtual && procedimentoAtual.percentual_repasse_medico > 0) {

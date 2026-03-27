@@ -55,7 +55,12 @@ export default function FormularioProcedimento({ procedimento, categorias, preco
       const precosIniciais = {};
       categorias.forEach(cat => {
         const precoExistente = precosExistentes.find(p => p.categoria_id === cat.id);
-        precosIniciais[cat.id] = precoExistente ? String(precoExistente.valor) : '';
+        precosIniciais[cat.id] = {
+          valor: precoExistente ? String(precoExistente.valor) : '',
+          tipo_repasse: precoExistente?.tipo_repasse || 'valor_fixo',
+          valor_repasse: precoExistente?.valor_repasse !== null && precoExistente?.valor_repasse !== undefined ? String(precoExistente.valor_repasse) : '',
+          percentual_repasse: precoExistente?.percentual_repasse !== null && precoExistente?.percentual_repasse !== undefined ? String(precoExistente.percentual_repasse) : ''
+        };
       });
       setPrecos(precosIniciais);
     }
@@ -66,8 +71,14 @@ export default function FormularioProcedimento({ procedimento, categorias, preco
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handlePrecoChange = (categoriaId, value) => {
-    setPrecos(prev => ({ ...prev, [categoriaId]: value }));
+  const handlePrecoChange = (categoriaId, field, value) => {
+    setPrecos(prev => ({ 
+      ...prev, 
+      [categoriaId]: {
+        ...(prev[categoriaId] || { valor: '', tipo_repasse: 'valor_fixo', valor_repasse: '', percentual_repasse: '' }),
+        [field]: value
+      }
+    }));
   };
 
   const adicionarItemPacote = () => {
@@ -139,19 +150,32 @@ export default function FormularioProcedimento({ procedimento, categorias, preco
       // 2. Salvar, atualizar ou deletar preços
       const pricePromises = categorias.map(async (cat) => {
         const precoExistente = precosExistentes.find(p => p.categoria_id === cat.id);
-        const novoPreco = precos[cat.id];
+        const novoPrecoData = precos[cat.id];
+        const novoPreco = novoPrecoData?.valor;
 
         if (novoPreco && novoPreco !== '') {
           const valorNumerico = parseFloat(novoPreco);
+          const tipo_repasse = novoPrecoData.tipo_repasse;
+          const valor_repasse = tipo_repasse === 'valor_fixo' && novoPrecoData.valor_repasse ? parseFloat(novoPrecoData.valor_repasse) : null;
+          const percentual_repasse = tipo_repasse === 'percentual' && novoPrecoData.percentual_repasse ? parseFloat(novoPrecoData.percentual_repasse) : null;
+
           if (precoExistente) {
             // Atualizar preço
-            return TabelaPreco.update(precoExistente.id, { valor: valorNumerico });
+            return TabelaPreco.update(precoExistente.id, { 
+              valor: valorNumerico,
+              tipo_repasse,
+              valor_repasse,
+              percentual_repasse
+            });
           } else {
             // Criar novo preço
             return TabelaPreco.create({
               procedimento_id: procedimentoId,
               categoria_id: cat.id,
-              valor: valorNumerico
+              valor: valorNumerico,
+              tipo_repasse,
+              valor_repasse,
+              percentual_repasse
             });
           }
         } else if (precoExistente) {
@@ -259,19 +283,59 @@ export default function FormularioProcedimento({ procedimento, categorias, preco
 
           {/* Coluna da Tabela de Preços */}
           <div className="space-y-4">
-            <h3 className="font-semibold text-lg border-b pb-2">Tabela de Preços (R$)</h3>
-            {categorias.map(cat => (
-              <div key={cat.id}>
-                <Label htmlFor={`preco-${cat.id}`}>{cat.nome}</Label>
-                <Input
-                  type="number"
-                  id={`preco-${cat.id}`}
-                  value={precos[cat.id] || ''}
-                  onChange={(e) => handlePrecoChange(cat.id, e.target.value)}
-                  placeholder="Defina o valor"
-                />
+            <h3 className="font-semibold text-lg border-b pb-2">Tabela de Preços (R$) e Repasse</h3>
+            {categorias.map(cat => {
+              const precoData = precos[cat.id] || { valor: '', tipo_repasse: 'valor_fixo', valor_repasse: '', percentual_repasse: '' };
+              return (
+              <div key={cat.id} className="p-3 bg-gray-50 rounded-lg border space-y-3">
+                <Label className="font-bold text-base">{cat.nome}</Label>
+                <div className="grid grid-cols-1 gap-3">
+                  <div>
+                    <Label htmlFor={`preco-${cat.id}`} className="text-xs text-gray-500">Valor do Procedimento (R$)</Label>
+                    <Input
+                      type="number"
+                      id={`preco-${cat.id}`}
+                      value={precoData.valor}
+                      onChange={(e) => handlePrecoChange(cat.id, 'valor', e.target.value)}
+                      placeholder="Ex: 150.00"
+                      className="bg-white"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-gray-500">Repasse Específico para este plano</Label>
+                    <div className="flex w-full gap-2">
+                      <Select value={precoData.tipo_repasse} onValueChange={(v) => handlePrecoChange(cat.id, 'tipo_repasse', v)}>
+                        <SelectTrigger className="w-[120px] bg-white">
+                          <SelectValue placeholder="Tipo" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="valor_fixo">Fixo (R$)</SelectItem>
+                          <SelectItem value="percentual">Percent (%)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {precoData.tipo_repasse === 'valor_fixo' ? (
+                        <Input 
+                          type="number" 
+                          value={precoData.valor_repasse} 
+                          onChange={(e) => handlePrecoChange(cat.id, 'valor_repasse', e.target.value)} 
+                          placeholder="0.00" 
+                          className="flex-1 bg-white" 
+                        />
+                      ) : (
+                        <Input 
+                          type="number" 
+                          value={precoData.percentual_repasse} 
+                          onChange={(e) => handlePrecoChange(cat.id, 'percentual_repasse', e.target.value)} 
+                          placeholder="0 a 100" 
+                          min="0" max="100" 
+                          className="flex-1 bg-white" 
+                        />
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
-            ))}
+            )})}
 
             {/* Seção de Pacote */}
             {formData.is_pacote && (
