@@ -154,8 +154,9 @@ const getAvailableSlots = (medico, periods, appointments, targetDate) => {
   
   const todayIso = formatIsoInTz(new Date());
   const isToday = targetDate === todayIso;
-  const now = new Date();
-  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const timeStr = new Date().toLocaleTimeString('pt-BR', { timeZone: TIME_ZONE, hour: '2-digit', minute: '2-digit' });
+  const [curH, curM] = timeStr.split(':').map(Number);
+  const currentMinutes = curH * 60 + curM;
 
   if (tipoAtendimento === 'Ordem de Chegada') {
     const horarioInicio = periods[0]?.horario_inicio;

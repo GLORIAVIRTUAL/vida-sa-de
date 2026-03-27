@@ -194,8 +194,15 @@ Deno.serve(async (req) => {
             const horariosDisponiveis = [];
             const tempoConsulta = medico.tempo_consulta_minutos || 30;
             const tipoAtendimento = medico.tipo_atendimento || "Horários Marcados";
+            
+            // Obter hora atual em São Paulo para filtrar horários passados
+            const _hojeI = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+            const isToday = cleanData === _hojeI;
+            const timeStr = new Date().toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' });
+            const [curH, curM] = timeStr.split(':').map(Number);
+            const currentMinutes = curH * 60 + curM;
 
-            console.log('⚙️ Configurações:', { tempoConsulta, tipoAtendimento });
+            console.log('⚙️ Configurações:', { tempoConsulta, tipoAtendimento, isToday, currentMinutes, timeStr });
 
             if (tipoAtendimento === "Ordem de Chegada") {
                 const limiteVagas = medico.limite_ordem_chegada || 1;
@@ -216,6 +223,8 @@ Deno.serve(async (req) => {
                     const fimMinutos = fimH * 60 + fimM;
 
                     for (let minutos = inicioMinutos; minutos <= fimMinutos - tempoConsulta; minutos += tempoConsulta) {
+                        if (isToday && minutos <= currentMinutes) continue;
+                        
                         const horas = Math.floor(minutos / 60);
                         const mins = minutos % 60;
                         const horario = `${String(horas).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;

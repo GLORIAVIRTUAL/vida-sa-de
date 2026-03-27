@@ -879,7 +879,10 @@ O cliente está ESCOLHENDO/RESPONDENDO. Ele disse: "${messageText}"
             try {
               const slotRes = await Promise.race([base44.asServiceRole.functions.invoke('getAvailableSlots',{medico_id:medico.id,data:df}),new Promise((_,r)=>setTimeout(()=>r(new Error('T')),3000))]);
               const slots = slotRes?.data?.available_slots || [];
-              const slotsValidos = df===_hojeI ? slots.filter(h=>{const[hh,mm]=h.split(':').map(Number);const agora=new Date();const slotDate=new Date();slotDate.setHours(hh,mm,0,0);return slotDate>agora;}) : slots;
+              const slotsValidos = df===_hojeI ? slots.filter(h=>{
+                const horaAtualSP = new Date().toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' });
+                return h > horaAtualSP;
+              }) : slots;
               if(slotsValidos.length>0){
                 // Pegar apenas o PRIMEIRO horário disponível (real do sistema)
                 disponibilidadesMedico.push({data:df,data_formatada:dc.toLocaleDateString('pt-BR',{timeZone:'America/Sao_Paulo',weekday:'long',day:'2-digit',month:'2-digit'}),horarios:[slotsValidos[0]]});
