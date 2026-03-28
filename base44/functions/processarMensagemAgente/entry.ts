@@ -1183,6 +1183,10 @@ Retorne JSON.`;
     else if (horaNumero >= 18 || horaNumero < 5) saudacaoHorario = 'Boa-noite';
     const ehPrimeiraMensagem = ehPrimeiraMensagemDefinitiva;
     let infoProcedimentosExames = '';
+    let _allProcedimentos = [];
+    let _allExames = [];
+    let _allTabelaPrecos = [];
+    let _categoriasMap = {};
     
     {
       try {
@@ -1191,11 +1195,15 @@ Retorne JSON.`;
           Promise.race([base44.asServiceRole.entities.Exame.filter({ status: 'Ativo' }, '-created_date', 500), new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout Exames')), 5000))]).catch(e => []),
           Promise.race([base44.asServiceRole.entities.TabelaPreco.list('-created_date', 1000), new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout TabelaPrecos')), 5000))]).catch(e => [])
         ]);
+        _allProcedimentos = procedimentos;
+        _allExames = exames;
+        _allTabelaPrecos = tabelaPrecos;
 
         let categoriasPreco = [];
         try { categoriasPreco = await Promise.race([base44.asServiceRole.entities.CategoriaPreco.filter({ status: 'Ativo' }), new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout CategoriaPreco')), 2000))]); } catch (e) {}
         const categoriasMap = {};
         categoriasPreco.forEach(c => { categoriasMap[c.id] = c.nome; });
+        _categoriasMap = categoriasMap;
 
       if (procedimentos.length > 0 || exames.length > 0) {
           infoProcedimentosExames = `\n\n📋 BASE DE DADOS - PROCEDIMENTOS E EXAMES COM PREÇOS:\n`;
@@ -1354,11 +1362,151 @@ ${listaMedicosAtivosParaPrompt}
         let userContent = [{ type: 'text', text: cleanMessageText || '(sem texto)' }];
         if (mediaUrl && mediaType === 'image') {
           userContent.push({type:'image_url',image_url:{url:mediaUrl,detail:'low'}});
-          userContent[0].text+=`\n\n🚨 ANALISE A IMAGEM ANEXADA. Leia TODO o texto visível (nomes de exames, médico, CRM, datas).\n🚨🚨 REGRAS OBRIGATÓRIAS DE ORÇAMENTO:\n1. LISTE APENAS exames que aparecem na imagem.\n2. Para CADA exame, busque o nome na BASE DE DADOS e copie o valor EXATO COM CENTAVOS.\n3. PROIBIDO arredondar: R$ 21,85 é R$ 21,85, NÃO R$ 22,00 ou R$ 40,00.\n4. Se não encontrar o exame na base, escreva "Consultar recepção".\n5. Some valores EXATOS para o total.\n6. Só mostre Cartão Mais Vida se valor_convenio > 0 para aquele exame.\n7. Se não conseguir ler a imagem, peça foto mais nítida.\n⚠️ "Doppler" NÃO é exame separado! É complemento (ex: "Ecocardiograma + Doppler" = 1 exame "Ecocardiograma com Doppler"). NUNCA liste Doppler como item separado.`;
+          // Primeiro, extrair nomes dos exames da imagem via LLM separado
+          let examesExtraidos = null;
+          try {
+            const openaiKeyExt = Deno.env.get('OPENAI_API_KEY');
+            const extResp = await Promise.race([
+              fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${openaiKeyExt}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  model: 'gpt-4o-mini',
+                  messages: [{
+                    role: 'user',
+                    content: [
+                      { type: 'text', text: 'Liste APENAS os nomes dos exames médicos visíveis nesta imagem, um por linha. Não inclua preços, médicos, nem comentários. Se "Doppler" aparecer junto com outro exame (ex: Ecocardiograma), combine como um só ("Ecocardiograma com Doppler"). Retorne JSON: {"exames": ["nome1", "nome2", ...]}' },
+                      { type: 'image_url', image_url: { url: mediaUrl, detail: 'low' } }
+                    ]
+                  }],
+                  max_tokens: 500,
+                  temperature: 0,
+                  response_format: { type: 'json_object' }
+                })
+              }),
+              new Promise((_, r) => setTimeout(() => r(new Error('Timeout')), 15000))
+            ]);
+            if (extResp.ok) {
+              const extData = await extResp.json();
+              try {
+                examesExtraidos = JSON.parse(extData.choices?.[0]?.message?.content || '{}').exames || null;
+                console.log('🔍 Exames extraídos da imagem:', examesExtraidos);
+              } catch(e) {}
+            }
+          } catch(e) { console.log('⚠️ Erro ao extrair exames da imagem:', e.message); }
+
+          // Se conseguiu extrair, criar mini-tabela de preços específica
+          if (examesExtraidos && examesExtraidos.length > 0 && _allExames && _allExames.length > 0) {
+            const normTxt = (t) => (t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9\s]/g, '').trim();
+            let tabelaOrcamento = '\n\n🚨🚨🚨 TABELA DE PREÇOS PARA ESTE ORÇAMENTO (USE SOMENTE ESTES VALORES) 🚨🚨🚨\n';
+            let encontrados = 0;
+            for (const nomeExame of examesExtraidos) {
+              const nomeNorm = normTxt(nomeExame);
+              // Buscar match na base de exames
+              let match = _allExames.find(e => normTxt(e.nome) === nomeNorm);
+              if (!match) match = _allExames.find(e => normTxt(e.nome).includes(nomeNorm) || nomeNorm.includes(normTxt(e.nome)));
+              if (!match) {
+                // Busca por palavras-chave
+                const palavras = nomeNorm.split(/\s+/).filter(p => p.length > 3);
+                if (palavras.length > 0) {
+                  match = _allExames.find(e => {
+                    const eNorm = normTxt(e.nome);
+                    return palavras.every(p => eNorm.includes(p));
+                  });
+                  if (!match) match = _allExames.find(e => {
+                    const eNorm = normTxt(e.nome);
+                    return palavras.some(p => eNorm.includes(p)) && palavras.filter(p => eNorm.includes(p)).length >= Math.ceil(palavras.length / 2);
+                  });
+                }
+              }
+              // Buscar também em procedimentos (TabelaPreco)
+              if (!match && _allProcedimentos && _allProcedimentos.length > 0) {
+                const procMatch = _allProcedimentos.find(p => {
+                  const pNorm = normTxt(p.nome);
+                  return pNorm === nomeNorm || pNorm.includes(nomeNorm) || nomeNorm.includes(pNorm);
+                });
+                if (procMatch) {
+                  const precoProc = _allTabelaPrecos.find(tp => tp.procedimento_id === procMatch.id && tp.valor > 0);
+                  if (precoProc) {
+                    const catNome = _categoriasMap[precoProc.categoria_id] || 'Particular';
+                    tabelaOrcamento += `• ${nomeExame} → ${procMatch.nome}: ${catNome} R$ ${precoProc.valor.toFixed(2)}\n`;
+                    encontrados++;
+                    continue;
+                  }
+                }
+              }
+              if (match) {
+                let precoStr = '';
+                if (match.valor_particular) precoStr += `Particular: R$ ${match.valor_particular.toFixed(2)}`;
+                if (match.valor_convenio && match.valor_convenio > 0) precoStr += ` | Cartão Mais Vida: R$ ${match.valor_convenio.toFixed(2)}`;
+                tabelaOrcamento += `• ${nomeExame} → ${match.nome}: ${precoStr || 'Consultar'}\n`;
+                encontrados++;
+              } else {
+                tabelaOrcamento += `• ${nomeExame} → NÃO ENCONTRADO na base. Diga "Consultar na recepção".\n`;
+              }
+            }
+            tabelaOrcamento += `\n✅ Total de exames encontrados: ${encontrados}/${examesExtraidos.length}`;
+            tabelaOrcamento += `\n🚨 COPIE os valores R$ EXATAMENTE como estão acima. NÃO arredonde. NÃO invente.`;
+            tabelaOrcamento += `\n🚨 Para o TOTAL, some os valores exatos COM CENTAVOS.`;
+            userContent[0].text += tabelaOrcamento;
+          }
+          userContent[0].text+=`\n\n🚨 ANALISE A IMAGEM. Liste os exames e use SOMENTE os preços da TABELA DE PREÇOS PARA ESTE ORÇAMENTO acima.\n⚠️ "Doppler" NÃO é exame separado! É complemento (ex: "Ecocardiograma + Doppler" = 1 exame "Ecocardiograma com Doppler"). NUNCA liste Doppler como item separado.`;
         } else if (mediaUrl && mediaType === 'document') {
           try {
             const eR = await base44.asServiceRole.functions.invoke('extractPdfText', { fileUrl: mediaUrl });
-            if(eR?.data?.text){userContent[0].text+=`\n\n🚨 CONTEÚDO DO PDF 🚨\n${eR.data.text}\n\n🚨 REGRAS: 1.LISTE APENAS exames acima. 2.PROIBIDO inventar. 3.Cruze com tabela. 4.NÃO pergunte se quer agendar coleta. 5."Doppler" NÃO é exame separado! É complemento (ex: "Ecocardiograma + Doppler" = 1 exame). NUNCA liste Doppler como item separado.`;}
+            if(eR?.data?.text){
+              const pdfText = eR.data.text;
+              userContent[0].text+=`\n\n🚨 CONTEÚDO DO PDF 🚨\n${pdfText}`;
+              // Extrair nomes dos exames do PDF e criar mini-tabela
+              let examesExtraidosPdf = null;
+              try {
+                const openaiKeyPdf = Deno.env.get('OPENAI_API_KEY');
+                const extPdfResp = await Promise.race([
+                  fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${openaiKeyPdf}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      model: 'gpt-4o-mini',
+                      messages: [{ role: 'user', content: `Liste APENAS os nomes dos exames médicos neste texto, um por linha. Não inclua preços. Se "Doppler" aparecer junto com outro exame, combine como um só. Retorne JSON: {"exames": ["nome1", ...]}\n\nTexto:\n${pdfText}` }],
+                      max_tokens: 500, temperature: 0, response_format: { type: 'json_object' }
+                    })
+                  }),
+                  new Promise((_, r) => setTimeout(() => r(new Error('Timeout')), 12000))
+                ]);
+                if (extPdfResp.ok) {
+                  const extPdfData = await extPdfResp.json();
+                  try { examesExtraidosPdf = JSON.parse(extPdfData.choices?.[0]?.message?.content || '{}').exames || null; } catch(e) {}
+                }
+              } catch(e) {}
+
+              if (examesExtraidosPdf && examesExtraidosPdf.length > 0 && _allExames && _allExames.length > 0) {
+                const normTxt = (t) => (t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9\s]/g, '').trim();
+                let tabelaOrcPdf = '\n\n🚨🚨🚨 TABELA DE PREÇOS PARA ESTE ORÇAMENTO (USE SOMENTE ESTES VALORES) 🚨🚨🚨\n';
+                for (const nomeExame of examesExtraidosPdf) {
+                  const nomeNorm = normTxt(nomeExame);
+                  let match = _allExames.find(e => normTxt(e.nome) === nomeNorm);
+                  if (!match) match = _allExames.find(e => normTxt(e.nome).includes(nomeNorm) || nomeNorm.includes(normTxt(e.nome)));
+                  if (!match) {
+                    const palavras = nomeNorm.split(/\s+/).filter(p => p.length > 3);
+                    if (palavras.length > 0) {
+                      match = _allExames.find(e => { const eN = normTxt(e.nome); return palavras.every(p => eN.includes(p)); });
+                      if (!match) match = _allExames.find(e => { const eN = normTxt(e.nome); return palavras.some(p => eN.includes(p)) && palavras.filter(p => eN.includes(p)).length >= Math.ceil(palavras.length / 2); });
+                    }
+                  }
+                  if (!match && _allProcedimentos && _allProcedimentos.length > 0) {
+                    const procM = _allProcedimentos.find(p => { const pN = normTxt(p.nome); return pN === nomeNorm || pN.includes(nomeNorm) || nomeNorm.includes(pN); });
+                    if (procM) { const precoP = _allTabelaPrecos.find(tp => tp.procedimento_id === procM.id && tp.valor > 0); if (precoP) { tabelaOrcPdf += `• ${nomeExame} → ${procM.nome}: ${_categoriasMap[precoP.categoria_id] || 'Particular'} R$ ${precoP.valor.toFixed(2)}\n`; continue; } }
+                  }
+                  if (match) {
+                    let ps = ''; if (match.valor_particular) ps += `Particular: R$ ${match.valor_particular.toFixed(2)}`; if (match.valor_convenio && match.valor_convenio > 0) ps += ` | Cartão Mais Vida: R$ ${match.valor_convenio.toFixed(2)}`;
+                    tabelaOrcPdf += `• ${nomeExame} → ${match.nome}: ${ps || 'Consultar'}\n`;
+                  } else { tabelaOrcPdf += `• ${nomeExame} → NÃO ENCONTRADO. Diga "Consultar na recepção".\n`; }
+                }
+                tabelaOrcPdf += `\n🚨 COPIE os valores R$ EXATAMENTE. NÃO arredonde. NÃO invente. Some COM CENTAVOS.`;
+                userContent[0].text += tabelaOrcPdf;
+              }
+              userContent[0].text+=`\n\n🚨 Use SOMENTE os preços da TABELA DE PREÇOS PARA ESTE ORÇAMENTO. NÃO pergunte se quer agendar coleta. "Doppler" NÃO é exame separado!`;
+            }
             else{userContent[0].text+=`\n\n⚠️ PDF ilegível. Peça foto nítida.`;}
           } catch(e){userContent[0].text+=`\n\n⚠️ PDF ilegível. Peça foto nítida.`;}
         }
