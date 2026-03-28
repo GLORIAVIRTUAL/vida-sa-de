@@ -11,9 +11,10 @@ Deno.serve(async (req) => {
       if (urlNoTexto) {
         const u = urlNoTexto[1]; const limpaTxt = (tag) => { messageText = messageText.replace(urlNoTexto[0], '').replace(tag, '').trim(); mediaUrl = u; };
         if (/\[(?:á|a)udio/i.test(messageText)) { mediaType='audio'; limpaTxt(/\[(?:á|a)udio\s*(?:recebido)?\]/gi); messageText=messageText||'[Áudio recebido]'; }
-        else if (/\[(?:i|I)magem/i.test(messageText) || /\.(jpg|jpeg|png|webp)/i.test(u)) { mediaType='image'; limpaTxt(/\[(?:i|I)magem\s*(?:recebida)?\]/gi); messageText=messageText||'[Imagem recebida]'; }
+        else if (/\[(?:i|I)magem/i.test(messageText) || /\.(jpg|jpeg|png|webp)/i.test(u) || (/\/files\//i.test(u) && /\[(?:i|I)magem/i.test(messageText))) { mediaType='image'; limpaTxt(/\[(?:i|I)magem\s*(?:recebida)?\]/gi); messageText=messageText||'[Imagem recebida]'; }
         else if (/\.ogg/i.test(u)) { mediaType='audio'; limpaTxt(/$/); messageText=messageText||'[Áudio recebido]'; }
         else if (/\.pdf/i.test(u)) { mediaType='document'; limpaTxt(/$/); messageText=messageText||'[Documento recebido]'; }
+        else if (/\/files\//i.test(u) && !/\.pdf/i.test(u)) { mediaType='image'; limpaTxt(/\[.*?\]/gi); messageText=messageText||'[Imagem recebida]'; }
       }
     }
 
