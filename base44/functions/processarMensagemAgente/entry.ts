@@ -1192,9 +1192,9 @@ Retorne JSON.`;
     {
       try {
         const [procedimentos, exames, tabelaPrecos] = await Promise.all([
-          Promise.race([base44.asServiceRole.entities.Procedimento.list('-created_date', 500), new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout Procedimentos')), 10000))]).catch(e => { console.log('⚠️ Timeout/erro Procedimentos:', e.message); return []; }),
-          Promise.race([base44.asServiceRole.entities.Exame.list('-created_date', 500), new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout Exames')), 10000))]).catch(e => { console.log('⚠️ Timeout/erro Exames:', e.message); return []; }),
-          Promise.race([base44.asServiceRole.entities.TabelaPreco.list('-created_date', 1000), new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout TabelaPrecos')), 10000))]).catch(e => { console.log('⚠️ Timeout/erro TabelaPrecos:', e.message); return []; })
+          Promise.race([base44.asServiceRole.entities.Procedimento.list('-created_date', 2000), new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout Procedimentos')), 10000))]).catch(e => { console.log('⚠️ Timeout/erro Procedimentos:', e.message); return []; }),
+          Promise.race([base44.asServiceRole.entities.Exame.list('-created_date', 2000), new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout Exames')), 10000))]).catch(e => { console.log('⚠️ Timeout/erro Exames:', e.message); return []; }),
+          Promise.race([base44.asServiceRole.entities.TabelaPreco.list('-created_date', 2000), new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout TabelaPrecos')), 10000))]).catch(e => { console.log('⚠️ Timeout/erro TabelaPrecos:', e.message); return []; })
         ]);
         _allProcedimentos = Array.isArray(procedimentos) ? procedimentos.filter(p => p.status === 'Ativo') : [];
         _allExames = Array.isArray(exames) ? exames.filter(e => e.status === 'Ativo') : [];
@@ -1424,9 +1424,9 @@ ${listaMedicosAtivosParaPrompt}
           if ((!Array.isArray(_allExames) || _allExames.length === 0) || (!Array.isArray(_allProcedimentos) || _allProcedimentos.length === 0)) {
             try {
               const [exReload, procReload, tpReload] = await Promise.all([
-                base44.asServiceRole.entities.Exame.list('-created_date', 500).then(items => items.filter(e => e.status === 'Ativo')).catch(() => []),
-                base44.asServiceRole.entities.Procedimento.list('-created_date', 500).then(items => items.filter(p => p.status === 'Ativo')).catch(() => []),
-                base44.asServiceRole.entities.TabelaPreco.list('-created_date', 1000).catch(() => [])
+                base44.asServiceRole.entities.Exame.list('-created_date', 2000).then(items => items.filter(e => e.status === 'Ativo')).catch(() => []),
+                base44.asServiceRole.entities.Procedimento.list('-created_date', 2000).then(items => items.filter(p => p.status === 'Ativo')).catch(() => []),
+                base44.asServiceRole.entities.TabelaPreco.list('-created_date', 2000).catch(() => [])
               ]);
               _allExames = Array.isArray(exReload) ? exReload : [];
               _allProcedimentos = Array.isArray(procReload) ? procReload : [];
