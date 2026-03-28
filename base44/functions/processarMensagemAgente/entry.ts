@@ -1396,61 +1396,172 @@ ${listaMedicosAtivosParaPrompt}
           } catch(e) { console.log('⚠️ Erro ao extrair exames da imagem:', e.message); }
 
           // Se conseguiu extrair, criar mini-tabela de preços específica
-          if (examesExtraidos && examesExtraidos.length > 0 && _allExames && _allExames.length > 0) {
+          if (examesExtraidos && examesExtraidos.length > 0 && Array.isArray(_allExames) && _allExames.length > 0) {
             const normTxt = (t) => (t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9\s]/g, '').trim();
+
+            // Dicionário de sinônimos: nome popular → nome no banco
+            const SINONIMOS = {
+              'hemograma': 'hemograma completo',
+              'glicemia de jejum': 'glicose',
+              'glicose em jejum': 'glicose',
+              'glicemia': 'glicose',
+              'hemoglobina glicada': 'hemoglobina glicosilada ac1',
+              'hba1c': 'hemoglobina glicosilada ac1',
+              'vitamina d': '25 hidroxivitamina d',
+              'vit d': '25 hidroxivitamina d',
+              '25 oh vitamina d': '25 hidroxivitamina d',
+              'tgo': 'tgo ast',
+              'tgp': 'tgp alt',
+              'ast': 'tgo ast',
+              'alt': 'tgp alt',
+              'triglicerideos': 'trigliceridios',
+              'triglicerides': 'trigliceridios',
+              'gama gt': 'gama  gt',
+              'ggt': 'gama  gt',
+              'pcr': 'pcr',
+              'vhs': 'vhs',
+              'tsh': 'tsh  h tireoestimulante',
+              't4 livre': 't4 livre',
+              'acido urico': 'acido urico',
+              'fosfatase alcalina': 'fosfatase alcalina',
+              'ferro serico': 'ferro serico',
+              'ferritina': 'ferritina',
+              'calcio': 'calcio',
+              'magnesio': 'magnesio',
+              'eas': 'eas  urina tipo i',
+              'urina tipo 1': 'eas  urina tipo i',
+              'parcial de urina': 'eas  urina tipo i',
+              'beta hcg': 'beta hcg',
+            };
+
+            // Exames compostos que devem ser expandidos em múltiplos
+            const COMPOSTOS = {
+              'colesterol total e fracoes': ['colesterol total', 'colesterol hdl', 'colesterol ldl', 'colesterol vldl', 'trigliceridios'],
+              'perfil lipidico': ['colesterol total', 'colesterol hdl', 'colesterol ldl', 'colesterol vldl', 'trigliceridios'],
+              'lipidograma': ['colesterol total', 'colesterol hdl', 'colesterol ldl', 'colesterol vldl', 'trigliceridios'],
+              'ast e alt': ['tgo ast', 'tgp alt'],
+              'tgo e tgp': ['tgo ast', 'tgp alt'],
+              'transaminases': ['tgo ast', 'tgp alt'],
+              'hepatograma': ['tgo ast', 'tgp alt', 'gama  gt', 'fosfatase alcalina', 'bilirrubinas totais e fracoes'],
+              'funcao renal': ['ureia', 'creatinina'],
+              'pasta do figado': ['tgo ast', 'tgp alt', 'gama  gt', 'fosfatase alcalina'],
+              'provas de funcao hepatica': ['tgo ast', 'tgp alt', 'gama  gt', 'fosfatase alcalina'],
+            };
+
+            // Função para buscar exame pelo nome normalizado
+            const buscarExame = (nomeNorm) => {
+              // 1. Match exato
+              let match = _allExames.find(e => normTxt(e.nome) === nomeNorm);
+              if (match) return match;
+              // 2. Sinônimo
+              const sinonimo = SINONIMOS[nomeNorm];
+              if (sinonimo) {
+                match = _allExames.find(e => normTxt(e.nome) === sinonimo);
+                if (match) return match;
+                // Match parcial do sinônimo
+                match = _allExames.find(e => normTxt(e.nome).includes(sinonimo) || sinonimo.includes(normTxt(e.nome)));
+                if (match) return match;
+              }
+              // 3. Contém / está contido
+              match = _allExames.find(e => normTxt(e.nome).includes(nomeNorm) || nomeNorm.includes(normTxt(e.nome)));
+              if (match) return match;
+              // 4. Busca por palavras-chave (todas as palavras >3 chars)
+              const palavras = nomeNorm.split(/\s+/).filter(p => p.length > 3);
+              if (palavras.length > 0) {
+                match = _allExames.find(e => { const eN = normTxt(e.nome); return palavras.every(p => eN.includes(p)); });
+                if (match) return match;
+                match = _allExames.find(e => { const eN = normTxt(e.nome); const hits = palavras.filter(p => eN.includes(p)); return hits.length >= Math.ceil(palavras.length * 0.6); });
+                if (match) return match;
+              }
+              return null;
+            };
+
+            // Função para formatar preço de um exame
+            const formatarPreco = (match) => {
+              let ps = '';
+              if (match.valor_particular) ps += `Particular: R$ ${match.valor_particular.toFixed(2)}`;
+              if (match.valor_convenio && match.valor_convenio > 0) ps += ` | Cartão Mais Vida: R$ ${match.valor_convenio.toFixed(2)}`;
+              return ps || 'Consultar';
+            };
+
             let tabelaOrcamento = '\n\n🚨🚨🚨 TABELA DE PREÇOS PARA ESTE ORÇAMENTO (USE SOMENTE ESTES VALORES) 🚨🚨🚨\n';
             let encontrados = 0;
+            let totalParticular = 0;
+            let totalConvenio = 0;
+
             for (const nomeExame of examesExtraidos) {
               const nomeNorm = normTxt(nomeExame);
-              // Buscar match na base de exames
-              let match = _allExames.find(e => normTxt(e.nome) === nomeNorm);
-              if (!match) match = _allExames.find(e => normTxt(e.nome).includes(nomeNorm) || nomeNorm.includes(normTxt(e.nome)));
-              if (!match) {
-                // Busca por palavras-chave
-                const palavras = nomeNorm.split(/\s+/).filter(p => p.length > 3);
-                if (palavras.length > 0) {
-                  match = _allExames.find(e => {
-                    const eNorm = normTxt(e.nome);
-                    return palavras.every(p => eNorm.includes(p));
-                  });
-                  if (!match) match = _allExames.find(e => {
-                    const eNorm = normTxt(e.nome);
-                    return palavras.some(p => eNorm.includes(p)) && palavras.filter(p => eNorm.includes(p)).length >= Math.ceil(palavras.length / 2);
-                  });
+
+              // Verificar se é um exame composto que deve ser expandido
+              const compostoKey = Object.keys(COMPOSTOS).find(k => nomeNorm === k || nomeNorm.includes(k) || k.includes(nomeNorm));
+              if (compostoKey) {
+                const subExames = COMPOSTOS[compostoKey];
+                tabelaOrcamento += `\n📦 ${nomeExame} (COMPOSTO - lista cada item separadamente):\n`;
+                let subTotal = 0;
+                let subTotalConv = 0;
+                let todosEncontrados = true;
+                for (const subNome of subExames) {
+                  const subMatch = buscarExame(subNome);
+                  if (subMatch) {
+                    tabelaOrcamento += `  - ${subMatch.nome}: ${formatarPreco(subMatch)}\n`;
+                    subTotal += subMatch.valor_particular || 0;
+                    subTotalConv += subMatch.valor_convenio || 0;
+                    encontrados++;
+                  } else {
+                    tabelaOrcamento += `  - ${subNome}: NÃO ENCONTRADO. Diga "Consultar na recepção".\n`;
+                    todosEncontrados = false;
+                  }
                 }
+                if (todosEncontrados) {
+                  tabelaOrcamento += `  SUBTOTAL ${nomeExame}: Particular R$ ${subTotal.toFixed(2)}`;
+                  if (subTotalConv > 0) tabelaOrcamento += ` | Cartão Mais Vida R$ ${subTotalConv.toFixed(2)}`;
+                  tabelaOrcamento += '\n';
+                }
+                totalParticular += subTotal;
+                totalConvenio += subTotalConv;
+                continue;
               }
-              // Buscar também em procedimentos (TabelaPreco)
-              if (!match && _allProcedimentos && _allProcedimentos.length > 0) {
+
+              // Exame simples
+              let match = buscarExame(nomeNorm);
+
+              // Buscar em procedimentos se não encontrou em exames
+              if (!match && Array.isArray(_allProcedimentos) && _allProcedimentos.length > 0) {
                 const procMatch = _allProcedimentos.find(p => {
-                  const pNorm = normTxt(p.nome);
-                  return pNorm === nomeNorm || pNorm.includes(nomeNorm) || nomeNorm.includes(pNorm);
+                  const pN = normTxt(p.nome);
+                  return pN === nomeNorm || pN.includes(nomeNorm) || nomeNorm.includes(pN);
                 });
                 if (procMatch) {
                   const precoProc = _allTabelaPrecos.find(tp => tp.procedimento_id === procMatch.id && tp.valor > 0);
                   if (precoProc) {
                     const catNome = _categoriasMap[precoProc.categoria_id] || 'Particular';
                     tabelaOrcamento += `• ${nomeExame} → ${procMatch.nome}: ${catNome} R$ ${precoProc.valor.toFixed(2)}\n`;
+                    totalParticular += precoProc.valor;
                     encontrados++;
                     continue;
                   }
                 }
               }
+
               if (match) {
-                let precoStr = '';
-                if (match.valor_particular) precoStr += `Particular: R$ ${match.valor_particular.toFixed(2)}`;
-                if (match.valor_convenio && match.valor_convenio > 0) precoStr += ` | Cartão Mais Vida: R$ ${match.valor_convenio.toFixed(2)}`;
-                tabelaOrcamento += `• ${nomeExame} → ${match.nome}: ${precoStr || 'Consultar'}\n`;
+                tabelaOrcamento += `• ${nomeExame} → ${match.nome}: ${formatarPreco(match)}\n`;
+                totalParticular += match.valor_particular || 0;
+                totalConvenio += match.valor_convenio || 0;
                 encontrados++;
               } else {
                 tabelaOrcamento += `• ${nomeExame} → NÃO ENCONTRADO na base. Diga "Consultar na recepção".\n`;
               }
             }
-            tabelaOrcamento += `\n✅ Total de exames encontrados: ${encontrados}/${examesExtraidos.length}`;
+
+            tabelaOrcamento += `\n💰 TOTAL PRÉ-CALCULADO (Particular): R$ ${totalParticular.toFixed(2)}`;
+            if (totalConvenio > 0) tabelaOrcamento += ` | TOTAL Cartão Mais Vida: R$ ${totalConvenio.toFixed(2)}`;
+            tabelaOrcamento += `\n\n✅ Exames encontrados: ${encontrados}/${examesExtraidos.length}`;
             tabelaOrcamento += `\n🚨 COPIE os valores R$ EXATAMENTE como estão acima. NÃO arredonde. NÃO invente.`;
-            tabelaOrcamento += `\n🚨 Para o TOTAL, some os valores exatos COM CENTAVOS.`;
+            tabelaOrcamento += `\n🚨 Use o TOTAL PRÉ-CALCULADO acima como total do orçamento. NÃO recalcule.`;
+            console.log('📊 Mini-tabela de orçamento gerada:', tabelaOrcamento.substring(0, 500));
             userContent[0].text += tabelaOrcamento;
           }
-          userContent[0].text+=`\n\n🚨 ANALISE A IMAGEM. Liste os exames e use SOMENTE os preços da TABELA DE PREÇOS PARA ESTE ORÇAMENTO acima.\n⚠️ "Doppler" NÃO é exame separado! É complemento (ex: "Ecocardiograma + Doppler" = 1 exame "Ecocardiograma com Doppler"). NUNCA liste Doppler como item separado.`;
+          userContent[0].text+=`\n\n🚨 ANALISE A IMAGEM. Liste os exames e use SOMENTE os preços da TABELA DE PREÇOS PARA ESTE ORÇAMENTO acima. Use o TOTAL PRÉ-CALCULADO da tabela.\n⚠️ "Doppler" NÃO é exame separado! É complemento (ex: "Ecocardiograma + Doppler" = 1 exame "Ecocardiograma com Doppler"). NUNCA liste Doppler como item separado.`;
         } else if (mediaUrl && mediaType === 'document') {
           try {
             const eR = await base44.asServiceRole.functions.invoke('extractPdfText', { fileUrl: mediaUrl });
@@ -1479,33 +1590,46 @@ ${listaMedicosAtivosParaPrompt}
                 }
               } catch(e) {}
 
-              if (examesExtraidosPdf && examesExtraidosPdf.length > 0 && _allExames && _allExames.length > 0) {
+              // Reutilizar a mesma lógica de mini-tabela para PDF
+              if (examesExtraidosPdf && examesExtraidosPdf.length > 0 && Array.isArray(_allExames) && _allExames.length > 0) {
                 const normTxt = (t) => (t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9\s]/g, '').trim();
+                const SINONIMOS = {'hemograma':'hemograma completo','glicemia de jejum':'glicose','glicose em jejum':'glicose','glicemia':'glicose','hemoglobina glicada':'hemoglobina glicosilada ac1','hba1c':'hemoglobina glicosilada ac1','vitamina d':'25 hidroxivitamina d','vit d':'25 hidroxivitamina d','25 oh vitamina d':'25 hidroxivitamina d','tgo':'tgo ast','tgp':'tgp alt','ast':'tgo ast','alt':'tgp alt','triglicerideos':'trigliceridios','triglicerides':'trigliceridios','gama gt':'gama  gt','ggt':'gama  gt','tsh':'tsh  h tireoestimulante','acido urico':'acido urico'};
+                const COMPOSTOS = {'colesterol total e fracoes':['colesterol total','colesterol hdl','colesterol ldl','colesterol vldl','trigliceridios'],'perfil lipidico':['colesterol total','colesterol hdl','colesterol ldl','colesterol vldl','trigliceridios'],'ast e alt':['tgo ast','tgp alt'],'tgo e tgp':['tgo ast','tgp alt'],'transaminases':['tgo ast','tgp alt'],'pasta do figado':['tgo ast','tgp alt','gama  gt','fosfatase alcalina'],'provas de funcao hepatica':['tgo ast','tgp alt','gama  gt','fosfatase alcalina']};
+                const buscarExame = (nomeNorm) => {
+                  let m = _allExames.find(e => normTxt(e.nome) === nomeNorm);
+                  if (m) return m;
+                  const sin = SINONIMOS[nomeNorm]; if (sin) { m = _allExames.find(e => normTxt(e.nome) === sin || normTxt(e.nome).includes(sin)); if (m) return m; }
+                  m = _allExames.find(e => normTxt(e.nome).includes(nomeNorm) || nomeNorm.includes(normTxt(e.nome))); if (m) return m;
+                  const palavras = nomeNorm.split(/\s+/).filter(p => p.length > 3);
+                  if (palavras.length > 0) { m = _allExames.find(e => { const eN = normTxt(e.nome); return palavras.every(p => eN.includes(p)); }); if (m) return m; }
+                  return null;
+                };
+                const formatarPreco = (match) => { let ps = ''; if (match.valor_particular) ps += `Particular: R$ ${match.valor_particular.toFixed(2)}`; if (match.valor_convenio && match.valor_convenio > 0) ps += ` | Cartão Mais Vida: R$ ${match.valor_convenio.toFixed(2)}`; return ps || 'Consultar'; };
                 let tabelaOrcPdf = '\n\n🚨🚨🚨 TABELA DE PREÇOS PARA ESTE ORÇAMENTO (USE SOMENTE ESTES VALORES) 🚨🚨🚨\n';
+                let totalP = 0; let totalC = 0;
                 for (const nomeExame of examesExtraidosPdf) {
                   const nomeNorm = normTxt(nomeExame);
-                  let match = _allExames.find(e => normTxt(e.nome) === nomeNorm);
-                  if (!match) match = _allExames.find(e => normTxt(e.nome).includes(nomeNorm) || nomeNorm.includes(normTxt(e.nome)));
-                  if (!match) {
-                    const palavras = nomeNorm.split(/\s+/).filter(p => p.length > 3);
-                    if (palavras.length > 0) {
-                      match = _allExames.find(e => { const eN = normTxt(e.nome); return palavras.every(p => eN.includes(p)); });
-                      if (!match) match = _allExames.find(e => { const eN = normTxt(e.nome); return palavras.some(p => eN.includes(p)) && palavras.filter(p => eN.includes(p)).length >= Math.ceil(palavras.length / 2); });
+                  const compostoKey = Object.keys(COMPOSTOS).find(k => nomeNorm === k || nomeNorm.includes(k) || k.includes(nomeNorm));
+                  if (compostoKey) {
+                    tabelaOrcPdf += `\n📦 ${nomeExame} (COMPOSTO):\n`;
+                    for (const subNome of COMPOSTOS[compostoKey]) {
+                      const subM = buscarExame(subNome);
+                      if (subM) { tabelaOrcPdf += `  - ${subM.nome}: ${formatarPreco(subM)}\n`; totalP += subM.valor_particular || 0; totalC += subM.valor_convenio || 0; }
+                      else { tabelaOrcPdf += `  - ${subNome}: NÃO ENCONTRADO.\n`; }
                     }
+                    continue;
                   }
-                  if (!match && _allProcedimentos && _allProcedimentos.length > 0) {
-                    const procM = _allProcedimentos.find(p => { const pN = normTxt(p.nome); return pN === nomeNorm || pN.includes(nomeNorm) || nomeNorm.includes(pN); });
-                    if (procM) { const precoP = _allTabelaPrecos.find(tp => tp.procedimento_id === procM.id && tp.valor > 0); if (precoP) { tabelaOrcPdf += `• ${nomeExame} → ${procM.nome}: ${_categoriasMap[precoP.categoria_id] || 'Particular'} R$ ${precoP.valor.toFixed(2)}\n`; continue; } }
-                  }
-                  if (match) {
-                    let ps = ''; if (match.valor_particular) ps += `Particular: R$ ${match.valor_particular.toFixed(2)}`; if (match.valor_convenio && match.valor_convenio > 0) ps += ` | Cartão Mais Vida: R$ ${match.valor_convenio.toFixed(2)}`;
-                    tabelaOrcPdf += `• ${nomeExame} → ${match.nome}: ${ps || 'Consultar'}\n`;
-                  } else { tabelaOrcPdf += `• ${nomeExame} → NÃO ENCONTRADO. Diga "Consultar na recepção".\n`; }
+                  const match = buscarExame(nomeNorm);
+                  if (!match && Array.isArray(_allProcedimentos)) { const procM = _allProcedimentos.find(p => { const pN = normTxt(p.nome); return pN === nomeNorm || pN.includes(nomeNorm) || nomeNorm.includes(pN); }); if (procM) { const precoP = _allTabelaPrecos.find(tp => tp.procedimento_id === procM.id && tp.valor > 0); if (precoP) { tabelaOrcPdf += `• ${nomeExame} → ${procM.nome}: ${_categoriasMap[precoP.categoria_id] || 'Particular'} R$ ${precoP.valor.toFixed(2)}\n`; totalP += precoP.valor; continue; } } }
+                  if (match) { tabelaOrcPdf += `• ${nomeExame} → ${match.nome}: ${formatarPreco(match)}\n`; totalP += match.valor_particular || 0; totalC += match.valor_convenio || 0; }
+                  else { tabelaOrcPdf += `• ${nomeExame} → NÃO ENCONTRADO. Diga "Consultar na recepção".\n`; }
                 }
-                tabelaOrcPdf += `\n🚨 COPIE os valores R$ EXATAMENTE. NÃO arredonde. NÃO invente. Some COM CENTAVOS.`;
+                tabelaOrcPdf += `\n💰 TOTAL PRÉ-CALCULADO (Particular): R$ ${totalP.toFixed(2)}`;
+                if (totalC > 0) tabelaOrcPdf += ` | TOTAL Cartão Mais Vida: R$ ${totalC.toFixed(2)}`;
+                tabelaOrcPdf += `\n🚨 COPIE os valores R$ EXATAMENTE. NÃO arredonde. NÃO invente. Use o TOTAL PRÉ-CALCULADO.`;
                 userContent[0].text += tabelaOrcPdf;
               }
-              userContent[0].text+=`\n\n🚨 Use SOMENTE os preços da TABELA DE PREÇOS PARA ESTE ORÇAMENTO. NÃO pergunte se quer agendar coleta. "Doppler" NÃO é exame separado!`;
+              userContent[0].text+=`\n\n🚨 Use SOMENTE os preços da TABELA DE PREÇOS PARA ESTE ORÇAMENTO. Use o TOTAL PRÉ-CALCULADO. NÃO pergunte se quer agendar coleta. "Doppler" NÃO é exame separado!`;
             }
             else{userContent[0].text+=`\n\n⚠️ PDF ilegível. Peça foto nítida.`;}
           } catch(e){userContent[0].text+=`\n\n⚠️ PDF ilegível. Peça foto nítida.`;}
