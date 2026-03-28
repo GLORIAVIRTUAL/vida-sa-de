@@ -1195,9 +1195,9 @@ Retorne JSON.`;
           Promise.race([base44.asServiceRole.entities.Exame.filter({ status: 'Ativo' }, '-created_date', 500), new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout Exames')), 5000))]).catch(e => []),
           Promise.race([base44.asServiceRole.entities.TabelaPreco.list('-created_date', 1000), new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout TabelaPrecos')), 5000))]).catch(e => [])
         ]);
-        _allProcedimentos = procedimentos;
-        _allExames = exames;
-        _allTabelaPrecos = tabelaPrecos;
+        _allProcedimentos = Array.isArray(procedimentos) ? procedimentos : [];
+        _allExames = Array.isArray(exames) ? exames : [];
+        _allTabelaPrecos = Array.isArray(tabelaPrecos) ? tabelaPrecos : [];
 
         let categoriasPreco = [];
         try { categoriasPreco = await Promise.race([base44.asServiceRole.entities.CategoriaPreco.filter({ status: 'Ativo' }), new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout CategoriaPreco')), 2000))]); } catch (e) {}
