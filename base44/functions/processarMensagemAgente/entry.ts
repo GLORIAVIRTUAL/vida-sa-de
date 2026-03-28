@@ -1366,6 +1366,32 @@ ${listaMedicosAtivosParaPrompt}
           userContent.push({ type: 'image_url', image_url: { url: mediaUrl, detail: 'high' } });
 
           const normalizarItem = (texto) => (texto || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+          const buscarExameFuzzy = (nome, listaExames) => {
+            const nomeNorm = normalizarItem(nome);
+            // 1. Match exato normalizado
+            let found = listaExames.find(e => normalizarItem(e.nome) === nomeNorm);
+            if (found) return found;
+            // 2. Match via sinônimos
+            const alias = sinonimosExames[nomeNorm];
+            if (alias) {
+              const aliasNorm = normalizarItem(alias);
+              found = listaExames.find(e => normalizarItem(e.nome) === aliasNorm);
+              if (found) return found;
+              // 2b. Contains match para sinônimo
+              found = listaExames.find(e => { const en = normalizarItem(e.nome); return en.includes(aliasNorm) || aliasNorm.includes(en); });
+              if (found) return found;
+            }
+            // 3. Contains match
+            found = listaExames.find(e => { const en = normalizarItem(e.nome); return (nomeNorm.length >= 4 && en.includes(nomeNorm)) || (en.length >= 4 && nomeNorm.includes(en)); });
+            if (found) return found;
+            // 4. Palavras-chave match (todas as palavras do termo devem estar no nome do exame)
+            const palavras = nomeNorm.split(' ').filter(p => p.length >= 3);
+            if (palavras.length >= 1) {
+              found = listaExames.find(e => { const en = normalizarItem(e.nome); return palavras.every(p => en.includes(p)); });
+              if (found) return found;
+            }
+            return null;
+          };
           const fmtPreco = (v) => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`;
           const sinonimosExames = {
             'glicemia de jejum': 'glicose', 'glicose em jejum': 'glicose', 'glicemia': 'glicose',
@@ -1437,11 +1463,7 @@ ${listaMedicosAtivosParaPrompt}
           }
 
           if (itensExtraidos.length > 0 && (_allExames.length > 0 || _allProcedimentos.length > 0)) {
-            const buscarExame = (nome) => {
-              const nomeNorm = normalizarItem(nome);
-              const alias = sinonimosExames[nomeNorm] || nomeNorm;
-              return _allExames.find(e => normalizarItem(e.nome) === alias) || null;
-            };
+            const buscarExame = (nome) => buscarExameFuzzy(nome, _allExames);
             const buscarProcedimento = (nome) => {
               const nomeNorm = normalizarItem(nome);
               return _allProcedimentos.find(p => normalizarItem(p.nome) === nomeNorm) || null;
@@ -1586,12 +1608,21 @@ ${listaMedicosAtivosParaPrompt}
 
               // Gerar orçamento DIRETAMENTE no código para PDF também
               if (examesExtraidosPdf && examesExtraidosPdf.length > 0 && Array.isArray(_allExames) && _allExames.length > 0) {
-                const normTxt = (t) => (t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9\s]/g, '').trim();
+                const normTxt = (t) => (t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
                 const SINONIMOS = {'hemograma':'hemograma completo','glicemia de jejum':'glicose','glicose em jejum':'glicose','glicemia':'glicose','glicose de jejum':'glicose','hemoglobina glicada':'hemoglobina glicosilada ac1','hba1c':'hemoglobina glicosilada ac1','vitamina d':'vitamina d 1 25 dihidroxi','vit d':'vitamina d 1 25 dihidroxi','1 25 dihidroxi vitamina d':'vitamina d 1 25 dihidroxi','25 oh vitamina d':'25 hidroxivitamina d','25hidroxivitamina d':'25 hidroxivitamina d','tgo':'tgo ast','tgp':'tgp alt','ast':'tgo ast','alt':'tgp alt','triglicerideos':'trigliceridios','triglicerides':'trigliceridios','trigliceridos':'trigliceridios','gama gt':'gama  gt','ggt':'gama  gt','gamaglutamiltransferase':'gama  gt','tsh':'tsh  h tireoestimulante','tsh ultrassensivel':'tsh  h tireoestimulante','acido urico':'acido urico','fosfatase alcalina':'fosfatase alcalina','ferro serico':'ferro serico','ferritina':'ferritina','calcio':'calcio','calcio serico':'calcio','magnesio':'magnesio','magnesio serico':'magnesio','eas':'eas  urina tipo i','urina tipo 1':'eas  urina tipo i','urina tipo i':'eas  urina tipo i','exame de urina':'eas  urina tipo i','parcial de urina':'eas  urina tipo i','beta hcg':'beta hcg','sodio':'sodio','potassio':'potassio','t4 livre':'t4 livre','t4l':'t4 livre','t3 livre':'t3','t3l':'t3','psa total':'psa total','psa livre':'psa livre','psa':'psa total','ureia':'ureia','urea':'ureia','creatinina':'creatinina','colesterol total':'colesterol total','colesterol hdl':'colesterol hdl','hdl':'colesterol hdl','colesterol ldl':'colesterol ldl','ldl':'colesterol ldl','colesterol vldl':'colesterol vldl','vldl':'colesterol vldl','bilirrubina total':'bilirrubinas totais e fracoes','bilirrubinas':'bilirrubinas totais e fracoes','fosforo':'fosforo','fosforo serico':'fosforo','pcr':'proteina c reativa','proteina c reativa':'proteina c reativa','vhs':'vhs','urocultura':'urocultura','parasitologico de fezes':'parasitologico de fezes','epf':'parasitologico de fezes','eletrocardiograma':'eletrocardiograma','ecg':'eletrocardiograma','ecocardiograma':'ecocardiograma','ecocardiograma com doppler':'ecocardiograma com doppler','raio x de torax':'raio x de torax','rx de torax':'raio x de torax','rx torax':'raio x de torax','radiografia de torax':'raio x de torax'};
                 const COMPOSTOS = {'colesterol total e fracoes':['colesterol total','colesterol hdl','colesterol ldl','colesterol vldl','trigliceridios'],'perfil lipidico':['colesterol total','colesterol hdl','colesterol ldl','colesterol vldl','trigliceridios'],'ast e alt':['tgo ast','tgp alt'],'tgo e tgp':['tgo ast','tgp alt'],'transaminases':['tgo ast','tgp alt'],'hepatograma':['tgo ast','tgp alt','gama  gt','fosfatase alcalina'],'funcao renal':['ureia','creatinina'],'funcao hepatica':['tgo ast','tgp alt','gama  gt','fosfatase alcalina'],'pasta do figado':['tgo ast','tgp alt','gama  gt','fosfatase alcalina'],'provas de funcao hepatica':['tgo ast','tgp alt','gama  gt','fosfatase alcalina'],'bilirrubinas total e fracoes':['bilirrubinas totais e fracoes']};
                 const buscarExame = (nomeNorm) => {
                   let m = _allExames.find(e => normTxt(e.nome) === nomeNorm); if (m) return m;
-                  const sin = SINONIMOS[nomeNorm]; if (sin) { m = _allExames.find(e => normTxt(e.nome) === sin); if (m) return m; }
+                  const sin = SINONIMOS[nomeNorm]; if (sin) {
+                    const sinNorm = normTxt(sin);
+                    m = _allExames.find(e => normTxt(e.nome) === sinNorm); if (m) return m;
+                    m = _allExames.find(e => { const en = normTxt(e.nome); return en.includes(sinNorm) || sinNorm.includes(en); }); if (m) return m;
+                  }
+                  // Contains match
+                  m = _allExames.find(e => { const en = normTxt(e.nome); return (nomeNorm.length >= 4 && en.includes(nomeNorm)) || (en.length >= 4 && nomeNorm.includes(en)); }); if (m) return m;
+                  // Palavras-chave match
+                  const palavras = nomeNorm.split(' ').filter(p => p.length >= 3);
+                  if (palavras.length >= 1) { m = _allExames.find(e => { const en = normTxt(e.nome); return palavras.every(p => en.includes(p)); }); if (m) return m; }
                   return null;
                 };
                 const fmtPreco = (v) => `R$ ${v.toFixed(2).replace('.', ',')}`;
