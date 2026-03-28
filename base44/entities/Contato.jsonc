@@ -1,0 +1,243 @@
+{
+  "name": "Contato",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string",
+      "description": "Nome do contato"
+    },
+    "telefone": {
+      "type": "string",
+      "description": "N\u00famero de telefone/WhatsApp (formato internacional)"
+    },
+    "email": {
+      "type": "string",
+      "format": "email",
+      "description": "Email do contato"
+    },
+    "cpf": {
+      "type": "string",
+      "description": "CPF do contato"
+    },
+    "data_nascimento": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de nascimento"
+    },
+    "endereco": {
+      "type": "object",
+      "properties": {
+        "cep": {
+          "type": "string"
+        },
+        "logradouro": {
+          "type": "string"
+        },
+        "numero": {
+          "type": "string"
+        },
+        "complemento": {
+          "type": "string"
+        },
+        "bairro": {
+          "type": "string"
+        },
+        "cidade": {
+          "type": "string"
+        },
+        "estado": {
+          "type": "string"
+        }
+      },
+      "description": "Endere\u00e7o completo do contato"
+    },
+    "paciente_id": {
+      "type": "string",
+      "description": "ID do paciente vinculado (se existir)"
+    },
+    "origem": {
+      "type": "string",
+      "enum": [
+        "WhatsApp",
+        "Site",
+        "Instagram",
+        "Facebook",
+        "Manual",
+        "Outro"
+      ],
+      "default": "WhatsApp",
+      "description": "Origem do contato"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Novo",
+        "Lead",
+        "Qualificado",
+        "Cliente",
+        "Inativo",
+        "Cancelou",
+        "Turmas"
+      ],
+      "default": "Novo",
+      "description": "Status do contato no funil"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Tags para categorizar o contato"
+    },
+    "interesses": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Interesses ou especialidades de interesse"
+    },
+    "ultima_interacao": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data e hora da \u00faltima intera\u00e7\u00e3o"
+    },
+    "total_mensagens": {
+      "type": "number",
+      "default": 0,
+      "description": "Total de mensagens trocadas"
+    },
+    "conversas_ativas": {
+      "type": "number",
+      "default": 0,
+      "description": "N\u00famero de conversas ativas"
+    },
+    "agendamentos_realizados": {
+      "type": "number",
+      "default": 0,
+      "description": "N\u00famero de agendamentos feitos via chatbot"
+    },
+    "observacoes": {
+      "type": "string",
+      "description": "Observa\u00e7\u00f5es sobre o contato"
+    },
+    "opt_in_marketing": {
+      "type": "boolean",
+      "default": true,
+      "description": "Se aceitou receber mensagens de marketing"
+    },
+    "bloqueado": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se o contato est\u00e1 bloqueado"
+    },
+    "atendimento_humano": {
+      "type": "boolean",
+      "default": true,
+      "description": "Se o atendimento est\u00e1 sendo feito por humano (IA pausada)"
+    },
+    "atendente_atual": {
+      "type": "string",
+      "description": "Nome do usu\u00e1rio que est\u00e1 atualmente atendendo este contato"
+    },
+    "atendente_id": {
+      "type": "string",
+      "description": "ID do usu\u00e1rio que est\u00e1 atualmente atendendo este contato"
+    },
+    "conversa_finalizada": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se a conversa foi finalizada manualmente"
+    },
+    "dados_extras": {
+      "type": "object",
+      "description": "Campos personalizados capturados pelo chatbot"
+    },
+    "historico_mensagens": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "assistant"
+            ]
+          },
+          "content": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "humano": {
+            "type": "boolean"
+          },
+          "messageId": {
+            "type": "string"
+          },
+          "mediaType": {
+            "type": "string"
+          },
+          "mediaUrl": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Hist\u00f3rico de mensagens da conversa"
+    },
+    "ultima_mensagem": {
+      "type": "string",
+      "description": "\u00daltima mensagem enviada pelo cliente"
+    },
+    "ultima_resposta": {
+      "type": "string",
+      "description": "\u00daltima resposta do chatbot"
+    },
+    "mensagens_pendentes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "texto": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "messageId": {
+            "type": "string",
+            "description": "ID da mensagem original do WhatsApp"
+          },
+          "mediaType": {
+            "type": "string",
+            "description": "Tipo de m\u00eddia (text, image, document, audio, video)"
+          },
+          "mediaUrl": {
+            "type": "string",
+            "description": "URL permanente da m\u00eddia ap\u00f3s upload"
+          }
+        }
+      },
+      "description": "Buffer de mensagens aguardando processamento (debounce)"
+    },
+    "ultimo_timestamp_pendente": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp da \u00faltima mensagem pendente"
+    },
+    "processando_ia_lock": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time",
+      "description": "Timestamp do lock de processamento IA (mutex distribu\u00eddo para evitar respostas duplicadas)"
+    }
+  },
+  "required": [
+    "telefone"
+  ]
+}

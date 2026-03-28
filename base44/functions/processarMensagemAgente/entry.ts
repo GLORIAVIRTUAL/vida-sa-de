@@ -1192,13 +1192,14 @@ Retorne JSON.`;
     {
       try {
         const [procedimentos, exames, tabelaPrecos] = await Promise.all([
-          Promise.race([base44.asServiceRole.entities.Procedimento.filter({ status: 'Ativo' }, '-created_date', 500), new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout Procedimentos')), 5000))]).catch(e => []),
-          Promise.race([base44.asServiceRole.entities.Exame.filter({ status: 'Ativo' }, '-created_date', 500), new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout Exames')), 5000))]).catch(e => []),
-          Promise.race([base44.asServiceRole.entities.TabelaPreco.list('-created_date', 1000), new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout TabelaPrecos')), 5000))]).catch(e => [])
+          Promise.race([base44.asServiceRole.entities.Procedimento.filter({ status: 'Ativo' }, '-created_date', 500), new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout Procedimentos')), 10000))]).catch(e => { console.log('⚠️ Timeout/erro Procedimentos:', e.message); return []; }),
+          Promise.race([base44.asServiceRole.entities.Exame.filter({ status: 'Ativo' }, '-created_date', 500), new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout Exames')), 10000))]).catch(e => { console.log('⚠️ Timeout/erro Exames:', e.message); return []; }),
+          Promise.race([base44.asServiceRole.entities.TabelaPreco.list('-created_date', 1000), new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout TabelaPrecos')), 10000))]).catch(e => { console.log('⚠️ Timeout/erro TabelaPrecos:', e.message); return []; })
         ]);
         _allProcedimentos = Array.isArray(procedimentos) ? procedimentos : [];
         _allExames = Array.isArray(exames) ? exames : [];
         _allTabelaPrecos = Array.isArray(tabelaPrecos) ? tabelaPrecos : [];
+        console.log('📦 Dados carregados: Procedimentos=', _allProcedimentos.length, 'Exames=', _allExames.length, 'TabelaPrecos=', _allTabelaPrecos.length);
 
         let categoriasPreco = [];
         try { categoriasPreco = await Promise.race([base44.asServiceRole.entities.CategoriaPreco.filter({ status: 'Ativo' }), new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout CategoriaPreco')), 2000))]); } catch (e) {}
@@ -1397,6 +1398,24 @@ ${listaMedicosAtivosParaPrompt}
           } catch(e) { console.log('⚠️ Erro ao extrair exames da imagem:', e.message); }
 
           // Se conseguiu extrair, gerar orçamento DIRETAMENTE no código (sem depender do LLM para preços)
+          // SEMPRE recarregar exames frescos para garantir dados atualizados para orçamento
+          if (examesExtraidos && examesExtraidos.length > 0) {
+            console.log('📦 Carregando dados de exames para orçamento... _allExames pré-carregados:', _allExames?.length || 0);
+            if (!Array.isArray(_allExames) || _allExames.length === 0) {
+              try {
+                const [exReload, procReload, tpReload] = await Promise.all([
+                  base44.asServiceRole.entities.Exame.filter({ status: 'Ativo' }, '-created_date', 500).catch(() => []),
+                  base44.asServiceRole.entities.Procedimento.filter({ status: 'Ativo' }, '-created_date', 500).catch(() => []),
+                  base44.asServiceRole.entities.TabelaPreco.list('-created_date', 1000).catch(() => [])
+                ]);
+                if (Array.isArray(exReload) && exReload.length > 0) _allExames = exReload;
+                if (Array.isArray(procReload) && procReload.length > 0) _allProcedimentos = procReload;
+                if (Array.isArray(tpReload) && tpReload.length > 0) _allTabelaPrecos = tpReload;
+                console.log('✅ Dados recarregados: Exames=', _allExames.length, 'Procedimentos=', _allProcedimentos.length, 'TabelaPrecos=', _allTabelaPrecos.length);
+              } catch (e) { console.log('❌ Falha ao carregar dados:', e.message); }
+            }
+          }
+          console.log('📊 Budget check: examesExtraidos=', examesExtraidos?.length, '_allExames=', _allExames?.length);
           if (examesExtraidos && examesExtraidos.length > 0 && Array.isArray(_allExames) && _allExames.length > 0) {
             const normTxt = (t) => (t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9\s]/g, '').trim();
             const SINONIMOS = {'hemograma':'hemograma completo','glicemia de jejum':'glicose','glicose em jejum':'glicose','glicemia':'glicose','hemoglobina glicada':'hemoglobina glicosilada ac1','hba1c':'hemoglobina glicosilada ac1','vitamina d':'25 hidroxivitamina d','vit d':'25 hidroxivitamina d','25 oh vitamina d':'25 hidroxivitamina d','tgo':'tgo ast','tgp':'tgp alt','ast':'tgo ast','alt':'tgp alt','triglicerideos':'trigliceridios','triglicerides':'trigliceridios','gama gt':'gama  gt','ggt':'gama  gt','tsh':'tsh  h tireoestimulante','acido urico':'acido urico','fosfatase alcalina':'fosfatase alcalina','ferro serico':'ferro serico','ferritina':'ferritina','calcio':'calcio','magnesio':'magnesio','eas':'eas  urina tipo i','urina tipo 1':'eas  urina tipo i','beta hcg':'beta hcg','sodio':'sodio','potassio':'potassio'};
