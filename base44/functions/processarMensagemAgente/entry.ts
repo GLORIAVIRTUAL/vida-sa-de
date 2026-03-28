@@ -1454,32 +1454,39 @@ ${listaMedicosAtivosParaPrompt}
             let total = 0;
             let naoEncontrados = [];
             let contador = 1;
+            const itensJaCobrados = new Set();
 
             for (const itemOriginal of itensExtraidos) {
               const itemNorm = normalizarItem(itemOriginal);
-              const grupo = Object.keys(gruposCompostos).find(k => itemNorm === k || itemNorm.includes(k) || k.includes(itemNorm));
+              const grupo = Object.keys(gruposCompostos).find(k => itemNorm === k);
 
               if (grupo) {
                 const subitens = gruposCompostos[grupo];
                 let subtotal = 0;
                 let detalhes = [];
                 let faltandoSubitem = false;
+                let adicionouAlgum = false;
                 for (const subitem of subitens) {
                   const exame = buscarExame(subitem);
+                  const chaveSubitem = `exame:${subitem}`;
                   if (exame && Number(exame.valor_particular) > 0) {
-                    subtotal += Number(exame.valor_particular);
-                    detalhes.push(`   - ${exame.nome}: ${fmtPreco(exame.valor_particular)}`);
+                    if (!itensJaCobrados.has(chaveSubitem)) {
+                      subtotal += Number(exame.valor_particular);
+                      detalhes.push(`   - ${exame.nome}: ${fmtPreco(exame.valor_particular)}`);
+                      itensJaCobrados.add(chaveSubitem);
+                      adicionouAlgum = true;
+                    }
                   } else {
                     faltandoSubitem = true;
                     naoEncontrados.push(subitem);
                   }
                 }
-                if (!faltandoSubitem && subtotal > 0) {
+                if (!faltandoSubitem && adicionouAlgum && subtotal > 0) {
                   linhas.push(`${contador}. *${itemOriginal}*: ${fmtPreco(subtotal)}`);
                   linhas.push(...detalhes);
                   total += subtotal;
                   contador++;
-                } else {
+                } else if (faltandoSubitem) {
                   naoEncontrados.push(itemOriginal);
                 }
                 continue;
@@ -1487,9 +1494,13 @@ ${listaMedicosAtivosParaPrompt}
 
               const exame = buscarExame(itemOriginal);
               if (exame && Number(exame.valor_particular) > 0) {
-                linhas.push(`${contador}. *${exame.nome}*: ${fmtPreco(exame.valor_particular)}`);
-                total += Number(exame.valor_particular);
-                contador++;
+                const chaveExame = `exame:${itemNorm}`;
+                if (!itensJaCobrados.has(chaveExame)) {
+                  linhas.push(`${contador}. *${exame.nome}*: ${fmtPreco(exame.valor_particular)}`);
+                  total += Number(exame.valor_particular);
+                  contador++;
+                  itensJaCobrados.add(chaveExame);
+                }
                 continue;
               }
 
@@ -1579,27 +1590,24 @@ ${listaMedicosAtivosParaPrompt}
                 const COMPOSTOS = {'colesterol total e fracoes':['colesterol total','colesterol hdl','colesterol ldl','colesterol vldl','trigliceridios'],'perfil lipidico':['colesterol total','colesterol hdl','colesterol ldl','colesterol vldl','trigliceridios'],'ast e alt':['tgo ast','tgp alt'],'tgo e tgp':['tgo ast','tgp alt'],'transaminases':['tgo ast','tgp alt'],'hepatograma':['tgo ast','tgp alt','gama  gt','fosfatase alcalina'],'funcao renal':['ureia','creatinina'],'funcao hepatica':['tgo ast','tgp alt','gama  gt','fosfatase alcalina'],'pasta do figado':['tgo ast','tgp alt','gama  gt','fosfatase alcalina'],'provas de funcao hepatica':['tgo ast','tgp alt','gama  gt','fosfatase alcalina'],'bilirrubinas total e fracoes':['bilirrubinas totais e fracoes']};
                 const buscarExame = (nomeNorm) => {
                   let m = _allExames.find(e => normTxt(e.nome) === nomeNorm); if (m) return m;
-                  const sin = SINONIMOS[nomeNorm]; if (sin) { m = _allExames.find(e => normTxt(e.nome) === sin); if (m) return m; m = _allExames.find(e => normTxt(e.nome).includes(sin) || sin.includes(normTxt(e.nome))); if (m) return m; }
-                  m = _allExames.find(e => normTxt(e.nome).includes(nomeNorm) || nomeNorm.includes(normTxt(e.nome))); if (m) return m;
-                  const palavras = nomeNorm.split(/\s+/).filter(p => p.length > 3);
-                  if (palavras.length > 0) { m = _allExames.find(e => { const eN = normTxt(e.nome); return palavras.every(p => eN.includes(p)); }); if (m) return m; }
+                  const sin = SINONIMOS[nomeNorm]; if (sin) { m = _allExames.find(e => normTxt(e.nome) === sin); if (m) return m; }
                   return null;
                 };
                 const fmtPreco = (v) => `R$ ${v.toFixed(2).replace('.', ',')}`;
-                let orcLinhas = []; let totalP = 0; let naoEnc = []; let itemN = 0;
+                let orcLinhas = []; let totalP = 0; let naoEnc = []; let itemN = 0; const itensPdfJaCobrados = new Set();
                 for (const nomeExame of examesExtraidosPdf) {
                   const nomeNorm = normTxt(nomeExame);
                   const compostoKey = Object.keys(COMPOSTOS).find(k => nomeNorm === k || nomeNorm.includes(k) || k.includes(nomeNorm));
                   if (compostoKey) {
-                    const subExames = COMPOSTOS[compostoKey]; let subT = 0; let subL = []; let allOk = true;
-                    for (const sn of subExames) { const sm = buscarExame(sn); if (sm && sm.valor_particular) { subL.push(`   - ${sm.nome}: ${fmtPreco(sm.valor_particular)}`); subT += sm.valor_particular; } else allOk = false; }
-                    if (allOk && subT > 0) { itemN++; orcLinhas.push(`${itemN}. *${nomeExame}*: ${fmtPreco(subT)}`); for (const sl of subL) orcLinhas.push(sl); totalP += subT; }
-                    else { for (const sn of subExames) { const sm = buscarExame(sn); if (sm && sm.valor_particular) { itemN++; orcLinhas.push(`${itemN}. *${sm.nome}*: ${fmtPreco(sm.valor_particular)}`); totalP += sm.valor_particular; } else naoEnc.push(sn); } }
+                    const subExames = COMPOSTOS[compostoKey]; let subT = 0; let subL = []; let allOk = true; let adicionou = false;
+                    for (const sn of subExames) { const sm = buscarExame(sn); const chave = `exame:${sn}`; if (sm && sm.valor_particular) { if (!itensPdfJaCobrados.has(chave)) { subL.push(`   - ${sm.nome}: ${fmtPreco(sm.valor_particular)}`); subT += sm.valor_particular; itensPdfJaCobrados.add(chave); adicionou = true; } } else allOk = false; }
+                    if (allOk && adicionou && subT > 0) { itemN++; orcLinhas.push(`${itemN}. *${nomeExame}*: ${fmtPreco(subT)}`); for (const sl of subL) orcLinhas.push(sl); totalP += subT; }
+                    else if (!allOk) { for (const sn of subExames) naoEnc.push(sn); }
                     continue;
                   }
                   let match = buscarExame(nomeNorm);
-                  if (!match && Array.isArray(_allProcedimentos)) { const procM = _allProcedimentos.find(p => { const pN = normTxt(p.nome); return pN === nomeNorm || pN.includes(nomeNorm) || nomeNorm.includes(pN); }); if (procM) { const precoP = _allTabelaPrecos.find(tp => tp.procedimento_id === procM.id && tp.valor > 0); if (precoP) { itemN++; orcLinhas.push(`${itemN}. *${nomeExame}*: ${fmtPreco(precoP.valor)}`); totalP += precoP.valor; continue; } } }
-                  if (match && match.valor_particular) { itemN++; orcLinhas.push(`${itemN}. *${nomeExame}*: ${fmtPreco(match.valor_particular)}`); totalP += match.valor_particular; }
+                  if (!match && Array.isArray(_allProcedimentos)) { const procM = _allProcedimentos.find(p => normTxt(p.nome) === nomeNorm); if (procM) { const precoP = _allTabelaPrecos.find(tp => tp.procedimento_id === procM.id && tp.valor > 0); if (precoP) { const chaveProc = `procedimento:${nomeNorm}`; if (!itensPdfJaCobrados.has(chaveProc)) { itemN++; orcLinhas.push(`${itemN}. *${nomeExame}*: ${fmtPreco(precoP.valor)}`); totalP += precoP.valor; itensPdfJaCobrados.add(chaveProc); } continue; } } }
+                  if (match && match.valor_particular) { const chaveMatch = `exame:${nomeNorm}`; if (!itensPdfJaCobrados.has(chaveMatch)) { itemN++; orcLinhas.push(`${itemN}. *${nomeExame}*: ${fmtPreco(match.valor_particular)}`); totalP += match.valor_particular; itensPdfJaCobrados.add(chaveMatch); } }
                   else naoEnc.push(nomeExame);
                 }
                 let orcTxtPdf = 'Aqui está o orçamento dos exames da requisição:\n\n' + orcLinhas.join('\n') + '\n';
