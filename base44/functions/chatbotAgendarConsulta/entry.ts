@@ -277,8 +277,8 @@ Deno.serve(async (req) => {
         if (categorias.length > 0) {
           categoriaParticularId = categorias[0].id;
           const [tabelaPrecos, procedimentos] = await Promise.all([
-            base44.asServiceRole.entities.TabelaPreco.filter({ categoria_id: categoriaParticularId }),
-            base44.asServiceRole.entities.Procedimento.filter({ status: 'Ativo' })
+            base44.asServiceRole.entities.TabelaPreco.filter({ categoria_id: categoriaParticularId }, '-created_date', 500),
+            base44.asServiceRole.entities.Procedimento.filter({ status: 'Ativo' }, '-created_date', 500)
           ]);
           const espMedico = (medico.especialidade || '').toLowerCase();
           let proc = procedimentos.find(p => {

@@ -1120,8 +1120,8 @@ Retorne JSON.`;
                   categoriaParticularId = categorias[0].id;
                   try {
                     const [tabelaPrecos, procedimentos] = await Promise.all([
-                      Promise.race([base44.asServiceRole.entities.TabelaPreco.filter({ categoria_id: categoriaParticularId }), new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout TabelaPrecos')), 2000))]).catch(() => []),
-                      Promise.race([base44.asServiceRole.entities.Procedimento.filter({ status: 'Ativo' }), new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout Procedimentos')), 2000))]).catch(() => [])
+                      Promise.race([base44.asServiceRole.entities.TabelaPreco.filter({ categoria_id: categoriaParticularId }, '-created_date', 500), new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout TabelaPrecos')), 3000))]).catch(() => []),
+                      Promise.race([base44.asServiceRole.entities.Procedimento.filter({ status: 'Ativo' }, '-created_date', 500), new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout Procedimentos')), 3000))]).catch(() => [])
                     ]);
                     const especialidadeMedico = (medicoEncontrado.especialidade || '').toLowerCase();
                     let procedimentoConsulta = procedimentos.find(p => { const nomeLower = (p.nome || '').toLowerCase(); const espLower = (p.especialidade || '').toLowerCase(); return (nomeLower.includes('consulta') || nomeLower.includes(especialidadeMedico)) && (espLower.includes(especialidadeMedico) || especialidadeMedico.includes(espLower)); });
@@ -1187,9 +1187,9 @@ Retorne JSON.`;
     {
       try {
         const [procedimentos, exames, tabelaPrecos] = await Promise.all([
-          Promise.race([base44.asServiceRole.entities.Procedimento.filter({ status: 'Ativo' }), new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout Procedimentos')), 3000))]).catch(e => []),
-          Promise.race([base44.asServiceRole.entities.Exame.filter({ status: 'Ativo' }), new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout Exames')), 3000))]).catch(e => []),
-          Promise.race([base44.asServiceRole.entities.TabelaPreco.list(), new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout TabelaPrecos')), 3000))]).catch(e => [])
+          Promise.race([base44.asServiceRole.entities.Procedimento.filter({ status: 'Ativo' }, '-created_date', 500), new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout Procedimentos')), 5000))]).catch(e => []),
+          Promise.race([base44.asServiceRole.entities.Exame.filter({ status: 'Ativo' }, '-created_date', 500), new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout Exames')), 5000))]).catch(e => []),
+          Promise.race([base44.asServiceRole.entities.TabelaPreco.list('-created_date', 1000), new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout TabelaPrecos')), 5000))]).catch(e => [])
         ]);
 
         let categoriasPreco = [];
