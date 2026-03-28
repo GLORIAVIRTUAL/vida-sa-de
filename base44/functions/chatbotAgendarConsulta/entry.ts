@@ -234,7 +234,7 @@ Deno.serve(async (req) => {
 
       if (paciente_cpf && paciente_cpf !== 'NÃO INFORMADO') {
         const cpfLimpo = paciente_cpf.replace(/\D/g, '');
-        const todosPacientes = await base44.asServiceRole.entities.Paciente.list('-created_date', 500);
+        const todosPacientes = await base44.asServiceRole.entities.Paciente.list('-created_date', 2000);
         paciente = todosPacientes.find(p => (p.cpf || '').replace(/\D/g, '') === cpfLimpo);
       }
 
@@ -249,7 +249,7 @@ Deno.serve(async (req) => {
 
       if (!paciente && paciente_cpf && paciente_cpf !== 'NÃO INFORMADO') {
         const cpfLimpo = paciente_cpf.replace(/\D/g, '');
-        const todosPacientes = await base44.asServiceRole.entities.Paciente.list('-created_date', 500);
+        const todosPacientes = await base44.asServiceRole.entities.Paciente.list('-created_date', 2000);
         const nomeLower = paciente_nome.toLowerCase().trim();
         paciente = todosPacientes.find(p => p.nome && p.nome.toLowerCase().trim() === nomeLower && (p.cpf || '').replace(/\D/g, '') === cpfLimpo);
       }
@@ -277,8 +277,8 @@ Deno.serve(async (req) => {
         if (categorias.length > 0) {
           categoriaParticularId = categorias[0].id;
           const [tabelaPrecos, procedimentos] = await Promise.all([
-            base44.asServiceRole.entities.TabelaPreco.filter({ categoria_id: categoriaParticularId }, '-created_date', 500),
-            base44.asServiceRole.entities.Procedimento.filter({ status: 'Ativo' }, '-created_date', 500)
+            base44.asServiceRole.entities.TabelaPreco.filter({ categoria_id: categoriaParticularId }, '-created_date', 2000),
+            base44.asServiceRole.entities.Procedimento.filter({ status: 'Ativo' }, '-created_date', 2000)
           ]);
           const espMedico = (medico.especialidade || '').toLowerCase();
           let proc = procedimentos.find(p => {
