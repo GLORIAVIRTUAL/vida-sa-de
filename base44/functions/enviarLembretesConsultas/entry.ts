@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
 
 Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
@@ -37,8 +37,12 @@ Deno.serve(async (req) => {
 
         console.log(`📊 Total de agendamentos para amanhã: ${agendamentosValidos.length}`);
 
-        // Verificar quais já receberam lembrete (usando ScheduledNotification ou NotificationLog)
-        const notificacoesEnviadas = await base44.asServiceRole.entities.NotificationLog.filter({});
+        // Verificar quais já receberam lembrete — busca apenas logs recentes (últimos 3 dias)
+        const tresDiasAtras = new Date();
+        tresDiasAtras.setDate(tresDiasAtras.getDate() - 3);
+        const notificacoesEnviadas = await base44.asServiceRole.entities.NotificationLog.filter({
+            timestamp_envio: { $gte: tresDiasAtras.toISOString() }
+        });
         const agendamentosNotificados = new Set(
             notificacoesEnviadas
                 .filter(n => n.agendamento_id && n.mensagem_enviada?.includes('lembrete'))

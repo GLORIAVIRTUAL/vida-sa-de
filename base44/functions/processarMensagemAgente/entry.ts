@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
 
 Deno.serve(async (req) => {
   try {
@@ -428,14 +428,16 @@ Deno.serve(async (req) => {
     if(querVerificarAgendamento){
       const nm=messageText.match(/(?:nome[:\s]+|sou\s+o?\s*|me chamo\s+|é\s+)?([A-Za-zÀ-ÿ]+(?:\s+[A-Za-zÀ-ÿ]+)+)/i);
       let nE=null;if(nm){let n=nm[1].trim().replace(/^(me chamo|sou|meu nome é|é)\s*/i,'');if(n.split(' ').length>=2)nE=n;}
+      const cpfMatch=messageText.match(/(\d{3}\.?\d{3}\.?\d{3}[-.]?\d{2})/);
+      const cpfE=cpfMatch?cpfMatch[1].replace(/\D/g,''):null;
       const dm=messageText.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
       const dE=dm?`${dm[3]}-${String(dm[2]).padStart(2,'0')}-${String(dm[1]).padStart(2,'0')}`:null;
-      if(nE&&dE){try{const rv=await base44.asServiceRole.functions.invoke('verificarAgendamento',{nome:nE,data_nascimento:dE});let rV='';
+      if(nE&&(cpfE||dE)){try{const rv=await base44.asServiceRole.functions.invoke('verificarAgendamento',{nome:nE,cpf:cpfE,data_nascimento:dE});let rV='';
         if(rv.data?.sucesso&&rv.data?.agendamentos?.length>0){rV=`📋 *Seus agendamentos:*\n\n`;rv.data.agendamentos.forEach(ag=>{const se=ag.status==='Cancelado'?'❌':ag.status==='Agendado'?'📅':'✅';const st=ag.status==='Cancelado'?'CANCELADO':ag.status==='Agendado'?'Agendado':ag.status==='Confirmado'?'CONFIRMADO':ag.status;rV+=`${se} *${ag.data_formatada}* às *${ag.horario}*\n👨‍⚕️ ${ag.medico_nome} (${ag.especialidade})\n📌 *${st}*\n\n`;});const tc=rv.data.agendamentos.some(a=>a.status==='Confirmado'||a.status==='Agendado');if(tc)rV+='📍 Tristão Monteiro, 580 – Tramandaí/RS\n⏰ Chegue 10min antes!\n\n';rV+='Posso ajudar em mais algo?';}else{rV=`😔 Não encontramos agendamentos para *${nE}*.\nPosso agendar para você! 😊`;}
         try{const cs=await base44.asServiceRole.entities.Contato.filter({telefone:phoneNumber});if(cs.length>0){const h=cs[0].historico_mensagens||[];const ts=new Date().toISOString();h.push({role:'user',content:messageText,timestamp:ts},{role:'assistant',content:rV,timestamp:ts});await base44.asServiceRole.entities.Contato.update(cs[0].id,{historico_mensagens:h.slice(-50),ultima_interacao:ts});}}catch(e){}
         await liberarLock(base44, phoneNumber, lockName);return Response.json({success:true,resposta:rV,verificado:true,fluxo:'verificacao'});
       }catch(e){}}else{
-        const rPD=`Para verificar, preciso:\n📝 Nome completo\n📅 Data nascimento (DD/MM/AAAA)\n\nEx: "Antonio Thiago 19/04/1982"`;
+        const rPD=`Para verificar, preciso:\n📝 Nome completo\n📝 CPF (apenas números)\n\nEx: \"Antonio Thiago 12345678900\"`;
         try{const cs=await base44.asServiceRole.entities.Contato.filter({telefone:phoneNumber});if(cs.length>0){const h=cs[0].historico_mensagens||[];const ts=new Date().toISOString();h.push({role:'user',content:messageText,timestamp:ts},{role:'assistant',content:rPD,timestamp:ts});await base44.asServiceRole.entities.Contato.update(cs[0].id,{historico_mensagens:h.slice(-50),ultima_interacao:ts});}}catch(e){}
         await liberarLock(base44, phoneNumber, lockName);return Response.json({success:true,resposta:rPD,fluxo:'verificacao'});}
     }
@@ -941,8 +943,8 @@ O cliente está ESCOLHENDO/RESPONDENDO. Ele disse: "${messageText}"
     let dadosFaltantes = [];
     
     const historicoTemEspecialidadeLocal = historicoConversa && /clínico|clinico|cardiolog|dermatolog|ginecolog|nutrici|psicolog|ortoped|urolog|geriatr|gastro|reumato|psiquiatr|fisioterap|oftalmolog|otorrino|pediatr|pneumolog|neurolog|quiroprax|massoterap|optometr|hidro|pilates|odontolog|dentist|endocrinolog|Dr\.|👨‍⚕️/i.test(historicoConversa);
-    const assistentePediuDadosPaciente = historicoConversa && /nome completo|data de nascimento|DD\/MM\/AAAA|nome do paciente/i.test(historicoConversa);
-    const clienteFornecendoDadosPessoais = assistentePediuDadosPaciente && (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(messageText.trim()) || /[A-Za-zÀ-ÿ]+\s+[A-Za-zÀ-ÿ]+.*\d{1,2}\/\d{1,2}\/\d{4}/.test(messageText) || (/^[A-Za-zÀ-ÿ\s]+$/.test(messageText.trim()) && messageText.trim().split(/\s+/).length >= 2));
+    const assistentePediuDadosPaciente = historicoConversa && /nome completo|cpf|data de nascimento|DD\/MM\/AAAA|nome do paciente/i.test(historicoConversa);
+    const clienteFornecendoDadosPessoais = assistentePediuDadosPaciente && (/^\d{11}$/.test(messageText.trim().replace(/\D/g,'')) || /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(messageText.trim()) || /[A-Za-zÀ-ÿ]+\s+[A-Za-zÀ-ÿ]+.*\d{3}/.test(messageText) || (/^[A-Za-zÀ-ÿ\s]+$/.test(messageText.trim()) && messageText.trim().split(/\s+/).length >= 2));
     
     const _soPerguntandoDisp = ehPerguntaDisponibilidadeMedico && !clienteFornecendoDadosPessoais && !/agendar|marcar/i.test(messageText);
     const estaEmFluxoAgendamento = !agendamentoRecenteConcluido && !_soPerguntandoDisp && ((querAgendar && historicoTemEspecialidadeLocal && !ehPerguntaDisponibilidadeMedico) || (historicoConversa && /horário|data|nascimento|doutor|dr\./i.test(historicoConversa) && historicoTemEspecialidadeLocal && !ehPerguntaPreco && !_soPerguntandoDisp) || clienteFornecendoDadosPessoais);
@@ -967,9 +969,10 @@ O cliente está ESCOLHENDO/RESPONDENDO. Ele disse: "${messageText}"
         3. Se cliente diz "segunda" ou "21/01" = está escolhendo a DATA
         4. Se cliente diz nome próprio em contexto de agendamento = é o NOME DO MÉDICO ou NOME DO PACIENTE (use contexto!)
         5. Se está no fluxo de agendamento (histórico menciona médicos/horários), interprete SEMPRE para preencher dados faltantes
-        6. ⚠️ CRÍTICO: Se cliente envia "Nome Completo DD/MM/AAAA" (ex: "Antonio thiago cavalcanti 19/04/1982"), extraia:
-           - nome_paciente = "Antonio Thiago Cavalcanti" (tudo antes da data, capitalize corretamente)
-           - data_nascimento = "19/04/1982" (a data no final)
+        6. ⚠️ CRÍTICO: Se cliente envia "Nome Completo CPF" (ex: "Antonio thiago cavalcanti 12345678900"), extraia:
+           - nome_paciente = "Antonio Thiago Cavalcanti" (tudo antes do CPF, capitalize corretamente)
+           - cpf = "12345678900" (os 11 dígitos numéricos)
+           - Também aceitar formatos com pontos: "123.456.789-00"
 
         HISTÓRICO DA CONVERSA:
         ${historicoConversa || '(sem histórico)'}
@@ -983,8 +986,8 @@ O cliente está ESCOLHENDO/RESPONDENDO. Ele disse: "${messageText}"
 ${medicosDisponiveis}
 
 EXTRAIA OS DADOS QUE CONSEGUIR ENCONTRAR:
-1. nome_paciente: nome completo (ex: "Antonio Thiago Cavalcanti Alves") - se vier junto com data, separe!
-2. data_nascimento: formato DD/MM/YYYY (ex: "19/04/1982") - pode vir no final da mensagem junto com nome
+1. nome_paciente: nome completo (ex: "Antonio Thiago Cavalcanti Alves") - se vier junto com CPF, separe!
+2. cpf: 11 dígitos numéricos (ex: "12345678900") - pode vir formatado como "123.456.789-00", extraia apenas os números
 3. medico_nome: nome EXATO do médico escolhido da lista acima (ex: "Dr. João Inocencio Rodrigues Gonçalves")
 4. medico_id: ID do médico escolhido da lista acima (se encontrar)
 5. data_agendamento: formato YYYY-MM-DD (converta "14/01" para "${anoAtual}-01-14", "hoje" para "${hoje.toISOString().split('T')[0]}")
@@ -994,16 +997,16 @@ REGRAS CRÍTICAS:
 - Se o cliente disse "hoje", use ${hoje.toISOString().split('T')[0]}
 - Se disse apenas dia/mês (14/01), adicione ano ${anoAtual}
 - Marque cada campo como null se NÃO encontrar
-- dados_completos = true APENAS se TODOS os 6 campos forem preenchidos
+- dados_completos = true APENAS se nome_paciente + cpf + medico + data + horario estiverem preenchidos
 - IMPORTANTE: Use o nome EXATO do médico que foi OFERECIDO no histórico da conversa
 - Se o assistente ofereceu "Dr. Douglas Filipe Bianchi", use EXATAMENTE esse nome
 - NÃO confunda médicos diferentes - verifique qual médico foi mencionado na conversa
-- ⚠️ MUITO IMPORTANTE: Se o cliente enviou nome e data de nascimento juntos (ex: "Antonio thiago 19/04/1982"), EXTRAIA AMBOS! O nome é tudo antes da data, a data de nascimento é a data no formato DD/MM/AAAA.
+- ⚠️ MUITO IMPORTANTE: Se o cliente enviou nome e CPF juntos (ex: "Antonio thiago 12345678900"), EXTRAIA AMBOS! O nome é tudo antes do CPF, o CPF são os 11 dígitos numéricos.
 - 🚨🚨 REGRA ABSOLUTAMENTE CRÍTICA SOBRE HORÁRIOS: O horario extraído DEVE ser EXATAMENTE um dos horários listados pelo ASSISTENTE no histórico da conversa. Procure a mensagem onde o assistente mostrou disponibilidades (ex: "Segunda 2/03: 08:00", "Sexta 6/03: 10:00"). Se o cliente escolheu "sexta dia 6" e o horário oferecido para sexta dia 6 foi "10:00", extraia horario="10:00". NUNCA invente horário (como 14:00) que NÃO foi oferecido. Se não especificou horário, use o PRIMEIRO horário oferecido para o dia escolhido.
 
 Retorne JSON.`;
 
-        let extracao = { dados_completos: false, nome_paciente: null, data_nascimento: null, medico_nome: null, medico_id: null, data_agendamento: null, horario: null };
+        let extracao = { dados_completos: false, nome_paciente: null, cpf: null, medico_nome: null, medico_id: null, data_agendamento: null, horario: null };
         try {
           const _extR = await Promise.race([fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{'Authorization':`Bearer ${Deno.env.get('OPENAI_API_KEY')}`,'Content-Type':'application/json'},body:JSON.stringify({model:'gpt-4o-mini',messages:[{role:'user',content:promptExtracao+'\n\nRetorne APENAS JSON válido.'}],max_tokens:500,temperature:0,response_format:{type:'json_object'}})}), new Promise((_,r)=>setTimeout(()=>r(new Error('Timeout')),15000))]);
           if (_extR.ok) { const _ed=await _extR.json(); try { extracao=JSON.parse(_ed.choices?.[0]?.message?.content||'{}'); } catch(e){} }
@@ -1011,7 +1014,7 @@ Retorne JSON.`;
 
         if(extracao.horario&&extracao.data_agendamento&&historicoConversa&&!historicoConversa.includes(extracao.horario)){const dO=new Date(extracao.data_agendamento+'T12:00:00');const dN=String(dO.getDate()).padStart(2,'0');const mN=String(dO.getMonth()+1).padStart(2,'0');const hA=historicoMensagensRaw.filter(m=>m.role==='assistant').map(m=>m.content).join('\n');const rx=new RegExp(`(?:${dN}[/.]${mN}|dia\\s*${parseInt(dN)})[^\\n]*(\\d{2}:\\d{2})`,'gi');const mt=[...(hA.matchAll(rx))];if(mt.length>0){extracao.horario=mt[0][1];}}
             if (!extracao.nome_paciente) dadosFaltantes.push('nome completo');
-            if (!extracao.data_nascimento) dadosFaltantes.push('data de nascimento');
+            if (!extracao.cpf) dadosFaltantes.push('CPF');
 
         const jaEscolheuMedico = historicoConversa && /(Dr\.|👨‍⚕️|médico|doutor)/i.test(historicoConversa) && (extracao.medico_nome || extracao.medico_id);
         const jaEscolheuHorario = historicoConversa && /\d{1,2}[h:]|14:00|15:00|16:00|hora/i.test(historicoConversa) && extracao.horario;
@@ -1021,16 +1024,17 @@ Retorne JSON.`;
         if (!extracao.horario && !jaEscolheuHorario) dadosFaltantes.push('horário');
 
         const _nV=extracao.nome_paciente&&extracao.nome_paciente.trim().split(/\s+/).length>=2&&extracao.nome_paciente.trim().length>=5;
-        const _dV=extracao.data_nascimento&&/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(extracao.data_nascimento.trim());
-        if(!_nV||!_dV){extracao.dados_completos=false;if(!_nV&&!dadosFaltantes.includes('nome completo'))dadosFaltantes.push('nome completo');if(!_dV&&!dadosFaltantes.includes('data de nascimento'))dadosFaltantes.push('data de nascimento');}
+        const _cpfV=extracao.cpf&&extracao.cpf.replace(/\D/g,'').length===11;
+        if(!_nV||!_cpfV){extracao.dados_completos=false;if(!_nV&&!dadosFaltantes.includes('nome completo'))dadosFaltantes.push('nome completo');if(!_cpfV&&!dadosFaltantes.includes('CPF'))dadosFaltantes.push('CPF');}
         const mensagemEhPerguntaNova=/\?|quanto custa|qual valor|pre[cç]o|valor da consulta|valor do exame|onde fica|endere[cç]o|telefone|conv[eê]nio|convenio/i.test(messageText||'');
         const assistentePediuConfirmacaoHorario=/você gostaria de agendar esse horário|gostaria de agendar esse horário|quer agendar esse horário|posso confirmar esse horário/i.test(ultimaMsgAssistenteFull||'');
-        const assistentePediuDadosParaFinalizar=/nome completo|data de nascimento|dd\/mm\/aaaa|para finalizar|para confirmar|para prosseguir/i.test(ultimaMsgAssistenteFull||'');
+        const assistentePediuDadosParaFinalizar=/nome completo|cpf|data de nascimento|dd\/mm\/aaaa|para finalizar|para confirmar|para prosseguir/i.test(ultimaMsgAssistenteFull||'');
         const clienteConfirmouOuEscolheu=/^(sim|s|ok|quero|pode|claro|isso|esse|essa|confirmo|pode ser|vamos|fechado|certo|correto)$/i.test((messageText||'').trim())||/\d{1,2}[:h]\d{2}|\d{1,2}\/\d{1,2}|segunda|ter[cç]a|quarta|quinta|sexta|s[áa]bado|amanh[ãa]|hoje/i.test(messageText||'');
-        const clienteEnviouDadosPessoaisNaMensagem=/\d{1,2}\/\d{1,2}\/\d{4}/.test(messageText||'')&&/[A-Za-zÀ-ÿ]{2,}.*\d{1,2}\/\d{1,2}\/\d{4}/.test(messageText||'');
-        const clienteEnviouComplementoDadosNaMensagem=clienteEnviouDadosPessoaisNaMensagem||/^\d{1,2}\/\d{1,2}\/\d{4}$/.test((messageText||'').trim())||(/^[A-Za-zÀ-ÿ\s]+$/.test((messageText||'').trim())&&(messageText||'').trim().split(/\s+/).length>=2);
-        const podeCriarAgendamentoAgora=!mensagemEhPerguntaNova&&((assistentePediuConfirmacaoHorario&&clienteConfirmouOuEscolheu)||(assistentePediuDadosParaFinalizar&&clienteEnviouComplementoDadosNaMensagem&&_nV&&_dV));
-        if (_nV && _dV && (extracao.medico_nome || extracao.medico_id) && extracao.data_agendamento && extracao.horario && podeCriarAgendamentoAgora) {
+        const clienteEnviouCPFNaMensagem=/\d{11}/.test((messageText||'').replace(/\D/g,''));
+        const clienteEnviouDadosPessoaisNaMensagem=(clienteEnviouCPFNaMensagem&&/[A-Za-zÀ-ÿ]{2,}/.test(messageText||''))||(/\d{1,2}\/\d{1,2}\/\d{4}/.test(messageText||'')&&/[A-Za-zÀ-ÿ]{2,}/.test(messageText||''));
+        const clienteEnviouComplementoDadosNaMensagem=clienteEnviouDadosPessoaisNaMensagem||clienteEnviouCPFNaMensagem||/^\d{1,2}\/\d{1,2}\/\d{4}$/.test((messageText||'').trim())||(/^[A-Za-zÀ-ÿ\s]+$/.test((messageText||'').trim())&&(messageText||'').trim().split(/\s+/).length>=2);
+        const podeCriarAgendamentoAgora=!mensagemEhPerguntaNova&&((assistentePediuConfirmacaoHorario&&clienteConfirmouOuEscolheu)||(assistentePediuDadosParaFinalizar&&clienteEnviouComplementoDadosNaMensagem&&_nV&&_cpfV));
+        if (_nV && _cpfV && (extracao.medico_nome || extracao.medico_id) && extracao.data_agendamento && extracao.horario && podeCriarAgendamentoAgora) {
           
           let medicos = [];
           try {
@@ -1056,28 +1060,42 @@ Retorne JSON.`;
           }
           
           if (medicoEncontrado) {
-            let dataNascimentoISO = null;
-            if (extracao.data_nascimento) {
-              const partes = extracao.data_nascimento.split('/');
-              if (partes.length === 3) dataNascimentoISO = `${partes[2]}-${partes[1]}-${partes[0]}`;
-            }
+            const cpfLimpo = extracao.cpf ? extracao.cpf.replace(/\D/g, '') : null;
 
             let paciente = null;
-            let pacientesExistentes = await base44.asServiceRole.entities.Paciente.filter({ telefone: phoneNumber });
-            if (pacientesExistentes.length === 0 && extracao.nome_paciente && dataNascimentoISO) {
-              const todosPacientes = await base44.asServiceRole.entities.Paciente.list();
-              const nomeLower = extracao.nome_paciente.toLowerCase().trim();
-              pacientesExistentes = todosPacientes.filter(p => p.nome && p.nome.toLowerCase().trim() === nomeLower && p.data_nascimento === dataNascimentoISO);
+            // Busca por CPF primeiro (mais confiável)
+            if (cpfLimpo && cpfLimpo.length === 11) {
+              const todosPacientes = await base44.asServiceRole.entities.Paciente.list('-created_date', 500);
+              paciente = todosPacientes.find(p => (p.cpf || '').replace(/\D/g, '') === cpfLimpo);
+            }
+            // Fallback: busca por telefone
+            if (!paciente) {
+              let pacientesExistentes = await base44.asServiceRole.entities.Paciente.filter({ telefone: phoneNumber });
+              if (pacientesExistentes.length === 0) {
+                const telNorm = phoneNumber.replace(/\D/g, '');
+                const variantes = [telNorm];
+                if (telNorm.startsWith('55') && telNorm.length >= 12) variantes.push(telNorm.slice(2));
+                if (!telNorm.startsWith('55') && telNorm.length >= 10) variantes.push('55' + telNorm);
+                for (const v of variantes) {
+                  if (paciente) break;
+                  const found = await base44.asServiceRole.entities.Paciente.filter({ telefone: v });
+                  if (found.length > 0) paciente = found[0];
+                }
+              } else {
+                paciente = pacientesExistentes[0];
+              }
             }
             
-            if (pacientesExistentes.length > 0) {
-              paciente = pacientesExistentes[0];
-              const updateData = { nome: extracao.nome_paciente, data_nascimento: dataNascimentoISO };
+            if (paciente) {
+              const updateData = { nome: extracao.nome_paciente };
               if (!paciente.telefone || paciente.telefone === '') updateData.telefone = phoneNumber;
+              if (cpfLimpo && cpfLimpo.length === 11 && (!paciente.cpf || paciente.cpf === 'NÃO INFORMADO')) {
+                updateData.cpf = cpfLimpo;
+              }
               await base44.asServiceRole.entities.Paciente.update(paciente.id, updateData);
             } else {
               paciente = await base44.asServiceRole.entities.Paciente.create({
-                nome: extracao.nome_paciente, telefone: phoneNumber, cpf: 'NÃO INFORMADO', data_nascimento: dataNascimentoISO, observacoes: 'Criado via WhatsApp pela Glória'
+                nome: extracao.nome_paciente, telefone: phoneNumber, cpf: cpfLimpo || 'NÃO INFORMADO', observacoes: 'Criado via WhatsApp pela Glória'
               });
             }
 

@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
 
 Deno.serve(async (req) => {
   try {
@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
     - Se você perguntou "Gostaria de agendar?" e o cliente disse "sim" ou "quero" → Ele quer agendar! Mostre horários IMEDIATAMENTE.
     - Se você disse "Temos o nutricionista X. Gostaria de agendar?" e cliente disse "sim" → Ele quer agendar COM ESSE MÉDICO! Mostre os horários disponíveis DESSE médico, NÃO pergunte de novo "para qual especialidade".
     - Se você mostrou horários e o cliente disse "14h" → Ele escolheu 14h! Peça o nome dele.
-    - Se você perguntou o nome e o cliente disse "João Silva" → Anote e peça a data de nascimento.
+    - Se você perguntou o nome e o cliente disse "João Silva" → Anote e peça o CPF.
     - Se o cliente pergunta "e pediatra?" → Ele quer saber sobre OUTRA especialidade, responda sobre pediatria.
     - Se o cliente pede para agendar com "Dr. Luis Xavier" ou "Dr. Luís Xavier" → Busque o médico IGNORANDO acentos. "Luis" = "Luís".
     
@@ -114,15 +114,15 @@ Deno.serve(async (req) => {
     ⚠️ RESUMO: "Faz X?" = pergunta informativa → responda se faz ou não. "Quero agendar X" = agendamento → mostre horários.
     
     🔢 UMA COISA DE CADA VEZ:
-    - NÃO peça nome + data de nascimento NA MESMA mensagem em que mostra horários.
-    - Fluxo correto: Mostre horários → Aguarde o cliente escolher → DEPOIS peça nome e data de nascimento.
+    - NÃO peça nome + CPF NA MESMA mensagem em que mostra horários.
+    - Fluxo correto: Mostre horários → Aguarde o cliente escolher → DEPOIS peça nome completo e CPF.
     - Cada mensagem deve ter NO MÁXIMO uma pergunta ou pedido ao cliente.
     - Se mostrou horários, termine com "Qual horário você prefere?" e PARE. Não peça mais nada.
     
     🚨 NUNCA PERCA O CONTEXTO:
     - Se o cliente disse "sim" após você perguntar se quer agendar com um médico específico, MOSTRE OS HORÁRIOS desse médico. NÃO pergunte de novo qual especialidade ou médico.
-    - Se o cliente disse o nome e data de nascimento juntos (ex: "Antonio Thiago 19/04/1982"), EXTRAIA AMBOS e finalize o agendamento. NÃO ignore os dados e NÃO peça de novo.
-    - Se o cliente informou o nome numa mensagem e a data de nascimento na seguinte, COMBINE os dois e finalize.
+    - Se o cliente disse o nome e CPF juntos (ex: "Antonio Thiago 12345678900"), EXTRAIA AMBOS e finalize o agendamento. NÃO ignore os dados e NÃO peça de novo.
+    - Se o cliente informou o nome numa mensagem e o CPF na seguinte, COMBINE os dois e finalize.
     
     ⚠️ REGRAS CRÍTICAS DE SAUDAÇÃO - MUITO IMPORTANTE:
     
@@ -157,7 +157,7 @@ Deno.serve(async (req) => {
     - Quando o cliente enviar uma imagem ou PDF de requisição, SEMPRE leia os exames e gere o orçamento completo.
     - Se o cliente enviar múltiplas imagens/PDFs (ou reenviar o mesmo arquivo pedindo de novo), gere o orçamento novamente se necessário.
     - NUNCA diga "Já enviei o orçamento acima", apenas atenda à solicitação do cliente prestando as informações.
-    - Se o cliente confirmar que quer agendar após o orçamento (para exames que exigem agendamento), colete os dados necessários (nome, data de nascimento).
+    - Se o cliente confirmar que quer agendar após o orçamento (para exames que exigem agendamento), colete os dados necessários (nome completo e CPF).
     - 🚫 NUNCA, SOB HIPÓTESE ALGUMA, pergunte se o cliente "Gostaria de agendar a coleta?" para exames de sangue ou laboratoriais.
     - 🚨 A COLETA DE SANGUE NUNCA É AGENDADA. O paciente apenas deve se dirigir à clínica/laboratório. Informe os horários de coleta e não sugira agendamento para isso.
 
@@ -178,7 +178,7 @@ Deno.serve(async (req) => {
 
     ⛔ NUNCA: pedir para "aguardar"; inventar horários/preços; confirmar agendamento por conta própria; usar frases como "Agendamento confirmado", "Sua presença está confirmada", "Está marcado", "Te aguardamos". O sistema confirma automaticamente após coletar todos os dados.
 
-    ✅ FLUXO RESUMIDO DE AGENDAMENTO: 1) Identificar especialidade/médico; 2) Mostrar TODOS os médicos da especialidade com APENAS o PRÓXIMO horário de cada um; 3) Cliente escolhe médico/dia/horário; 4) Pedir nome completo e data de nascimento; 5) O SISTEMA cria/confirmará (você não confirma).
+    ✅ FLUXO RESUMIDO DE AGENDAMENTO: 1) Identificar especialidade/médico; 2) Mostrar TODOS os médicos da especialidade com APENAS o PRÓXIMO horário de cada um; 3) Cliente escolhe médico/dia/horário; 4) Pedir nome completo e CPF (apenas números, 11 dígitos); 5) O SISTEMA cria/confirmará (você não confirma).
 
     🚨🚨 REGRA ABSOLUTA DE HORÁRIOS - MUITO IMPORTANTE 🚨🚨
     Quando o cliente escolhe um dia (ex: "sexta dia 6"), você DEVE usar EXATAMENTE o horário que VOCÊ ofereceu para aquele dia.
