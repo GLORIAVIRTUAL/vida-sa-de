@@ -1221,14 +1221,14 @@ Retorne JSON.`;
               infoProcedimentosExames += `• ${exame.nome}${exame.tipo ? ` (${exame.tipo})` : ''} - ${valoresStr}\n`;
             }
           }
-          infoProcedimentosExames += `\n🚨 REGRAS: Consulte lista acima ANTES de responder. NÃO invente preços. Para exames de sangue, a clínica faz coleta diária, não precisa agendar.`;
+          infoProcedimentosExames += `\n🚨🚨🚨 REGRAS ABSOLUTAS DE PREÇOS 🚨🚨🚨:\n1. COPIE os valores EXATOS com centavos da lista acima (ex: R$ 21,85 e NÃO R$ 22,00 ou R$ 40,00).\n2. Se o exame NÃO está na lista acima, diga "Consultar na recepção" - NUNCA invente um preço.\n3. NÃO arredonde valores. R$ 5,82 é R$ 5,82, NÃO R$ 6,00 nem R$ 15,00.\n4. Para TOTAIS, some os valores EXATOS com centavos. Confira a soma.\n5. "Colesterol total e frações" = Colesterol Total + Colesterol HDL + Colesterol LDL + Colesterol VLDL + Triglicerídios (some cada um).\n6. "Glicose em jejum" = GLICOSE (R$ que está na lista).\n7. "Hemoglobina glicada" = HEMOGLOBINA GLICOSILADA (AC1) na lista.\n8. Para exames de sangue, a clínica faz coleta diária, NÃO precisa agendar.\n9. Se o valor_convenio for 0 ou não existir, NÃO mostre preço de Cartão Mais Vida para esse exame - mostre apenas Particular.`;
         }
       } catch (e) {}
     }
 
     let instrucoesMidia = '';
-    if (mediaType === 'image') instrucoesMidia = `\n\n📷 IMAGEM RECEBIDA: O texto da imagem foi extraído via OCR e está no conteúdo da mensagem. LISTE APENAS exames do texto extraído. PROIBIDO inventar. Cruze com tabela de preços. Calcule TOTAL. Mostre Particular E Cartão Mais Vida.\n⚠️ REGRA DOPPLER: "Doppler" NÃO é um exame separado! É um complemento. Ex: "Ecocardiograma" + "Doppler" = UM ÚNICO exame "Ecocardiograma com Doppler". "Ecografia" + "Doppler" = "Ecografia com Doppler". NUNCA liste Doppler como item separado.`;
-    else if (mediaType === 'document') instrucoesMidia = `\n\n📄 DOCUMENTO: LISTE APENAS exames do texto extraído. NÃO invente. Nome ESPECÍFICO+preço INDIVIDUAL. Calcule TOTAL. Mostre Particular E Cartão Mais Vida.\n⚠️ REGRA DOPPLER: "Doppler" NÃO é um exame separado! É um complemento. Ex: "Ecocardiograma" + "Doppler" = UM ÚNICO exame "Ecocardiograma com Doppler". NUNCA liste Doppler como item separado.`;
+    if (mediaType === 'image') instrucoesMidia = `\n\n📷 IMAGEM RECEBIDA: O texto da imagem foi extraído via OCR e está no conteúdo da mensagem.\n🚨 INSTRUÇÕES OBRIGATÓRIAS PARA ORÇAMENTO:\n1. LISTE APENAS exames que aparecem na imagem.\n2. Para CADA exame, encontre o nome EXATO na BASE DE DADOS acima e copie o valor COM CENTAVOS.\n3. PROIBIDO arredondar ou inventar valores. Se na base diz R$ 21,85, escreva R$ 21,85.\n4. Se um exame não está na base, escreva "Consultar na recepção".\n5. Some os valores EXATOS para o total. Confira a soma.\n6. Mostre Particular. Só mostre Cartão Mais Vida se o exame tiver valor_convenio > 0.\n⚠️ REGRA DOPPLER: "Doppler" NÃO é um exame separado! É um complemento. Ex: "Ecocardiograma" + "Doppler" = UM ÚNICO exame "Ecocardiograma com Doppler". "Ecografia" + "Doppler" = "Ecografia com Doppler". NUNCA liste Doppler como item separado.`;
+    else if (mediaType === 'document') instrucoesMidia = `\n\n📄 DOCUMENTO RECEBIDO:\n🚨 INSTRUÇÕES OBRIGATÓRIAS PARA ORÇAMENTO:\n1. LISTE APENAS exames do documento.\n2. Para CADA exame, encontre o nome EXATO na BASE DE DADOS acima e copie o valor COM CENTAVOS.\n3. PROIBIDO arredondar ou inventar valores. Se na base diz R$ 5,82, escreva R$ 5,82.\n4. Se um exame não está na base, escreva "Consultar na recepção".\n5. Some os valores EXATOS para o total. Confira a soma.\n6. Mostre Particular. Só mostre Cartão Mais Vida se o exame tiver valor_convenio > 0.\n⚠️ REGRA DOPPLER: "Doppler" NÃO é um exame separado! É um complemento. Ex: "Ecocardiograma" + "Doppler" = UM ÚNICO exame "Ecocardiograma com Doppler". NUNCA liste Doppler como item separado.`;
     else if (mediaType === 'audio') instrucoesMidia = `\n\n🎤 ÁUDIO: OUÇA e RESPONDA ao conteúdo. Se não entender: "Poderia digitar?"`;
     else if (mediaType === 'video') instrucoesMidia = `\n\n🎥 VÍDEO: Analise e confirme recebimento.`;
     
@@ -1354,7 +1354,7 @@ ${listaMedicosAtivosParaPrompt}
         let userContent = [{ type: 'text', text: cleanMessageText || '(sem texto)' }];
         if (mediaUrl && mediaType === 'image') {
           userContent.push({type:'image_url',image_url:{url:mediaUrl,detail:'low'}});
-          userContent[0].text+=`\n\n🚨 ANALISE A IMAGEM ANEXADA. Leia TODO o texto visível (nomes de exames, médico, CRM, datas). LISTE APENAS os exames que aparecem na imagem. PROIBIDO inventar. Cruze com a tabela de preços. Calcule TOTAL Particular E Cartão Mais Vida. Se não conseguir ler, peça foto mais nítida.\n⚠️ "Doppler" NÃO é exame separado! É complemento (ex: "Ecocardiograma + Doppler" = 1 exame "Ecocardiograma com Doppler"). NUNCA liste Doppler como item separado.`;
+          userContent[0].text+=`\n\n🚨 ANALISE A IMAGEM ANEXADA. Leia TODO o texto visível (nomes de exames, médico, CRM, datas).\n🚨🚨 REGRAS OBRIGATÓRIAS DE ORÇAMENTO:\n1. LISTE APENAS exames que aparecem na imagem.\n2. Para CADA exame, busque o nome na BASE DE DADOS e copie o valor EXATO COM CENTAVOS.\n3. PROIBIDO arredondar: R$ 21,85 é R$ 21,85, NÃO R$ 22,00 ou R$ 40,00.\n4. Se não encontrar o exame na base, escreva "Consultar recepção".\n5. Some valores EXATOS para o total.\n6. Só mostre Cartão Mais Vida se valor_convenio > 0 para aquele exame.\n7. Se não conseguir ler a imagem, peça foto mais nítida.\n⚠️ "Doppler" NÃO é exame separado! É complemento (ex: "Ecocardiograma + Doppler" = 1 exame "Ecocardiograma com Doppler"). NUNCA liste Doppler como item separado.`;
         } else if (mediaUrl && mediaType === 'document') {
           try {
             const eR = await base44.asServiceRole.functions.invoke('extractPdfText', { fileUrl: mediaUrl });
@@ -1363,7 +1363,8 @@ ${listaMedicosAtivosParaPrompt}
           } catch(e){userContent[0].text+=`\n\n⚠️ PDF ilegível. Peça foto nítida.`;}
         }
         messages.push({ role: 'user', content: userContent });
-        const body = { model: modeloLLM, messages, max_tokens: 1000, temperature: config.temperatura || 0.7 };
+        const isOrcamento = mediaType === 'image' || mediaType === 'document' || /or[çc]amento|quanto custa|pre[çc]o|valor/i.test(messageText);
+        const body = { model: modeloLLM, messages, max_tokens: 1500, temperature: isOrcamento ? 0.2 : (config.temperatura || 0.7) };
         const openaiResp = await Promise.race([
           fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',

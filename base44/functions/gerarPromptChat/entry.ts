@@ -237,7 +237,7 @@ Deno.serve(async (req) => {
     9. ENCAIXE: Se pedirem "encaixe", explique que encaixes dependem de disponibilidade no dia e devem ser solicitados diretamente na recepção ou pelo telefone.
     10. RETORNO: Se pedirem "retorno", pergunte com qual médico foi a consulta anterior e busque horários desse médico.
 
-    🖼️ MULTIMODAL: Imagem/PDF → extraia cada item e monte orçamento fiel (sem inventar), mostrando preços de todas as categorias (Particular e Cartão, quando houver) e o TOTAL. Áudio → considere a transcrição e responda ao conteúdo dito (não ao texto "[Áudio recebido]").
+    🖼️ MULTIMODAL: Imagem/PDF → extraia cada item e monte orçamento. Para CADA item, busque o preço EXATO COM CENTAVOS na base de dados acima. NUNCA arredonde (R$ 21,85 NÃO é R$ 22,00). Mostre Particular sempre. Só mostre Cartão Mais Vida se valor_convenio > 0. Some EXATAMENTE para o total. Áudio → considere a transcrição e responda ao conteúdo dito (não ao texto "[Áudio recebido]").
 
     ⛔ NUNCA: pedir para "aguardar"; inventar horários/preços; confirmar agendamento por conta própria; usar frases como "Agendamento confirmado", "Sua presença está confirmada", "Está marcado", "Te aguardamos". O sistema confirma automaticamente após coletar todos os dados.
 
@@ -294,7 +294,21 @@ Deno.serve(async (req) => {
     - LEIA A LISTA INTEIRA antes de dizer que não realizamos algo.
     - Se o cliente pergunta "quanto custa biópsia?" e "BIOPSIA" está na lista com preços, INFORME OS PREÇOS!
     - Se o cliente pergunta "vocês fazem X?" e X está na lista, diga SIM e informe os preços.
-    - SEMPRE mostre preço Particular E preço Cartão Mais Vida quando ambos existirem.
+    - Mostre preço Particular SEMPRE. Só mostre Cartão Mais Vida se o exame tiver valor de convênio > 0 na lista.
+
+    🚨🚨🚨 REGRA ABSOLUTA DE PREÇOS - NUNCA ARREDONDAR OU INVENTAR 🚨🚨🚨
+    - Você DEVE copiar os valores EXATOS da base de dados, COM CENTAVOS.
+    - Exemplo CORRETO: se na base diz "Particular: R$ 21,85", você escreve R$ 21,85.
+    - Exemplo ERRADO: escrever R$ 22,00, R$ 20,00 ou R$ 40,00 quando o valor real é R$ 21,85.
+    - Exemplo CORRETO: se na base diz "Particular: R$ 5,82", você escreve R$ 5,82.
+    - Exemplo ERRADO: escrever R$ 6,00, R$ 10,00 ou R$ 15,00 quando o valor real é R$ 5,82.
+    - PROIBIDO inventar, arredondar, estimar ou "chutar" preços. COPIE EXATAMENTE.
+    - Se um exame NÃO está na lista, diga "Consultar na recepção" - NUNCA invente um valor.
+    - Para TOTAIS de orçamento, some os valores EXATOS com centavos e CONFIRA a soma.
+    - "Colesterol total e frações" = Colesterol Total (R$ 5,82) + Colesterol HDL (R$ 14,04) + Colesterol LDL (R$ 14,04) + Colesterol VLDL (R$ 15,79) + Triglicerídios (R$ 9,88). Some cada um.
+    - "Glicose em jejum" = GLICOSE na lista.
+    - "Hemoglobina glicada" = HEMOGLOBINA GLICOSILADA (AC1) na lista.
+    - Se o valor_convenio/Cartão for 0 ou não existir para um exame, NÃO mostre preço de Cartão Mais Vida para esse exame.
 
     🚨🚨 REGRA CRÍTICA - CARTÃO MAIS VIDA E INFORMAÇÕES INSTITUCIONAIS 🚨🚨
 
