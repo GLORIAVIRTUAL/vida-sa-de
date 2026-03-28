@@ -1439,17 +1439,11 @@ ${listaMedicosAtivosParaPrompt}
             const buscarExame = (nome) => {
               const nomeNorm = normalizarItem(nome);
               const alias = sinonimosExames[nomeNorm] || nomeNorm;
-              return _allExames.find(e => {
-                const base = normalizarItem(e.nome);
-                return base === alias || base.includes(alias) || alias.includes(base);
-              });
+              return _allExames.find(e => normalizarItem(e.nome) === alias) || null;
             };
             const buscarProcedimento = (nome) => {
               const nomeNorm = normalizarItem(nome);
-              return _allProcedimentos.find(p => {
-                const base = normalizarItem(p.nome);
-                return base === nomeNorm || base.includes(nomeNorm) || nomeNorm.includes(base);
-              });
+              return _allProcedimentos.find(p => normalizarItem(p.nome) === nomeNorm) || null;
             };
             const buscarPrecoProcedimento = (procedimentoId) => {
               const preco = _allTabelaPrecos.find(tp => tp.procedimento_id === procedimentoId && Number(tp.valor) > 0);
@@ -1469,16 +1463,18 @@ ${listaMedicosAtivosParaPrompt}
                 const subitens = gruposCompostos[grupo];
                 let subtotal = 0;
                 let detalhes = [];
-                let encontrou = false;
+                let faltandoSubitem = false;
                 for (const subitem of subitens) {
                   const exame = buscarExame(subitem);
                   if (exame && Number(exame.valor_particular) > 0) {
-                    encontrou = true;
                     subtotal += Number(exame.valor_particular);
                     detalhes.push(`   - ${exame.nome}: ${fmtPreco(exame.valor_particular)}`);
+                  } else {
+                    faltandoSubitem = true;
+                    naoEncontrados.push(subitem);
                   }
                 }
-                if (encontrou) {
+                if (!faltandoSubitem && subtotal > 0) {
                   linhas.push(`${contador}. *${itemOriginal}*: ${fmtPreco(subtotal)}`);
                   linhas.push(...detalhes);
                   total += subtotal;
@@ -1515,10 +1511,11 @@ ${listaMedicosAtivosParaPrompt}
               let orcamentoTexto = 'Aqui está o orçamento da solicitação enviada:\n\n';
               orcamentoTexto += linhas.join('\n');
               if (naoEncontrados.length > 0) {
-                orcamentoTexto += '\n\n⚠️ *Itens para consultar na recepção:*\n';
-                orcamentoTexto += naoEncontrados.map(item => `- ${item}`).join('\n');
+                const itensUnicosNaoEncontrados = [...new Set(naoEncontrados)];
+                orcamentoTexto += '\n\n⚠️ *Itens não encontrados no sistema:*\n';
+                orcamentoTexto += itensUnicosNaoEncontrados.map(item => `- ${item}`).join('\n');
               }
-              orcamentoTexto += `\n\n💰 *Total: ${fmtPreco(total)}*`;
+              orcamentoTexto += `\n\n💰 *Total apenas dos itens cadastrados: ${fmtPreco(total)}*`;
               orcamentoTexto += '\n\n🏥 Para exames laboratoriais, a coleta é feita de segunda a sexta, das 07:30 às 09:00, sem necessidade de agendamento.';
               orcamentoTexto += '\n\nSe quiser, também posso te orientar sobre os próximos passos. 😊';
 
