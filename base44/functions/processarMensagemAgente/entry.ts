@@ -1362,8 +1362,8 @@ ${listaMedicosAtivosParaPrompt}
         if (mediaUrl) cleanMessageText = cleanMessageText.replace(mediaUrl, '').trim();
         let userContent = [{ type: 'text', text: cleanMessageText || '(sem texto)' }];
         if (mediaUrl && mediaType === 'image') {
-          userContent.push({type:'image_url',image_url:{url:mediaUrl,detail:'low'}});
-          // Primeiro, extrair nomes dos exames da imagem via LLM separado
+          userContent.push({type:'image_url',image_url:{url:mediaUrl,detail:'high'}});
+          // Primeiro, extrair nomes dos exames da imagem via LLM com vision (detail:high + gpt-4o)
           let examesExtraidos = null;
           try {
             const openaiKeyExt = Deno.env.get('OPENAI_API_KEY');
@@ -1372,12 +1372,12 @@ ${listaMedicosAtivosParaPrompt}
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${openaiKeyExt}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                  model: 'gpt-4o-mini',
+                  model: 'gpt-4o',
                   messages: [{
                     role: 'user',
                     content: [
-                      { type: 'text', text: 'Liste APENAS os nomes dos exames médicos visíveis nesta imagem, um por linha. Não inclua preços, médicos, nem comentários. Se "Doppler" aparecer junto com outro exame (ex: Ecocardiograma), combine como um só ("Ecocardiograma com Doppler"). Retorne JSON: {"exames": ["nome1", "nome2", ...]}' },
-                      { type: 'image_url', image_url: { url: mediaUrl, detail: 'low' } }
+                      { type: 'text', text: 'Liste APENAS os nomes dos exames m\u00e9dicos vis\u00edveis nesta imagem, um por linha. N\u00e3o inclua pre\u00e7os, m\u00e9dicos, nem coment\u00e1rios. Se "Doppler" aparecer junto com outro exame (ex: Ecocardiograma), combine como um s\u00f3 ("Ecocardiograma com Doppler"). Retorne JSON: {"exames": ["nome1", "nome2", ...]}' },
+                      { type: 'image_url', image_url: { url: mediaUrl, detail: 'high' } }
                     ]
                   }],
                   max_tokens: 500,
