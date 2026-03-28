@@ -1363,23 +1363,32 @@ ${listaMedicosAtivosParaPrompt}
         if (mediaUrl) cleanMessageText = cleanMessageText.replace(mediaUrl, '').trim();
         let userContent = [{ type: 'text', text: cleanMessageText || '(sem texto)' }];
         if (mediaUrl && mediaType === 'image') {
-          userContent.push({type:'image_url',image_url:{url:mediaUrl,detail:'high'}});
-          // Primeiro, extrair nomes dos exames da imagem via LLM com vision (detail:high + gpt-4o)
-          let examesExtraidos = null;
+          userContent.push({ type: 'image_url', image_url: { url: mediaUrl, detail: 'high' } });
+
+          const normalizarItem = (texto) => (texto || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+          const fmtPreco = (v) => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`;
+          const sinonimosExames = {
+            'glicemia de jejum': 'glicose', 'glicose em jejum': 'glicose', 'glicemia': 'glicose',
+            'hemoglobina glicada': 'hemoglobina glicosilada ac1', 'hba1c': 'hemoglobina glicosilada ac1',
+            'ureia': 'ureia', 'urea': 'ureia', 'creatinina': 'creatinina', 'acido urico': 'acido urico',
+            'tgo': 'tgo ast', 'ast': 'tgo ast', 'tgp': 'tgp alt', 'alt': 'tgp alt',
+            'gama gt': 'gama  gt', 'ggt': 'gama  gt', 'vitamina d': '25 hidroxivitamina d',
+            'vitamina b12': 'vitamina b12', 'psa total': 'psa total', 'psa livre': 'psa livre',
+            'testosterona total': 'testosterona total', 'testosterona livre': 'testosterona livre',
+            'sodio': 'sodio', 'potassio': 'potassio', 'triglicerideos': 'trigliceridios'
+          };
+          const gruposCompostos = {
+            'colesterol total e fracoes': ['colesterol total', 'colesterol hdl', 'colesterol ldl', 'colesterol vldl', 'trigliceridios'],
+            'perfil lipidico': ['colesterol total', 'colesterol hdl', 'colesterol ldl', 'colesterol vldl', 'trigliceridios'],
+            'lipidograma': ['colesterol total', 'colesterol hdl', 'colesterol ldl', 'colesterol vldl', 'trigliceridios'],
+            'ast e alt': ['tgo ast', 'tgp alt'], 'tgo e tgp': ['tgo ast', 'tgp alt'],
+            'psa total e livre': ['psa total', 'psa livre'],
+            'testosterona total e livre': ['testosterona total', 'testosterona livre']
+          };
+
+          let itensExtraidos = [];
           try {
             const openaiKeyExt = Deno.env.get('OPENAI_API_KEY');
-            const visionPrompt = `Você é um especialista em leitura de requisições médicas. Analise esta imagem com EXTREMO CUIDADO.
-
-INSTRUÇÕES CRÍTICAS:
-1. Leia CADA LINHA da requisição, incluindo texto manuscrito, impresso, carimbos e marcações.
-2. Identifique TODOS os exames solicitados, mesmo que estejam escritos de forma abreviada ou com letra difícil.
-3. Inclua exames de sangue (hemograma, glicose, colesterol, TGO, TGP, TSH, T4, PSA, ácido úrico, uréia, creatinina, etc.), exames de urina (EAS, urocultura), exames de fezes, exames de imagem (ecografia, raio-x, ecocardiograma), e qualquer outro.
-4. Se "Doppler" aparecer junto com outro exame, combine como um só ("Ecocardiograma com Doppler").
-5. NÃO inclua: nomes de médicos, pacientes, datas, CRM, endereços, telefones ou observações gerais.
-6. Se houver abreviações comuns, expanda: "HMG" = "Hemograma", "GLI" = "Glicose", "CT" = "Colesterol Total", "TG" = "Triglicerídeos", "HB GLIC" = "Hemoglobina Glicada".
-7. LEIA A IMAGEM INTEIRA - não pare na primeira metade. Vá até o final do documento.
-
-Retorne JSON: {"exames": ["nome1", "nome2", ...]}`;
             const extResp = await Promise.race([
               fetch('https://api.openai.com/v1/chat/completions', {
                 method: 'POST',
@@ -1389,142 +1398,155 @@ Retorne JSON: {"exames": ["nome1", "nome2", ...]}`;
                   messages: [{
                     role: 'user',
                     content: [
-                      { type: 'text', text: visionPrompt },
+                      { type: 'text', text: 'Leia esta solicitação médica e extraia TODOS os exames e procedimentos pedidos, linha por linha, sem pular nenhum item. Ignore cabeçalho, dados do paciente, médico e datas. Retorne JSON no formato {"itens": ["item 1", "item 2"]}.' },
                       { type: 'image_url', image_url: { url: mediaUrl, detail: 'high' } }
                     ]
                   }],
-                  max_tokens: 1000,
+                  max_tokens: 1200,
                   temperature: 0,
                   response_format: { type: 'json_object' }
                 })
               }),
-              new Promise((_, r) => setTimeout(() => r(new Error('Timeout')), 20000))
+              new Promise((_, r) => setTimeout(() => r(new Error('Timeout extração imagem')), 25000))
             ]);
+
             if (extResp.ok) {
               const extData = await extResp.json();
-              try {
-                examesExtraidos = JSON.parse(extData.choices?.[0]?.message?.content || '{}').exames || null;
-                console.log('🔍 Exames extraídos da imagem:', examesExtraidos);
-              } catch(e) {}
+              const parsed = JSON.parse(extData.choices?.[0]?.message?.content || '{}');
+              itensExtraidos = Array.isArray(parsed.itens) ? parsed.itens : [];
+              console.log('🔍 Itens extraídos da imagem:', itensExtraidos);
             }
-          } catch(e) { console.log('⚠️ Erro ao extrair exames da imagem:', e.message); }
+          } catch (e) {
+            console.log('⚠️ Erro ao extrair itens da imagem:', e.message);
+          }
 
-          // Se conseguiu extrair, gerar orçamento DIRETAMENTE no código (sem depender do LLM para preços)
-          // SEMPRE recarregar exames frescos para garantir dados atualizados para orçamento
-          if (examesExtraidos && examesExtraidos.length > 0) {
-            console.log('📦 Carregando dados de exames para orçamento... _allExames pré-carregados:', _allExames?.length || 0);
-            if (!Array.isArray(_allExames) || _allExames.length === 0) {
-              try {
-                const [exReload, procReload, tpReload] = await Promise.all([
-                  base44.asServiceRole.entities.Exame.list('-created_date', 500).then(items => items.filter(e => e.status === 'Ativo')).catch(() => []),
-                  base44.asServiceRole.entities.Procedimento.list('-created_date', 500).then(items => items.filter(p => p.status === 'Ativo')).catch(() => []),
-                  base44.asServiceRole.entities.TabelaPreco.list('-created_date', 1000).catch(() => [])
-                ]);
-                if (Array.isArray(exReload) && exReload.length > 0) _allExames = exReload;
-                if (Array.isArray(procReload) && procReload.length > 0) _allProcedimentos = procReload;
-                if (Array.isArray(tpReload) && tpReload.length > 0) _allTabelaPrecos = tpReload;
-                console.log('✅ Dados recarregados: Exames=', _allExames.length, 'Procedimentos=', _allProcedimentos.length, 'TabelaPrecos=', _allTabelaPrecos.length);
-              } catch (e) { console.log('❌ Falha ao carregar dados:', e.message); }
+          if ((!Array.isArray(_allExames) || _allExames.length === 0) || (!Array.isArray(_allProcedimentos) || _allProcedimentos.length === 0)) {
+            try {
+              const [exReload, procReload, tpReload] = await Promise.all([
+                base44.asServiceRole.entities.Exame.list('-created_date', 500).then(items => items.filter(e => e.status === 'Ativo')).catch(() => []),
+                base44.asServiceRole.entities.Procedimento.list('-created_date', 500).then(items => items.filter(p => p.status === 'Ativo')).catch(() => []),
+                base44.asServiceRole.entities.TabelaPreco.list('-created_date', 1000).catch(() => [])
+              ]);
+              _allExames = Array.isArray(exReload) ? exReload : [];
+              _allProcedimentos = Array.isArray(procReload) ? procReload : [];
+              _allTabelaPrecos = Array.isArray(tpReload) ? tpReload : [];
+            } catch (e) {
+              console.log('❌ Falha ao recarregar base da imagem:', e.message);
             }
           }
-          console.log('📊 Budget check: examesExtraidos=', examesExtraidos?.length, '_allExames=', _allExames?.length);
-          if (examesExtraidos && examesExtraidos.length > 0 && Array.isArray(_allExames) && _allExames.length > 0) {
-            const normTxt = (t) => (t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9\s]/g, '').trim();
-            const SINONIMOS = {'hemograma':'hemograma completo','glicemia de jejum':'glicose','glicose em jejum':'glicose','glicemia':'glicose','glicose de jejum':'glicose','hemoglobina glicada':'hemoglobina glicosilada ac1','hba1c':'hemoglobina glicosilada ac1','vitamina d':'25 hidroxivitamina d','vit d':'25 hidroxivitamina d','25 oh vitamina d':'25 hidroxivitamina d','25hidroxivitamina d':'25 hidroxivitamina d','tgo':'tgo ast','tgp':'tgp alt','ast':'tgo ast','alt':'tgp alt','triglicerideos':'trigliceridios','triglicerides':'trigliceridios','trigliceridos':'trigliceridios','gama gt':'gama  gt','ggt':'gama  gt','gamaglutamiltransferase':'gama  gt','tsh':'tsh  h tireoestimulante','tsh ultrassensivel':'tsh  h tireoestimulante','acido urico':'acido urico','fosfatase alcalina':'fosfatase alcalina','ferro serico':'ferro serico','ferritina':'ferritina','calcio':'calcio','calcio serico':'calcio','magnesio':'magnesio','magnesio serico':'magnesio','eas':'eas  urina tipo i','urina tipo 1':'eas  urina tipo i','urina tipo i':'eas  urina tipo i','exame de urina':'eas  urina tipo i','parcial de urina':'eas  urina tipo i','beta hcg':'beta hcg','sodio':'sodio','potassio':'potassio','t4 livre':'t4 livre','t4l':'t4 livre','t3 livre':'t3','t3l':'t3','psa total':'psa total','psa livre':'psa livre','psa':'psa total','ureia':'ureia','urea':'ureia','creatinina':'creatinina','colesterol total':'colesterol total','colesterol hdl':'colesterol hdl','hdl':'colesterol hdl','colesterol ldl':'colesterol ldl','ldl':'colesterol ldl','colesterol vldl':'colesterol vldl','vldl':'colesterol vldl','bilirrubina total':'bilirrubinas totais e fracoes','bilirrubinas':'bilirrubinas totais e fracoes','bilirrubina total e fracoes':'bilirrubinas totais e fracoes','fosforo':'fosforo','fosforo serico':'fosforo','pcr':'proteina c reativa','proteina c reativa':'proteina c reativa','vhs':'vhs','velocidade de hemossedimentacao':'vhs','urocultura':'urocultura','cultura de urina':'urocultura','parasitologico de fezes':'parasitologico de fezes','epf':'parasitologico de fezes','exame parasitologico':'parasitologico de fezes','protoparasitologico':'parasitologico de fezes','eletrocardiograma':'eletrocardiograma','ecg':'eletrocardiograma','ecocardiograma':'ecocardiograma','ecocardiograma com doppler':'ecocardiograma com doppler','raio x de torax':'raio x de torax','rx de torax':'raio x de torax','rx torax':'raio x de torax','radiografia de torax':'raio x de torax'};
-            const COMPOSTOS = {'colesterol total e fracoes':['colesterol total','colesterol hdl','colesterol ldl','colesterol vldl','trigliceridios'],'perfil lipidico':['colesterol total','colesterol hdl','colesterol ldl','colesterol vldl','trigliceridios'],'lipidograma':['colesterol total','colesterol hdl','colesterol ldl','colesterol vldl','trigliceridios'],'ast e alt':['tgo ast','tgp alt'],'tgo e tgp':['tgo ast','tgp alt'],'transaminases':['tgo ast','tgp alt'],'hepatograma':['tgo ast','tgp alt','gama  gt','fosfatase alcalina'],'funcao renal':['ureia','creatinina'],'funcao hepatica':['tgo ast','tgp alt','gama  gt','fosfatase alcalina'],'pasta do figado':['tgo ast','tgp alt','gama  gt','fosfatase alcalina'],'provas de funcao hepatica':['tgo ast','tgp alt','gama  gt','fosfatase alcalina'],'bilirrubinas total e fracoes':['bilirrubinas totais e fracoes']};
-            const buscarExame = (nomeNorm) => {
-              let m = _allExames.find(e => normTxt(e.nome) === nomeNorm);
-              if (m) return m;
-              const sin = SINONIMOS[nomeNorm]; if (sin) { m = _allExames.find(e => normTxt(e.nome) === sin); if (m) return m; m = _allExames.find(e => normTxt(e.nome).includes(sin) || sin.includes(normTxt(e.nome))); if (m) return m; }
-              m = _allExames.find(e => normTxt(e.nome).includes(nomeNorm) || nomeNorm.includes(normTxt(e.nome))); if (m) return m;
-              const palavras = nomeNorm.split(/\s+/).filter(p => p.length > 3);
-              if (palavras.length > 0) { m = _allExames.find(e => { const eN = normTxt(e.nome); return palavras.every(p => eN.includes(p)); }); if (m) return m; }
-              return null;
+
+          if (itensExtraidos.length > 0 && (_allExames.length > 0 || _allProcedimentos.length > 0)) {
+            const buscarExame = (nome) => {
+              const nomeNorm = normalizarItem(nome);
+              const alias = sinonimosExames[nomeNorm] || nomeNorm;
+              return _allExames.find(e => {
+                const base = normalizarItem(e.nome);
+                return base === alias || base.includes(alias) || alias.includes(base);
+              });
             };
-            const fmtPreco = (v) => `R$ ${v.toFixed(2).replace('.', ',')}`;
+            const buscarProcedimento = (nome) => {
+              const nomeNorm = normalizarItem(nome);
+              return _allProcedimentos.find(p => {
+                const base = normalizarItem(p.nome);
+                return base === nomeNorm || base.includes(nomeNorm) || nomeNorm.includes(base);
+              });
+            };
+            const buscarPrecoProcedimento = (procedimentoId) => {
+              const preco = _allTabelaPrecos.find(tp => tp.procedimento_id === procedimentoId && Number(tp.valor) > 0);
+              return preco ? Number(preco.valor) : null;
+            };
 
-            // Gerar orçamento completo direto no código
-            let orcamentoLinhas = [];
-            let totalParticular = 0;
+            let linhas = [];
+            let total = 0;
             let naoEncontrados = [];
-            let itemNum = 0;
+            let contador = 1;
 
-            for (const nomeExame of examesExtraidos) {
-              const nomeNorm = normTxt(nomeExame);
-              const compostoKey = Object.keys(COMPOSTOS).find(k => nomeNorm === k || nomeNorm.includes(k) || k.includes(nomeNorm));
-              if (compostoKey) {
-                // Exame composto: expandir e somar sub-itens
-                const subExames = COMPOSTOS[compostoKey];
-                let subTotal = 0;
-                let subLinhas = [];
-                let todosOk = true;
-                for (const subNome of subExames) {
-                  const subM = buscarExame(subNome);
-                  if (subM && subM.valor_particular) {
-                    subLinhas.push(`   - ${subM.nome}: ${fmtPreco(subM.valor_particular)}`);
-                    subTotal += subM.valor_particular;
-                  } else { todosOk = false; }
-                }
-                if (todosOk && subTotal > 0) {
-                  itemNum++;
-                  orcamentoLinhas.push(`${itemNum}. *${nomeExame}*: ${fmtPreco(subTotal)}`);
-                  for (const sl of subLinhas) orcamentoLinhas.push(sl);
-                  totalParticular += subTotal;
-                } else {
-                  // fallback: listar sub-itens individualmente
-                  for (const subNome of subExames) {
-                    const subM = buscarExame(subNome);
-                    if (subM && subM.valor_particular) { itemNum++; orcamentoLinhas.push(`${itemNum}. *${subM.nome}*: ${fmtPreco(subM.valor_particular)}`); totalParticular += subM.valor_particular; }
-                    else { naoEncontrados.push(subNome); }
+            for (const itemOriginal of itensExtraidos) {
+              const itemNorm = normalizarItem(itemOriginal);
+              const grupo = Object.keys(gruposCompostos).find(k => itemNorm === k || itemNorm.includes(k) || k.includes(itemNorm));
+
+              if (grupo) {
+                const subitens = gruposCompostos[grupo];
+                let subtotal = 0;
+                let detalhes = [];
+                let encontrou = false;
+                for (const subitem of subitens) {
+                  const exame = buscarExame(subitem);
+                  if (exame && Number(exame.valor_particular) > 0) {
+                    encontrou = true;
+                    subtotal += Number(exame.valor_particular);
+                    detalhes.push(`   - ${exame.nome}: ${fmtPreco(exame.valor_particular)}`);
                   }
+                }
+                if (encontrou) {
+                  linhas.push(`${contador}. *${itemOriginal}*: ${fmtPreco(subtotal)}`);
+                  linhas.push(...detalhes);
+                  total += subtotal;
+                  contador++;
+                } else {
+                  naoEncontrados.push(itemOriginal);
                 }
                 continue;
               }
-              // Exame simples
-              let match = buscarExame(nomeNorm);
-              if (!match && Array.isArray(_allProcedimentos)) {
-                const procM = _allProcedimentos.find(p => { const pN = normTxt(p.nome); return pN === nomeNorm || pN.includes(nomeNorm) || nomeNorm.includes(pN); });
-                if (procM) { const precoP = _allTabelaPrecos.find(tp => tp.procedimento_id === procM.id && tp.valor > 0); if (precoP) { itemNum++; orcamentoLinhas.push(`${itemNum}. *${nomeExame}*: ${fmtPreco(precoP.valor)}`); totalParticular += precoP.valor; continue; } }
+
+              const exame = buscarExame(itemOriginal);
+              if (exame && Number(exame.valor_particular) > 0) {
+                linhas.push(`${contador}. *${exame.nome}*: ${fmtPreco(exame.valor_particular)}`);
+                total += Number(exame.valor_particular);
+                contador++;
+                continue;
               }
-              if (match && match.valor_particular) {
-                itemNum++;
-                orcamentoLinhas.push(`${itemNum}. *${nomeExame}*: ${fmtPreco(match.valor_particular)}`);
-                totalParticular += match.valor_particular;
-              } else {
-                naoEncontrados.push(nomeExame);
+
+              const procedimento = buscarProcedimento(itemOriginal);
+              if (procedimento) {
+                const precoProcedimento = buscarPrecoProcedimento(procedimento.id);
+                if (precoProcedimento && precoProcedimento > 0) {
+                  linhas.push(`${contador}. *${procedimento.nome}*: ${fmtPreco(precoProcedimento)}`);
+                  total += precoProcedimento;
+                  contador++;
+                  continue;
+                }
               }
+
+              naoEncontrados.push(itemOriginal);
             }
 
-            // Montar texto completo do orçamento
-            let orcamentoTexto = 'Aqui está o orçamento dos exames da requisição:\n\n';
-            orcamentoTexto += orcamentoLinhas.join('\n') + '\n';
-            if (naoEncontrados.length > 0) {
-              orcamentoTexto += '\n⚠️ *Consultar na recepção:*\n';
-              for (const ne of naoEncontrados) orcamentoTexto += `- ${ne}\n`;
-            }
-            orcamentoTexto += `\n💰 *Total: ${fmtPreco(totalParticular)}*`;
-            orcamentoTexto += '\n\n🏥 A coleta de sangue é feita de segunda a sexta, das 07:30 às 09:00. Não é necessário agendar.';
-            orcamentoTexto += '\n\nSe precisar de mais alguma coisa, estou à disposição! 😊';
-
-            console.log('📊 Orçamento gerado diretamente (sem LLM):', orcamentoTexto.substring(0, 300));
-
-            // BYPASS do LLM: retornar orçamento direto como resposta
-            // Salvar no histórico e retornar imediatamente
-            try {
-              const cOrc = await buscarContatoPorTelefone(phoneNumber);
-              const tsOrc = new Date().toISOString();
-              if (cOrc) {
-                const hOrc = cOrc.historico_mensagens || [];
-                const userMsgExists = messageId && hOrc.some(m => m.messageId === messageId && m.role === 'user');
-                if (!userMsgExists) hOrc.push({ role: 'user', content: mediaUrl ? `${messageText}\n${mediaUrl}` : messageText, timestamp: tsOrc, messageId, mediaType, mediaUrl });
-                hOrc.push({ role: 'assistant', content: orcamentoTexto, timestamp: tsOrc });
-                await base44.asServiceRole.entities.Contato.update(cOrc.id, { ultima_mensagem: messageText, ultima_resposta: orcamentoTexto, historico_mensagens: hOrc.slice(-50), ultima_interacao: tsOrc, total_mensagens: (cOrc.total_mensagens || 0) + 2, processando_ia_lock: null });
+            if (linhas.length > 0) {
+              let orcamentoTexto = 'Aqui está o orçamento da solicitação enviada:\n\n';
+              orcamentoTexto += linhas.join('\n');
+              if (naoEncontrados.length > 0) {
+                orcamentoTexto += '\n\n⚠️ *Itens para consultar na recepção:*\n';
+                orcamentoTexto += naoEncontrados.map(item => `- ${item}`).join('\n');
               }
-            } catch (e) {}
-            await liberarLock(base44, phoneNumber, lockName);
-            return Response.json({ success: true, resposta: orcamentoTexto, conversationId: null, orcamento_direto: true });
+              orcamentoTexto += `\n\n💰 *Total: ${fmtPreco(total)}*`;
+              orcamentoTexto += '\n\n🏥 Para exames laboratoriais, a coleta é feita de segunda a sexta, das 07:30 às 09:00, sem necessidade de agendamento.';
+              orcamentoTexto += '\n\nSe quiser, também posso te orientar sobre os próximos passos. 😊';
+
+              try {
+                const contato = await buscarContatoPorTelefone(phoneNumber);
+                const ts = new Date().toISOString();
+                if (contato) {
+                  const historico = contato.historico_mensagens || [];
+                  const userMsgExists = messageId && historico.some(m => m.messageId === messageId && m.role === 'user');
+                  if (!userMsgExists) historico.push({ role: 'user', content: mediaUrl ? `${messageText}\n${mediaUrl}` : messageText, timestamp: ts, messageId, mediaType, mediaUrl });
+                  historico.push({ role: 'assistant', content: orcamentoTexto, timestamp: ts });
+                  await base44.asServiceRole.entities.Contato.update(contato.id, {
+                    ultima_mensagem: messageText,
+                    ultima_resposta: orcamentoTexto,
+                    historico_mensagens: historico.slice(-50),
+                    ultima_interacao: ts,
+                    total_mensagens: (contato.total_mensagens || 0) + 2,
+                    processando_ia_lock: null
+                  });
+                }
+              } catch (e) {}
+
+              await liberarLock(base44, phoneNumber, lockName);
+              return Response.json({ success: true, resposta: orcamentoTexto, conversationId: null, orcamento_direto: true });
+            }
           }
-          userContent[0].text+=`\n\n🚨 ANALISE A IMAGEM e responda ao cliente. NÃO gere orçamento (o sistema já trata imagens de requisição). Se a imagem não for uma requisição médica, responda normalmente.`;
+
+          userContent[0].text += `\n\n🚨 A imagem não gerou orçamento automático. Responda normalmente apenas se NÃO for uma solicitação médica.`;
         } else if (mediaUrl && mediaType === 'document') {
           try {
             const eR = await base44.asServiceRole.functions.invoke('extractPdfText', { fileUrl: mediaUrl });
