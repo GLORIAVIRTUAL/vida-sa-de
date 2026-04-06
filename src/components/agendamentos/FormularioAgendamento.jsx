@@ -417,7 +417,7 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
 
         try {
           const pk = Object.keys(localStorage).find(k => k.startsWith('agendamento_preconfig_'));
-          if (pk) { const pc = JSON.parse(localStorage.getItem(pk) || '{}'); if (pc.data_agendamento) initialFormData.data_agendamento = pc.data_agendamento; if (pc.tipo_servico) initialFormData.tipo_servico = pc.tipo_servico; if (pc.medico_id && medicos.find(m => m.id === pc.medico_id)) initialFormData.medico_id = pc.medico_id; }
+          if (pk) { const pc = JSON.parse(localStorage.getItem(pk) || '{}'); if (pc.data_agendamento) initialFormData.data_agendamento = pc.data_agendamento; if (pc.tipo_servico) initialFormData.tipo_servico = pc.tipo_servico; if (pc.medico_id && medicos.find(m => m.id === pc.medico_id) && pc.tipo_servico !== 'Exame') initialFormData.medico_id = pc.medico_id; }
         } catch (e) {}
 
         // Handle dadosIniciais from navigation (e.g., from Chat or Dashboard)
@@ -1080,6 +1080,8 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
       const dados = { paciente_id: formData.paciente_id, paciente_nome: pacienteSelecionado?.nome || '', data_agendamento: formData.data_agendamento, horario: formData.horario, tipo_servico: formData.tipo_servico, categoria_preco_id: formData.categoria_preco_id, valor_total: parseFloat(formData.valor_total) || 0, desconto_manual: parseFloat(formData.desconto_manual) || 0, acrescimo_manual: parseFloat(formData.acrescimo_manual) || 0, valor_final: parseFloat(formData.valor_final) || parseFloat(formData.valor_total) || 0, status: formData.status || 'Agendado', forma_pagamento: formData.forma_pagamento || 'Dinheiro', is_encaixe: formData.is_encaixe || false, is_reserva: !formData.paciente_id, is_recorrente: formData.is_recorrente || false, lembrete_equipe: formData.lembrete_equipe || false, lembrete_dias_antes: parseInt(formData.lembrete_dias_antes) || 0 };
       if (formData.duracao_minutos) dados.duracao_minutos = parseInt(formData.duracao_minutos);
       const _dn=formData.observacoes?.match(/Dentista:\s*(.+?)(\n|$)/)?.[1]?.trim(),_dm=_dn&&medicos.find(m=>m.nome===_dn);dados.medico_id=_dm?_dm.id:(formData.medico_id||null);
+      // Para Exames, nunca forçar médico — medico_id deve ser null
+      if (formData.tipo_servico === 'Exame') { dados.medico_id = null; }
       if (formData.observacoes) dados.observacoes = formData.observacoes;
       if (formData.procedimento_id) dados.procedimento_id = formData.procedimento_id;
       if (formData.exames_ids?.length > 0) dados.exames_ids = formData.exames_ids;
