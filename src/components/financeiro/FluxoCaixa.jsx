@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +22,7 @@ import { Lancamento } from "@/entities/all";
 import { excluirLancamentosDeOSCanceladas } from "./financeiroUtils";
 
 import FormularioLancamento from "./FormularioLancamento";
+import SenhaRetroativaDialog, { isDiaFechado, podeAlterarDiaFechado } from "./SenhaRetroativaDialog";
 
 const tipoColors = {
   "Entrada": "bg-green-100 text-green-800 border-green-200",
@@ -35,6 +37,20 @@ export default function FluxoCaixa({ lancamentos, ordensServico, pacientes, onUp
   const [erroSenha, setErroSenha] = useState('');
   const [lancamentoParaExcluir, setLancamentoParaExcluir] = useState(null);
   const [excluindo, setExcluindo] = useState(false);
+  
+  // Estado do usuário atual
+  const [currentUserEmail, setCurrentUserEmail] = useState('');
+  
+  // Estado para controle de autorização retroativa
+  const [mostrarSenhaRetroativa, setMostrarSenhaRetroativa] = useState(false);
+  const [acaoRetroativa, setAcaoRetroativa] = useState(null); // 'criar' | 'excluir'
+  const [lancamentoExcluirPendente, setLancamentoExcluirPendente] = useState(null);
+  const [tipoLancamentoRetroativo, setTipoLancamentoRetroativo] = useState(null);
+  const [autorizado, setAutorizado] = useState(false); // Se já autorizou na sessão atual
+  
+  useEffect(() => {
+    base44.auth.me().then(u => setCurrentUserEmail(u?.email || '')).catch(() => {});
+  }, []);
   
   // Senha para desbloquear valores (pode ser alterada aqui)
   const SENHA_VALORES = '1234';
@@ -85,7 +101,7 @@ export default function FluxoCaixa({ lancamentos, ordensServico, pacientes, onUp
   const [formaPagamentoFiltro, setFormaPagamentoFiltro] = useState("todas");
 
   const abrirForm = (tipo) => {
-    setTipoLancamento(tipo);
+    setTipoLancamentoRetroativo(tipo);
     setMostrarForm(true);
   };
 
@@ -99,6 +115,27 @@ export default function FluxoCaixa({ lancamentos, ordensServico, pacientes, onUp
       setErroSenha('Senha incorreta. Tente novamente.');
       setSenhaDigitada('');
     }
+  };
+
+  // Tenta excluir, mas verifica se o dia está fechado
+  const tentarExcluir = (lancamento) => {
+    if (isDiaFechado(lancamento.data_lancamento)) {
+      // Dia fechado - verificar se é o email autorizado
+      if (!podeAlterarDiaFechado(currentUserEmail)) {
+        // Usuário não autorizado - bloquear
+        alert('⛔ Apenas o responsável financeiro (cristianogoldani@yahoo.com.br) pode excluir lançamentos de dias anteriores.');
+        return;
+      }
+      // É o email autorizado, pedir senha
+      if (!autorizado) {
+        setLancamentoExcluirPendente(lancamento);
+        setAcaoRetroativa('excluir');
+        setMostrarSenhaRetroativa(true);
+        return;
+      }
+    }
+    // Dia atual ou já autorizado - abrir confirmação normal
+    setLancamentoParaExcluir(lancamento);
   };
 
   const handleExcluirLancamento = async () => {
@@ -490,7 +527,7 @@ export default function FluxoCaixa({ lancamentos, ordensServico, pacientes, onUp
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
-                          onClick={() => setLancamentoParaExcluir(lancamento)}
+                          onClick={() => tentarExcluir(lancamento)}
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
@@ -505,19 +542,52 @@ export default function FluxoCaixa({ lancamentos, ordensServico, pacientes, onUp
 
       {mostrarForm && (
         <FormularioLancamento
-          tipoInicial={tipoLancamento}
+          tipoInicial={tipoLancamentoRetroativo || tipoLancamento}
           onSalvar={async (dados) => {
+            // Verificar se está tentando lançar em dia fechado
+            if (isDiaFechado(dados.data_lancamento)) {
+              if (!podeAlterarDiaFechado(currentUserEmail)) {
+                alert('⛔ Apenas o responsável financeiro (cristianogoldani@yahoo.com.br) pode lançar em dias anteriores.');
+                return;
+              }
+              if (!autorizado) {
+                setAcaoRetroativa('criar');
+                setMostrarSenhaRetroativa(true);
+                return;
+              }
+            }
             try {
               await Lancamento.create(dados);
               setMostrarForm(false);
+              setTipoLancamentoRetroativo(null);
               onUpdate();
             } catch (error) {
               console.error("Erro ao salvar lançamento:", error);
             }
           }}
-          onCancelar={() => setMostrarForm(false)}
+          onCancelar={() => { setMostrarForm(false); setTipoLancamentoRetroativo(null); }}
         />
       )}
+
+      {/* Dialog de senha retroativa */}
+      <SenhaRetroativaDialog
+        open={mostrarSenhaRetroativa}
+        onClose={() => {
+          setMostrarSenhaRetroativa(false);
+          setAcaoRetroativa(null);
+          setLancamentoExcluirPendente(null);
+        }}
+        acao={acaoRetroativa}
+        onAutorizado={() => {
+          setAutorizado(true);
+          setMostrarSenhaRetroativa(false);
+          if (acaoRetroativa === 'excluir' && lancamentoExcluirPendente) {
+            setLancamentoParaExcluir(lancamentoExcluirPendente);
+            setLancamentoExcluirPendente(null);
+          }
+          setAcaoRetroativa(null);
+        }}
+      />
 
       {/* Dialog para confirmar exclusão */}
       <Dialog open={!!lancamentoParaExcluir} onOpenChange={() => setLancamentoParaExcluir(null)}>

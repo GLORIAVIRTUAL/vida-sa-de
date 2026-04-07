@@ -1,18 +1,26 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { X, Save } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { X, Save, AlertCircle } from "lucide-react";
 import { Lancamento } from "@/entities/all";
+import { base44 } from '@/api/base44Client';
+import { isDiaFechado, podeAlterarDiaFechado } from './SenhaRetroativaDialog';
 
 const categoriasEntrada = ["Receita Consultas", "Receita Procedimentos", "Receita Exames", "Outros"];
 const categoriasSaida = ["Repasse Médico", "Repasse Laboratório", "Aluguel", "Água/Luz", "Material Médico", "Equipamentos", "Marketing", "Salários", "Impostos", "Outros"];
 
 export default function FormularioLancamento({ onSalvar, onCancelar, tipoInicial = "Entrada" }) {
+  const [currentUserEmail, setCurrentUserEmail] = useState('');
+  
+  useEffect(() => {
+    base44.auth.me().then(u => setCurrentUserEmail(u?.email || '')).catch(() => {});
+  }, []);
+
   const [formData, setFormData] = useState({
     tipo: tipoInicial,
     categoria: tipoInicial === "Entrada" ? categoriasEntrada[0] : categoriasSaida[0],
@@ -22,6 +30,9 @@ export default function FormularioLancamento({ onSalvar, onCancelar, tipoInicial
     forma_pagamento: "Dinheiro",
     observacoes: ""
   });
+
+  // Verifica se data selecionada é de dia fechado e usuário não é autorizado
+  const dataPassadaBloqueada = isDiaFechado(formData.data_lancamento) && !podeAlterarDiaFechado(currentUserEmail);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -152,14 +163,24 @@ export default function FormularioLancamento({ onSalvar, onCancelar, tipoInicial
             </div>
           </CardContent>
           
-          <CardFooter className="border-t p-6 flex justify-end gap-3">
-            <Button type="button" variant="outline" onClick={onCancelar}>
-              Cancelar
-            </Button>
-            <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
-              <Save className="w-4 h-4 mr-2" />
-              Salvar Lançamento
-            </Button>
+          <CardFooter className="border-t p-6 flex flex-col gap-3">
+            {dataPassadaBloqueada && (
+              <Alert variant="destructive" className="w-full">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  ⛔ Você não pode lançar em dias anteriores. Apenas o responsável financeiro pode alterar dados de dias fechados.
+                </AlertDescription>
+              </Alert>
+            )}
+            <div className="flex justify-end gap-3 w-full">
+              <Button type="button" variant="outline" onClick={onCancelar}>
+                Cancelar
+              </Button>
+              <Button type="submit" className="bg-blue-600 hover:bg-blue-700" disabled={dataPassadaBloqueada}>
+                <Save className="w-4 h-4 mr-2" />
+                Salvar Lançamento
+              </Button>
+            </div>
           </CardFooter>
         </form>
       </Card>
