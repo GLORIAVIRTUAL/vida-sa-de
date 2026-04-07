@@ -481,7 +481,13 @@ Deno.serve(async (req) => {
 
     const contextoCancel = !cancelamentoJaConcluidoNoHistorico && /cancelar|desmarcar|remarcar|qual.*cancelar|qual.*remarcar|gostaria de cancelar|gostaria de remarcar|qual\s*consulta.*deseja|deseja\s*cancelar|deseja\s*remarcar/i.test(historicoConversa || '');
     
-    if (contextoCancel && historicoConversa) {
+    // No fluxo de remarcação, se o cliente está perguntando sobre vagas/disponibilidades, NÃO entrar no cancelamento
+    const clientePerguntandoVagas = /que dia|quando|tem vaga|tem hor[áa]rio|dispon[íi]vel|pr[óo]ximo|qual.*dia|qual.*hor[áa]rio/i.test(messageText);
+    // Se o assistente já informou sobre o agendamento e perguntou novo dia/horário, o cliente está no fluxo de remarcar (buscar vagas)
+    const assistenteJaPerguntouNovoHorario = /qual novo dia|novo dia e hor[áa]rio|quando.*gostaria de agendar|para quando.*remarcar/i.test(ultimaMsgAssistenteFull || (historicoMensagensRaw.filter(m=>m.role==='assistant').slice(-1)[0]?.content || ''));
+    const deveSkipCancelamentoParaBuscarVagas = clientePerguntandoVagas || assistenteJaPerguntouNovoHorario;
+    
+    if (contextoCancel && historicoConversa && !deveSkipCancelamentoParaBuscarVagas) {
       const hoje = new Date().toISOString().split('T')[0];
       const telNorm = phoneNumber.replace(/\D/g, '');
       const variantes = [phoneNumber, telNorm];
