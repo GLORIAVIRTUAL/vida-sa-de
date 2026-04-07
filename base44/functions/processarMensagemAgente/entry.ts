@@ -481,12 +481,13 @@ Deno.serve(async (req) => {
 
     const contextoCancel = !cancelamentoJaConcluidoNoHistorico && /cancelar|desmarcar|remarcar|qual.*cancelar|qual.*remarcar|gostaria de cancelar|gostaria de remarcar|qual\s*consulta.*deseja|deseja\s*cancelar|deseja\s*remarcar/i.test(historicoConversa || '');
     
-    // No fluxo de remarcação, se o cliente está perguntando sobre vagas/disponibilidades, NÃO entrar no cancelamento
+    // No fluxo de remarcação, se o cliente está perguntando sobre vagas/disponibilidades OU escolhendo a nova data/horário, NÃO entrar no cancelamento
     const clientePerguntandoVagas = /que dia|quando|tem vaga|tem hor[áa]rio|dispon[íi]vel|pr[óo]ximo|qual.*dia|qual.*hor[áa]rio/i.test(messageText);
+    const clienteEscolhendoNovoHorarioRemarcacao = /\bhoje\b|\bamanh[ãa]\b|\bdia\s*\d{1,2}(?:\/\d{1,2})?\b|\d{1,2}\/\d{1,2}(?:\/\d{2,4})?|\d{1,2}:\d{2}|\d{1,2}h(?:\d{2})?|segunda|ter[çc]a|quarta|quinta|sexta|s[áa]bado|domingo/i.test(messageText);
     // Se o assistente já informou sobre o agendamento e perguntou novo dia/horário, o cliente está no fluxo de remarcar (buscar vagas)
     const _ultimaMsgAssistenteParaCheck = historicoMensagensRaw.filter(m=>m.role==='assistant').slice(-1)[0]?.content || '';
-    const assistenteJaPerguntouNovoHorario = /qual novo dia|novo dia e hor[áa]rio|quando.*gostaria de agendar|para quando.*remarcar/i.test(_ultimaMsgAssistenteParaCheck);
-    const deveSkipCancelamentoParaBuscarVagas = clientePerguntandoVagas || assistenteJaPerguntouNovoHorario;
+    const assistenteJaPerguntouNovoHorario = /qual novo dia|novo dia e hor[áa]rio|quando.*gostaria de agendar|para quando.*remarcar|qual desses hor[áa]rios fica bom|qual desses hor[áa]rios|qual hor[áa]rio fica bom/i.test(_ultimaMsgAssistenteParaCheck);
+    const deveSkipCancelamentoParaBuscarVagas = clientePerguntandoVagas || (assistenteJaPerguntouNovoHorario && clienteEscolhendoNovoHorarioRemarcacao) || (/remarcar|nova data|novo hor[áa]rio/.test(historicoConversa || '') && clienteEscolhendoNovoHorarioRemarcacao);
     
     if (contextoCancel && historicoConversa && !deveSkipCancelamentoParaBuscarVagas) {
       const hoje = new Date().toISOString().split('T')[0];
