@@ -1016,7 +1016,44 @@ Retorne JSON.`;
           if (_extR.ok) { const _ed=await _extR.json(); try { extracao=JSON.parse(_ed.choices?.[0]?.message?.content||'{}'); } catch(e){} }
         } catch(_ee){}
 
-        if(extracao.horario&&extracao.data_agendamento&&historicoConversa&&!historicoConversa.includes(extracao.horario)){const dO=new Date(extracao.data_agendamento+'T12:00:00');const dN=String(dO.getDate()).padStart(2,'0');const mN=String(dO.getMonth()+1).padStart(2,'0');const hA=historicoMensagensRaw.filter(m=>m.role==='assistant').map(m=>m.content).join('\n');const rx=new RegExp(`(?:${dN}[/.]${mN}|dia\\s*${parseInt(dN)})[^\\n]*(\\d{2}:\\d{2})`,'gi');const mt=[...(hA.matchAll(rx))];if(mt.length>0){extracao.horario=mt[0][1];}}
+        // CORREÇÃO: Se a data extraída não bate com o dia da semana mencionado no histórico, corrigir
+        if (extracao.data_agendamento) {
+          const diasSemanaRegex = /segunda|ter[çc]a|quarta|quinta|sexta|s[áa]bado|domingo/gi;
+          const diasSemanaMap = {'segunda':1,'terca':2,'terça':2,'quarta':3,'quinta':4,'sexta':5,'sabado':6,'sábado':6,'domingo':0};
+          // Verificar se no histórico/mensagem há menção a dia da semana
+          const textoCompleto = (messageText + ' ' + (ultimaMsgAssistenteFull || '')).toLowerCase();
+          const matchDiaSemana = textoCompleto.match(diasSemanaRegex);
+          if (matchDiaSemana) {
+            const diaSemanaDesejado = diasSemanaMap[matchDiaSemana[0].toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')];
+            if (diaSemanaDesejado !== undefined) {
+              const dataExtraida = new Date(extracao.data_agendamento + 'T12:00:00');
+              const diaSemanaExtraido = dataExtraida.getUTCDay();
+              if (diaSemanaExtraido !== diaSemanaDesejado) {
+                // Calcular a próxima ocorrência do dia da semana desejado
+                const hoje = new Date();
+                const hojeLocal = new Date(hoje.toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }) + 'T12:00:00');
+                let diff = diaSemanaDesejado - hojeLocal.getUTCDay();
+                if (diff <= 0) diff += 7;
+                const novaData = new Date(hojeLocal);
+                novaData.setUTCDate(novaData.getUTCDate() + diff);
+                // Se o cliente mencionou "dia X", verificar se bate
+                const diaNumMatch = messageText.match(/dia\s*(\d{1,2})/i);
+                if (diaNumMatch) {
+                  const diaNum = parseInt(diaNumMatch[1]);
+                  if (novaData.getUTCDate() === diaNum) {
+                    extracao.data_agendamento = novaData.toISOString().split('T')[0];
+                    console.log(`📅 Data corrigida para ${extracao.data_agendamento} (${matchDiaSemana[0]} dia ${diaNum})`);
+                  }
+                } else {
+                  extracao.data_agendamento = novaData.toISOString().split('T')[0];
+                  console.log(`📅 Data corrigida para ${extracao.data_agendamento} (próxima ${matchDiaSemana[0]})`);
+                }
+              }
+            }
+          }
+        }
+
+        if(extracao.horario&&extracao.data_agendamento&&historicoConversa&&!historicoConversa.includes(extracao.horario)){const dO=new Date(extracao.data_agendamento+'T12:00:00');const dN=String(dO.getUTCDate()).padStart(2,'0');const mN=String(dO.getUTCMonth()+1).padStart(2,'0');const hA=historicoMensagensRaw.filter(m=>m.role==='assistant').map(m=>m.content).join('\n');const rx=new RegExp(`(?:${dN}[/.]${mN}|dia\\s*${parseInt(dN)})[^\\n]*(\\d{2}:\\d{2})`,'gi');const mt=[...(hA.matchAll(rx))];if(mt.length>0){extracao.horario=mt[0][1];}}
             if (!extracao.nome_paciente) dadosFaltantes.push('nome completo');
             if (!extracao.cpf) dadosFaltantes.push('CPF');
 
