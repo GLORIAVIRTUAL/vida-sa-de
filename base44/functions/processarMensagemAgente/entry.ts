@@ -572,6 +572,7 @@ Deno.serve(async (req) => {
         const { pacientes, agendamentos } = await listarAgendamentosFuturosPorTelefone(phoneNumber);
         if (agendamentos.length === 0) {
           const respostaSemAgendamento = 'Não encontrei consultas futuras cadastradas para este número de telefone.';
+          try{const cs=await base44.asServiceRole.entities.Contato.filter({telefone:phoneNumber});if(cs.length>0){const h=cs[0].historico_mensagens||[];const ts=new Date().toISOString();h.push({role:'user',content:messageText,timestamp:ts},{role:'assistant',content:respostaSemAgendamento,timestamp:ts});await base44.asServiceRole.entities.Contato.update(cs[0].id,{historico_mensagens:h.slice(-50),ultima_interacao:ts});}}catch(e){}
           await liberarLock(base44, phoneNumber, lockName);
           return Response.json({ success: true, resposta: respostaSemAgendamento, remarcacao_executada: false });
         }
@@ -581,7 +582,7 @@ Deno.serve(async (req) => {
 
         const ultimaAssistente = historicoMensagensRaw.filter(m => m.role === 'assistant').slice(-1)[0]?.content || '';
         const aguardandoAceiteNovaData = /Você aceita remarcar para/i.test(ultimaAssistente);
-        const clienteAceitouNovaData = /^(sim|s|aceito|pode ser|ok|certo|confirmo|fechado|isso|perfeito)$/i.test((messageText || '').trim());
+        const clienteAceitouNovaData = /^(sim|s|aceito|pode ser|ok|certo|confirmo|fechado|isso|perfeito|essa|esse|essa\s*mesma)$/i.test((messageText || '').trim());
 
         if (aguardandoAceiteNovaData && clienteAceitouNovaData) {
           const matchConfirmacao = ultimaAssistente.match(/\[REMARCACAO\|agendamento:([^|]+)\|medico:([^|]+)\|data:(\d{4}-\d{2}-\d{2})\|horario:(\d{2}:\d{2})\|paciente:([^\]]+)\]/);
@@ -589,13 +590,16 @@ Deno.serve(async (req) => {
             const [, agendamentoOriginalId, medicoId, novaData, novoHorario, pacienteId] = matchConfirmacao;
             const agOriginal = agendamentos.find(a => a.id === agendamentoOriginalId);
             if (!agOriginal) {
+              try{const cs=await base44.asServiceRole.entities.Contato.filter({telefone:phoneNumber});if(cs.length>0){const h=cs[0].historico_mensagens||[];const ts=new Date().toISOString();h.push({role:'user',content:messageText,timestamp:ts},{role:'assistant',content:listaTexto,timestamp:ts});await base44.asServiceRole.entities.Contato.update(cs[0].id,{historico_mensagens:h.slice(-50),ultima_interacao:ts});}}catch(e){}
               await liberarLock(base44, phoneNumber, lockName);
               return Response.json({ success: true, resposta: listaTexto, remarcacao_executada: false });
             }
             const cancelado = await executarCancelamento(agendamentoOriginalId);
             if (!cancelado) {
+              const erroCancel = 'Não consegui cancelar o agendamento antigo no sistema agora. Tente novamente em instantes.';
+              try{const cs=await base44.asServiceRole.entities.Contato.filter({telefone:phoneNumber});if(cs.length>0){const h=cs[0].historico_mensagens||[];const ts=new Date().toISOString();h.push({role:'user',content:messageText,timestamp:ts},{role:'assistant',content:erroCancel,timestamp:ts});await base44.asServiceRole.entities.Contato.update(cs[0].id,{historico_mensagens:h.slice(-50),ultima_interacao:ts});}}catch(e){}
               await liberarLock(base44, phoneNumber, lockName);
-              return Response.json({ success: true, resposta: 'Não consegui cancelar o agendamento antigo no sistema agora. Tente novamente em instantes.', remarcacao_executada: false });
+              return Response.json({ success: true, resposta: erroCancel, remarcacao_executada: false });
             }
 
             const paciente = pacientes.find(p => p.id === pacienteId) || pacientes[0];
@@ -636,6 +640,7 @@ Deno.serve(async (req) => {
 
             const dataFormatada = new Date(novaData + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
             const respostaFinal = `✅ Remarcação concluída no sistema!\n\nNovo agendamento: ${dataFormatada} às ${novoHorario}.`;
+            try{const cs=await base44.asServiceRole.entities.Contato.filter({telefone:phoneNumber});if(cs.length>0){const h=cs[0].historico_mensagens||[];const ts=new Date().toISOString();h.push({role:'user',content:messageText,timestamp:ts},{role:'assistant',content:respostaFinal,timestamp:ts});await base44.asServiceRole.entities.Contato.update(cs[0].id,{historico_mensagens:h.slice(-50),ultima_interacao:ts});}}catch(e){}
             await liberarLock(base44, phoneNumber, lockName);
             return Response.json({ success: true, resposta: respostaFinal, remarcacao_executada: true, agendamento_criado: true });
           }
@@ -645,14 +650,17 @@ Deno.serve(async (req) => {
           const respostaNaoEntendidaRemarcacao = agendamentos.length === 1
             ? `${listaTexto}\n\nSe você quer essa consulta, pode responder “1” ou “essa mesma”.`
             : `${listaTexto}\n\nMe responda com o número da consulta que você quer remarcar.`;
+          try{const cs=await base44.asServiceRole.entities.Contato.filter({telefone:phoneNumber});if(cs.length>0){const h=cs[0].historico_mensagens||[];const ts=new Date().toISOString();h.push({role:'user',content:messageText,timestamp:ts},{role:'assistant',content:respostaNaoEntendidaRemarcacao,timestamp:ts});await base44.asServiceRole.entities.Contato.update(cs[0].id,{historico_mensagens:h.slice(-50),ultima_interacao:ts});}}catch(e){}
           await liberarLock(base44, phoneNumber, lockName);
           return Response.json({ success: true, resposta: respostaNaoEntendidaRemarcacao, remarcacao_executada: false });
         }
 
         const proximoHorario = await buscarPrimeiroHorarioDisponivel(agendamentoEscolhido.medico_id, agendamentoEscolhido.data_agendamento);
         if (!proximoHorario) {
+          const errDisp = 'Encontrei a consulta, mas não achei um próximo horário disponível para esse mesmo profissional agora.';
+          try{const cs=await base44.asServiceRole.entities.Contato.filter({telefone:phoneNumber});if(cs.length>0){const h=cs[0].historico_mensagens||[];const ts=new Date().toISOString();h.push({role:'user',content:messageText,timestamp:ts},{role:'assistant',content:errDisp,timestamp:ts});await base44.asServiceRole.entities.Contato.update(cs[0].id,{historico_mensagens:h.slice(-50),ultima_interacao:ts});}}catch(e){}
           await liberarLock(base44, phoneNumber, lockName);
-          return Response.json({ success: true, resposta: 'Encontrei a consulta, mas não achei um próximo horário disponível para esse mesmo profissional agora.', remarcacao_executada: false });
+          return Response.json({ success: true, resposta: errDisp, remarcacao_executada: false });
         }
 
         const medicoEscolhido = medicosMap[agendamentoEscolhido.medico_id];
@@ -660,6 +668,7 @@ Deno.serve(async (req) => {
         const novaDataFmt = new Date(proximoHorario.data_agendamento + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
         const pacienteBase = pacientes.find(p => p.id === agendamentoEscolhido.paciente_id) || pacientes[0];
         const respostaOferta = `Encontrei sua consulta de ${dataAtualFmt} às ${agendamentoEscolhido.horario}${medicoEscolhido ? ` com ${medicoEscolhido.nome}` : ''}.\n\nA próxima data disponível é ${novaDataFmt} às ${proximoHorario.horario}.\n\nVocê aceita remarcar para esse horário?\n[REMARCACAO|agendamento:${agendamentoEscolhido.id}|medico:${agendamentoEscolhido.medico_id}|data:${proximoHorario.data_agendamento}|horario:${proximoHorario.horario}|paciente:${pacienteBase?.id || agendamentoEscolhido.paciente_id}]`;
+        try{const cs=await base44.asServiceRole.entities.Contato.filter({telefone:phoneNumber});if(cs.length>0){const h=cs[0].historico_mensagens||[];const ts=new Date().toISOString();h.push({role:'user',content:messageText,timestamp:ts},{role:'assistant',content:respostaOferta,timestamp:ts});await base44.asServiceRole.entities.Contato.update(cs[0].id,{historico_mensagens:h.slice(-50),ultima_interacao:ts});}}catch(e){}
         await liberarLock(base44, phoneNumber, lockName);
         return Response.json({ success: true, resposta: respostaOferta, remarcacao_executada: false });
       }
