@@ -443,200 +443,218 @@ Deno.serve(async (req) => {
         await liberarLock(base44, phoneNumber, lockName);return Response.json({success:true,resposta:rPD,fluxo:'verificacao'});}
     }
 
-      if(querCancelar){try{const hj=new Date().toISOString().split('T')[0];let aF=[];let nP='';let pacs=[];const tnC=phoneNumber.replace(/\D/g,'');const vC=[phoneNumber,tnC];if(tnC.startsWith('55')&&tnC.length>=12)vC.push(tnC.slice(2));if(!tnC.startsWith('55')&&tnC.length>=10)vC.push('55'+tnC);for(const v of vC){if(pacs.length>0)break;try{pacs=await base44.asServiceRole.entities.Paciente.filter({telefone:v});}catch(e){}}if(!pacs.length){try{const tp=await base44.asServiceRole.entities.Paciente.list('-created_date',500);const u8=tnC.slice(-8);pacs=tp.filter(p=>(p.telefone||'').replace(/\D/g,'').slice(-8)===u8);}catch(e){}}if(pacs.length>0){nP=pacs[0].nome;for(const p of pacs){const ag=await base44.asServiceRole.entities.Agendamento.filter({paciente_id:p.id});aF.push(...ag.filter(a=>a.data_agendamento>=hj && ['Agendado','Confirmado','Pago'].includes(a.status)));}const ids=new Set();aF=aF.filter(a=>{if(ids.has(a.id))return false;ids.add(a.id);return true;});}
-        if(aF.length>0){const mds=await base44.asServiceRole.entities.Medico.list();const mm={};mds.forEach(m=>{mm[m.id]=m;});infoCancelamento=`\n\n📋 CANCELAMENTO - ${nP}:\n`;aF.forEach((ag,i)=>{const md=mm[ag.medico_id];const df=new Date(ag.data_agendamento+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit'});infoCancelamento+=`\n${i+1}. ${ag.tipo_servico} - ${df} às ${ag.horario}${md?` com ${md.nome}`:''}\n   ID: ${ag.id}`;});infoCancelamento+='\n\n⚠️ Pergunte QUAL cancelar e use sempre a DATA EXATA. NÃO use hoje/amanhã/ontem. É PROIBIDO dizer que cancelou com sucesso sem executar no sistema. Se o cliente pediu para REMARCAR, você DEVE primeiro cancelar a consulta atual e em seguida já perguntar para quando ele quer remarcar (ou já oferecer horários disponíveis).';
-          const _mlc=messageText.toLowerCase().trim();let _agIm=null;
-          for(const ag of aF){const md=mm[ag.medico_id];if(md){const pn=md.nome.toLowerCase().split(' ').filter(p=>p.length>3&&!/^(dr\.?|dra\.?)$/i.test(p));if(pn.some(p=>_mlc.includes(p))){_agIm=ag.id;break;}}}
-          if(!_agIm){const _dm=messageText.match(/(\d{1,2})\/(\d{1,2})|dia\s*(\d{1,2})/i);if(_dm){const _d=_dm[1]||_dm[3],_m=_dm[2]||String(new Date().getMonth()+1),_dr=`${new Date().getFullYear()}-${String(_m).padStart(2,'0')}-${String(_d).padStart(2,'0')}`;const _c=aF.find(a=>a.data_agendamento===_dr);if(_c){_agIm=_c.id;}}}
-          if(!_agIm){const _hm=messageText.match(/(?:às|as)?\s*(\d{1,2})[h:](\d{2})/i);if(_hm){const _hr=`${String(_hm[1]).padStart(2,'0')}:${_hm[2]}`;const _c=aF.find(a=>a.horario===_hr);if(_c){_agIm=_c.id;}}}
-          // if(!_agIm&&aF.length===1){_agIm=aF[0].id;} // Removido para evitar cancelamento automatico sem confirmacao
-          if(_agIm){const _ac=aF.find(a=>a.id===_agIm);const _mc=_ac?mm[_ac.medico_id]:null;
-            try{await base44.asServiceRole.entities.Agendamento.update(_agIm,{status:'Cancelado',observacoes:`Cancelado via WhatsApp em ${new Date().toLocaleString('pt-BR')}`});
-            try{const cs=await base44.asServiceRole.entities.Contato.filter({telefone:phoneNumber});if(cs.length>0)await base44.asServiceRole.entities.Contato.update(cs[0].id,{status:'Cancelou'});}catch(e){}
-            const _df=_ac?new Date(_ac.data_agendamento+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit'}):'';
-            try{await base44.asServiceRole.entities.Notification.create({type:'agendamento_cancelado',message:`❌ ${_ac?.paciente_nome||'Paciente'} cancelou ${_mc?.especialidade||''} com ${_mc?.nome||'Médico'} - ${_df} às ${_ac?.horario||''}`,data:{agendamento_id:_agIm,paciente_nome:_ac?.paciente_nome,medico_nome:_mc?.nome,cancelado_por:'WhatsApp - Glória'},is_read:false});}catch(e){}
-            const _qr=/remarcar|adiar|mudar.*data/i.test(messageText);let _rc=`✅ Agendamento cancelado com sucesso!\n\n❌ *Cancelado:* ${_ac?.tipo_servico||'Consulta'} - ${_df} às ${_ac?.horario||''}${_mc?` com ${_mc.nome} (${_mc.especialidade||''})`:''}\n\n`;
-            _rc+=_qr?`Para quando você gostaria de remarcar?${_mc?` Posso ver os próximos horários para ${_mc.especialidade||'essa consulta'}.`:''}`:`Se precisar de mais alguma coisa, estou à disposição! 😊`;
-            try{const _ch=await buscarContatoPorTelefone(phoneNumber);if(_ch){const _h=_ch.historico_mensagens||[];const _t=new Date().toISOString();_h.push({role:'user',content:messageText,timestamp:_t,messageId},{role:'assistant',content:_rc,timestamp:_t});await base44.asServiceRole.entities.Contato.update(_ch.id,{historico_mensagens:_h.slice(-50),ultima_interacao:_t,ultima_mensagem:messageText,ultima_resposta:_rc});}}catch(e){}
-            await liberarLock(base44, phoneNumber, lockName);return Response.json({success:true,resposta:_rc,cancelamento_executado:true});
-            }catch(ce){}
-          }
-        }else{infoCancelamento='\n\n❌ CANCELAMENTO: Sem agendamentos futuros p/ este telefone. 🚨 REGRA CRÍTICA E ABSOLUTA: O cliente NÃO TEM consultas marcadas. Diga EXATAMENTE que não encontrou nenhuma consulta para cancelar. NUNCA, SOB NENHUMA HIPÓTESE, invente ou liste consultas fictícias usando os nomes dos médicos da clínica.';}
-      }catch(e){}}
+      const normalizarTelefoneVariantes = (telefone) => {
+        const tel = (telefone || '').replace(/\D/g, '');
+        const lista = [telefone, tel].filter(Boolean);
+        if (tel.startsWith('55') && tel.length >= 12) lista.push(tel.slice(2));
+        if (!tel.startsWith('55') && tel.length >= 10) lista.push('55' + tel);
+        return [...new Set(lista)];
+      };
 
-    const executarCancelamento = async (agendamentoId) => {
-      try {
-        const ags = await base44.asServiceRole.entities.Agendamento.filter({ id: agendamentoId });
-        const ag = Array.isArray(ags) ? ags[0] : null;
-        if (!ag) return false;
-        let medicoNome='Médico', medicoEsp='';
-        try { const ms=await base44.asServiceRole.entities.Medico.filter({id:ag.medico_id}); if(ms.length>0){medicoNome=ms[0].nome;medicoEsp=ms[0].especialidade;} } catch(e){}
-        const df=new Date(ag.data_agendamento+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit'});
-        await base44.asServiceRole.entities.Agendamento.update(agendamentoId,{status:'Cancelado',observacoes:`Cancelado via WhatsApp em ${new Date().toLocaleString('pt-BR')}`});
-        try{const cs=await base44.asServiceRole.entities.Contato.filter({telefone:phoneNumber});if(cs.length>0)await base44.asServiceRole.entities.Contato.update(cs[0].id,{status:'Cancelou'});}catch(e){}
-        try{await base44.asServiceRole.entities.Notification.create({type:'agendamento_cancelado',message:`❌ ${ag.paciente_nome||'Paciente'} cancelou ${medicoEsp} com ${medicoNome} - ${df} às ${ag.horario}`,data:{agendamento_id:agendamentoId,paciente_nome:ag.paciente_nome,medico_nome:medicoNome,especialidade:medicoEsp,data:ag.data_agendamento,horario:ag.horario,cancelado_por:'WhatsApp - Glória'},is_read:false});}catch(e){}
-        return true;
-      } catch(e) { return false; }
-    };
-
-    const contextoCancel = !cancelamentoJaConcluidoNoHistorico && /cancelar|desmarcar|remarcar|qual.*cancelar|qual.*remarcar|gostaria de cancelar|gostaria de remarcar|qual\s*consulta.*deseja|deseja\s*cancelar|deseja\s*remarcar/i.test(historicoConversa || '');
-    
-    // No fluxo de remarcação, se o cliente está perguntando sobre vagas/disponibilidades OU escolhendo a nova data/horário, NÃO entrar no cancelamento
-    const clientePerguntandoVagas = /que dia|quando|tem vaga|tem hor[áa]rio|dispon[íi]vel|pr[óo]ximo|qual.*dia|qual.*hor[áa]rio/i.test(messageText);
-    const clienteEscolhendoNovoHorarioRemarcacao = /\bhoje\b|\bamanh[ãa]\b|\bdia\s*\d{1,2}(?:\/\d{1,2})?\b|\d{1,2}\/\d{1,2}(?:\/\d{2,4})?|\d{1,2}:\d{2}|\d{1,2}h(?:\d{2})?|segunda|ter[çc]a|quarta|quinta|sexta|s[áa]bado|domingo/i.test(messageText);
-    // Se o assistente já informou sobre o agendamento e perguntou novo dia/horário, o cliente está no fluxo de remarcar (buscar vagas)
-    const _ultimaMsgAssistenteParaCheck = historicoMensagensRaw.filter(m=>m.role==='assistant').slice(-1)[0]?.content || '';
-    const assistenteJaPerguntouNovoHorario = /qual novo dia|novo dia e hor[áa]rio|quando.*gostaria de agendar|para quando.*remarcar|qual desses hor[áa]rios fica bom|qual desses hor[áa]rios|qual hor[áa]rio fica bom/i.test(_ultimaMsgAssistenteParaCheck);
-    const deveSkipCancelamentoParaBuscarVagas = clientePerguntandoVagas || (assistenteJaPerguntouNovoHorario && clienteEscolhendoNovoHorarioRemarcacao) || (/remarcar|nova data|novo hor[áa]rio/.test(historicoConversa || '') && clienteEscolhendoNovoHorarioRemarcacao);
-    
-    if (contextoCancel && historicoConversa && !deveSkipCancelamentoParaBuscarVagas) {
-      const hoje = new Date().toISOString().split('T')[0];
-      const telNorm = phoneNumber.replace(/\D/g, '');
-      const variantes = [phoneNumber, telNorm];
-      if (telNorm.startsWith('55') && telNorm.length >= 12) variantes.push(telNorm.slice(2));
-      if (!telNorm.startsWith('55') && telNorm.length >= 10) variantes.push('55' + telNorm);
-      
-      let pacientes = [];
-      for (const variante of variantes) {
-        if (pacientes.length > 0) break;
-        try { pacientes = await base44.asServiceRole.entities.Paciente.filter({ telefone: variante }); } catch (e) {}
-      }
-      
-      if (pacientes.length === 0) {
+      const buscarPacientesPorTelefone = async (telefone) => {
+        const variantes = normalizarTelefoneVariantes(telefone);
+        for (const variante of variantes) {
+          try {
+            const encontrados = await base44.asServiceRole.entities.Paciente.filter({ telefone: variante });
+            if (encontrados.length > 0) return encontrados;
+          } catch (e) {}
+        }
         try {
           const todosPacientes = await base44.asServiceRole.entities.Paciente.list('-created_date', 500);
-          const ultimos8 = telNorm.slice(-8);
-          pacientes = todosPacientes.filter(p => {
-            const tel = (p.telefone || '').replace(/\D/g, '');
-            return tel.slice(-8) === ultimos8;
-          });
-        } catch (e) {}
-      }
-      
-      let agendamentosFuturos = [];
-      if (pacientes.length > 0) {
-        for (const paciente of pacientes) {
-          const agendamentos = await base44.asServiceRole.entities.Agendamento.filter({ paciente_id: paciente.id });
-          const futuros = agendamentos.filter(ag => ag.data_agendamento >= hoje && ['Agendado', 'Confirmado', 'Pago'].includes(ag.status));
-          agendamentosFuturos.push(...futuros);
+          const ultimos8 = (telefone || '').replace(/\D/g, '').slice(-8);
+          return todosPacientes.filter(p => ((p.telefone || '').replace(/\D/g, '').slice(-8) === ultimos8));
+        } catch (e) {
+          return [];
         }
-        const idsVistos = new Set();
-        agendamentosFuturos = agendamentosFuturos.filter(ag => {
-          if (idsVistos.has(ag.id)) return false;
-          idsVistos.add(ag.id);
-          return true;
-        });
-      }
-      
-      if (agendamentosFuturos.length > 0) {
+      };
+
+      const listarAgendamentosFuturosPorTelefone = async (telefone) => {
+        const hoje = new Date().toISOString().split('T')[0];
+        const pacientes = await buscarPacientesPorTelefone(telefone);
+        let agendamentos = [];
+        for (const paciente of pacientes) {
+          const ags = await base44.asServiceRole.entities.Agendamento.filter({ paciente_id: paciente.id });
+          agendamentos.push(...ags.filter(ag => ag.data_agendamento >= hoje && ['Agendado', 'Confirmado', 'Pago'].includes(ag.status)));
+        }
+        const ids = new Set();
+        return { pacientes, agendamentos: agendamentos.filter(ag => { if (ids.has(ag.id)) return false; ids.add(ag.id); return true; }) };
+      };
+
+      const formatarListaRemarcacao = async (agendamentos) => {
         const medicos = await base44.asServiceRole.entities.Medico.list();
         const medicosMap = {};
         medicos.forEach(m => { medicosMap[m.id] = m; });
-        const msgLower = messageText.toLowerCase().trim();
-        let agendamentoParaCancelar = null;
-        
-        const numeroMatch = messageText.match(/^(?:op[çc][aã]o\s*)?(\d)\s*[.\-,:]?\s*/i);
+        let texto = 'Encontrei estes agendamentos no seu número:\n\n';
+        agendamentos.forEach((ag, index) => {
+          const medico = medicosMap[ag.medico_id];
+          const dataFmt = new Date(ag.data_agendamento + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
+          texto += `${index + 1}. ${ag.tipo_servico || 'Consulta'} - ${dataFmt} às ${ag.horario}${medico ? ` com ${medico.nome}` : ''}\n`;
+        });
+        texto += '\nMe diga o número da opção que você quer remarcar.';
+        return { texto, medicosMap };
+      };
+
+      const executarCancelamento = async (agendamentoId) => {
+        try {
+          const ags = await base44.asServiceRole.entities.Agendamento.filter({ id: agendamentoId });
+          const ag = Array.isArray(ags) ? ags[0] : null;
+          if (!ag) return null;
+          let medicoNome = 'Médico', medicoEsp = '';
+          try {
+            const ms = await base44.asServiceRole.entities.Medico.filter({ id: ag.medico_id });
+            if (ms.length > 0) { medicoNome = ms[0].nome; medicoEsp = ms[0].especialidade; }
+          } catch (e) {}
+          const df = new Date(ag.data_agendamento + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' });
+          await base44.asServiceRole.entities.Agendamento.update(agendamentoId, { status: 'Cancelado', observacoes: `Cancelado via remarcação no WhatsApp em ${new Date().toLocaleString('pt-BR')}` });
+          try {
+            await base44.asServiceRole.entities.Notification.create({
+              type: 'agendamento_cancelado',
+              message: `🔄 ${ag.paciente_nome || 'Paciente'} remarcou ${medicoEsp} com ${medicoNome} - ${df} às ${ag.horario}`,
+              data: { agendamento_id: agendamentoId, paciente_nome: ag.paciente_nome, medico_nome: medicoNome, especialidade: medicoEsp, data: ag.data_agendamento, horario: ag.horario, cancelado_por: 'WhatsApp - Glória (remarcação)' },
+              is_read: false
+            });
+          } catch (e) {}
+          return ag;
+        } catch (e) { return null; }
+      };
+
+      const buscarPrimeiroHorarioDisponivel = async (medicoId, ignorarData = null, diasLimite = 45) => {
+        const hoje = new Date();
+        const hojeISO = hoje.toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+        const horaAtualSP = new Date().toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' });
+        for (let i = 0; i < diasLimite; i++) {
+          const data = new Date();
+          data.setDate(data.getDate() + i);
+          const dataISO = data.toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+          if (ignorarData && dataISO === ignorarData) continue;
+          try {
+            const slotRes = await base44.asServiceRole.functions.invoke('getAvailableSlots', { medico_id: medicoId, data: dataISO });
+            const slots = slotRes?.data?.available_slots || [];
+            const slotsValidos = dataISO === hojeISO ? slots.filter(h => h > horaAtualSP) : slots;
+            if (slotsValidos.length > 0) return { data_agendamento: dataISO, horario: slotsValidos[0] };
+          } catch (e) {}
+        }
+        return null;
+      };
+
+      const escolherAgendamentoParaRemarcar = (messageText, agendamentos, medicosMap) => {
+        const texto = (messageText || '').toLowerCase().trim();
+        const numeroMatch = texto.match(/^(?:op[çc][aã]o\s*)?(\d{1,2})\b/i);
         if (numeroMatch) {
-          const num = parseInt(numeroMatch[1]);
-          if (num > 0 && num <= agendamentosFuturos.length) agendamentoParaCancelar = agendamentosFuturos[num - 1].id;
+          const indice = parseInt(numeroMatch[1], 10) - 1;
+          if (indice >= 0 && indice < agendamentos.length) return agendamentos[indice];
         }
-        
-        if (!agendamentoParaCancelar) {
-          const horarioCompletoMatch = messageText.match(/(?:às|as)?\s*(\d{1,2})[h:](\d{2})/i);
-          const horaCheiaMatch = messageText.match(/(?:às|as)?\s*(\d{1,2})\s*(?:h\b|horas?\b)/i) || messageText.match(/^(\d{1,2})$/);
-          let horarioBuscado = null;
-          if (horarioCompletoMatch) horarioBuscado = `${String(horarioCompletoMatch[1]).padStart(2,'0')}:${horarioCompletoMatch[2]}`;
-          else if (horaCheiaMatch) horarioBuscado = `${String(horaCheiaMatch[1]).padStart(2,'0')}:00`;
-          if (horarioBuscado) {
-            for (const ag of agendamentosFuturos) {
-              if (ag.horario === horarioBuscado) { agendamentoParaCancelar = ag.id; break; }
-            }
+        for (const ag of agendamentos) {
+          if (texto.includes(ag.horario.toLowerCase())) return ag;
+          const medico = medicosMap[ag.medico_id];
+          if (medico) {
+            const partes = medico.nome.toLowerCase().split(' ').filter(p => p.length > 3);
+            if (partes.some(p => texto.includes(p))) return ag;
           }
+          const dataBR = new Date(ag.data_agendamento + 'T12:00:00').toLocaleDateString('pt-BR');
+          if (texto.includes(dataBR)) return ag;
+          const dia = ag.data_agendamento.split('-')[2];
+          const mes = ag.data_agendamento.split('-')[1];
+          if (texto.includes(`${dia}/${mes}`) || texto.includes(`dia ${parseInt(dia, 10)}`)) return ag;
         }
-        
-        if (!agendamentoParaCancelar) {
-          for (const ag of agendamentosFuturos) {
-            const medico = medicosMap[ag.medico_id];
-            if (medico) {
-              const nomeMedicoLower = medico.nome.toLowerCase();
-              const partesNome = nomeMedicoLower.split(' ').filter(p => p.length > 3);
-              for (const parte of partesNome) {
-                if (msgLower.includes(parte)) { agendamentoParaCancelar = ag.id; break; }
-              }
-            }
-            if (agendamentoParaCancelar) break;
-          }
-        }
-        
-        if (!agendamentoParaCancelar) {
-          const dataMatch = messageText.match(/(\d{1,2})\/(\d{1,2})|dia\s*(\d{1,2})/i);
-          const dia = dataMatch?.[1] || dataMatch?.[3];
-          const mes = dataMatch?.[2] || String(new Date().getMonth() + 1);
-          let dataRef = dia ? `${new Date().getFullYear()}-${String(mes).padStart(2,'0')}-${String(dia).padStart(2,'0')}` : null;
-          let horarioRef = null;
-          if (!dataRef && /\b(sim|confirmo|ok|pode|prosseguir|isso|exato|quero cancelar|pode cancelar|sim quero cancelar|cancelar)\b/i.test(msgLower)) {
-            const ultimaAssist = [...historicoMensagensRaw].reverse().find(m => m.role === 'assistant')?.content || '';
-            const dm = ultimaAssist.match(/(\d{2})\/(\d{2})\/(\d{4})/);
-            const hm = ultimaAssist.match(/(?:às|as)\s*(\d{2}:\d{2})/i);
-            if (/posso prosseguir com o cancelamento|você deseja cancelar/i.test(ultimaAssist.toLowerCase())) { dataRef = dm ? `${dm[3]}-${dm[2]}-${dm[1]}` : null; horarioRef = hm?.[1] || null; }
-          }
-          if (dataRef) {
-            const candidato = agendamentosFuturos.find(ag => ag.data_agendamento === dataRef && (!horarioRef || ag.horario === horarioRef));
-            if (candidato) agendamentoParaCancelar = candidato.id;
-          }
-        }
-        
-        if (!agendamentoParaCancelar && agendamentosFuturos.length === 1) {
-          const confirmacao = /^(sim|s|ok|isso|confirmo|pode|certo|correto|cancela|1|essa|esse|essa\s*mesm[ao]|esse\s*mesm[ao]|é\s*essa|é\s*esse|exato|exatamente|isso\s*mesmo|pode\s*cancelar|quero\s*cancelar)$/i.test(msgLower);
-          if (confirmacao) agendamentoParaCancelar = agendamentosFuturos[0].id;
-        }
-        
-        if (!agendamentoParaCancelar) {
-          const confirmacaoGenerica = /essa|esse|mesm[ao]|pode\s*ser|isso|é\s*ess[ae]|a\s*primeira|quero\s*cancelar|pode\s*cancelar|exato|exatamente/i.test(msgLower);
-          if (confirmacaoGenerica && agendamentosFuturos.length === 1) {
-            agendamentoParaCancelar = agendamentosFuturos[0].id;
-          } else if (confirmacaoGenerica && agendamentosFuturos.length > 1) {
-            const historicoMostrouLista = /1\.\s+.*cancelar|seguinte.*agendamento|tem\s+os?\s+seguint/i.test(historicoConversa || '');
-            if (historicoMostrouLista) agendamentoParaCancelar = agendamentosFuturos[0].id;
-          }
-        }
-        
-        if (agendamentoParaCancelar) {
-          const cancelou = await executarCancelamento(agendamentoParaCancelar);
-          if (cancelou) {
-            agendamentoCancelado = true;
-            const agCancelado = agendamentosFuturos.find(a => a.id === agendamentoParaCancelar);
-            const medicoCanc = agCancelado ? medicosMap[agCancelado.medico_id] : null;
-            const dataObjCanc = agCancelado ? new Date(agCancelado.data_agendamento + 'T12:00:00') : null;
-            const dataFmtCanc = dataObjCanc ? dataObjCanc.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' }) : '';
-            const querRemarcar = /remarcar|adiar|mudar.*data|mudar.*hor[áa]rio/i.test(messageText) || /remarcar|adiar/i.test(historicoConversa || '');
-            let respostaCancelamento = `✅ Agendamento cancelado com sucesso!\n\n❌ *Cancelado:* ${agCancelado?.tipo_servico || 'Consulta'} - ${dataFmtCanc} às ${agCancelado?.horario || ''}${medicoCanc ? ` com ${medicoCanc.nome} (${medicoCanc.especialidade || ''})` : ''}\n\n`;
-            if (querRemarcar) {
-                respostaCancelamento += `Para quando você gostaria de remarcar?`;
-                if (medicoCanc) respostaCancelamento += ` Posso ver os próximos horários disponíveis para ${medicoCanc.especialidade || 'essa consulta'}.`;
-            } else {
-                respostaCancelamento += `Se precisar de mais alguma coisa, estou à disposição! 😊`;
-            }
-            try {
-              const cCancelHist = await buscarContatoPorTelefone(phoneNumber);
-              if (cCancelHist) {
-                const historicoAtualCancel = cCancelHist.historico_mensagens || [];
-                const timestampCancel = new Date().toISOString();
-                historicoAtualCancel.push({ role: 'user', content: messageText, timestamp: timestampCancel, messageId }, { role: 'assistant', content: respostaCancelamento, timestamp: timestampCancel });
-                await base44.asServiceRole.entities.Contato.update(cCancelHist.id, { historico_mensagens: historicoAtualCancel.slice(-50), ultima_interacao: timestampCancel, ultima_mensagem: messageText, ultima_resposta: respostaCancelamento });
-              }
-            } catch (e) {}
-            await liberarLock(base44, phoneNumber, lockName);
-            return Response.json({ success: true, resposta: respostaCancelamento, cancelamento_executado: true });
-          } else {
-            await liberarLock(base44, phoneNumber, lockName); return Response.json({ success: true, resposta: 'Não consegui concluir o cancelamento no sistema agora. Por favor, tente novamente em instantes.', cancelamento_executado: false });
-          }
-        } else {
+        return null;
+      };
+
+      const historicoAssistenteTexto = historicoMensagensRaw.filter(m => m.role === 'assistant').map(m => m.content || '').join('\n');
+      const fluxoRemarcacaoAtivo = /remarcar|reagendar|mudar.*consulta|mudar.*data|mudar.*hor[áa]rio|trocar.*consulta|trocar.*data|trocar.*hor[áa]rio/i.test(messageText || '') || /Me diga o número da opção que você quer remarcar|Você aceita remarcar para|Encontrei estes agendamentos no seu número/i.test(historicoAssistenteTexto || '');
+
+      if (fluxoRemarcacaoAtivo) {
+        const { pacientes, agendamentos } = await listarAgendamentosFuturosPorTelefone(phoneNumber);
+        if (agendamentos.length === 0) {
+          const respostaSemAgendamento = 'Não encontrei consultas futuras cadastradas para este número de telefone.';
           await liberarLock(base44, phoneNumber, lockName);
-          return Response.json({ success: true, resposta: agendamentosFuturos.length > 1 ? 'Para cancelar corretamente, me responda com o número da opção, a data exata ou o horário exato da consulta.' : 'Para cancelar corretamente, me confirme a data exata ou o horário exato da consulta.', cancelamento_executado: false });
+          return Response.json({ success: true, resposta: respostaSemAgendamento, remarcacao_executada: false });
         }
+
+        const { texto: listaTexto, medicosMap } = await formatarListaRemarcacao(agendamentos);
+        const agendamentoEscolhido = escolherAgendamentoParaRemarcar(messageText, agendamentos, medicosMap);
+
+        const ultimaAssistente = historicoMensagensRaw.filter(m => m.role === 'assistant').slice(-1)[0]?.content || '';
+        const aguardandoAceiteNovaData = /Você aceita remarcar para/i.test(ultimaAssistente);
+        const clienteAceitouNovaData = /^(sim|s|aceito|pode ser|ok|certo|confirmo|fechado|isso|perfeito)$/i.test((messageText || '').trim());
+
+        if (aguardandoAceiteNovaData && clienteAceitouNovaData) {
+          const matchConfirmacao = ultimaAssistente.match(/\[REMARCACAO\|agendamento:([^|]+)\|medico:([^|]+)\|data:(\d{4}-\d{2}-\d{2})\|horario:(\d{2}:\d{2})\|paciente:([^\]]+)\]/);
+          if (matchConfirmacao) {
+            const [, agendamentoOriginalId, medicoId, novaData, novoHorario, pacienteId] = matchConfirmacao;
+            const agOriginal = agendamentos.find(a => a.id === agendamentoOriginalId);
+            if (!agOriginal) {
+              await liberarLock(base44, phoneNumber, lockName);
+              return Response.json({ success: true, resposta: listaTexto, remarcacao_executada: false });
+            }
+            const cancelado = await executarCancelamento(agendamentoOriginalId);
+            if (!cancelado) {
+              await liberarLock(base44, phoneNumber, lockName);
+              return Response.json({ success: true, resposta: 'Não consegui cancelar o agendamento antigo no sistema agora. Tente novamente em instantes.', remarcacao_executada: false });
+            }
+
+            const paciente = pacientes.find(p => p.id === pacienteId) || pacientes[0];
+            let categoriaParticularId = agOriginal.categoria_preco_id || null;
+            if (!categoriaParticularId) {
+              try {
+                const categorias = await base44.asServiceRole.entities.CategoriaPreco.filter({ nome: 'Particular', status: 'Ativo' });
+                if (categorias.length > 0) categoriaParticularId = categorias[0].id;
+              } catch (e) {}
+            }
+
+            const novoAgendamento = await base44.asServiceRole.entities.Agendamento.create({
+              paciente_id: paciente?.id || agOriginal.paciente_id,
+              paciente_nome: paciente?.nome || agOriginal.paciente_nome,
+              medico_id: medicoId,
+              data_agendamento: novaData,
+              horario: novoHorario,
+              tipo_servico: agOriginal.tipo_servico || 'Consulta',
+              duracao_minutos: agOriginal.duracao_minutos,
+              categoria_preco_id: categoriaParticularId,
+              status: 'Agendado',
+              valor_total: agOriginal.valor_total || 0,
+              valor_final: agOriginal.valor_final || agOriginal.valor_total || 0,
+              observacoes: 'Remarcado pela Glória via WhatsApp',
+              agendado_por: 'Glória',
+              agendado_por_tipo: 'chatbot'
+            });
+
+            try {
+              const medico = medicosMap[medicoId] || (await base44.asServiceRole.entities.Medico.filter({ id: medicoId }))[0];
+              await base44.asServiceRole.entities.Notification.create({
+                type: 'novo_agendamento',
+                message: `🔄 ${paciente?.nome || agOriginal.paciente_nome} remarcou consulta com ${medico?.nome || 'Médico'} para ${new Date(novaData + 'T12:00:00').toLocaleDateString('pt-BR')} às ${novoHorario}`,
+                data: { agendamento_id: novoAgendamento.id, paciente_nome: paciente?.nome || agOriginal.paciente_nome, medico_nome: medico?.nome, data: novaData, horario: novoHorario, origem: 'remarcação_whatsapp' },
+                is_read: false
+              });
+            } catch (e) {}
+
+            const dataFormatada = new Date(novaData + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
+            const respostaFinal = `✅ Remarcação concluída no sistema!\n\nNovo agendamento: ${dataFormatada} às ${novoHorario}.`;
+            await liberarLock(base44, phoneNumber, lockName);
+            return Response.json({ success: true, resposta: respostaFinal, remarcacao_executada: true, agendamento_criado: true });
+          }
+        }
+
+        if (!agendamentoEscolhido) {
+          await liberarLock(base44, phoneNumber, lockName);
+          return Response.json({ success: true, resposta: listaTexto, remarcacao_executada: false });
+        }
+
+        const proximoHorario = await buscarPrimeiroHorarioDisponivel(agendamentoEscolhido.medico_id, agendamentoEscolhido.data_agendamento);
+        if (!proximoHorario) {
+          await liberarLock(base44, phoneNumber, lockName);
+          return Response.json({ success: true, resposta: 'Encontrei a consulta, mas não achei um próximo horário disponível para esse mesmo profissional agora.', remarcacao_executada: false });
+        }
+
+        const medicoEscolhido = medicosMap[agendamentoEscolhido.medico_id];
+        const dataAtualFmt = new Date(agendamentoEscolhido.data_agendamento + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
+        const novaDataFmt = new Date(proximoHorario.data_agendamento + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
+        const pacienteBase = pacientes.find(p => p.id === agendamentoEscolhido.paciente_id) || pacientes[0];
+        const respostaOferta = `Encontrei sua consulta de ${dataAtualFmt} às ${agendamentoEscolhido.horario}${medicoEscolhido ? ` com ${medicoEscolhido.nome}` : ''}.\n\nA próxima data disponível é ${novaDataFmt} às ${proximoHorario.horario}.\n\nVocê aceita remarcar para esse horário?\n[REMARCACAO|agendamento:${agendamentoEscolhido.id}|medico:${agendamentoEscolhido.medico_id}|data:${proximoHorario.data_agendamento}|horario:${proximoHorario.horario}|paciente:${pacienteBase?.id || agendamentoEscolhido.paciente_id}]`;
+        await liberarLock(base44, phoneNumber, lockName);
+        return Response.json({ success: true, resposta: respostaOferta, remarcacao_executada: false });
       }
-    }
 
     const _hjER=/encontrei o resultado|PDF está sendo enviado|arquivo PDF/i.test(historicoConversa||'');
     const _hfR=/seu nome completo|seu cpf|para localizar.*resultado/i.test(historicoConversa||'');
