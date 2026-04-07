@@ -1113,40 +1113,58 @@ Retorne JSON.`;
           if (ehRemarcacao) {
             try {
               const telNormRemar = phoneNumber.replace(/\D/g, '');
-              const u8Remar = telNormRemar.slice(-8);
+              const variantesRemar = [telNormRemar];
+              if (telNormRemar.startsWith('55') && telNormRemar.length >= 12) variantesRemar.push(telNormRemar.slice(2));
+              if (!telNormRemar.startsWith('55') && telNormRemar.length >= 10) variantesRemar.push('55' + telNormRemar);
+              const ultimos8Remar = telNormRemar.slice(-8);
+              const hjRemar = new Date().toISOString().split('T')[0];
+
               const todosPacsRemar = await base44.asServiceRole.entities.Paciente.list('-created_date', 500);
-              const pacsRemar = todosPacsRemar.filter(p => (p.telefone || '').replace(/\D/g, '').slice(-8) === u8Remar);
-              if (pacsRemar.length > 0) {
-                const hjRemar = new Date().toISOString().split('T')[0];
-                const pIdsRemar = pacsRemar.map(p => p.id);
-                const todosAgsRemar = await base44.asServiceRole.entities.Agendamento.filter({ data_agendamento: { $gte: hjRemar } });
-                const agsAtivosRemar = todosAgsRemar.filter(a => pIdsRemar.includes(a.paciente_id) && ['Agendado', 'Confirmado', 'Pago'].includes(a.status));
-                if (agsAtivosRemar.length > 0) {
-                  // Tentar identificar qual agendamento cancelar pelo médico mencionado no histórico
-                  let agParaCancelar = null;
-                  if (extracao.medico_id) {
-                    agParaCancelar = agsAtivosRemar.find(a => a.medico_id === extracao.medico_id);
-                  }
-                  if (!agParaCancelar && extracao.medico_nome) {
-                    const mdsRemar = await base44.asServiceRole.entities.Medico.list();
-                    const medRemar = mdsRemar.find(m => m.nome.toLowerCase().includes(extracao.medico_nome.toLowerCase()) || extracao.medico_nome.toLowerCase().includes(m.nome.toLowerCase()));
-                    if (medRemar) agParaCancelar = agsAtivosRemar.find(a => a.medico_id === medRemar.id);
-                  }
-                  // Se só tem 1 agendamento ativo, cancelar ele
-                  if (!agParaCancelar && agsAtivosRemar.length === 1) {
-                    agParaCancelar = agsAtivosRemar[0];
-                  }
-                  if (agParaCancelar) {
-                    await base44.asServiceRole.entities.Agendamento.update(agParaCancelar.id, { status: 'Cancelado', observacoes: `Cancelado automaticamente para remarcação via WhatsApp em ${new Date().toLocaleString('pt-BR')}` });
-                    try {
-                      const mdsNotif = await base44.asServiceRole.entities.Medico.list();
-                      const medNotif = mdsNotif.find(m => m.id === agParaCancelar.medico_id);
-                      const dfNotif = new Date(agParaCancelar.data_agendamento + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' });
-                      await base44.asServiceRole.entities.Notification.create({ type: 'agendamento_cancelado', message: `🔄 ${agParaCancelar.paciente_nome || 'Paciente'} remarcou ${medNotif?.especialidade || ''} com ${medNotif?.nome || 'Médico'} - ${dfNotif} às ${agParaCancelar.horario}`, data: { agendamento_id: agParaCancelar.id, paciente_nome: agParaCancelar.paciente_nome, medico_nome: medNotif?.nome, cancelado_por: 'WhatsApp - Glória (remarcação)' }, is_read: false });
-                    } catch (e) {}
-                    agendamentoAntigoCancelado = true;
-                    console.log(`🔄 Agendamento antigo ${agParaCancelar.id} cancelado para remarcação`);
-                  }
+              const pacsPorTelefone = todosPacsRemar.filter(p => {
+                const telPaciente = (p.telefone || '').replace(/\D/g, '');
+                return variantesRemar.includes(telPaciente) || (ultimos8Remar && telPaciente.slice(-8) === ultimos8Remar);
+              });
+
+              let agsAtivosRemar = [];
+              const idsAgendamento = new Set();
+
+              for (const pacienteTel of pacsPorTelefone) {
+                const agsPaciente = await base44.asServiceRole.entities.Agendamento.filter({ paciente_id: pacienteTel.id });
+                agsPaciente
+                  .filter(a => a.data_agendamento >= hjRemar && ['Agendado', 'Confirmado', 'Pago'].includes(a.status))
+                  .forEach(a => {
+                    if (!idsAgendamento.has(a.id)) {
+                      idsAgendamento.add(a.id);
+                      agsAtivosRemar.push(a);
+                    }
+                  });
+              }
+
+              if (agsAtivosRemar.length > 0) {
+                // Tentar identificar qual agendamento cancelar pelo médico mencionado no histórico
+                let agParaCancelar = null;
+                if (extracao.medico_id) {
+                  agParaCancelar = agsAtivosRemar.find(a => a.medico_id === extracao.medico_id);
+                }
+                if (!agParaCancelar && extracao.medico_nome) {
+                  const mdsRemar = await base44.asServiceRole.entities.Medico.list();
+                  const medRemar = mdsRemar.find(m => m.nome.toLowerCase().includes(extracao.medico_nome.toLowerCase()) || extracao.medico_nome.toLowerCase().includes(m.nome.toLowerCase()));
+                  if (medRemar) agParaCancelar = agsAtivosRemar.find(a => a.medico_id === medRemar.id);
+                }
+                // Se só tem 1 agendamento ativo, cancelar ele
+                if (!agParaCancelar && agsAtivosRemar.length === 1) {
+                  agParaCancelar = agsAtivosRemar[0];
+                }
+                if (agParaCancelar) {
+                  await base44.asServiceRole.entities.Agendamento.update(agParaCancelar.id, { status: 'Cancelado', observacoes: `Cancelado automaticamente para remarcação via WhatsApp em ${new Date().toLocaleString('pt-BR')}` });
+                  try {
+                    const mdsNotif = await base44.asServiceRole.entities.Medico.list();
+                    const medNotif = mdsNotif.find(m => m.id === agParaCancelar.medico_id);
+                    const dfNotif = new Date(agParaCancelar.data_agendamento + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' });
+                    await base44.asServiceRole.entities.Notification.create({ type: 'agendamento_cancelado', message: `🔄 ${agParaCancelar.paciente_nome || 'Paciente'} remarcou ${medNotif?.especialidade || ''} com ${medNotif?.nome || 'Médico'} - ${dfNotif} às ${agParaCancelar.horario}`, data: { agendamento_id: agParaCancelar.id, paciente_nome: agParaCancelar.paciente_nome, medico_nome: medNotif?.nome, cancelado_por: 'WhatsApp - Glória (remarcação)' }, is_read: false });
+                  } catch (e) {}
+                  agendamentoAntigoCancelado = true;
+                  console.log(`🔄 Agendamento antigo ${agParaCancelar.id} cancelado para remarcação`);
                 }
               }
             } catch (e) { console.log('⚠️ Erro ao cancelar agendamento antigo para remarcação:', e.message); }
