@@ -160,6 +160,7 @@ export default function ContatosTab({ onIniciarConversa }) {
   const limparHistorico = async (contato) => {
     setLimpando(true);
     try {
+      // Limpar o contato principal
       await base44.entities.Contato.update(contato.id, {
         historico_mensagens: [],
         ultima_mensagem: null,
@@ -169,11 +170,39 @@ export default function ContatosTab({ onIniciarConversa }) {
         conversa_finalizada: true,
         processando_ia_lock: null
       });
+
+      // Também limpar contatos duplicados com o mesmo telefone
+      // (a tela de chat mescla históricos de todos os contatos com o mesmo número)
+      const telNorm = (contato.telefone || '').replace(/\D/g, '');
+      const ultimos8 = telNorm.slice(-8);
+      if (ultimos8.length === 8) {
+        const duplicados = contatos.filter(c => {
+          if (c.id === contato.id) return false;
+          const tel = (c.telefone || '').replace(/\D/g, '');
+          return tel.length >= 8 && tel.slice(-8) === ultimos8;
+        });
+        for (const dup of duplicados) {
+          try {
+            await base44.entities.Contato.update(dup.id, {
+              historico_mensagens: [],
+              ultima_mensagem: null,
+              ultima_resposta: null,
+              mensagens_pendentes: [],
+              total_mensagens: 0,
+              conversa_finalizada: true,
+              processando_ia_lock: null
+            });
+          } catch (e) {
+            console.warn('Erro ao limpar duplicado:', dup.id, e);
+          }
+        }
+      }
+
       setConfirmandoLimpeza(null);
       await carregarContatos();
     } catch (error) {
-      console.error('Erro ao limpar histórico:', error);
-      alert('Erro ao limpar histórico: ' + (error?.message || 'Erro desconhecido'));
+      console.error('Erro ao limpar hist\u00f3rico:', error);
+      alert('Erro ao limpar hist\u00f3rico: ' + (error?.message || 'Erro desconhecido'));
     } finally {
       setLimpando(false);
     }
