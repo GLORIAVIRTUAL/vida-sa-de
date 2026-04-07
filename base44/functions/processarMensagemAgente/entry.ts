@@ -1102,6 +1102,9 @@ Retorne JSON.`;
         const clienteEnviouCPFNaMensagem=/\d{11}/.test((messageText||'').replace(/\D/g,''));
         const clienteEnviouDadosPessoaisNaMensagem=(clienteEnviouCPFNaMensagem&&/[A-Za-zÀ-ÿ]{2,}/.test(messageText||''))||(/\d{1,2}\/\d{1,2}\/\d{4}/.test(messageText||'')&&/[A-Za-zÀ-ÿ]{2,}/.test(messageText||''));
         const clienteEnviouComplementoDadosNaMensagem=clienteEnviouDadosPessoaisNaMensagem||clienteEnviouCPFNaMensagem||/^\d{1,2}\/\d{1,2}\/\d{4}$/.test((messageText||'').trim())||(/^[A-Za-zÀ-ÿ\s]+$/.test((messageText||'').trim())&&(messageText||'').trim().split(/\s+/).length>=2);
+        
+        const assistentePediuConfirmacaoDados = /correto.*\?|confirma.*\?|est[áa] (correto|certo).*\?|s[óo] para confirmar/i.test(ultimaMsgAssistenteFull||'');
+
         // No fluxo de remarcação, o paciente já existe no sistema - buscar dados dele se nome/CPF estão faltando
         let _nVFinal = _nV;
         let _cpfVFinal = _cpfV;
@@ -1124,7 +1127,7 @@ Retorne JSON.`;
             }
           } catch (e) {}
         }
-        const podeCriarAgendamentoAgora=!mensagemEhPerguntaNova&&((assistentePediuConfirmacaoHorario&&clienteConfirmouOuEscolheu)||(assistentePediuDadosParaFinalizar&&clienteEnviouComplementoDadosNaMensagem&&_nVFinal&&_cpfVFinal));
+        const podeCriarAgendamentoAgora=!mensagemEhPerguntaNova&&((assistentePediuConfirmacaoHorario&&clienteConfirmouOuEscolheu)||(assistentePediuDadosParaFinalizar&&clienteEnviouComplementoDadosNaMensagem&&_nVFinal&&_cpfVFinal)||(assistentePediuConfirmacaoDados&&clienteConfirmouOuEscolheu&&_nVFinal&&_cpfVFinal));
         if (_nVFinal && _cpfVFinal && (extracao.medico_nome || extracao.medico_id) && extracao.data_agendamento && extracao.horario && podeCriarAgendamentoAgora) {
           
           // REMARCAÇÃO: Se o histórico indica remarcação, cancelar o agendamento antigo ANTES de criar o novo
