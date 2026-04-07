@@ -1100,6 +1100,51 @@ Retorne JSON.`;
         const podeCriarAgendamentoAgora=!mensagemEhPerguntaNova&&((assistentePediuConfirmacaoHorario&&clienteConfirmouOuEscolheu)||(assistentePediuDadosParaFinalizar&&clienteEnviouComplementoDadosNaMensagem&&_nVFinal&&_cpfVFinal));
         if (_nVFinal && _cpfVFinal && (extracao.medico_nome || extracao.medico_id) && extracao.data_agendamento && extracao.horario && podeCriarAgendamentoAgora) {
           
+          // REMARCAÇÃO: Se o histórico indica remarcação, cancelar o agendamento antigo ANTES de criar o novo
+          const ehRemarcacao = /remarcar|adiar|mudar.*data|mudar.*hor[áa]rio/i.test(historicoConversa || '');
+          let agendamentoAntigoCancelado = false;
+          if (ehRemarcacao) {
+            try {
+              const telNormRemar = phoneNumber.replace(/\D/g, '');
+              const u8Remar = telNormRemar.slice(-8);
+              const todosPacsRemar = await base44.asServiceRole.entities.Paciente.list('-created_date', 500);
+              const pacsRemar = todosPacsRemar.filter(p => (p.telefone || '').replace(/\D/g, '').slice(-8) === u8Remar);
+              if (pacsRemar.length > 0) {
+                const hjRemar = new Date().toISOString().split('T')[0];
+                const pIdsRemar = pacsRemar.map(p => p.id);
+                const todosAgsRemar = await base44.asServiceRole.entities.Agendamento.filter({ data_agendamento: { $gte: hjRemar } });
+                const agsAtivosRemar = todosAgsRemar.filter(a => pIdsRemar.includes(a.paciente_id) && ['Agendado', 'Confirmado', 'Pago'].includes(a.status));
+                if (agsAtivosRemar.length > 0) {
+                  // Tentar identificar qual agendamento cancelar pelo médico mencionado no histórico
+                  let agParaCancelar = null;
+                  if (extracao.medico_id) {
+                    agParaCancelar = agsAtivosRemar.find(a => a.medico_id === extracao.medico_id);
+                  }
+                  if (!agParaCancelar && extracao.medico_nome) {
+                    const mdsRemar = await base44.asServiceRole.entities.Medico.list();
+                    const medRemar = mdsRemar.find(m => m.nome.toLowerCase().includes(extracao.medico_nome.toLowerCase()) || extracao.medico_nome.toLowerCase().includes(m.nome.toLowerCase()));
+                    if (medRemar) agParaCancelar = agsAtivosRemar.find(a => a.medico_id === medRemar.id);
+                  }
+                  // Se só tem 1 agendamento ativo, cancelar ele
+                  if (!agParaCancelar && agsAtivosRemar.length === 1) {
+                    agParaCancelar = agsAtivosRemar[0];
+                  }
+                  if (agParaCancelar) {
+                    await base44.asServiceRole.entities.Agendamento.update(agParaCancelar.id, { status: 'Cancelado', observacoes: `Cancelado automaticamente para remarcação via WhatsApp em ${new Date().toLocaleString('pt-BR')}` });
+                    try {
+                      const mdsNotif = await base44.asServiceRole.entities.Medico.list();
+                      const medNotif = mdsNotif.find(m => m.id === agParaCancelar.medico_id);
+                      const dfNotif = new Date(agParaCancelar.data_agendamento + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' });
+                      await base44.asServiceRole.entities.Notification.create({ type: 'agendamento_cancelado', message: `🔄 ${agParaCancelar.paciente_nome || 'Paciente'} remarcou ${medNotif?.especialidade || ''} com ${medNotif?.nome || 'Médico'} - ${dfNotif} às ${agParaCancelar.horario}`, data: { agendamento_id: agParaCancelar.id, paciente_nome: agParaCancelar.paciente_nome, medico_nome: medNotif?.nome, cancelado_por: 'WhatsApp - Glória (remarcação)' }, is_read: false });
+                    } catch (e) {}
+                    agendamentoAntigoCancelado = true;
+                    console.log(`🔄 Agendamento antigo ${agParaCancelar.id} cancelado para remarcação`);
+                  }
+                }
+              }
+            } catch (e) { console.log('⚠️ Erro ao cancelar agendamento antigo para remarcação:', e.message); }
+          }
+
           let medicos = [];
           try {
             medicos = await Promise.race([
@@ -1127,12 +1172,10 @@ Retorne JSON.`;
             const cpfLimpo = extracao.cpf ? extracao.cpf.replace(/\D/g, '') : null;
 
             let paciente = null;
-            // Busca por CPF primeiro (mais confiável)
             if (cpfLimpo && cpfLimpo.length === 11) {
               const todosPacientes = await base44.asServiceRole.entities.Paciente.list('-created_date', 500);
               paciente = todosPacientes.find(p => (p.cpf || '').replace(/\D/g, '') === cpfLimpo);
             }
-            // Fallback: busca por telefone
             if (!paciente) {
               let pacientesExistentes = await base44.asServiceRole.entities.Paciente.filter({ telefone: phoneNumber });
               if (pacientesExistentes.length === 0) {
@@ -1196,14 +1239,14 @@ Retorne JSON.`;
               } catch (e) {}
               
               const novoAgendamento = await base44.asServiceRole.entities.Agendamento.create({
-                paciente_id: paciente.id, paciente_nome: extracao.nome_paciente, medico_id: medicoEncontrado.id, data_agendamento: extracao.data_agendamento, horario: extracao.horario, tipo_servico: 'Consulta', status: 'Agendado', categoria_preco_id: categoriaParticularId, valor_total: valorConsulta, valor_final: valorConsulta, observacoes: 'Agendado pela Glória', agendado_por: 'Glória', agendado_por_tipo: 'chatbot'
+                paciente_id: paciente.id, paciente_nome: extracao.nome_paciente, medico_id: medicoEncontrado.id, data_agendamento: extracao.data_agendamento, horario: extracao.horario, tipo_servico: 'Consulta', status: 'Agendado', categoria_preco_id: categoriaParticularId, valor_total: valorConsulta, valor_final: valorConsulta, observacoes: ehRemarcacao && agendamentoAntigoCancelado ? 'Remarcado pela Glória' : 'Agendado pela Glória', agendado_por: 'Glória', agendado_por_tipo: 'chatbot'
               });
 
               try {
                 const dataObjNotif = new Date(extracao.data_agendamento + 'T12:00:00');
                 const dataFormatadaNotif = dataObjNotif.toLocaleDateString('pt-BR');
                 await base44.asServiceRole.entities.Notification.create({
-                  type: 'novo_agendamento', message: `🆕 ${extracao.nome_paciente} - ${medicoEncontrado.especialidade} com ${medicoEncontrado.nome} em ${dataFormatadaNotif} às ${extracao.horario}`, data: { agendamento_id: novoAgendamento.id, paciente_nome: extracao.nome_paciente, medico_nome: medicoEncontrado.nome, especialidade: medicoEncontrado.especialidade, data: extracao.data_agendamento, horario: extracao.horario, agendado_por: 'Glória', agendado_por_tipo: 'chatbot' }, is_read: false
+                  type: 'novo_agendamento', message: `${ehRemarcacao ? '🔄' : '🆕'} ${extracao.nome_paciente} - ${medicoEncontrado.especialidade} com ${medicoEncontrado.nome} em ${dataFormatadaNotif} às ${extracao.horario}${ehRemarcacao ? ' (remarcação)' : ''}`, data: { agendamento_id: novoAgendamento.id, paciente_nome: extracao.nome_paciente, medico_nome: medicoEncontrado.nome, especialidade: medicoEncontrado.especialidade, data: extracao.data_agendamento, horario: extracao.horario, agendado_por: 'Glória', agendado_por_tipo: 'chatbot' }, is_read: false
                 });
               } catch (notifError) {}
 
