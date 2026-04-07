@@ -1069,14 +1069,36 @@ Retorne JSON.`;
         const _cpfV=extracao.cpf&&extracao.cpf.replace(/\D/g,'').length===11;
         if(!_nV||!_cpfV){extracao.dados_completos=false;if(!_nV&&!dadosFaltantes.includes('nome completo'))dadosFaltantes.push('nome completo');if(!_cpfV&&!dadosFaltantes.includes('CPF'))dadosFaltantes.push('CPF');}
         const mensagemEhPerguntaNova=/\?|quanto custa|qual valor|pre[cç]o|valor da consulta|valor do exame|onde fica|endere[cç]o|telefone|conv[eê]nio|convenio/i.test(messageText||'');
-        const assistentePediuConfirmacaoHorario=/você gostaria de agendar esse horário|gostaria de agendar esse horário|quer agendar esse horário|posso confirmar esse horário/i.test(ultimaMsgAssistenteFull||'');
+        const assistentePediuConfirmacaoHorario=/você gostaria de agendar esse horário|gostaria de agendar esse horário|quer agendar esse horário|posso confirmar esse horário|qual dessas datas|qual desses hor[áa]rios|qual hor[áa]rio.*prefere|qual data.*prefere|qual.*voc[êe].*prefere|qual.*você.*prefere|escolha.*data|escolha.*hor[áa]rio/i.test(ultimaMsgAssistenteFull||'');
         const assistentePediuDadosParaFinalizar=/nome completo|cpf|data de nascimento|dd\/mm\/aaaa|para finalizar|para confirmar|para prosseguir/i.test(ultimaMsgAssistenteFull||'');
         const clienteConfirmouOuEscolheu=/^(sim|s|ok|quero|pode|claro|isso|esse|essa|confirmo|pode ser|vamos|fechado|certo|correto)$/i.test((messageText||'').trim())||/\d{1,2}[:h]\d{2}|\d{1,2}\/\d{1,2}|segunda|ter[cç]a|quarta|quinta|sexta|s[áa]bado|amanh[ãa]|hoje/i.test(messageText||'');
         const clienteEnviouCPFNaMensagem=/\d{11}/.test((messageText||'').replace(/\D/g,''));
         const clienteEnviouDadosPessoaisNaMensagem=(clienteEnviouCPFNaMensagem&&/[A-Za-zÀ-ÿ]{2,}/.test(messageText||''))||(/\d{1,2}\/\d{1,2}\/\d{4}/.test(messageText||'')&&/[A-Za-zÀ-ÿ]{2,}/.test(messageText||''));
         const clienteEnviouComplementoDadosNaMensagem=clienteEnviouDadosPessoaisNaMensagem||clienteEnviouCPFNaMensagem||/^\d{1,2}\/\d{1,2}\/\d{4}$/.test((messageText||'').trim())||(/^[A-Za-zÀ-ÿ\s]+$/.test((messageText||'').trim())&&(messageText||'').trim().split(/\s+/).length>=2);
-        const podeCriarAgendamentoAgora=!mensagemEhPerguntaNova&&((assistentePediuConfirmacaoHorario&&clienteConfirmouOuEscolheu)||(assistentePediuDadosParaFinalizar&&clienteEnviouComplementoDadosNaMensagem&&_nV&&_cpfV));
-        if (_nV && _cpfV && (extracao.medico_nome || extracao.medico_id) && extracao.data_agendamento && extracao.horario && podeCriarAgendamentoAgora) {
+        // No fluxo de remarcação, o paciente já existe no sistema - buscar dados dele se nome/CPF estão faltando
+        let _nVFinal = _nV;
+        let _cpfVFinal = _cpfV;
+        if (!_nV || !_cpfV) {
+          // Tentar obter nome/CPF do paciente pelo telefone
+          try {
+            const telN = phoneNumber.replace(/\D/g, '');
+            const u8Tel = telN.slice(-8);
+            const todosPacs = await base44.asServiceRole.entities.Paciente.list('-created_date', 500);
+            const pacEncontrado = todosPacs.find(p => (p.telefone || '').replace(/\D/g, '').slice(-8) === u8Tel);
+            if (pacEncontrado) {
+              if (!_nV && pacEncontrado.nome && pacEncontrado.nome.trim().split(/\s+/).length >= 2) {
+                extracao.nome_paciente = pacEncontrado.nome;
+                _nVFinal = true;
+              }
+              if (!_cpfV && pacEncontrado.cpf && pacEncontrado.cpf.replace(/\D/g, '').length === 11 && pacEncontrado.cpf !== 'NÃO INFORMADO') {
+                extracao.cpf = pacEncontrado.cpf.replace(/\D/g, '');
+                _cpfVFinal = true;
+              }
+            }
+          } catch (e) {}
+        }
+        const podeCriarAgendamentoAgora=!mensagemEhPerguntaNova&&((assistentePediuConfirmacaoHorario&&clienteConfirmouOuEscolheu)||(assistentePediuDadosParaFinalizar&&clienteEnviouComplementoDadosNaMensagem&&_nVFinal&&_cpfVFinal));
+        if (_nVFinal && _cpfVFinal && (extracao.medico_nome || extracao.medico_id) && extracao.data_agendamento && extracao.horario && podeCriarAgendamentoAgora) {
           
           let medicos = [];
           try {
