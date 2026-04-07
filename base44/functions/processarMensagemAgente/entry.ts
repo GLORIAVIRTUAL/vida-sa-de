@@ -481,60 +481,35 @@ Deno.serve(async (req) => {
       };
 
       const formatarListaRemarcacao = async (agendamentos) => {
-        const medicos = await base44.asServiceRole.entities.Medico.list();
-        const medicosMap = {};
-        medicos.forEach(m => { medicosMap[m.id] = m; });
+        const medicosMap = {}; (await base44.asServiceRole.entities.Medico.list()).forEach(m => { medicosMap[m.id] = m; });
         let texto = 'Encontrei estes agendamentos no seu número:\n\n';
-        agendamentos.forEach((ag, index) => {
-          const medico = medicosMap[ag.medico_id];
-          const dataFmt = new Date(ag.data_agendamento + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
-          texto += `${index + 1}. ${ag.tipo_servico || 'Consulta'} - ${dataFmt} às ${ag.horario}${medico ? ` com ${medico.nome}` : ''}\n`;
-        });
-        texto += '\nMe diga o número da opção que você quer remarcar.';
-        return { texto, medicosMap };
+        agendamentos.forEach((ag, idx) => {
+          const m = medicosMap[ag.medico_id]; const dF = new Date(ag.data_agendamento + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
+          texto += `${idx + 1}. ${ag.tipo_servico || 'Consulta'} - ${dF} às ${ag.horario}${m ? ` com ${m.nome}` : ''}\n`;
+        }); return { texto: texto + '\nMe diga o número da opção que você quer remarcar.', medicosMap };
       };
-
       const executarCancelamento = async (agendamentoId) => {
         try {
-          const ags = await base44.asServiceRole.entities.Agendamento.filter({ id: agendamentoId });
-          const ag = Array.isArray(ags) ? ags[0] : null;
-          if (!ag) return null;
+          const ags = await base44.asServiceRole.entities.Agendamento.filter({ id: agendamentoId }); const ag = Array.isArray(ags) ? ags[0] : null; if (!ag) return null;
           let medicoNome = 'Médico', medicoEsp = '';
-          try {
-            const ms = await base44.asServiceRole.entities.Medico.filter({ id: ag.medico_id });
-            if (ms.length > 0) { medicoNome = ms[0].nome; medicoEsp = ms[0].especialidade; }
-          } catch (e) {}
+          try { const ms = await base44.asServiceRole.entities.Medico.filter({ id: ag.medico_id }); if (ms.length > 0) { medicoNome = ms[0].nome; medicoEsp = ms[0].especialidade; } } catch (e) {}
           const df = new Date(ag.data_agendamento + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' });
           await base44.asServiceRole.entities.Agendamento.update(agendamentoId, { status: 'Cancelado', observacoes: `Cancelado via remarcação no WhatsApp em ${new Date().toLocaleString('pt-BR')}` });
-          try {
-            await base44.asServiceRole.entities.Notification.create({
-              type: 'agendamento_cancelado',
-              message: `🔄 ${ag.paciente_nome || 'Paciente'} remarcou ${medicoEsp} com ${medicoNome} - ${df} às ${ag.horario}`,
-              data: { agendamento_id: agendamentoId, paciente_nome: ag.paciente_nome, medico_nome: medicoNome, especialidade: medicoEsp, data: ag.data_agendamento, horario: ag.horario, cancelado_por: 'WhatsApp - Glória (remarcação)' },
-              is_read: false
-            });
-          } catch (e) {}
+          try { await base44.asServiceRole.entities.Notification.create({ type: 'agendamento_cancelado', message: `🔄 ${ag.paciente_nome || 'Paciente'} remarcou ${medicoEsp} com ${medicoNome} - ${df} às ${ag.horario}`, data: { agendamento_id: agendamentoId, paciente_nome: ag.paciente_nome, medico_nome: medicoNome, especialidade: medicoEsp, data: ag.data_agendamento, horario: ag.horario, cancelado_por: 'WhatsApp - Glória (remarcação)' }, is_read: false }); } catch (e) {}
           return ag;
         } catch (e) { return null; }
       };
-
       const buscarPrimeiroHorarioDisponivel = async (medicoId, ignorarData = null, diasLimite = 45) => {
-        const hoje = new Date();
-        const hojeISO = hoje.toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
-        const horaAtualSP = new Date().toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' });
+        const hISO = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }); const hSP = new Date().toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' });
         for (let i = 0; i < diasLimite; i++) {
-          const data = new Date();
-          data.setDate(data.getDate() + i);
-          const dataISO = data.toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
-          if (ignorarData && dataISO === ignorarData) continue;
+          const dc = new Date(); dc.setDate(dc.getDate() + i); const dISO = dc.toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+          if (ignorarData && dISO === ignorarData) continue;
           try {
-            const slotRes = await base44.asServiceRole.functions.invoke('getAvailableSlots', { medico_id: medicoId, data: dataISO });
-            const slots = slotRes?.data?.available_slots || [];
-            const slotsValidos = dataISO === hojeISO ? slots.filter(h => h > horaAtualSP) : slots;
-            if (slotsValidos.length > 0) return { data_agendamento: dataISO, horario: slotsValidos[0] };
+            const sr = await base44.asServiceRole.functions.invoke('getAvailableSlots', { medico_id: medicoId, data: dISO });
+            const sv = dISO === hISO ? (sr?.data?.available_slots || []).filter(h => h > hSP) : (sr?.data?.available_slots || []);
+            if (sv.length > 0) return { data_agendamento: dISO, horario: sv[0] };
           } catch (e) {}
-        }
-        return null;
+        } return null;
       };
 
       const escolherAgendamentoParaRemarcar = (messageText, agendamentos, medicosMap) => {
@@ -582,9 +557,16 @@ Deno.serve(async (req) => {
 
         const ultimaAssistente = historicoMensagensRaw.filter(m => m.role === 'assistant').slice(-1)[0]?.content || '';
         const aguardandoAceiteNovaData = /Você aceita remarcar para/i.test(ultimaAssistente);
-        const clienteAceitouNovaData = /^(sim|s|aceito|pode ser|ok|certo|confirmo|fechado|isso|perfeito|essa|esse|essa\s*mesma)$/i.test((messageText || '').trim());
+        const clienteAceitouNovaData = /sim|s|aceito|pode ser|ok|certo|confirmo|fechado|isso|perfeito|essa|esse|essa\s*mesma|quero|marcar/i.test((messageText || '').trim());
 
-        if (aguardandoAceiteNovaData && clienteAceitouNovaData) {
+        if (aguardandoAceiteNovaData) {
+          if (!clienteAceitouNovaData) {
+            const respostaNaoAceitou = 'Entendi. Como esse horário não ficou bom, por favor, me diga para qual dia ou turno você prefere, ou ligue para a recepção no (51) 3661-5991 para vermos outras opções na agenda.';
+            try{const cs=await base44.asServiceRole.entities.Contato.filter({telefone:phoneNumber});if(cs.length>0){const h=cs[0].historico_mensagens||[];const ts=new Date().toISOString();h.push({role:'user',content:messageText,timestamp:ts},{role:'assistant',content:respostaNaoAceitou,timestamp:ts});await base44.asServiceRole.entities.Contato.update(cs[0].id,{historico_mensagens:h.slice(-50),ultima_interacao:ts});}}catch(e){}
+            await liberarLock(base44, phoneNumber, lockName);
+            return Response.json({ success: true, resposta: respostaNaoAceitou, remarcacao_executada: false });
+          }
+
           const matchConfirmacao = ultimaAssistente.match(/\[REMARCACAO\|agendamento:([^|]+)\|medico:([^|]+)\|data:(\d{4}-\d{2}-\d{2})\|horario:(\d{2}:\d{2})\|paciente:([^\]]+)\]/);
           if (matchConfirmacao) {
             const [, agendamentoOriginalId, medicoId, novaData, novoHorario, pacienteId] = matchConfirmacao;
@@ -667,10 +649,12 @@ Deno.serve(async (req) => {
         const dataAtualFmt = new Date(agendamentoEscolhido.data_agendamento + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
         const novaDataFmt = new Date(proximoHorario.data_agendamento + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
         const pacienteBase = pacientes.find(p => p.id === agendamentoEscolhido.paciente_id) || pacientes[0];
-        const respostaOferta = `Encontrei sua consulta de ${dataAtualFmt} às ${agendamentoEscolhido.horario}${medicoEscolhido ? ` com ${medicoEscolhido.nome}` : ''}.\n\nA próxima data disponível é ${novaDataFmt} às ${proximoHorario.horario}.\n\nVocê aceita remarcar para esse horário?\n[REMARCACAO|agendamento:${agendamentoEscolhido.id}|medico:${agendamentoEscolhido.medico_id}|data:${proximoHorario.data_agendamento}|horario:${proximoHorario.horario}|paciente:${pacienteBase?.id || agendamentoEscolhido.paciente_id}]`;
-        try{const cs=await base44.asServiceRole.entities.Contato.filter({telefone:phoneNumber});if(cs.length>0){const h=cs[0].historico_mensagens||[];const ts=new Date().toISOString();h.push({role:'user',content:messageText,timestamp:ts},{role:'assistant',content:respostaOferta,timestamp:ts});await base44.asServiceRole.entities.Contato.update(cs[0].id,{historico_mensagens:h.slice(-50),ultima_interacao:ts});}}catch(e){}
+        const tagInterna = `[REMARCACAO|agendamento:${agendamentoEscolhido.id}|medico:${agendamentoEscolhido.medico_id}|data:${proximoHorario.data_agendamento}|horario:${proximoHorario.horario}|paciente:${pacienteBase?.id || agendamentoEscolhido.paciente_id}]`;
+        const respostaOfertaLimpa = `Encontrei sua consulta de ${dataAtualFmt} às ${agendamentoEscolhido.horario}${medicoEscolhido ? ` com ${medicoEscolhido.nome}` : ''}.\n\nA próxima data disponível é ${novaDataFmt} às ${proximoHorario.horario}.\n\nVocê aceita remarcar para esse horário?`;
+        const respostaOfertaParaHistorico = `${respostaOfertaLimpa}\n${tagInterna}`;
+        try{const cs=await base44.asServiceRole.entities.Contato.filter({telefone:phoneNumber});if(cs.length>0){const h=cs[0].historico_mensagens||[];const ts=new Date().toISOString();h.push({role:'user',content:messageText,timestamp:ts},{role:'assistant',content:respostaOfertaParaHistorico,timestamp:ts});await base44.asServiceRole.entities.Contato.update(cs[0].id,{historico_mensagens:h.slice(-50),ultima_interacao:ts});}}catch(e){}
         await liberarLock(base44, phoneNumber, lockName);
-        return Response.json({ success: true, resposta: respostaOferta, remarcacao_executada: false });
+        return Response.json({ success: true, resposta: respostaOfertaLimpa, remarcacao_executada: false });
       }
 
     const _hjER=/encontrei o resultado|PDF está sendo enviado|arquivo PDF/i.test(historicoConversa||'');
