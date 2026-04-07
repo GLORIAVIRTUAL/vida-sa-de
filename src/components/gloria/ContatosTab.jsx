@@ -165,13 +165,15 @@ export default function ContatosTab({ onIniciarConversa }) {
         ultima_mensagem: null,
         ultima_resposta: null,
         mensagens_pendentes: [],
-        total_mensagens: 0
+        total_mensagens: 0,
+        conversa_finalizada: true,
+        processando_ia_lock: null
       });
       setConfirmandoLimpeza(null);
-      carregarContatos();
+      await carregarContatos();
     } catch (error) {
       console.error('Erro ao limpar histórico:', error);
-      alert('Erro ao limpar histórico');
+      alert('Erro ao limpar histórico: ' + (error?.message || 'Erro desconhecido'));
     } finally {
       setLimpando(false);
     }
@@ -519,7 +521,7 @@ export default function ContatosTab({ onIniciarConversa }) {
       </Dialog>
 
       {/* Modal de Confirmar Limpeza de Histórico */}
-      <Dialog open={!!confirmandoLimpeza} onOpenChange={() => setConfirmandoLimpeza(null)}>
+      <Dialog open={!!confirmandoLimpeza} onOpenChange={(open) => { if (!open) setConfirmandoLimpeza(null); }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-red-600">
