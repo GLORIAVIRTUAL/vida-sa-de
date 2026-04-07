@@ -784,7 +784,10 @@ Deno.serve(async (req) => {
         /^(sim|quero|ok|pode|claro|esse|essa|este|esta|o primeiro|a primeira|o segundo|a segunda|qualquer)\b/i.test(messageText.trim())
       ) && /Dr\.|👨‍⚕️|\d{2}:\d{2}/i.test(ultimaMsgAssistenteFull);
       
-      const jaShowouDisponibilidades = (
+      // Verificar se o último contexto é de cancelamento/remarcação (NÃO deve considerar como disponibilidades já mostradas)
+      const ultimoContextoEhCancelamento = /cancelado com sucesso|❌\s*\*Cancelado:|gostaria de remarcar|para quando.*remarcar/i.test(ultimaMsgAssistenteFull);
+
+      const jaShowouDisponibilidades = !ultimoContextoEhCancelamento && (
         /\d{2}\/\d{2}.*\d{2}:\d{2}/i.test(ultimaMsgAssistenteFull) || 
         (/Dr\.\s+\w+/i.test(ultimaMsgAssistenteFull) && /\d{2}:\d{2}/i.test(ultimaMsgAssistenteFull)) ||
         /Qual médico.*prefere|Qual horário.*prefere|qual.*você.*prefere/i.test(ultimaMsgAssistenteFull)
