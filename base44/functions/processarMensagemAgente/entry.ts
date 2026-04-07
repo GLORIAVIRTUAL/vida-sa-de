@@ -544,12 +544,17 @@ Deno.serve(async (req) => {
           const indice = parseInt(numeroMatch[1], 10) - 1;
           if (indice >= 0 && indice < agendamentos.length) return agendamentos[indice];
         }
+
+        const confirmacaoGenerica = /^(essa|esse|essa\s*mesma|esse\s*mesmo|a\s*primeira|o\s*primeiro|pode\s*ser\s*essa|pode\s*ser\s*esse|sim|isso|exato|correto)$/i.test(texto);
+        if (confirmacaoGenerica && agendamentos.length === 1) return agendamentos[0];
+
         for (const ag of agendamentos) {
-          if (texto.includes(ag.horario.toLowerCase())) return ag;
+          if (texto.includes((ag.horario || '').toLowerCase())) return ag;
           const medico = medicosMap[ag.medico_id];
           if (medico) {
-            const partes = medico.nome.toLowerCase().split(' ').filter(p => p.length > 3);
-            if (partes.some(p => texto.includes(p))) return ag;
+            const nomeCompleto = medico.nome.toLowerCase();
+            const partes = nomeCompleto.split(' ').filter(p => p.length > 2);
+            if (texto.includes(nomeCompleto) || partes.some(p => texto.includes(p))) return ag;
           }
           const dataBR = new Date(ag.data_agendamento + 'T12:00:00').toLocaleDateString('pt-BR');
           if (texto.includes(dataBR)) return ag;
@@ -637,8 +642,11 @@ Deno.serve(async (req) => {
         }
 
         if (!agendamentoEscolhido) {
+          const respostaNaoEntendidaRemarcacao = agendamentos.length === 1
+            ? `${listaTexto}\n\nSe você quer essa consulta, pode responder “1” ou “essa mesma”.`
+            : `${listaTexto}\n\nMe responda com o número da consulta que você quer remarcar.`;
           await liberarLock(base44, phoneNumber, lockName);
-          return Response.json({ success: true, resposta: listaTexto, remarcacao_executada: false });
+          return Response.json({ success: true, resposta: respostaNaoEntendidaRemarcacao, remarcacao_executada: false });
         }
 
         const proximoHorario = await buscarPrimeiroHorarioDisponivel(agendamentoEscolhido.medico_id, agendamentoEscolhido.data_agendamento);
