@@ -126,7 +126,12 @@ export default function RepasseMedicos({ ordensServico, medicos, pacientes, onRe
         await onRepasseRealizado();
       }
 
-      alert("✅ Repasse realizado com sucesso!");
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth <= 768;
+      if (isMobile) {
+        alert("✅ Repasse realizado com sucesso!\n\nNota: O comprovante de impressão não foi aberto para evitar o fechamento do aplicativo. Acesse pelo computador caso precise imprimir.");
+      } else {
+        alert("✅ Repasse realizado com sucesso!");
+      }
 
     } catch (error) {
       console.error("❌ Erro ao realizar repasse:", error);
@@ -138,6 +143,12 @@ export default function RepasseMedicos({ ordensServico, medicos, pacientes, onRe
 
   const gerarComprovante = (grupoMedico) => {
     try {
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth <= 768;
+      if (isMobile) {
+        console.log("📱 Acesso via celular detectado, ignorando impressão automática para evitar fechamento do app.");
+        return;
+      }
+
       const dataAtual = format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
       const dataRepasse = format(new Date(filtroData + 'T00:00:00'), "dd/MM/yyyy", { locale: ptBR });
 
