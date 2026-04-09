@@ -1264,7 +1264,12 @@ Retorne JSON.`;
             } catch (e) {}
 
             let horarioValidado=false;
-            try{const dAO=new Date(extracao.data_agendamento+'T12:00:00');const dsA=dAO.getDay();const hAM=medicoEncontrado.horarios_atendimento||[];const dBl=hAM.some(h=>h.data_especifica===extracao.data_agendamento&&h.bloqueado);if(!dBl){const hDE=hAM.filter(h=>h.data_especifica===extracao.data_agendamento&&!h.bloqueado);const hDD=hDE.length>0?hDE:hAM.filter(h=>{if(h.bloqueado||h.data_especifica)return false;if(Math.floor(h.dia_semana)!==dsA)return false;const rc=h.recorrencia||'Toda Semana';if(rc==='Toda Semana')return true;if(rc==='Apenas uma vez')return false;const pm=new Date(dAO.getFullYear(),dAO.getMonth(),1);const sm=Math.ceil((dAO.getDate()+pm.getDay())/7);if(rc==='1ª e 3ª Semana do Mês')return sm===1||sm===3;if(rc==='2ª e 4ª Semana do Mês')return sm===2||sm===4;if(rc.includes('1ª'))return sm===1;if(rc.includes('2ª'))return sm===2;if(rc.includes('3ª'))return sm===3;if(rc.includes('4ª'))return sm===4;return false;});if(hDD.length>0){const tcM=medicoEncontrado.tempo_consulta_minutos||30;const[hR,mR]=extracao.horario.split(':').map(Number);const mnR=hR*60+mR;for(const p of hDD){const[ih,im]=p.horario_inicio.split(':').map(Number);const[fh,fm]=p.horario_fim.split(':').map(Number);for(let m=ih*60+im;m+tcM<=fh*60+fm;m+=tcM){if(m===mnR){horarioValidado=true;break;}}if(horarioValidado)break;}}}}catch(vE){}
+            try{
+              const sr = await base44.asServiceRole.functions.invoke('getAvailableSlots', { medico_id: medicoEncontrado.id, data: extracao.data_agendamento });
+              if (sr?.data?.available_slots && sr.data.available_slots.includes(extracao.horario)) {
+                horarioValidado = true;
+              }
+            }catch(vE){}
             if(!horarioValidado){mensagemAgendamento=`😔 O horário ${extracao.horario} em ${new Date(extracao.data_agendamento+'T12:00:00').toLocaleDateString('pt-BR')} não está disponível na agenda do(a) ${medicoEncontrado.nome}. Vou buscar os próximos horários disponíveis!`;dadosFaltantes.push('horário válido');}
             else if (agendamentosExistentes.length === 0) {
               let categoriaParticularId = null;
