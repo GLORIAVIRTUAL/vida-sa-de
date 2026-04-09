@@ -831,11 +831,11 @@ O cliente está ESCOLHENDO/RESPONDENDO. Ele disse: "${messageText}"
 1. NÃO diga que não há horários! O cliente está respondendo à lista que você já apresentou.
 2. NÃO diga "infelizmente não temos horários disponíveis" - você ACABOU de mostrar horários!
 3. Se ele mencionou um médico e horário/data, REPITA usando EXATAMENTE o horário que VOCÊ ofereceu para aquele dia. Ex: se você ofereceu "Sexta 06/03: 10:00" e cliente disse "sexta dia 6", responda "Perfeito, horário escolhido: sexta dia 6 às 10:00". NUNCA use um horário que não foi oferecido!
-4. DEPOIS peça: "Preciso do seu nome completo e data de nascimento (DD/MM/AAAA) para prosseguir no sistema."
+4. DEPOIS peça: "Preciso do seu nome completo e CPF (apenas números) para prosseguir no sistema."
 5. O SISTEMA só cria o agendamento depois da validação real dos dados. NUNCA prometa que já agendou.
 6. NÃO repita a lista de disponibilidades! O cliente JÁ viu a lista.
 7. 🚨 NUNCA diga "sua presença está confirmada", "agendamento confirmado", "agendamento realizado" ou "te aguardamos" sem retorno real do sistema.
-8. Se o cliente disse "sim" após você perguntar "Você gostaria de confirmar o horário?", isso significa que ele QUER aquele horário. NÃO mostre horários novamente, PEÇA nome e data de nascimento.
+8. Se o cliente disse "sim" após você perguntar "Você gostaria de confirmar o horário?", isso significa que ele QUER aquele horário. NÃO mostre horários novamente, PEÇA nome completo e CPF.
 
 ⚠️ IMPORTANTE: O cliente está se referindo aos horários que VOCÊ mostrou na mensagem anterior. Consulte o HISTÓRICO para ver quais horários foram oferecidos e confirme a escolha do cliente.`;
         } else if (!querVerificarAgendamento) {
@@ -938,7 +938,7 @@ O cliente está ESCOLHENDO/RESPONDENDO. Ele disse: "${messageText}"
           }
         }
           infoDisponibilidade+=disponibilidadesEncontradas.length>1?'\n⚠️ Apresente os médicos e o PRIMEIRO horário disponível de cada dia. Pergunte qual prefere.':'\n⚠️ Apresente o PRIMEIRO horário disponível de cada dia listado. Pergunte se esse horário fica bom.';
-          infoDisponibilidade+='\n⚠️ Para confirmar: nome completo e data nascimento.';
+          infoDisponibilidade+='\n⚠️ Para confirmar: nome completo e CPF (apenas números).';
         } else if (medicosParaBuscar.length > 0) {
           const _nDs=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
           let _fbDisp=[];
@@ -956,7 +956,7 @@ O cliente está ESCOLHENDO/RESPONDENDO. Ele disse: "${messageText}"
             infoDisponibilidade=`\n\n📅 DISPONIBILIDADES ENCONTRADAS:\n🚨HOJE=${_hojeI} AMANHÃ=${_amI2}.\n`;
             for(const m of _fbDisp){infoDisponibilidade+=`\n👨‍⚕️ *${m.nome}* (${m.esp}) [ID: ${m.id}]\n`;for(const d of m.dias.slice(0,3)){infoDisponibilidade+=`   📅 ${d.fmt}: ${d.hi} às ${d.hf} (~${d.sl} vagas)\n`;}}
             infoDisponibilidade+=_fbDisp.length>1?'\n⚠️ Apresente médicos e próximos dias. Pergunte qual prefere.':'\n⚠️ Apresente próximos dias. Pergunte qual prefere.';
-            infoDisponibilidade+='\n⚠️ Para confirmar: nome completo e data nascimento.';
+            infoDisponibilidade+='\n⚠️ Para confirmar: nome completo e CPF (apenas números).';
           }else{
             infoDisponibilidade=`\n\n⚠️ HORÁRIOS ESGOTADOS para ${especialidadeDetectada||'esta especialidade'}.\n🚨 NÃO diga "todos os horários estão ocupados nos próximos 30 dias". Diga que os horários estão preenchidos e sugira ligar (51) 3661-5991 para encaixes. Seja POSITIVO.`;
           }
