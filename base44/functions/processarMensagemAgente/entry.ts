@@ -419,8 +419,9 @@ Deno.serve(async (req) => {
     }
 
     const _hMFA=historicoConversa&&(/nome completo.*paciente|data de nascimento.*paciente|qual.*médico.*prefere|disponibilidades|agendar.*consulta/i.test(historicoConversa)||(/Dr\.\s+\w+/i.test(historicoConversa)&&/\d{2}:\d{2}/i.test(historicoConversa)&&/qual.*prefere|escolh|horário/i.test(historicoConversa)));
-    const _tPV=historicoConversa&&/verificar|consultar|checar|status|confirma|está confirmado|meu agendamento/i.test(historicoConversa)&&!/agendar|marcar|nova consulta/i.test(historicoConversa)&&!_hMFA;
-    const querVerificarAgendamento=!_hMFA&&((/verificar|consultar|checar|status|confirma|está confirmado|meu agendamento/i.test(messageText)&&!/cancelar|desmarcar|agendar|marcar|nova|novo/i.test(messageText))||(_tPV&&/(\d{1,2})\/(\d{1,2})\/(\d{4})|nascimento|me chamo/i.test(messageText)));
+    const _tPV=historicoConversa&&/verificar|consultar|checar|status|confirma|está confirmado|meu agendamento/i.test(historicoConversa)&&!/\bagendar\b|\bmarcar\b|nova consulta/i.test(historicoConversa)&&!_hMFA;
+    const assistentePediuDadosVerificacao = historicoConversa && /Para verificar, preciso/i.test(historicoConversa);
+    const querVerificarAgendamento = (!_hMFA && (/verificar|consultar|checar|status|confirma|está confirmado|meu agendamento/i.test(messageText) && !/cancelar|desmarcar|\bagendar\b|\bmarcar\b|nova|novo/i.test(messageText))) || (_tPV && /(\d{1,2})\/(\d{1,2})\/(\d{4})|nascimento|me chamo/i.test(messageText)) || (assistentePediuDadosVerificacao && /(\d{11}|\d{3}\.\d{3}\.\d{3}-\d{2})/.test(messageText));
 
     const cancelamentoJaConcluidoNoHistorico=/Agendamento cancelado com sucesso|❌\s*\*Cancelado:/i.test(historicoConversa||'');
     const querCancelar=/cancelar|desmarcar|n[aã]o (vou|posso|irei)|remarcar|adiar|desistir/i.test(messageText)||(!cancelamentoJaConcluidoNoHistorico&&/cancelar|desmarcar|remarcar/i.test(historicoConversa||''));
