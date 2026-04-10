@@ -419,67 +419,29 @@ Deno.serve(async (req) => {
     }
 
     const _hMFA=historicoConversa&&(/nome completo.*paciente|data de nascimento.*paciente|qual.*médico.*prefere|disponibilidades|agendar.*consulta/i.test(historicoConversa)||(/Dr\.\s+\w+/i.test(historicoConversa)&&/\d{2}:\d{2}/i.test(historicoConversa)&&/qual.*prefere|escolh|horário/i.test(historicoConversa)));
-    const _tPV=historicoConversa&&/verificar|consultar|checar|status|confirma|está confirmado|meu agendamento/i.test(historicoConversa)&&!/\bagendar\b|\bmarcar\b|nova consulta/i.test(historicoConversa)&&!_hMFA;
-    const assistentePediuDadosVerificacao = historicoConversa && /Para verificar, preciso/i.test(historicoConversa);
-    const querVerificarAgendamento = (!_hMFA && (/verificar|consultar|checar|status|confirma|está confirmado|meu agendamento/i.test(messageText) && !/cancelar|desmarcar|\bagendar\b|\bmarcar\b|nova|novo/i.test(messageText))) || (_tPV && /(\d{1,2})\/(\d{1,2})\/(\d{4})|nascimento|me chamo/i.test(messageText)) || (assistentePediuDadosVerificacao && /(\d{11}|\d{3}\.\d{3}\.\d{3}-\d{2})/.test(messageText));
+    const querVerificarAgendamento = (!_hMFA && (/verificar|consultar|checar|status|confirma|está confirmado|meu agendamento/i.test(messageText) && !/cancelar|desmarcar|\bagendar\b|\bmarcar\b|nova|novo/i.test(messageText)));
 
     const cancelamentoJaConcluidoNoHistorico=/Agendamento cancelado com sucesso|❌\s*\*Cancelado:/i.test(historicoConversa||'');
     const querCancelar=/cancelar|desmarcar|n[aã]o (vou|posso|irei)|remarcar|adiar|desistir/i.test(messageText)||(!cancelamentoJaConcluidoNoHistorico&&/cancelar|desmarcar|remarcar/i.test(historicoConversa||''));
     let infoCancelamento='';let agendamentoCancelado=false;
 
+      const nTV = (telefone) => { const t = (telefone||'').replace(/\D/g,''); const l = [telefone,t].filter(Boolean); if(t.startsWith('55')&&t.length>=12) l.push(t.slice(2)); if(!t.startsWith('55')&&t.length>=10) l.push('55'+t); return [...new Set(l)]; };
+      const buscarPacientesPorTelefone = async (telefone) => { for(const v of nTV(telefone)){try{const e=await base44.asServiceRole.entities.Paciente.filter({telefone:v});if(e.length>0)return e;}catch(e){}}try{const tp=await base44.asServiceRole.entities.Paciente.list('-created_date',500);const u8=(telefone||'').replace(/\D/g,'').slice(-8);return tp.filter(p=>((p.telefone||'').replace(/\D/g,'').slice(-8)===u8));}catch(e){return [];}};
+      const listarAgendamentosFuturosPorTelefone = async (telefone) => { const hoje=new Date().toISOString().split('T')[0];const pacs=await buscarPacientesPorTelefone(telefone);let ags=[];for(const p of pacs){const pa=await base44.asServiceRole.entities.Agendamento.filter({paciente_id:p.id});ags.push(...pa.filter(a=>a.data_agendamento>=hoje&&['Agendado','Confirmado','Pago'].includes(a.status)));}const ids=new Set();return {pacientes:pacs,agendamentos:ags.filter(a=>{if(ids.has(a.id))return false;ids.add(a.id);return true;})}; };
+
     if(querVerificarAgendamento){
-      const nm=messageText.match(/(?:nome[:\s]+|sou\s+o?\s*|me chamo\s+|é\s+)?([A-Za-zÀ-ÿ]+(?:\s+[A-Za-zÀ-ÿ]+)+)/i);
-      let nE=null;if(nm){let n=nm[1].trim().replace(/^(me chamo|sou|meu nome é|é)\s*/i,'');if(n.split(' ').length>=2)nE=n;}
-      const cpfMatch=messageText.match(/(\d{3}\.?\d{3}\.?\d{3}[-.]?\d{2})/);
-      const cpfE=cpfMatch?cpfMatch[1].replace(/\D/g,''):null;
-      const dm=messageText.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-      const dE=dm?`${dm[3]}-${String(dm[2]).padStart(2,'0')}-${String(dm[1]).padStart(2,'0')}`:null;
-      if(nE&&(cpfE||dE)){try{const rv=await base44.asServiceRole.functions.invoke('verificarAgendamento',{nome:nE,cpf:cpfE,data_nascimento:dE});let rV='';
-        if(rv.data?.sucesso&&rv.data?.agendamentos?.length>0){rV=`📋 *Seus agendamentos:*\n\n`;rv.data.agendamentos.forEach(ag=>{const se=ag.status==='Cancelado'?'❌':ag.status==='Agendado'?'📅':'✅';const st=ag.status==='Cancelado'?'CANCELADO':ag.status==='Agendado'?'Agendado':ag.status==='Confirmado'?'CONFIRMADO':ag.status;rV+=`${se} *${ag.data_formatada}* às *${ag.horario}*\n👨‍⚕️ ${ag.medico_nome} (${ag.especialidade})\n📌 *${st}*\n\n`;});const tc=rv.data.agendamentos.some(a=>a.status==='Confirmado'||a.status==='Agendado');if(tc)rV+='📍 Tristão Monteiro, 580 – Tramandaí/RS\n⏰ Chegue 10min antes!\n\n';rV+='Posso ajudar em mais algo?';}else{rV=`😔 Não encontramos agendamentos para *${nE}*.\nPosso agendar para você! 😊`;}
+      try{
+        const {agendamentos} = await listarAgendamentosFuturosPorTelefone(phoneNumber);
+        let rV='';
+        if(agendamentos.length>0){
+          rV=`📋 *Encontrei os seguintes agendamentos para o seu número:*\n\n`;const mdsMap={};try{const mds=await base44.asServiceRole.entities.Medico.list();mds.forEach(m=>{mdsMap[m.id]=m;});}catch(e){}
+          agendamentos.sort((a,b)=>a.data_agendamento.localeCompare(b.data_agendamento)).forEach(ag=>{const md=mdsMap[ag.medico_id];const dF=new Date(ag.data_agendamento+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'});const se=ag.status==='Cancelado'?'❌':ag.status==='Agendado'?'📅':'✅';const st=ag.status==='Cancelado'?'CANCELADO':ag.status==='Agendado'?'Agendado':ag.status==='Confirmado'?'CONFIRMADO':ag.status;rV+=`${se} *${dF}* às *${ag.horario}*\n👨‍⚕️ ${md?md.nome:'Médico'} (${md?md.especialidade:'Especialidade'})\n📌 *${st}*\n\n`;});
+          if(agendamentos.some(a=>a.status==='Confirmado'||a.status==='Agendado')) rV+='📍 Tristão Monteiro, 580 – Tramandaí/RS\n⏰ Chegue 10min antes!\n\n';rV+='Posso ajudar em mais algo?';
+        }else rV=`😔 Não encontrei agendamentos futuros cadastrados para este número de telefone.\nPosso agendar para você! 😊`;
         try{const cs=await base44.asServiceRole.entities.Contato.filter({telefone:phoneNumber});if(cs.length>0){const h=cs[0].historico_mensagens||[];const ts=new Date().toISOString();h.push({role:'user',content:messageText,timestamp:ts},{role:'assistant',content:rV,timestamp:ts});await base44.asServiceRole.entities.Contato.update(cs[0].id,{historico_mensagens:h.slice(-50),ultima_interacao:ts});}}catch(e){}
         await liberarLock(base44, phoneNumber, lockName);return Response.json({success:true,resposta:rV,verificado:true,fluxo:'verificacao'});
-      }catch(e){}}else{
-        const rPD=`Para verificar, preciso:\n📝 Nome completo\n📝 CPF (apenas números)\n\nEx: \"Antonio Thiago 12345678900\"`;
-        try{const cs=await base44.asServiceRole.entities.Contato.filter({telefone:phoneNumber});if(cs.length>0){const h=cs[0].historico_mensagens||[];const ts=new Date().toISOString();h.push({role:'user',content:messageText,timestamp:ts},{role:'assistant',content:rPD,timestamp:ts});await base44.asServiceRole.entities.Contato.update(cs[0].id,{historico_mensagens:h.slice(-50),ultima_interacao:ts});}}catch(e){}
-        await liberarLock(base44, phoneNumber, lockName);return Response.json({success:true,resposta:rPD,fluxo:'verificacao'});}
+      }catch(e){console.error(e);}
     }
-
-      const normalizarTelefoneVariantes = (telefone) => {
-        const tel = (telefone || '').replace(/\D/g, '');
-        const lista = [telefone, tel].filter(Boolean);
-        if (tel.startsWith('55') && tel.length >= 12) lista.push(tel.slice(2));
-        if (!tel.startsWith('55') && tel.length >= 10) lista.push('55' + tel);
-        return [...new Set(lista)];
-      };
-
-      const buscarPacientesPorTelefone = async (telefone) => {
-        const variantes = normalizarTelefoneVariantes(telefone);
-        for (const variante of variantes) {
-          try {
-            const encontrados = await base44.asServiceRole.entities.Paciente.filter({ telefone: variante });
-            if (encontrados.length > 0) return encontrados;
-          } catch (e) {}
-        }
-        try {
-          const todosPacientes = await base44.asServiceRole.entities.Paciente.list('-created_date', 500);
-          const ultimos8 = (telefone || '').replace(/\D/g, '').slice(-8);
-          return todosPacientes.filter(p => ((p.telefone || '').replace(/\D/g, '').slice(-8) === ultimos8));
-        } catch (e) {
-          return [];
-        }
-      };
-
-      const listarAgendamentosFuturosPorTelefone = async (telefone) => {
-        const hoje = new Date().toISOString().split('T')[0];
-        const pacientes = await buscarPacientesPorTelefone(telefone);
-        let agendamentos = [];
-        for (const paciente of pacientes) {
-          const ags = await base44.asServiceRole.entities.Agendamento.filter({ paciente_id: paciente.id });
-          agendamentos.push(...ags.filter(ag => ag.data_agendamento >= hoje && ['Agendado', 'Confirmado', 'Pago'].includes(ag.status)));
-        }
-        const ids = new Set();
-        return { pacientes, agendamentos: agendamentos.filter(ag => { if (ids.has(ag.id)) return false; ids.add(ag.id); return true; }) };
-      };
 
       const formatarListaRemarcacao = async (agendamentos) => {
         const medicosMap = {}; (await base44.asServiceRole.entities.Medico.list()).forEach(m => { medicosMap[m.id] = m; });
