@@ -1376,21 +1376,14 @@ Retorne JSON.`;
     let contextoPreviousConversation = '';
     let infoAgendamentosCliente = '';
     try {
-      const tn = phoneNumber.replace(/\D/g, ''); const u8 = tn.slice(-8);
-      const tPacs = await base44.asServiceRole.entities.Paciente.list('-created_date', 500);
-      const pF = tPacs.filter(p => (p.telefone || '').replace(/\D/g, '').slice(-8) === u8);
-      if (pF.length > 0) {
-        const pIds = pF.map(p => p.id); const hj = new Date().toISOString().split('T')[0];
-        const tAgs = await base44.asServiceRole.entities.Agendamento.filter({data_agendamento: {$gte: hj}});
-        const aC = tAgs.filter(a => pIds.includes(a.paciente_id) && ['Agendado', 'Confirmado', 'Pago'].includes(a.status));
-        if (aC.length > 0) {
-          const mds = await base44.asServiceRole.entities.Medico.list(); const mM = {}; mds.forEach(m => { mM[m.id] = m; });
-          infoAgendamentosCliente = `\n\n📅 AGENDAMENTOS FUTUROS DESTE CLIENTE NO SISTEMA:\n`;
-          aC.forEach(ag => { const md = mM[ag.medico_id]; const dF = new Date(ag.data_agendamento + 'T12:00:00').toLocaleDateString('pt-BR'); infoAgendamentosCliente += `- ${ag.tipo_servico} com ${md ? md.nome : 'Médico'} em ${dF} às ${ag.horario} (Status: ${ag.status})\n`; });
-          infoAgendamentosCliente += `\n🚨 REGRA CRÍTICA: Se o cliente perguntar sobre seu agendamento, confirmar o horário, ou disser que está chegando, USE ESTES DADOS REAIS. Se o cliente disser um horário diferente do que está no sistema, CORRIJA-O educadamente informando o horário real que consta no sistema. NUNCA concorde com um horário errado!`;
-        } else {
-          infoAgendamentosCliente = `\n\n📅 AGENDAMENTOS FUTUROS DESTE CLIENTE NO SISTEMA:\nNenhum agendamento futuro encontrado. 🚨 REGRA CRÍTICA E ABSOLUTA: O cliente NÃO TEM consultas marcadas. Se ele quiser cancelar ou verificar, diga que NÃO HÁ consultas. NUNCA, SOB NENHUMA HIPÓTESE, invente ou liste consultas fictícias usando os nomes dos médicos.`;
-        }
+      const { agendamentos: aC } = await listarAgendamentosFuturosPorTelefone(phoneNumber);
+      if (aC.length > 0) {
+        const mds = await base44.asServiceRole.entities.Medico.list(); const mM = {}; mds.forEach(m => { mM[m.id] = m; });
+        infoAgendamentosCliente = `\n\n📅 AGENDAMENTOS FUTUROS DESTE CLIENTE NO SISTEMA:\n`;
+        aC.forEach(ag => { const md = mM[ag.medico_id]; const dF = new Date(ag.data_agendamento + 'T12:00:00').toLocaleDateString('pt-BR'); infoAgendamentosCliente += `- ${ag.tipo_servico} com ${md ? md.nome : 'Médico'} em ${dF} às ${ag.horario} (Status: ${ag.status})\n`; });
+        infoAgendamentosCliente += `\n🚨 REGRA CRÍTICA: Se o cliente perguntar sobre seu agendamento, confirmar o horário, ou disser que está chegando, USE ESTES DADOS REAIS. Se o cliente disser um horário diferente do que está no sistema, CORRIJA-O educadamente informando o horário real que consta no sistema. NUNCA concorde com um horário errado!`;
+      } else {
+        infoAgendamentosCliente = `\n\n📅 AGENDAMENTOS FUTUROS DESTE CLIENTE NO SISTEMA:\nNenhum agendamento futuro encontrado. 🚨 REGRA CRÍTICA E ABSOLUTA: O cliente NÃO TEM consultas marcadas. Se ele quiser cancelar ou verificar, diga que NÃO HÁ consultas. NUNCA, SOB NENHUMA HIPÓTESE, invente ou liste consultas fictícias usando os nomes dos médicos.`;
       }
     } catch (e) {}
 
