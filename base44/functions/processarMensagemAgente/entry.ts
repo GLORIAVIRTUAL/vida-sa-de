@@ -541,7 +541,14 @@ Deno.serve(async (req) => {
       };
 
       const historicoAssistenteTexto = historicoMensagensRaw.filter(m => m.role === 'assistant').map(m => m.content || '').join('\n');
-      const fluxoRemarcacaoAtivo = /remarcar|reagendar|mudar.*consulta|mudar.*data|mudar.*hor[áa]rio|trocar.*consulta|trocar.*data|trocar.*hor[áa]rio/i.test(messageText || '') || /Me diga o número da opção que você quer remarcar|Você aceita remarcar para|Encontrei estes agendamentos no seu número/i.test(historicoAssistenteTexto || '');
+      const ultimaMsgAssistenteFullRemarcacao = historicoMensagensRaw.filter(m => m.role === 'assistant').slice(-1)[0]?.content || '';
+      const remarcacaoRecenteConcluida = /Remarcação concluída/i.test(ultimaMsgAssistenteFullRemarcacao);
+      const querMudarDeAssuntoRemarcacao = /quanto\s*custa|qual\s*o?\s*(valor|pre[çc]o)|resultado|laudo|exame pronto|endere[çc]o|localiza[çc][aã]o|cart[aã]o\s*mais|onde\s*fica/i.test(messageText || '');
+      
+      const fluxoRemarcacaoAtivo = !remarcacaoRecenteConcluida && !querMudarDeAssuntoRemarcacao && (
+        /remarcar|reagendar|mudar.*consulta|mudar.*data|mudar.*hor[áa]rio|trocar.*consulta|trocar.*data|trocar.*hor[áa]rio/i.test(messageText || '') || 
+        /Me diga o número da opção que você quer remarcar|Você aceita remarcar para|Encontrei estes agendamentos no seu número/i.test(ultimaMsgAssistenteFullRemarcacao || '')
+      );
 
       if (fluxoRemarcacaoAtivo) {
         const { pacientes, agendamentos } = await listarAgendamentosFuturosPorTelefone(phoneNumber);
