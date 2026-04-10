@@ -658,7 +658,7 @@ Deno.serve(async (req) => {
       }
 
     const _hjER=/encontrei o resultado|PDF está sendo enviado|arquivo PDF/i.test(historicoConversa||'');
-    const _hfR=/seu nome completo|seu cpf|para localizar.*resultado/i.test(historicoConversa||'');
+    const _hfR=/(RESULTADO DE EXAME|para localizar.*resultado)/i.test(historicoConversa||'');
     const _ehSobreAgendamento = /agendar|marcar|consulta|hor[áa]rio|remarcar|cancelar|desmarcar/i.test(messageText);
     const querResultado=!_hjER&&!_ehSobreAgendamento&&(/resultado|laudo|exame pronto|meu exame|buscar exame|retirar exame|pegar exame/i.test(messageText)||(_hfR&&(/\d{3}/.test(messageText)||/[A-Za-zÀ-ÿ]{2,}\s+[A-Za-zÀ-ÿ]{2,}/.test(messageText))));
     let infoResultadoExame='';let arquivoParaEnviar=null;
