@@ -51,32 +51,21 @@ Deno.serve(async (req) => {
             return Response.json(recentes || []);
         }
 
-        // Busca por nome, CPF, telefone - varre TODOS os pacientes sem limite
-        const searchTerms = normalize(termo).split(/\s+/).filter(t => t.length > 0);
-        const filtered = [];
-        let skip = 0;
-        const batchSize = 1000;
+        // Busca otimizada direto no banco de dados
+        const regexTerm = termo.trim().split(/\s+/).join('.*');
+        const cleanNumber = termo.replace(/\D/g, '');
         
-        for (let i = 0; i < 200; i++) {
-            const batch = await client.entities.Paciente.list('-created_date', batchSize, skip);
-            if (!batch || batch.length === 0) break;
-            
-            for (const paciente of batch) {
-                const searchableText = normalize(
-                    `${paciente.nome} ${paciente.cpf} ${paciente.telefone} ${paciente.email}`
-                );
-                if (searchTerms.every(term => searchableText.includes(term))) {
-                    filtered.push(paciente);
-                    if (filtered.length >= maxResults) break;
-                }
-            }
-            
-            if (filtered.length >= maxResults) break;
-            if (batch.length < batchSize) break;
-            skip += batchSize;
+        const orConditions = [
+            { nome: { $regex: regexTerm, $options: 'i' } }
+        ];
+        
+        if (cleanNumber.length > 0) {
+            orConditions.push({ cpf: { $regex: cleanNumber, $options: 'i' } });
+            orConditions.push({ telefone: { $regex: cleanNumber, $options: 'i' } });
         }
 
-        return Response.json(filtered);
+        const filtered = await client.entities.Paciente.filter({ $or: orConditions }, '-created_date', maxResults);
+        return Response.json(filtered || []);
 
     } catch (error) {
         console.error('Erro na busca:', error);
