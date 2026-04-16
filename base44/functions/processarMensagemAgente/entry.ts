@@ -1614,7 +1614,7 @@ ${listaMedicosAtivosParaPrompt}
                 let adicionouAlgum = false;
                 for (const subitem of subitens) {
                   const exame = buscarExame(subitem);
-                  const chaveSubitem = `exame:${subitem}`;
+                  const chaveSubitem = exame ? `exame:${normalizarItem(exame.nome)}` : `exame:${subitem}`;
                   if (exame && Number(exame.valor_particular) > 0) {
                     if (!itensJaCobrados.has(chaveSubitem)) {
                       subtotal += Number(exame.valor_particular);
@@ -1640,7 +1640,7 @@ ${listaMedicosAtivosParaPrompt}
 
               const exame = buscarExame(itemOriginal);
               if (exame && Number(exame.valor_particular) > 0) {
-                const chaveExame = `exame:${itemNorm}`;
+                const chaveExame = `exame:${normalizarItem(exame.nome)}`;
                 if (!itensJaCobrados.has(chaveExame)) {
                   linhas.push(`${contador}. *${exame.nome}*: ${fmtPreco(exame.valor_particular)}`);
                   total += Number(exame.valor_particular);
@@ -1654,9 +1654,13 @@ ${listaMedicosAtivosParaPrompt}
               if (procedimento) {
                 const precoProcedimento = buscarPrecoProcedimento(procedimento.id);
                 if (precoProcedimento && precoProcedimento > 0) {
-                  linhas.push(`${contador}. *${procedimento.nome}*: ${fmtPreco(precoProcedimento)}`);
-                  total += precoProcedimento;
-                  contador++;
+                  const chaveProc = `procedimento:${normalizarItem(procedimento.nome)}`;
+                  if (!itensJaCobrados.has(chaveProc)) {
+                    linhas.push(`${contador}. *${procedimento.nome}*: ${fmtPreco(precoProcedimento)}`);
+                    total += precoProcedimento;
+                    contador++;
+                    itensJaCobrados.add(chaveProc);
+                  }
                   continue;
                 }
               }
@@ -1755,14 +1759,14 @@ ${listaMedicosAtivosParaPrompt}
                   const compostoKey = Object.keys(COMPOSTOS).find(k => nomeNorm === k || nomeNorm.includes(k) || k.includes(nomeNorm));
                   if (compostoKey) {
                     const subExames = COMPOSTOS[compostoKey]; let subT = 0; let subL = []; let allOk = true; let adicionou = false;
-                    for (const sn of subExames) { const sm = buscarExame(sn); const chave = `exame:${sn}`; if (sm && sm.valor_particular) { if (!itensPdfJaCobrados.has(chave)) { subL.push(`   - ${sm.nome}: ${fmtPreco(sm.valor_particular)}`); subT += sm.valor_particular; itensPdfJaCobrados.add(chave); adicionou = true; } } else allOk = false; }
+                    for (const sn of subExames) { const sm = buscarExame(sn); const chave = sm ? `exame:${normTxt(sm.nome)}` : `exame:${sn}`; if (sm && sm.valor_particular) { if (!itensPdfJaCobrados.has(chave)) { subL.push(`   - ${sm.nome}: ${fmtPreco(sm.valor_particular)}`); subT += sm.valor_particular; itensPdfJaCobrados.add(chave); adicionou = true; } } else allOk = false; }
                     if (allOk && adicionou && subT > 0) { itemN++; orcLinhas.push(`${itemN}. *${nomeExame}*: ${fmtPreco(subT)}`); for (const sl of subL) orcLinhas.push(sl); totalP += subT; }
                     else if (!allOk) { for (const sn of subExames) naoEnc.push(sn); }
                     continue;
                   }
                   let match = buscarExame(nomeNorm);
-                  if (!match && Array.isArray(_allProcedimentos)) { const procM = _allProcedimentos.find(p => normTxt(p.nome) === nomeNorm); if (procM) { const precoP = _allTabelaPrecos.find(tp => tp.procedimento_id === procM.id && tp.valor > 0); if (precoP) { const chaveProc = `procedimento:${nomeNorm}`; if (!itensPdfJaCobrados.has(chaveProc)) { itemN++; orcLinhas.push(`${itemN}. *${nomeExame}*: ${fmtPreco(precoP.valor)}`); totalP += precoP.valor; itensPdfJaCobrados.add(chaveProc); } continue; } } }
-                  if (match && match.valor_particular) { const chaveMatch = `exame:${nomeNorm}`; if (!itensPdfJaCobrados.has(chaveMatch)) { itemN++; orcLinhas.push(`${itemN}. *${nomeExame}*: ${fmtPreco(match.valor_particular)}`); totalP += match.valor_particular; itensPdfJaCobrados.add(chaveMatch); } }
+                  if (!match && Array.isArray(_allProcedimentos)) { const procM = _allProcedimentos.find(p => normTxt(p.nome) === nomeNorm); if (procM) { const precoP = _allTabelaPrecos.find(tp => tp.procedimento_id === procM.id && tp.valor > 0); if (precoP) { const chaveProc = `procedimento:${normTxt(procM.nome)}`; if (!itensPdfJaCobrados.has(chaveProc)) { itemN++; orcLinhas.push(`${itemN}. *${nomeExame}*: ${fmtPreco(precoP.valor)}`); totalP += precoP.valor; itensPdfJaCobrados.add(chaveProc); } continue; } } }
+                  if (match && match.valor_particular) { const chaveMatch = `exame:${normTxt(match.nome)}`; if (!itensPdfJaCobrados.has(chaveMatch)) { itemN++; orcLinhas.push(`${itemN}. *${nomeExame}*: ${fmtPreco(match.valor_particular)}`); totalP += match.valor_particular; itensPdfJaCobrados.add(chaveMatch); } }
                   else naoEnc.push(nomeExame);
                 }
                 let orcTxtPdf = 'Aqui está o orçamento dos exames da requisição:\n\n' + orcLinhas.join('\n') + '\n';
