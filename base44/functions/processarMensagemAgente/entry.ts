@@ -627,6 +627,45 @@ Deno.serve(async (req) => {
         return Response.json({ success: true, resposta: respostaOfertaLimpa, remarcacao_executada: false });
       }
 
+      const ultMsgAss = ultimaMsgAssistenteFullRemarcacao || '';
+      if (!cancelamentoJaConcluidoNoHistorico && !querMudarDeAssuntoRemarcacao && !fluxoRemarcacaoAtivo && (/cancelar|desmarcar|desistir/i.test(messageText) && !/remarcar|reagendar|mudar.*data|mudar.*hor[áa]rio/i.test(messageText) || /cancelamento da consulta/i.test(ultMsgAss) || /número da opção que você quer cancelar/i.test(ultMsgAss))) {
+        const { pacientes, agendamentos } = await listarAgendamentosFuturosPorTelefone(phoneNumber);
+        const medicosMap = {}; (await base44.asServiceRole.entities.Medico.list()).forEach(m => { medicosMap[m.id] = m; });
+        let resp = '', cancExe = false;
+        if (agendamentos.length === 0) resp = 'Não encontrei consultas futuras cadastradas para este número de telefone que possam ser canceladas.';
+        else {
+          let lista = 'Encontrei estes agendamentos no seu número:\n\n';
+          agendamentos.forEach((ag, idx) => lista += `${idx+1}. ${ag.tipo_servico || 'Consulta'} - ${new Date(ag.data_agendamento+'T12:00:00').toLocaleDateString('pt-BR')} às ${ag.horario}${medicosMap[ag.medico_id]?` com ${medicosMap[ag.medico_id].nome}`:''}\n`);
+          const escolhido = escolherAgendamentoParaRemarcar(messageText, agendamentos, medicosMap);
+          const txt = (messageText || '').trim().toLowerCase();
+          if (/cancelamento da consulta/i.test(ultMsgAss)) {
+             if (/n[aã]o/i.test(txt) && !/sim|ok|certo|confirmo|quero|cancelar/i.test(txt)) resp = 'Tudo bem, o cancelamento não foi realizado. A consulta segue agendada. Posso ajudar em algo mais?';
+             else if (/sim|s|ok|certo|confirmo|quero|cancelar/i.test(txt)) {
+                 const m = ultMsgAss.match(/\[CANCELAMENTO\|agendamento:([^\]]+)\]/);
+                 if (m && await executarCancelamento(m[1])) { resp = `✅ Agendamento cancelado com sucesso no sistema!\n\nPosso ajudar em algo mais?`; cancExe = true; }
+             }
+          }
+          if (!resp) {
+              if (!escolhido && /cancelar|desmarcar/i.test(txt)) {
+                  if (!/Encontrei estes agendamentos/i.test(ultMsgAss)) {
+                      if (agendamentos.length === 1) {
+                          const ag = agendamentos[0]; const med = medicosMap[ag.medico_id];
+                          resp = `Encontrei uma consulta de ${ag.tipo_servico || 'Consulta'} - ${new Date(ag.data_agendamento+'T12:00:00').toLocaleDateString('pt-BR')} às ${ag.horario}${med?` com ${med.nome}`:''}.\n\nVocê confirma o cancelamento da consulta?\n[CANCELAMENTO|agendamento:${ag.id}]`;
+                      } else resp = `${lista}\nMe responda com o número da opção que você quer cancelar.`;
+                  } else resp = `Me responda com o número da opção que você quer cancelar, ou "não" para manter as consultas.`;
+              } else if (escolhido) {
+                  const med = medicosMap[escolhido.medico_id];
+                  resp = `Você confirma o cancelamento da consulta de ${escolhido.tipo_servico || 'Consulta'} - ${new Date(escolhido.data_agendamento+'T12:00:00').toLocaleDateString('pt-BR')} às ${escolhido.horario}${med?` com ${med.nome}`:''}?\n[CANCELAMENTO|agendamento:${escolhido.id}]`;
+              }
+          }
+        }
+        if (resp) {
+            try { const cs=await base44.asServiceRole.entities.Contato.filter({telefone:phoneNumber}); if(cs.length>0){ const h=cs[0].historico_mensagens||[]; const ts=new Date().toISOString(); h.push({role:'user',content:messageText,timestamp:ts},{role:'assistant',content:resp,timestamp:ts}); await base44.asServiceRole.entities.Contato.update(cs[0].id,{historico_mensagens:h.slice(-50),ultima_interacao:ts}); } } catch(e){}
+            await liberarLock(base44, phoneNumber, lockName);
+            return Response.json({ success: true, resposta: resp.split('\n[')[0], cancelamento_executado: cancExe });
+        }
+      }
+
     const _hjER=/encontrei o resultado|PDF está sendo enviado|arquivo PDF/i.test(historicoConversa||'');
     const _hfR=/(RESULTADO DE EXAME|para localizar.*resultado)/i.test(historicoConversa||'');
     const _ehSobreAgendamento = /agendar|marcar|consulta|hor[áa]rio|remarcar|cancelar|desmarcar/i.test(messageText);
