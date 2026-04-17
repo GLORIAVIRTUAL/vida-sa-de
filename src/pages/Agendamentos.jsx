@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label"; // Import Label
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Import Select components
 import { Badge } from "@/components/ui/badge"; // Import Badge
 import { useLocation } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import ProtectedRoute from "../components/auth/ProtectedRoute";
 import VisualizacaoDiaria from "../components/agendamentos/VisualizacaoDiaria";
@@ -26,14 +27,16 @@ import { cachedApiCall, clearCache } from "@/components/shared/apiThrottle";
 
 export default function Agendamentos() {
   const location = useLocation();
-  const [agendamentos, setAgendamentos] = useState([]);
-  const [medicos, setMedicos] = useState([]);
-  const [pacientes, setPacientes] = useState([]);
-  const [procedimentos, setProcedimentos] = useState([]);
-  const [exames, setExames] = useState([]);
-  const [categorias, setCategorias] = useState([]);
-  const [tabelaPrecos, setTabelaPrecos] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { data: agendamentos = [], isLoading: loadingAgendamentos } = useQuery({ queryKey: ['agendamentos'], queryFn: () => base44.entities.Agendamento.list('-data_agendamento', 10000), staleTime: 60000 });
+  const { data: medicos = [], isLoading: loadingMedicos } = useQuery({ queryKey: ['medicos'], queryFn: () => base44.entities.Medico.list(), staleTime: 60000 });
+  const { data: pacientes = [], isLoading: loadingPacientes } = useQuery({ queryKey: ['pacientes'], queryFn: () => base44.entities.Paciente.list('-created_date', 5000), staleTime: 60000 });
+  const { data: procedimentos = [] } = useQuery({ queryKey: ['procedimentos'], queryFn: () => base44.entities.Procedimento.list(), staleTime: 60000 });
+  const { data: exames = [] } = useQuery({ queryKey: ['exames'], queryFn: () => base44.entities.Exame.list(), staleTime: 60000 });
+  const { data: categorias = [] } = useQuery({ queryKey: ['categorias'], queryFn: () => base44.entities.CategoriaPreco.list(), staleTime: 60000 });
+  const { data: tabelaPrecos = [] } = useQuery({ queryKey: ['tabelaPrecos'], queryFn: () => base44.entities.TabelaPreco.list(), staleTime: 60000 });
+  
+  const loading = loadingAgendamentos || loadingMedicos || loadingPacientes;
   const [diaSelecionado, setDiaSelecionado] = useState(new Date());
   const handleDiaSelecionado = (date) => {
     if (date) setDiaSelecionado(date);
@@ -79,59 +82,8 @@ export default function Agendamentos() {
   };
 
   const carregarDados = useCallback(async () => {
-    setLoading(true);
-    try {
-      console.log('🚀 Carregando dados com prioridades...');
-
-      // PRIORIDADE ALTA - Dados essenciais em paralelo (3 requisições)
-      // Buscar TODOS os agendamentos sem limite para não perder registros antigos
-      const [agendamentosData, medicosData, pacientesData] = await Promise.all([
-      cachedApiCall('agendamentos', () => Agendamento.list('-data_agendamento', 10000), []),
-      cachedApiCall('medicos', () => Medico.list(), []),
-      cachedApiCall('pacientes', () => Paciente.list('-created_date', 5000), [])]
-      );
-
-      setAgendamentos(Array.isArray(agendamentosData) ? agendamentosData : []);
-      setMedicos(Array.isArray(medicosData) ? medicosData : []);
-      setPacientes(Array.isArray(pacientesData) ? pacientesData : []);
-      console.log('✅ Dados essenciais carregados');
-
-      // PRIORIDADE MÉDIA - Dados complementares em paralelo (3 requisições)
-      const [procedimentosData, examesData, categoriasData] = await Promise.all([
-      cachedApiCall('procedimentos', () => Procedimento.list(), []),
-      cachedApiCall('exames', () => Exame.list(), []),
-      cachedApiCall('categorias', () => CategoriaPreco.list(), [])]
-      );
-
-      setProcedimentos(Array.isArray(procedimentosData) ? procedimentosData : []);
-      setExames(Array.isArray(examesData) ? examesData : []);
-      setCategorias(Array.isArray(categoriasData) ? categoriasData : []);
-      console.log('✅ Dados complementares carregados');
-
-      // PRIORIDADE BAIXA - Tabela de preços (última requisição)
-      const tabelaPrecosData = await cachedApiCall(
-        'tabelaPrecos',
-        () => TabelaPreco.list(),
-        []
-      );
-      setTabelaPrecos(Array.isArray(tabelaPrecosData) ? tabelaPrecosData : []);
-      console.log('✅ Tabela de preços carregada');
-
-      console.log('🎉 Todos os dados carregados!');
-
-    } catch (error) {
-      console.error("❌ Erro ao carregar dados:", error);
-      setAgendamentos([]);
-      setMedicos([]);
-      setPacientes([]);
-      setProcedimentos([]);
-      setExames([]);
-      setCategorias([]);
-      setTabelaPrecos([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [setAgendamentos, setMedicos, setPacientes, setProcedimentos, setExames, setCategorias, setTabelaPrecos, setLoading]);
+    await queryClient.invalidateQueries();
+  }, [queryClient]);
 
   // Verificar se há dados iniciais vindos da navegação (do Dashboard)
   useEffect(() => {
@@ -140,10 +92,6 @@ export default function Agendamentos() {
       setIsFormOpen(true);
     }
   }, [location.state]);
-
-  useEffect(() => {
-    carregarDados();
-  }, [carregarDados]);
 
   // Subscription para atualizar automaticamente quando agendamentos mudam
   useEffect(() => {
@@ -156,20 +104,16 @@ export default function Agendamentos() {
       clearCache('agendamentos');
       
       if (event.type === 'update' && event.data) {
-        // Atualizar o agendamento específico no estado
-        setAgendamentos(prev => {
+        queryClient.setQueryData(['agendamentos'], (prev = []) => {
           const updated = prev.map(ag => 
             ag.id === event.id ? { ...ag, ...event.data } : ag
           );
-          console.log('✅ Estado atualizado para agendamento:', event.id, '-> status:', event.data.status);
           return updated;
         });
       } else if (event.type === 'create' && event.data) {
-        // Adicionar novo agendamento
-        setAgendamentos(prev => [event.data, ...prev]);
+        queryClient.setQueryData(['agendamentos'], (prev = []) => [event.data, ...prev]);
       } else if (event.type === 'delete') {
-        // Remover agendamento
-        setAgendamentos(prev => prev.filter(ag => ag.id !== event.id));
+        queryClient.setQueryData(['agendamentos'], (prev = []) => prev.filter(ag => ag.id !== event.id));
       }
     });
 

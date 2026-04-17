@@ -18,11 +18,33 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { Link, useNavigate } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createPageUrl } from '@/utils';
 import ContatosTab from '../components/gloria/ContatosTab';
 import NotificacoesTab from '../components/gloria/NotificacoesTab';
 import { UserPlus } from 'lucide-react';
 import CadastroRapidoPaciente from '../components/pacientes/CadastroRapidoPaciente';
+
+export const useContatosQuery = () => {
+  return useQuery({
+    queryKey: ['chatbots_contatos'],
+    queryFn: async () => {
+      let todosContatos = [];
+      let skip = 0;
+      const batchSize = 500;
+      while (true) {
+        const lote = await base44.entities.Contato.list('-ultima_interacao', batchSize, skip);
+        if (!lote || lote.length === 0) break;
+        todosContatos = [...todosContatos, ...lote];
+        if (lote.length < batchSize) break;
+        skip += batchSize;
+      }
+      return todosContatos;
+    },
+    staleTime: 15000,
+    refetchInterval: 15000,
+  });
+};
 
 // Função para renderizar conteúdo de mensagem (texto, imagem, documento, áudio)
 function renderMensagemContent(content, isUser, msgData = {}) {
@@ -240,9 +262,57 @@ function renderMensagemContent(content, isUser, msgData = {}) {
 
 // ========== COMPONENTE: CHAT ==========
 function ChatTab({ contatoInicial, onContatoSelecionado }) {
-  const [contatos, setContatos] = useState([]);
+  const queryClient = useQueryClient();
+  const { data: todosContatosData = [], isLoading: carregandoContatos } = useContatosQuery();
+  const contatos = React.useMemo(() => {
+    const comHistorico = todosContatosData.filter(c => 
+      (c.historico_mensagens && c.historico_mensagens.length > 0) || c.ultima_mensagem
+    );
+    const contatosUnicosMap = new Map();
+    comHistorico.forEach(c => {
+      const telNorm = (c.telefone || '').replace(/\D/g, '');
+      const telKey = telNorm.length >= 8 ? telNorm.slice(-8) : telNorm;
+      if (telKey) {
+        if (!contatosUnicosMap.has(telKey)) {
+          contatosUnicosMap.set(telKey, { ...c, historico_mensagens: [...(c.historico_mensagens || [])] });
+        } else {
+          const existente = contatosUnicosMap.get(telKey);
+          const histExistente = existente.historico_mensagens || [];
+          const histNovo = c.historico_mensagens || [];
+          histNovo.forEach(msg => {
+            const jaExiste = histExistente.some(m => m.timestamp === msg.timestamp && m.content === msg.content);
+            if (!jaExiste) histExistente.push(msg);
+          });
+          histExistente.sort((a, b) => new Date(a.timestamp || 0) - new Date(b.timestamp || 0));
+          existente.historico_mensagens = histExistente;
+          const dataAtual = new Date(c.ultima_interacao || c.updated_date || c.created_date || 0).getTime();
+          const dataExistente = new Date(existente.ultima_interacao || existente.updated_date || existente.created_date || 0).getTime();
+          if (dataAtual > dataExistente) {
+            existente.ultima_interacao = c.ultima_interacao;
+            existente.ultima_mensagem = c.ultima_mensagem;
+            existente.ultima_resposta = c.ultima_resposta;
+            existente.status = c.status;
+            existente.conversa_finalizada = c.conversa_finalizada;
+            existente.atendimento_humano = c.atendimento_humano;
+            existente.atendente_atual = c.atendente_atual;
+            existente.nome = c.nome || existente.nome;
+            existente.id = c.id;
+          }
+        }
+      } else {
+        contatosUnicosMap.set(c.id, c);
+      }
+    });
+    return Array.from(contatosUnicosMap.values()).sort((a, b) => {
+      const aFinalizado = a.conversa_finalizada === true;
+      const bFinalizado = b.conversa_finalizada === true;
+      if (aFinalizado && !bFinalizado) return 1;
+      if (!aFinalizado && bFinalizado) return -1;
+      return 0;
+    });
+  }, [todosContatosData]);
+
   const [contatoSelecionado, setContatoSelecionado] = useState(null);
-  const [carregando, setCarregando] = useState(true);
   const [inputMsg, setInputMsg] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [modoHumano, setModoHumano] = useState(false);
@@ -303,90 +373,7 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
   }, [contatoSelecionado?.id]);
 
   const buscarContatos = async () => {
-    try {
-      let todosContatos = [];
-      let skip = 0;
-      const batchSize = 500;
-
-      while (true) {
-        const lote = await base44.entities.Contato.list('-ultima_interacao', batchSize, skip);
-        if (!lote || lote.length === 0) break;
-        todosContatos = [...todosContatos, ...lote];
-        if (lote.length < batchSize) break;
-        skip += batchSize;
-      }
-
-      const comHistorico = (todosContatos || []).filter(c => 
-        (c.historico_mensagens && c.historico_mensagens.length > 0) || c.ultima_mensagem
-      );
-
-      // Deduplicar contatos pelo número de telefone (usando os últimos 8 dígitos)
-      const contatosUnicosMap = new Map();
-      
-      comHistorico.forEach(c => {
-        const telNorm = (c.telefone || '').replace(/\D/g, '');
-        const telKey = telNorm.length >= 8 ? telNorm.slice(-8) : telNorm;
-        
-        if (telKey) {
-          if (!contatosUnicosMap.has(telKey)) {
-            // Clonar para não alterar o objeto original e permitir merge de histórico
-            contatosUnicosMap.set(telKey, { ...c, historico_mensagens: [...(c.historico_mensagens || [])] });
-          } else {
-            const existente = contatosUnicosMap.get(telKey);
-            
-            // Mesclar histórico de mensagens
-            const histExistente = existente.historico_mensagens || [];
-            const histNovo = c.historico_mensagens || [];
-            
-            histNovo.forEach(msg => {
-              const jaExiste = histExistente.some(m => 
-                m.timestamp === msg.timestamp && m.content === msg.content
-              );
-              if (!jaExiste) {
-                histExistente.push(msg);
-              }
-            });
-            
-            // Reordenar histórico mesclado
-            histExistente.sort((a, b) => new Date(a.timestamp || 0) - new Date(b.timestamp || 0));
-            existente.historico_mensagens = histExistente;
-
-            const dataAtual = new Date(c.ultima_interacao || c.updated_date || c.created_date || 0).getTime();
-            const dataExistente = new Date(existente.ultima_interacao || existente.updated_date || existente.created_date || 0).getTime();
-            
-            // Se o atual for mais recente, atualizar os metadados principais
-            if (dataAtual > dataExistente) {
-              existente.ultima_interacao = c.ultima_interacao;
-              existente.ultima_mensagem = c.ultima_mensagem;
-              existente.ultima_resposta = c.ultima_resposta;
-              existente.status = c.status;
-              existente.conversa_finalizada = c.conversa_finalizada;
-              existente.atendimento_humano = c.atendimento_humano;
-              existente.atendente_atual = c.atendente_atual;
-              existente.nome = c.nome || existente.nome;
-              existente.id = c.id; // Importante: usar o ID do mais recente para interações
-            }
-          }
-        } else {
-          contatosUnicosMap.set(c.id, c);
-        }
-      });
-      
-      const contatosUnicos = Array.from(contatosUnicosMap.values());
-
-      const ordenados = [...contatosUnicos].sort((a, b) => {
-        const aFinalizado = a.conversa_finalizada === true;
-        const bFinalizado = b.conversa_finalizada === true;
-        if (aFinalizado && !bFinalizado) return 1;
-        if (!aFinalizado && bFinalizado) return -1;
-        return 0;
-      });
-      setContatos(ordenados);
-    } catch (error) {
-      console.error('Erro ao buscar contatos:', error);
-    } finally {
-      setCarregando(false);
-    }
+    await queryClient.invalidateQueries({ queryKey: ['chatbots_contatos'] });
   };
 
   // Atualizar contato selecionado em tempo real
@@ -414,19 +401,11 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
     }
   };
 
-  useEffect(() => { buscarContatos(); }, []);
-  
   // Atualizar apenas contato selecionado a cada 2 segundos (rápido)
   useEffect(() => {
     const interval = setInterval(atualizarContatoSelecionado, 2000);
     return () => clearInterval(interval);
   }, [contatoSelecionado?.id]);
-  
-  // Atualizar lista geral a cada 15 segundos (menos frequente)
-  useEffect(() => {
-    const interval = setInterval(buscarContatos, 15000);
-    return () => clearInterval(interval);
-  }, []);
 
   // Selecionar contato inicial quando vier da aba de contatos ou notificações
   useEffect(() => {
@@ -597,10 +576,8 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
       });
 
       setContatoSelecionado(prev => prev ? { ...prev, dados_extras: dadosExtrasAtualizados } : prev);
-      setContatos(prev => prev.map(contato =>
-        contato.id === contatoSelecionado.id
-          ? { ...contato, dados_extras: dadosExtrasAtualizados }
-          : contato
+      queryClient.setQueryData(['chatbots_contatos'], (old = []) => old.map(c => 
+        c.id === contatoSelecionado.id ? { ...c, dados_extras: dadosExtrasAtualizados } : c
       ));
     } catch (error) {
       alert('Erro ao ativar alarme: ' + error.message);
@@ -710,7 +687,7 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
     }
   };
 
-  if (carregando) {
+  if (carregandoContatos && contatos.length === 0) {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
@@ -1134,41 +1111,25 @@ function classificarMotivo(contato) {
 }
 
 function PipelineTab() {
-  const [contatos, setContatos] = useState([]);
+  const queryClient = useQueryClient();
+  const { data: todosContatos = [], isLoading: loading } = useContatosQuery();
   const [pipeline, setPipeline] = useState({});
-  const [loading, setLoading] = useState(true);
 
   const carregarContatos = async () => {
-    try {
-      setLoading(true);
-      let todosContatos = [];
-      let skip = 0;
-      const batchSize = 100;
-      while (true) {
-        const batch = await base44.entities.Contato.list('-updated_date', batchSize, skip);
-        if (!batch || batch.length === 0) break;
-        todosContatos = [...todosContatos, ...batch];
-        if (batch.length < batchSize) break;
-        skip += batchSize;
-      }
-      const comHistorico = todosContatos.filter(c => c.historico_mensagens?.length > 0 || c.ultima_mensagem);
-      setContatos(comHistorico);
-
-      const pipelineOrganizado = {};
-      motivosColunas.forEach(m => { pipelineOrganizado[m.id] = []; });
-      comHistorico.forEach(contato => {
-        const motivo = classificarMotivo(contato);
-        pipelineOrganizado[motivo].push(contato);
-      });
-      setPipeline(pipelineOrganizado);
-    } catch (error) {
-      console.error('Erro:', error);
-    } finally {
-      setLoading(false);
-    }
+    await queryClient.invalidateQueries({ queryKey: ['chatbots_contatos'] });
   };
 
-  useEffect(() => { carregarContatos(); }, []);
+  useEffect(() => {
+    if (todosContatos.length === 0) return;
+    const comHistorico = todosContatos.filter(c => c.historico_mensagens?.length > 0 || c.ultima_mensagem);
+    const pipelineOrganizado = {};
+    motivosColunas.forEach(m => { pipelineOrganizado[m.id] = []; });
+    comHistorico.forEach(contato => {
+      const motivo = classificarMotivo(contato);
+      pipelineOrganizado[motivo].push(contato);
+    });
+    setPipeline(pipelineOrganizado);
+  }, [todosContatos]);
 
   const onDragEnd = async (result) => {
     const { source, destination, draggableId } = result;
@@ -1205,7 +1166,7 @@ function PipelineTab() {
     }
   };
 
-  if (loading) {
+  if (loading && todosContatos.length === 0) {
     return <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-purple-600" /></div>;
   }
 
@@ -1288,45 +1249,24 @@ function PipelineTab() {
 
 // ========== COMPONENTE: DASHBOARD ==========
 function DashboardTab() {
-  const [contatos, setContatos] = useState([]);
-  const [agendamentos, setAgendamentos] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { data: todosContatos = [], isLoading: loadingContatos } = useContatosQuery();
+  const { data: agendamentos = [], isLoading: loadingAgendamentos } = useQuery({
+    queryKey: ['agendamentos_dashboard_semana'],
+    queryFn: async () => {
+      const hoje = new Date();
+      const inicioSemana = new Date(hoje);
+      inicioSemana.setDate(hoje.getDate() - 7);
+      return await base44.entities.Agendamento.filter({
+        data_agendamento: { $gte: format(inicioSemana, 'yyyy-MM-dd') }
+      });
+    },
+    staleTime: 60000,
+  });
 
-  useEffect(() => {
-    const carregarDados = async () => {
-      try {
-        // Buscar todos os contatos (paginado para pegar todos)
-        let todosContatos = [];
-        let skip = 0;
-        const batchSize = 100;
-        while (true) {
-          const batch = await base44.entities.Contato.list('-updated_date', batchSize, skip);
-          if (!batch || batch.length === 0) break;
-          todosContatos = [...todosContatos, ...batch];
-          if (batch.length < batchSize) break;
-          skip += batchSize;
-        }
-        const comHistorico = todosContatos.filter(c => c.historico_mensagens?.length > 0 || c.ultima_mensagem);
-        setContatos(comHistorico);
+  const loading = loadingContatos || loadingAgendamentos;
+  const contatos = React.useMemo(() => todosContatos.filter(c => c.historico_mensagens?.length > 0 || c.ultima_mensagem), [todosContatos]);
 
-        // Buscar agendamentos da última semana
-        const hoje = new Date();
-        const inicioSemana = new Date(hoje);
-        inicioSemana.setDate(hoje.getDate() - 7);
-        const agendamentosList = await base44.entities.Agendamento.filter({
-          data_agendamento: { $gte: format(inicioSemana, 'yyyy-MM-dd') }
-        });
-        setAgendamentos(agendamentosList || []);
-      } catch (error) {
-        console.error('Erro:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    carregarDados();
-  }, []);
-
-  if (loading) {
+  if (loading && todosContatos.length === 0 && agendamentos.length === 0) {
     return <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-purple-600" /></div>;
   }
 
