@@ -395,7 +395,19 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
     try {
       const contatoAtualizado = await base44.entities.Contato.get(contatoSelecionado.id);
       if (contatoAtualizado) {
-        setContatoSelecionado(contatoAtualizado);
+        setContatoSelecionado(prev => {
+          if (!prev || prev.id !== contatoAtualizado.id) return contatoAtualizado;
+          
+          const lenPrev = prev.historico_mensagens?.length || 0;
+          const lenNovo = contatoAtualizado.historico_mensagens?.length || 0;
+          
+          // Se a tela tem mais mensagens que o banco (devido a um envio otimista recente),
+          // preserva o histórico local para a mensagem não sumir até o banco sincronizar.
+          if (lenPrev > lenNovo) {
+            return { ...contatoAtualizado, historico_mensagens: prev.historico_mensagens };
+          }
+          return contatoAtualizado;
+        });
       }
     } catch (error) {
       console.error('Erro ao atualizar:', error);
@@ -453,6 +465,8 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
     if (!texto.trim() || !contatoSelecionado) return;
     if (!textoCustom) setInputMsg('');
 
+    setEnviando(true);
+
     // Optimistic update: adicionar mensagem localmente de imediato
     const nomeUsuario = currentUser?.display_name || currentUser?.full_name || 'Recepção';
     const novaMensagem = {
@@ -467,14 +481,17 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
       return { ...prev, historico_mensagens: [...historicoAtual, novaMensagem] };
     });
 
-    // Enviar em background sem bloquear a UI
-    base44.functions.invoke('enviarMensagemHumano', {
-      phoneNumber: contatoSelecionado.telefone,
-      messageText: texto,
-      contatoId: contatoSelecionado.id
-    }).catch(error => {
+    try {
+      await base44.functions.invoke('enviarMensagemHumano', {
+        phoneNumber: contatoSelecionado.telefone,
+        messageText: texto,
+        contatoId: contatoSelecionado.id
+      });
+    } catch (error) {
       console.error('Erro ao enviar:', error.message);
-    });
+    } finally {
+      setEnviando(false);
+    }
   };
 
   const finalizarConversa = async () => {
