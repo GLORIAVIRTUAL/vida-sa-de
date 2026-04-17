@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
           await new Promise(resolve => setTimeout(resolve, 2000));
           
           // Re-verificar se o lock ainda é nosso
-          const contatoRecheck = await buscarContatoPorTelefone(phoneNumber);
+          const contatoRecheck = await base44.asServiceRole.entities.Contato.get(contatoVerif.id).catch(() => buscarContatoPorTelefone(phoneNumber));
           if (contatoRecheck && contatoRecheck.processando_ia_lock !== lockName) {
             console.log('🔒 Lock perdido para outra instância. Abortando.');
             return Response.json({ success: true, status: 'lock_perdido', resposta: null });
@@ -210,7 +210,9 @@ Deno.serve(async (req) => {
           await base44.asServiceRole.entities.Contato.update(contatoVerif.id, { processando_ia_lock: lockName });
           // Pequena pausa para garantir propagação e verificar se não houve race condition
           await new Promise(resolve => setTimeout(resolve, 500));
-          const contatoCheck = await buscarContatoPorTelefone(phoneNumber);
+          let contatoCheck = null;
+          try { contatoCheck = await base44.asServiceRole.entities.Contato.get(contatoVerif.id); } catch(e) {}
+          if (!contatoCheck) contatoCheck = await buscarContatoPorTelefone(phoneNumber);
           if (contatoCheck && contatoCheck.processando_ia_lock === lockName) {
             lockAdquirido = true;
             break;
@@ -223,7 +225,8 @@ Deno.serve(async (req) => {
         }
         
         // APÓS ADQUIRIR O LOCK, verificar se a mensagem já foi processada recentemente
-        const contatoPosLock = await buscarContatoPorTelefone(phoneNumber);
+        const cAux = await buscarContatoPorTelefone(phoneNumber);
+        const contatoPosLock = cAux ? await base44.asServiceRole.entities.Contato.get(cAux.id).catch(() => cAux) : null;
         if (contatoPosLock && contatoPosLock.historico_mensagens) {
             const ultimasUser = contatoPosLock.historico_mensagens.filter(m => m.role === 'user');
             if (ultimasUser.length > 0) {
