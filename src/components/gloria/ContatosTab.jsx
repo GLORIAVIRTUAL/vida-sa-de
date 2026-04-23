@@ -238,9 +238,13 @@ export default function ContatosTab({ onIniciarConversa }) {
   };
 
   const contatosFiltrados = contatos.filter(contato => {
+    const buscaNumeros = busca.replace(/\D/g, '');
+    const telNumeros = (contato.telefone || '').replace(/\D/g, '');
+    
     const matchBusca = !busca || 
       contato.nome?.toLowerCase().includes(busca.toLowerCase()) ||
-      contato.telefone?.includes(busca);
+      contato.telefone?.includes(busca) ||
+      (buscaNumeros.length >= 8 && telNumeros.length >= 8 && telNumeros.slice(-8) === buscaNumeros.slice(-8));
     
     const ultimoInteresse = contato.interesses?.[contato.interesses.length - 1]?.toLowerCase() || '';
     
