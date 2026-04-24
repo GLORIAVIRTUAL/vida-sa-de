@@ -1280,7 +1280,7 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={gerarOrcamento}
+                onClick={handleGerarOrcamento}
                 disabled={!formData.paciente_id || parseFloat(formData.valor_total) <= 0}
                 className="gap-2"
               >
