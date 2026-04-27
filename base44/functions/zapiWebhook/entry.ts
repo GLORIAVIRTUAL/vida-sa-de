@@ -275,7 +275,7 @@ async function processarMensagemRecebida(base44, payload) {
                     console.log(`✅ Encontrado por últimos 8 dígitos: ${contatos[0].nome} (tel salvo: ${contatos[0].telefone})`);
                     // Atualizar telefone do contato para o formato normalizado com 55
                     let telAtualizado = telNormalizado;
-                    if (!telAtualizado.startsWith('55')) telAtualizado = '55' + telAtualizado;
+                    if (!telAtualizado.startsWith('55') && telAtualizado.length < 14) telAtualizado = '55' + telAtualizado;
                     await base44.asServiceRole.entities.Contato.update(contatos[0].id, {
                         telefone: telAtualizado
                     });
@@ -600,7 +600,7 @@ async function processarMensagemRecebida(base44, payload) {
                     // Contato JÁ existe! Usar o existente ao invés de criar novo
                     console.log(`✅ Contato existente encontrado na verificação extra: ${contatoExistente.nome} (${contatoExistente.telefone}) - NÃO criando duplicata`);
                     let telAtualizado = telBusca;
-                    if (!telAtualizado.startsWith('55')) telAtualizado = '55' + telAtualizado;
+                    if (!telAtualizado.startsWith('55') && telAtualizado.length < 14) telAtualizado = '55' + telAtualizado;
                     const historicoAtual = contatoExistente.historico_mensagens || [];
                     historicoAtual.push({
                         role: 'user',
@@ -646,9 +646,9 @@ async function processarMensagemRecebida(base44, payload) {
                     messageId: msgId
                 }];
 
-                // Garantir que telefone tenha prefixo 55
+                // Garantir que telefone tenha prefixo 55 apenas para números de telefone reais (menores que 14 dígitos)
                 let telefoneComPrefixo = telefone.replace(/\D/g, '');
-                if (!telefoneComPrefixo.startsWith('55')) {
+                if (!telefoneComPrefixo.startsWith('55') && telefoneComPrefixo.length < 14) {
                     telefoneComPrefixo = '55' + telefoneComPrefixo;
                 }
 
