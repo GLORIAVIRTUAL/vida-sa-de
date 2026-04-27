@@ -336,7 +336,7 @@ Deno.serve(async (req) => {
           }
         } else {
           let telefoneComPrefixo = phoneNumber.replace(/\D/g, '');
-          if (!telefoneComPrefixo.startsWith('55')) telefoneComPrefixo = '55' + telefoneComPrefixo;
+          if (!telefoneComPrefixo.startsWith('55') && telefoneComPrefixo.length < 14) telefoneComPrefixo = '55' + telefoneComPrefixo;
           await base44.asServiceRole.entities.Contato.create({
             nome: senderName, telefone: telefoneComPrefixo, paciente_id: pacienteId, origem: 'WhatsApp', status: 'Novo', atendimento_humano: false, ultima_mensagem: messageText, historico_mensagens: [{ role: 'user', content: mediaUrl ? `${messageText}\n${mediaUrl}` : messageText, timestamp, messageId, mediaType, mediaUrl }], ultima_interacao: timestamp, total_mensagens: 1, conversa_finalizada: false
           });
@@ -405,7 +405,7 @@ Deno.serve(async (req) => {
           });
         } else {
           let telefoneComPrefixo = phoneNumber.replace(/\D/g, '');
-          if (!telefoneComPrefixo.startsWith('55')) telefoneComPrefixo = '55' + telefoneComPrefixo;
+          if (!telefoneComPrefixo.startsWith('55') && telefoneComPrefixo.length < 14) telefoneComPrefixo = '55' + telefoneComPrefixo;
           await base44.asServiceRole.entities.Contato.create({
             nome: senderName, telefone: telefoneComPrefixo, paciente_id: pacienteId, origem: 'WhatsApp', status: 'Novo', atendimento_humano: false, ultima_mensagem: messageText, historico_mensagens: [userEntry], ultima_interacao: timestamp, total_mensagens: 1, conversa_finalizada: false
           });
@@ -1933,7 +1933,7 @@ ${listaMedicosAtivosParaPrompt}
         await base44.asServiceRole.entities.Contato.update(contato.id, updateData);
       } else {
         let tCP = phoneNumber.replace(/\D/g, '');
-        if (!tCP.startsWith('55')) tCP = '55' + tCP;
+        if (!tCP.startsWith('55') && tCP.length < 14) tCP = '55' + tCP;
         const novoContatoData = {
           nome: senderName, telefone: tCP, paciente_id: pacienteId,
           ultima_mensagem: messageText, ultima_resposta: llmResponse,
