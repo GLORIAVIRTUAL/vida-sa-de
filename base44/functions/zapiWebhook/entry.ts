@@ -541,18 +541,32 @@ async function processarMensagemRecebida(base44, payload) {
                         // para evitar que a anti-duplicata do processarMensagemAgente rejeite
                         const bufferMessageId = `buffer_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
                         
-                        const resultado = await base44.asServiceRole.functions.invoke('processarMensagemAgente', {
-                            phoneNumber: telefone,
-                            messageText: textosCombinados,
-                            senderName: senderName,
-                            pacienteId: pacienteId,
-                            mediaType: ultimaComMidia?.mediaType || 'text',
-                            mediaUrl: ultimaComMidia?.mediaUrl || null,
-                            messageId: bufferMessageId
-                        });
-                        console.log('✅ processarMensagemAgente retornou:', JSON.stringify(resultado.data).substring(0, 200));
+                        const appId = Deno.env.get('BASE44_APP_ID');
+                        const urlAgente = `https://base44.app/api/apps/${appId}/functions/processarMensagemAgente`;
                         
-                        const respostaIA = resultado.data?.resposta;
+                        console.log('🚀 Chamando processarMensagemAgente via fetch para evitar erro 403...');
+                        const respAgente = await fetch(urlAgente, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                phoneNumber: telefone,
+                                messageText: textosCombinados,
+                                senderName: senderName,
+                                pacienteId: pacienteId,
+                                mediaType: ultimaComMidia?.mediaType || 'text',
+                                mediaUrl: ultimaComMidia?.mediaUrl || null,
+                                messageId: bufferMessageId
+                            })
+                        });
+                        
+                        if (!respAgente.ok) {
+                            throw new Error(`Erro na chamada ao Agente: ${respAgente.status} - ${await respAgente.text()}`);
+                        }
+                        
+                        const resultadoData = await respAgente.json();
+                        console.log('✅ processarMensagemAgente retornou:', JSON.stringify(resultadoData).substring(0, 200));
+                        
+                        const respostaIA = resultadoData?.resposta;
                         
                         if (respostaIA) {
                             // Enviar resposta via Z-API
@@ -561,8 +575,8 @@ async function processarMensagemRecebida(base44, payload) {
                             console.log('✅ Resposta IA enviada via WhatsApp. Z-API result:', JSON.stringify(zapiResult));
                             
                             // Se houver arquivo para enviar (resultado de exame)
-                            if (resultado.data?.arquivoParaEnviar) {
-                                const arquivo = resultado.data.arquivoParaEnviar;
+                            if (resultadoData?.arquivoParaEnviar) {
+                                const arquivo = resultadoData.arquivoParaEnviar;
                                 try {
                                     await enviarDocumentoZapi(telefone, arquivo.url, arquivo.nome);
                                     console.log('✅ Documento enviado:', arquivo.nome);
@@ -621,14 +635,20 @@ async function processarMensagemRecebida(base44, payload) {
                     // Se o contato estava em modo IA, precisamos enviar para a IA
                     if (contatoExistente.atendimento_humano === false) {
                         const bufferMessageId = `buffer_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-                        await base44.asServiceRole.functions.invoke('processarMensagemAgente', {
-                            phoneNumber: telAtualizado,
-                            messageText: textoMensagem,
-                            senderName: senderName,
-                            pacienteId: null,
-                            mediaType: mediaType || 'text',
-                            mediaUrl: mediaUrl || null,
-                            messageId: bufferMessageId
+                        const appId = Deno.env.get('BASE44_APP_ID');
+                        const urlAgente = `https://base44.app/api/apps/${appId}/functions/processarMensagemAgente`;
+                        await fetch(urlAgente, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                phoneNumber: telAtualizado,
+                                messageText: textoMensagem,
+                                senderName: senderName,
+                                pacienteId: null,
+                                mediaType: mediaType || 'text',
+                                mediaUrl: mediaUrl || null,
+                                messageId: bufferMessageId
+                            })
                         });
                         return new Response(JSON.stringify({ message: "Contato existente encaminhado para IA", status: "ia" }), { status: 200 });
                     }
