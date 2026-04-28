@@ -32,14 +32,14 @@ export const useContatosQuery = () => {
       let todosContatos = [];
       let skip = 0;
       const batchSize = 500;
-      while (true) {
+      while (todosContatos.length < 10000) {
         const lote = await base44.entities.Contato.list('-ultima_interacao', batchSize, skip);
         if (!lote || lote.length === 0) break;
         todosContatos = [...todosContatos, ...lote];
         if (lote.length < batchSize) break;
         skip += batchSize;
       }
-      return todosContatos;
+      return todosContatos.slice(0, 10000);
     },
     staleTime: 15000,
     refetchInterval: 15000,
@@ -1470,7 +1470,7 @@ export default function ChatbotsAtivos() {
                   let todosContatos = [];
                   let skip = 0;
                   const batchSize = 500;
-                  while (true) {
+                  while (todosContatos.length < 10000) {
                     const lote = await base44.entities.Contato.list('-ultima_interacao', batchSize, skip);
                     if (!lote || lote.length === 0) break;
                     todosContatos = [...todosContatos, ...lote];
