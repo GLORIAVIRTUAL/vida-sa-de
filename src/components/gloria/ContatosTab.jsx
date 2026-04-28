@@ -50,14 +50,14 @@ export default function ContatosTab({ onIniciarConversa }) {
       let todosContatos = [];
       let skip = 0;
       const batchSize = 500;
-      while (true) {
+      while (todosContatos.length < 10000) {
         const lote = await base44.entities.Contato.list('-created_date', batchSize, skip);
         if (!lote || lote.length === 0) break;
         todosContatos = [...todosContatos, ...lote];
         if (lote.length < batchSize) break;
         skip += batchSize;
       }
-      setContatos(todosContatos);
+      setContatos(todosContatos.slice(0, 10000));
     } catch (error) {
       console.error('Erro ao carregar contatos:', error);
     } finally {

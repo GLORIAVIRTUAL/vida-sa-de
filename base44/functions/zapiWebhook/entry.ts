@@ -259,7 +259,7 @@ async function processarMensagemRecebida(base44, payload) {
                 let todosContatos = [];
                 let skip = 0;
                 const batchSize = 500;
-                while (true) {
+                while (todosContatos.length < 10000) {
                     const batch = await base44.asServiceRole.entities.Contato.list('-created_date', batchSize, skip);
                     todosContatos = todosContatos.concat(batch);
                     if (batch.length < batchSize) break;
@@ -597,7 +597,7 @@ async function processarMensagemRecebida(base44, payload) {
                 console.log('🔍 Verificação extra antes de criar novo contato...');
                 let todosParaVerificar = [];
                 let skipV = 0;
-                while (true) {
+                while (todosParaVerificar.length < 10000) {
                     const batchV = await base44.asServiceRole.entities.Contato.list('-created_date', 500, skipV);
                     todosParaVerificar = todosParaVerificar.concat(batchV);
                     if (batchV.length < 500) break;
