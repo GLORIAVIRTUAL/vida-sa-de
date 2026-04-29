@@ -31,7 +31,14 @@ Deno.serve(async (req) => {
         }
 
         // 3. Buscar profissional para pegar nome (opcional, mas bom para o log/obs)
-        const medico = await base44.entities.Medico.get(turma.medico_id);
+        let medico = null;
+        if (turma.medico_id && turma.medico_id !== 'unknown') {
+            try {
+                medico = await base44.entities.Medico.get(turma.medico_id);
+            } catch (e) {
+                console.warn('Profissional não encontrado para a turma:', turma.medico_id);
+            }
+        }
         
         // 4. Gerar datas compatíveis com os dias da semana da turma
         const startDate = parseISO(dataInicio);
