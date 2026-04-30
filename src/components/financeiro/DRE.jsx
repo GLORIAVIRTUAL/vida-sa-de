@@ -31,8 +31,9 @@ export default function DRE({ lancamentos, ordensServico = [], loading }) {
       .filter(([categoria]) => !['Receita Consultas', 'Receita Procedimentos', 'Receita Exames'].includes(categoria))
       .reduce((total, [, valor]) => total + valor, 0);
 
-    const repasseMedico = saidasPorCategoria['Repasse Médico'] || 0;
-    const repasseLab = saidasPorCategoria['Repasse Laboratório'] || 0;
+    // Repasse Médico líquido: Saídas - Entradas (estornos de OS canceladas)
+    const repasseMedico = (saidasPorCategoria['Repasse Médico'] || 0) - (entradasPorCategoria['Repasse Médico'] || 0);
+    const repasseLab = (saidasPorCategoria['Repasse Laboratório'] || 0) - (entradasPorCategoria['Repasse Laboratório'] || 0);
     const aluguel = saidasPorCategoria['Aluguel'] || 0;
     const utilidades = saidasPorCategoria['Água/Luz'] || 0;
     const materialMedico = saidasPorCategoria['Material Médico'] || 0;
