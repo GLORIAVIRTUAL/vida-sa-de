@@ -43,8 +43,10 @@ export function excluirLancamentosDeOSCanceladas(lancamentos = [], ordensServico
     if (lancamento.status === 'Cancelado') return false;
 
     // Excluir lançamentos de Entrada vinculados a OS canceladas
+    // EXCETO estornos de Repasse Médico/Laboratório (que devem permanecer para reduzir a despesa)
     if (lancamento.tipo === 'Entrada' && lancamento.ordem_servico_id && osCanceladasIds.has(lancamento.ordem_servico_id)) {
-      return false;
+      const isEstornoRepasse = lancamento.categoria === 'Repasse Médico' || lancamento.categoria === 'Repasse Laboratório';
+      if (!isEstornoRepasse) return false;
     }
     return true;
   });
