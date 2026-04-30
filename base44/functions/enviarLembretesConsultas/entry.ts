@@ -31,9 +31,16 @@ Deno.serve(async (req) => {
         });
 
         // Filtrar apenas os que estão "Agendado" ou "Confirmado" (não cancelados/finalizados)
-        const agendamentosValidos = todosAgendamentos.filter(a => 
-            ['Agendado', 'Confirmado'].includes(a.status)
-        );
+        const agendamentosValidos = todosAgendamentos.filter(a => {
+            if (!['Agendado', 'Confirmado'].includes(a.status)) return false;
+            
+            // Ignorar agendamentos de Turmas e Grupos (não precisam de confirmação)
+            const isTurma = a.is_recorrente || 
+                (a.observacoes && a.observacoes.toLowerCase().includes('aula de')) ||
+                ['Hidroginástica', 'Pilates', 'Natação', 'Aula Coletiva'].includes(a.tipo_servico);
+                
+            return !isTurma;
+        });
 
         console.log(`📊 Total de agendamentos para amanhã: ${agendamentosValidos.length}`);
 
