@@ -371,23 +371,41 @@ async function processarMensagemRecebida(base44, payload) {
                 
                 if (estaEmModoHumano) {
                     // Modo HUMANO: salvar mensagem no histórico aqui
-                    const historicoAtual = contato.historico_mensagens || [];
+                    // 🔧 Re-fetch para reduzir race condition entre mensagens simultâneas
+                    let contatoFresh = contato;
+                    try {
+                        const refetched = await base44.asServiceRole.entities.Contato.get(contato.id);
+                        if (refetched) contatoFresh = refetched;
+                    } catch (e) {}
+                    
+                    const historicoAtual = contatoFresh.historico_mensagens || [];
+                    
+                    // 🔧 Anti-duplicação: verificar messageId E conteúdo+timestamp recente
+                    const conteudoNovo = mediaUrl ? `${textoMensagem}\n${mediaUrl}` : textoMensagem;
+                    const jaExiste = (msgId && historicoAtual.some(m => m.messageId === msgId && m.role === 'user'))
+                        || historicoAtual.slice(-5).some(m => m.role === 'user' && m.content === conteudoNovo && m.timestamp && (Date.now() - new Date(m.timestamp).getTime() < 10000));
+                    
+                    if (jaExiste) {
+                        console.log('⏭️ [HUMANO] Mensagem já existe no histórico - ignorando duplicata:', msgId);
+                        return new Response(JSON.stringify({ message: "Duplicata humano ignorada" }), { status: 200 });
+                    }
+                    
                     historicoAtual.push({
                         role: 'user',
-                        content: mediaUrl ? `${textoMensagem}\n${mediaUrl}` : textoMensagem,
+                        content: conteudoNovo,
                         timestamp: agora,
                         mediaType: mediaType,
                         mediaUrl: mediaUrl,
                         messageId: msgId
                     });
-                    await base44.asServiceRole.entities.Contato.update(contato.id, {
+                    await base44.asServiceRole.entities.Contato.update(contatoFresh.id, {
                         historico_mensagens: historicoAtual.slice(-200),
                         ultima_interacao: agora,
-                        nome: contato.nome || senderName,
+                        nome: contatoFresh.nome || senderName,
                         conversa_finalizada: false,
                         atendimento_humano: true
                     });
-                    console.log('👤 Contato em atendimento HUMANO (padrão) - mensagem salva, NÃO processando IA');
+                    console.log('👤 Contato em atendimento HUMANO - mensagem salva no histórico');
                     return new Response(JSON.stringify({ message: "Atendimento humano", status: "salvo" }), { status: 200 });
                 } else {
                     // Modo IA: DEBOUNCE - Acumular mensagens por 5 segundos antes de processar
@@ -631,22 +649,40 @@ async function processarMensagemRecebida(base44, payload) {
                     console.log(`✅ Contato existente encontrado na verificação extra: ${contatoExistente.nome} (${contatoExistente.telefone}) - NÃO criando duplicata`);
                     let telAtualizado = telBusca;
                     if (!telAtualizado.startsWith('55') && telAtualizado.length < 14) telAtualizado = '55' + telAtualizado;
-                    const historicoAtual = contatoExistente.historico_mensagens || [];
-                    historicoAtual.push({
-                        role: 'user',
-                        content: mediaUrl ? `${textoMensagem}\n${mediaUrl}` : textoMensagem,
-                        timestamp: agora,
-                        mediaType: mediaType,
-                        mediaUrl: mediaUrl,
-                        messageId: msgId
-                    });
-                    await base44.asServiceRole.entities.Contato.update(contatoExistente.id, {
-                        historico_mensagens: historicoAtual.slice(-200),
-                        ultima_interacao: agora,
-                        telefone: telAtualizado,
-                        nome: contatoExistente.nome || senderName,
-                        conversa_finalizada: false
-                    });
+                    
+                    // 🔧 Re-fetch para reduzir race condition
+                    let cExFresh = contatoExistente;
+                    try {
+                        const refetched = await base44.asServiceRole.entities.Contato.get(contatoExistente.id);
+                        if (refetched) cExFresh = refetched;
+                    } catch (e) {}
+                    
+                    const historicoAtual = cExFresh.historico_mensagens || [];
+                    const conteudoNovo = mediaUrl ? `${textoMensagem}\n${mediaUrl}` : textoMensagem;
+                    
+                    // 🔧 Anti-duplicação
+                    const jaExiste = (msgId && historicoAtual.some(m => m.messageId === msgId && m.role === 'user'))
+                        || historicoAtual.slice(-5).some(m => m.role === 'user' && m.content === conteudoNovo && m.timestamp && (Date.now() - new Date(m.timestamp).getTime() < 10000));
+                    
+                    if (!jaExiste) {
+                        historicoAtual.push({
+                            role: 'user',
+                            content: conteudoNovo,
+                            timestamp: agora,
+                            mediaType: mediaType,
+                            mediaUrl: mediaUrl,
+                            messageId: msgId
+                        });
+                        await base44.asServiceRole.entities.Contato.update(cExFresh.id, {
+                            historico_mensagens: historicoAtual.slice(-200),
+                            ultima_interacao: agora,
+                            telefone: telAtualizado,
+                            nome: cExFresh.nome || senderName,
+                            conversa_finalizada: false
+                        });
+                    } else {
+                        console.log('⏭️ [Verif extra] Mensagem já existe - ignorando duplicata');
+                    }
                     
                     // Se o contato estava em modo IA, precisamos enviar para a IA
                     if (contatoExistente.atendimento_humano === false) {
