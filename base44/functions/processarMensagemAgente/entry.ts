@@ -1905,7 +1905,7 @@ ${listaMedicosAtivosParaPrompt}
         let conteudoUsuario = messageText;
         if (mediaUrl) conteudoUsuario = `${messageText}\n${mediaUrl}`;
 
-        const userMsgJaExiste = messageId && historicoAtual.some(m => m.messageId === messageId && m.role === 'user');
+        const isBuf = messageId && messageId.startsWith('buffer_'); const userMsgJaExiste = (messageId && historicoAtual.some(m => m.messageId === messageId && m.role === 'user')) || (isBuf && historicoAtual.slice(-5).some(m => m.role === 'user' && m.content === conteudoUsuario && m.timestamp && (Date.now() - new Date(m.timestamp).getTime() < 30000)));
         if (!userMsgJaExiste) historicoAtual.push({ role: 'user', content: conteudoUsuario, timestamp, messageId, mediaType, mediaUrl });
         historicoAtual.push({ role: 'assistant', content: llmResponse, timestamp });
         

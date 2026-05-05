@@ -423,12 +423,28 @@ async function processarMensagemRecebida(base44, payload) {
                     // Salvar timestamp único desta instância para controle de debounce
                     const meuTimestamp = agora;
                     
+                    // 🔧 CORREÇÃO: Salvar mensagem IMEDIATAMENTE no histórico
+                    // Isso garante que a mensagem aparece no chat mesmo se o debounce/IA falhar
+                    const historicoComNovaMsg = [...(contato.historico_mensagens || [])];
+                    const jaNoHist = msgId && historicoComNovaMsg.some(m => m.messageId === msgId);
+                    if (!jaNoHist) {
+                        historicoComNovaMsg.push({
+                            role: 'user',
+                            content: mediaUrl ? `${textoMensagem}\n${mediaUrl}` : textoMensagem,
+                            timestamp: agora,
+                            mediaType: mediaType,
+                            mediaUrl: mediaUrl,
+                            messageId: msgId
+                        });
+                    }
+                    
                     await base44.asServiceRole.entities.Contato.update(contato.id, {
                         mensagens_pendentes: mensagensPendentes,
                         ultimo_timestamp_pendente: meuTimestamp,
                         ultima_interacao: agora,
                         nome: contato.nome || senderName,
-                        conversa_finalizada: false
+                        conversa_finalizada: false,
+                        historico_mensagens: historicoComNovaMsg.slice(-200)
                     });
                     
                     // Se tem mídia, esperar mais tempo para dar chance do cliente digitar texto junto
