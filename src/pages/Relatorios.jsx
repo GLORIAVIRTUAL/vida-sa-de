@@ -1326,7 +1326,7 @@ export default function Relatorios() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {dadosFiltrados.slice(0, 200).map((os) => {
+                        {dadosFiltrados.slice(0, 2000).map((os) => {
                           const nomeMedico = obterNomeMedico(os);
                           const nomeCategoria = obterNomeCategoria(os);
                           return (
@@ -1350,10 +1350,10 @@ export default function Relatorios() {
                             </TableRow>
                           );
                         })}
-                        {dadosFiltrados.length > 200 && (
+                        {dadosFiltrados.length > 2000 && (
                           <TableRow>
                             <TableCell colSpan={10} className="text-center text-gray-500">
-                              Mostrando 200 de {dadosFiltrados.length} registros. Use os filtros para refinar.
+                              Mostrando 2000 de {dadosFiltrados.length} registros. Use os filtros para refinar.
                             </TableCell>
                           </TableRow>
                         )}
