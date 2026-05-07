@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { User } from "@/entities/all";
-import { Loader2, User as UserIcon, Menu, LogOut, Calendar, BarChart3, Users, Stethoscope, DollarSign, FileText, Computer, AlertCircle, Edit, ClipboardList, Upload, MessageSquare, CreditCard, Activity, Wrench, Settings, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, User as UserIcon, Menu, LogOut, Calendar, BarChart3, Users, Stethoscope, DollarSign, FileText, Computer, AlertCircle, Edit, ClipboardList, Upload, MessageSquare, CreditCard, Activity, Wrench, Settings, ChevronLeft, ChevronRight, Shield } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -139,7 +139,8 @@ function MainLayout({ children, currentPageName, currentUser, onUserUpdate }) {
   { name: "API e Integrações", page: "ApiIntegracoes", icon: FileText, roles: ["admin"] },
   { name: "Teste de API", page: "ApiTest", icon: FileText, roles: ["admin"] },
   { name: "Verificação Assinatura", page: "VerificacaoAssinatura", icon: FileText, roles: ["admin"] },
-  { name: "Auditoria Segurança", page: "AuditoriaSeguranca", icon: FileText, roles: ["admin"] }];
+  { name: "Auditoria Segurança", page: "AuditoriaSeguranca", icon: FileText, roles: ["admin"] },
+  { name: "Auditoria Médicos", page: "AuditoriaMedicos", icon: Shield, roles: ["admin"] }];
 
 
   // Filtrar menus baseado no papel do usuário
