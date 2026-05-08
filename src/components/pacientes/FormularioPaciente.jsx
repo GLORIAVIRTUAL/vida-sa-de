@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Save, Printer } from "lucide-react";
 import { CategoriaPreco } from "@/entities/all";
+import ImportarExamesIA from "./ImportarExamesIA";
 
 export default function FormularioPaciente({ paciente, dadosIniciais, onSalvar, onCancelar }) {
   // Determinar valores iniciais com base em paciente ou dadosIniciais
@@ -477,6 +478,13 @@ export default function FormularioPaciente({ paciente, dadosIniciais, onSalvar, 
               rows={3}
             />
           </div>
+
+          {/* Importação de Exames com IA - apenas em edição */}
+          {paciente?.id && (
+            <div className="border-t pt-6">
+              <ImportarExamesIA paciente={paciente} />
+            </div>
+          )}
 
           {/* Botões */}
           <DialogFooter className="gap-2 sm:gap-0">

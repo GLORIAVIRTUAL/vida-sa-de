@@ -1,0 +1,52 @@
+{
+  "name": "ResultadoExame",
+  "type": "object",
+  "properties": {
+    "paciente_nome": {
+      "type": "string",
+      "description": "Nome do paciente"
+    },
+    "paciente_cpf": {
+      "type": "string",
+      "description": "CPF do paciente"
+    },
+    "paciente_id": {
+      "type": "string",
+      "description": "ID do paciente vinculado (opcional)"
+    },
+    "arquivo_url": {
+      "type": "string",
+      "description": "URL do arquivo PDF ou imagem"
+    },
+    "nome_arquivo": {
+      "type": "string",
+      "description": "Nome original do arquivo"
+    },
+    "descricao": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o ou tipo do exame"
+    },
+    "data_exame": {
+      "type": "string",
+      "format": "date",
+      "description": "Data do exame"
+    },
+    "transcricao_ia": {
+      "type": "string",
+      "description": "Transcri\u00e7\u00e3o/resumo do laudo gerada pela IA"
+    },
+    "tipo_exame_ia": {
+      "type": "string",
+      "description": "Tipo do exame identificado pela IA"
+    },
+    "achados_principais": {
+      "type": "string",
+      "description": "Achados principais identificados pela IA"
+    }
+  },
+  "required": [
+    "paciente_nome",
+    "paciente_cpf",
+    "arquivo_url"
+  ]
+}
