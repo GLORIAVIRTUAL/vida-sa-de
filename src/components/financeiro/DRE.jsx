@@ -24,12 +24,28 @@ export default function DRE({ lancamentos, ordensServico = [], loading }) {
     const entradasPorCategoria = agruparLancamentosPorCategoria(lancamentosPeriodo, 'Entrada');
     const saidasPorCategoria = agruparLancamentosPorCategoria(lancamentosPeriodo, 'Saída');
 
-    const receitaConsultas = entradasPorCategoria['Receita Consultas'] || 0;
-    const receitaProcedimentos = entradasPorCategoria['Receita Procedimentos'] || 0;
-    const receitaExames = entradasPorCategoria['Receita Exames'] || 0;
-    const outrasReceitas = Object.entries(entradasPorCategoria)
-      .filter(([categoria]) => !['Receita Consultas', 'Receita Procedimentos', 'Receita Exames'].includes(categoria))
-      .reduce((total, [, valor]) => total + valor, 0);
+    // === RECEITAS POR TIPO DE SERVIÇO: calculadas direto das OSs (fonte da verdade) ===
+    // Isso garante que OSs sem lançamento financeiro vinculado também sejam contabilizadas
+    const osAtivasPeriodo = ordensServico.filter(os => {
+      if (!os.data_execucao) return false;
+      const osYM = os.data_execucao.substring(0, 7);
+      return osYM === mesAnoFiltro && os.status_pagamento !== 'Cancelado';
+    });
+
+    const receitaConsultas = osAtivasPeriodo
+      .filter(os => os.tipo_servico === 'Consulta')
+      .reduce((acc, os) => acc + (os.valor_final || 0), 0);
+    const receitaProcedimentos = osAtivasPeriodo
+      .filter(os => os.tipo_servico === 'Procedimento')
+      .reduce((acc, os) => acc + (os.valor_final || 0), 0);
+    const receitaExames = osAtivasPeriodo
+      .filter(os => os.tipo_servico === 'Exame')
+      .reduce((acc, os) => acc + (os.valor_final || 0), 0);
+
+    // Outras Receitas: lançamentos de Entrada SEM vínculo com OS (ex.: vendas de cartão, taxas, etc.)
+    const outrasReceitas = lancamentosPeriodo
+      .filter(l => l.tipo === 'Entrada' && !l.ordem_servico_id)
+      .reduce((acc, l) => acc + (l.valor || 0), 0);
 
     // Repasse Médico líquido: Saídas - Entradas (estornos de OS canceladas)
     const repasseMedico = (saidasPorCategoria['Repasse Médico'] || 0) - (entradasPorCategoria['Repasse Médico'] || 0);
@@ -53,9 +69,9 @@ export default function DRE({ lancamentos, ordensServico = [], loading }) {
     });
     const impostoOS = osPeriodo.reduce((acc, os) => acc + (os.valor_imposto || 0), 0);
 
-    const receitaBruta = resumo.entradas;
+    const receitaBruta = receitaConsultas + receitaProcedimentos + receitaExames + outrasReceitas;
     const totalDespesas = resumo.saidas;
-    const lucroLiquido = resumo.saldo - impostoOS;
+    const lucroLiquido = receitaBruta - totalDespesas - impostoOS;
     const margemLiquida = receitaBruta > 0 ? (lucroLiquido / receitaBruta) * 100 : 0;
 
     return {
