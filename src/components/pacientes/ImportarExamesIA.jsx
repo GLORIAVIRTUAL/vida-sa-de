@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Upload, FileText, Sparkles, Eye, Trash2, CheckCircle2, AlertCircle } from "lucide-react";
+import { Loader2, Upload, FileText, Sparkles, Eye, Trash2, CheckCircle2, AlertCircle, Camera } from "lucide-react";
 import { ResultadoExame } from "@/entities/all";
 import { UploadFile, InvokeLLM, ExtractDataFromUploadedFile } from "@/integrations/Core";
 import { format } from "date-fns";
@@ -182,9 +182,9 @@ Retorne os dados no schema solicitado.`;
             Envie imagens (JPG, PNG) ou PDFs de laudos de exames. A IA fará a leitura, transcrição completa e extrairá os achados principais automaticamente para o prontuário do paciente.
           </p>
 
-          <div className="grid md:grid-cols-[1fr_auto] gap-2 items-end">
+          <div className="space-y-2">
             <div>
-              <Label htmlFor="exame-arquivo-ia">Selecione o arquivo</Label>
+              <Label htmlFor="exame-arquivo-ia">Selecione o arquivo (imagem ou PDF)</Label>
               <Input
                 id="exame-arquivo-ia"
                 type="file"
@@ -193,24 +193,54 @@ Retorne os dados no schema solicitado.`;
                 disabled={processando}
               />
             </div>
-            <Button
-              type="button"
-              onClick={processarArquivo}
-              disabled={!arquivoSelecionado || processando}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              {processando ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Processando...
-                </>
-              ) : (
-                <>
-                  <Upload className="w-4 h-4 mr-2" />
-                  Enviar e Transcrever
-                </>
-              )}
-            </Button>
+
+            {/* Input oculto para captura via câmera (iPhone e Android) */}
+            <input
+              id="exame-camera-ia"
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={handleFileChange}
+              disabled={processando}
+              className="hidden"
+            />
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => document.getElementById('exame-camera-ia')?.click()}
+                disabled={processando}
+                className="border-blue-300 text-blue-700 hover:bg-blue-100"
+              >
+                <Camera className="w-4 h-4 mr-2" />
+                Tirar Foto do Exame
+              </Button>
+              <Button
+                type="button"
+                onClick={processarArquivo}
+                disabled={!arquivoSelecionado || processando}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {processando ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Processando...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4 mr-2" />
+                    Enviar e Transcrever
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {arquivoSelecionado && (
+              <p className="text-xs text-gray-600">
+                📎 <strong>Selecionado:</strong> {arquivoSelecionado.name}
+              </p>
+            )}
           </div>
 
           {statusMsg && (
