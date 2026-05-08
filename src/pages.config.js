@@ -53,6 +53,7 @@ import ApiIntegracoes from './pages/ApiIntegracoes';
 import ApiTest from './pages/ApiTest';
 import Atendimento from './pages/Atendimento';
 import AuditoriaMedicos from './pages/AuditoriaMedicos';
+import AuditoriaOS from './pages/AuditoriaOS';
 import AuditoriaSeguranca from './pages/AuditoriaSeguranca';
 import ChatbotDashboard from './pages/ChatbotDashboard';
 import ChatbotGerenciamento from './pages/ChatbotGerenciamento';
@@ -96,6 +97,7 @@ export const PAGES = {
     "ApiTest": ApiTest,
     "Atendimento": Atendimento,
     "AuditoriaMedicos": AuditoriaMedicos,
+    "AuditoriaOS": AuditoriaOS,
     "AuditoriaSeguranca": AuditoriaSeguranca,
     "ChatbotDashboard": ChatbotDashboard,
     "ChatbotGerenciamento": ChatbotGerenciamento,

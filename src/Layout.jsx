@@ -140,7 +140,8 @@ function MainLayout({ children, currentPageName, currentUser, onUserUpdate }) {
   { name: "Teste de API", page: "ApiTest", icon: FileText, roles: ["admin"] },
   { name: "Verificação Assinatura", page: "VerificacaoAssinatura", icon: FileText, roles: ["admin"] },
   { name: "Auditoria Segurança", page: "AuditoriaSeguranca", icon: FileText, roles: ["admin"] },
-  { name: "Auditoria Médicos", page: "AuditoriaMedicos", icon: Shield, roles: ["admin"] }];
+  { name: "Auditoria Médicos", page: "AuditoriaMedicos", icon: Shield, roles: ["admin"] },
+  { name: "Auditoria de OS", page: "AuditoriaOS", icon: Shield, roles: ["admin"] }];
 
 
   // Filtrar menus baseado no papel do usuário
