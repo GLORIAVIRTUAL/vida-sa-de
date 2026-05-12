@@ -724,7 +724,7 @@ async function processarMensagemRecebida(base44, payload) {
                     telefoneComPrefixo = '55' + telefoneComPrefixo;
                 }
 
-                await base44.asServiceRole.entities.Contato.create({
+                const novoContatoCriado = await base44.asServiceRole.entities.Contato.create({
                     nome: senderName,
                     telefone: telefoneComPrefixo,
                     origem: 'WhatsApp',
@@ -736,7 +736,43 @@ async function processarMensagemRecebida(base44, payload) {
                     ultima_interacao: agora
                 });
 
-                console.log('👤 Novo contato criado em modo HUMANO');
+                console.log('👤 Novo contato criado em modo HUMANO:', novoContatoCriado?.id);
+
+                // 🔧 DUPLA CHECAGEM PÓS-CREATE: se houve race condition e existe outro contato
+                // com mesmo telefone (criado quase ao mesmo tempo por requisição paralela),
+                // mesclar e deletar o duplicado mais novo
+                try {
+                    await new Promise(r => setTimeout(r, 500)); // dar tempo para outras requisições paralelas terminarem
+                    const ult8Pos = telefoneComPrefixo.slice(-8);
+                    const verificacaoFinal = await base44.asServiceRole.entities.Contato.filter({ telefone: telefoneComPrefixo });
+                    if (verificacaoFinal && verificacaoFinal.length > 1) {
+                        console.log(`⚠️ DUPLICATA DETECTADA pós-create (${verificacaoFinal.length} contatos). Mesclando...`);
+                        // Ordenar por created_date (mais antigo primeiro)
+                        verificacaoFinal.sort((a, b) => new Date(a.created_date) - new Date(b.created_date));
+                        const principalFinal = verificacaoFinal[0];
+                        const histUnificado = [...(principalFinal.historico_mensagens || [])];
+                        for (let i = 1; i < verificacaoFinal.length; i++) {
+                            const d = verificacaoFinal[i];
+                            for (const m of (d.historico_mensagens || [])) {
+                                const ja = histUnificado.some(x =>
+                                    (m.messageId && x.messageId === m.messageId) ||
+                                    (x.timestamp === m.timestamp && x.content === m.content)
+                                );
+                                if (!ja) histUnificado.push(m);
+                            }
+                            try { await base44.asServiceRole.entities.Contato.delete(d.id); } catch (e) {}
+                        }
+                        histUnificado.sort((a, b) => new Date(a.timestamp || 0) - new Date(b.timestamp || 0));
+                        await base44.asServiceRole.entities.Contato.update(principalFinal.id, {
+                            historico_mensagens: histUnificado.slice(-200),
+                            ultima_interacao: agora
+                        });
+                        console.log('✅ Duplicata pós-create mesclada no contato principal:', principalFinal.id);
+                    }
+                } catch (verifErr) {
+                    console.warn('⚠️ Erro na dupla checagem pós-create:', verifErr.message);
+                }
+
                 return new Response(JSON.stringify({ message: "Novo contato criado em modo IA", status: "ia" }), { status: 200 });
             }
         } catch (contatoError) {
