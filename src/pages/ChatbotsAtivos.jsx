@@ -439,12 +439,10 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
     }
   }, [contatoSelecionado?.id]);
 
-  const enviarMensagem = async (textoCustom, skipRefresh = false) => {
+  const enviarMensagem = (textoCustom, skipRefresh = false) => {
     const texto = textoCustom || inputMsg;
     if (!texto.trim() || !contatoSelecionado) return;
     if (!textoCustom) setInputMsg('');
-
-    setEnviando(true);
 
     // Optimistic update: adicionar mensagem localmente de imediato
     const nomeUsuario = currentUser?.display_name || currentUser?.full_name || 'Recepção';
@@ -454,23 +452,23 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
       timestamp: new Date().toISOString(),
       humano: true
     };
+    const telefoneAlvo = contatoSelecionado.telefone;
+    const contatoIdAlvo = contatoSelecionado.id;
+
     setContatoSelecionado(prev => {
       if (!prev) return prev;
       const historicoAtual = prev.historico_mensagens || [];
       return { ...prev, historico_mensagens: [...historicoAtual, novaMensagem] };
     });
 
-    try {
-      await base44.functions.invoke('enviarMensagemHumano', {
-        phoneNumber: contatoSelecionado.telefone,
-        messageText: texto,
-        contatoId: contatoSelecionado.id
-      });
-    } catch (error) {
-      console.error('Erro ao enviar:', error.message);
-    } finally {
-      setEnviando(false);
-    }
+    // Fire-and-forget: envia em background, não bloqueia o input
+    base44.functions.invoke('enviarMensagemHumano', {
+      phoneNumber: telefoneAlvo,
+      messageText: texto,
+      contatoId: contatoIdAlvo
+    }).catch((error) => {
+      console.error('Erro ao enviar:', error?.message || error);
+    });
   };
 
   const finalizarConversa = async () => {
@@ -982,11 +980,10 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
                     placeholder="Digite uma mensagem..."
                     value={inputMsg}
                     onChange={(e) => setInputMsg(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && !enviando && enviarMensagem()}
-                    disabled={enviando}
+                    onKeyPress={(e) => e.key === 'Enter' && enviarMensagem()}
                   />
-                  <Button onClick={() => enviarMensagem()} disabled={enviando || !inputMsg.trim()} className="bg-blue-600 hover:bg-blue-700">
-                    {enviando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  <Button onClick={() => enviarMensagem()} disabled={!inputMsg.trim()} className="bg-blue-600 hover:bg-blue-700">
+                    <Send className="w-4 h-4" />
                   </Button>
                 </div>
               </div>
