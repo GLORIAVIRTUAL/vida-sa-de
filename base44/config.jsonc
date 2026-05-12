@@ -1,0 +1,9 @@
+{
+  "name": "COMPLETO GL\u00d3RIA CL\u00cdNICA",
+  "site": {
+    "installCommand": "npm install",
+    "buildCommand": "npm run build",
+    "serveCommand": "npm run dev",
+    "outputDirectory": "./dist"
+  }
+}
