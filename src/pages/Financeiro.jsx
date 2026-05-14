@@ -212,11 +212,7 @@ export default function Financeiro() {
 
           {lancamentoModal && (
             <FormularioLancamento
-              lancamento={lancamentoEditar}
-              medicos={medicos}
-              ordensServico={ordensServico}
-              open={lancamentoModal}
-              onClose={() => {
+              onCancelar={() => {
                 setLancamentoModal(false);
                 setLancamentoEditar(null);
               }}
