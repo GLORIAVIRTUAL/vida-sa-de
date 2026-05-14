@@ -57,8 +57,8 @@ Deno.serve(async (req) => {
         if (compararValores(dadosAntigos[campo], dadosAtuais[campo])) {
           camposAlterados.push({
             campo,
-            valor_antigo: dadosAntigos[campo] ?? null,
-            valor_novo: dadosAtuais[campo] ?? null
+            valor_antigo: formatarValor(dadosAntigos[campo]),
+            valor_novo: formatarValor(dadosAtuais[campo])
           });
         }
       }
