@@ -700,7 +700,8 @@ export default function Agendamentos() {
             loading={loading}
             dia={diaSelecionado}
             onUpdate={carregarDados}
-            periodo={filtros.periodo} /> :
+            periodo={filtros.periodo}
+            buscaAtiva={buscaAtiva} /> :
 
           visualizacao === "kanban" ?
           <VisualizacaoKanban

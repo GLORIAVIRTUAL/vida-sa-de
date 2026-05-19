@@ -26,7 +26,7 @@ const statusColors = {
   "Não Compareceu": "bg-gray-200 text-gray-600 border-gray-300"
 };
 
-export default function VisualizacaoDiaria({ agendamentos, medicos, pacientes, onEditarAgendamento, loading, dia, onUpdate, periodo }) {
+export default function VisualizacaoDiaria({ agendamentos, medicos, pacientes, onEditarAgendamento, loading, dia, onUpdate, periodo, buscaAtiva }) {
   const [atualizandoStatus, setAtualizandoStatus] = useState(null);
   const [notificacaoAberta, setNotificacaoAberta] = useState(false);
   const [agendamentoSelecionado, setAgendamentoSelecionado] = useState(null);
@@ -269,12 +269,12 @@ export default function VisualizacaoDiaria({ agendamentos, medicos, pacientes, o
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2 flex-wrap">
-                          {/* NOVO: Mostrar data quando não for visualização diária */}
-                          {periodo !== 'dia' &&
-                    <span className="text-sm font-semibold text-blue-700 bg-blue-50 px-2 py-1 rounded">
-                              {format(new Date(agendamento.data_agendamento + 'T00:00:00'), "EEE, dd/MM", { locale: ptBR })}
-                            </span>
-                    }
+                           {/* Mostrar data quando não for visualização diária OU quando há busca ativa */}
+                           {(periodo !== 'dia' || buscaAtiva) &&
+                        <span className="text-sm font-semibold text-blue-700 bg-blue-50 px-2 py-1 rounded">
+                               {format(new Date(agendamento.data_agendamento + 'T00:00:00'), "EEE, dd/MM", { locale: ptBR })}
+                             </span>
+                        }
                           <Clock className="w-4 h-4 text-gray-500" />
                           <span className="font-semibold text-lg">{agendamento.horario || 'Sem horário'}</span>
                           <Badge className={`${statusColors[agendamento.status]} border`}>
