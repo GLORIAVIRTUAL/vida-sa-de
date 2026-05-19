@@ -1,7 +1,9 @@
 import React, { useMemo } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Filter } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Filter, Search, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 // Função para normalizar strings (remover acentos e converter para maiúsculas)
 const normalizeString = (str) => {
@@ -69,7 +71,29 @@ export default function FiltrosAgendamento({ filtros, onFiltrosChange, medicos }
 
   return (
     <Card className="mb-6">
-      <CardContent className="p-4">
+      <CardContent className="p-4 space-y-3">
+        {/* Barra de busca por nome ou telefone */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Input
+            type="text"
+            placeholder="Buscar agendamento por nome do paciente ou telefone..."
+            value={filtros.busca || ''}
+            onChange={(e) => handleFiltroChange('busca', e.target.value)}
+            className="pl-10 pr-10"
+          />
+          {filtros.busca && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => handleFiltroChange('busca', '')}
+              className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
+
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-2">
             <Filter className="w-4 h-4 text-gray-500" />

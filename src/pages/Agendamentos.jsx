@@ -50,7 +50,8 @@ export default function Agendamentos() {
     periodo: "dia",
     medico: "todos",
     status: "todos",
-    tipo: "todos"
+    tipo: "todos",
+    busca: ""
   });
   const [filtroMedicoCalendario, setFiltroMedicoCalendario] = useState("todos"); // New state for calendar doctor filter
   const [filtroDentistaOdonto, setFiltroDentistaOdonto] = useState("todos"); // Filtro Lidiane/Ramão
@@ -205,7 +206,23 @@ export default function Agendamentos() {
     return medicos.filter(m => normalizeString(m.nome).includes('RUBEN')).map(m => m.id);
   }, [medicos]);
 
-  const agendamentosFiltrados = Array.isArray(agendamentosPorPeriodo) ? agendamentosPorPeriodo.filter((agendamento) => {
+  // Se há busca, ignora o filtro de período e busca em todos os agendamentos
+  const buscaAtiva = (filtros.busca || '').trim().length > 0;
+  const baseAgendamentos = buscaAtiva
+    ? (Array.isArray(agendamentos) ? agendamentos : [])
+    : (Array.isArray(agendamentosPorPeriodo) ? agendamentosPorPeriodo : []);
+
+  // Mapa rápido id -> paciente para busca por telefone
+  const pacientesMap = useMemo(() => {
+    const map = {};
+    (pacientes || []).forEach(p => { if (p?.id) map[p.id] = p; });
+    return map;
+  }, [pacientes]);
+
+  const termoBusca = normalizeString((filtros.busca || '').trim());
+  const termoBuscaTel = (filtros.busca || '').replace(/\D/g, '');
+
+  const agendamentosFiltrados = baseAgendamentos.filter((agendamento) => {
     if (!agendamento) return false;
 
     // Lógica especial para odontologia e Dr. Ruben: se filtrar por qualquer um do grupo, mostrar todos do grupo
@@ -231,8 +248,24 @@ export default function Agendamentos() {
     const filtroStatus = filtros.status === "todos" || agendamento.status === filtros.status;
     const filtroTipo = filtros.tipo === "todos" || agendamento.tipo_servico === filtros.tipo;
 
-    return filtroMedico && filtroStatus && filtroTipo;
-  }) : [];
+    // Filtro de busca por nome do paciente ou telefone
+    let filtroBusca = true;
+    if (buscaAtiva) {
+      const paciente = pacientesMap[agendamento.paciente_id];
+      const nomeAg = normalizeString(agendamento.paciente_nome || paciente?.nome || '');
+      const telPaciente = (paciente?.telefone || '').replace(/\D/g, '');
+      const telSecundario = (paciente?.telefone_secundario || '').replace(/\D/g, '');
+
+      const matchNome = termoBusca.length > 0 && nomeAg.includes(termoBusca);
+      const matchTel = termoBuscaTel.length >= 3 && (
+        telPaciente.includes(termoBuscaTel) || telSecundario.includes(termoBuscaTel)
+      );
+
+      filtroBusca = matchNome || matchTel;
+    }
+
+    return filtroMedico && filtroStatus && filtroTipo && filtroBusca;
+  });
 
   // CORRIGIDO: Filtrar agendamentos do calendário por médico E por mês atual
   const agendamentosCalendario = useMemo(() => {
