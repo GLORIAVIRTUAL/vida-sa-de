@@ -24,7 +24,8 @@ export function isDiaFechado(dataLancamento) {
  * Apenas o email autorizado pode, após digitar a senha.
  */
 export function podeAlterarDiaFechado(userEmail) {
-  return userEmail === EMAIL_AUTORIZADO;
+  if (!userEmail) return false;
+  return String(userEmail).trim().toLowerCase() === EMAIL_AUTORIZADO.toLowerCase();
 }
 
 export default function SenhaRetroativaDialog({ open, onClose, onAutorizado, acao }) {

@@ -36,6 +36,11 @@ export default function FormularioLancamento({ onSalvar, onCancelar, tipoInicial
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    // Revalida no momento do salvamento (bloqueio definitivo)
+    if (isDiaFechado(formData.data_lancamento) && !podeAlterarDiaFechado(currentUserEmail)) {
+      alert('⛔ Você não pode lançar em dias anteriores. Apenas o responsável financeiro pode fazer lançamentos retroativos.');
+      return;
+    }
     onSalvar(formData);
   };
 
