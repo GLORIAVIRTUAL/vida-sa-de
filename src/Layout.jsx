@@ -146,8 +146,11 @@ function MainLayout({ children, currentPageName, currentUser, onUserUpdate }) {
 
   // Filtrar menus baseado no papel do usuário
   const userRole = currentUser?.app_role || currentUser?.role || "user";
-  const menuPrincipal = menuBase.filter((item) => item.roles.includes(userRole));
-  const menuSistemaFiltrado = menuSistemaBase.filter((item) => item.roles.includes(userRole));
+  // Emails com permissões especiais (veem itens de admin mesmo sem o role)
+  const ADMIN_BYPASS_EMAILS = ['cristianogoldani@yahoo.com.br'];
+  const temBypassAdmin = currentUser?.email && ADMIN_BYPASS_EMAILS.includes(currentUser.email.toLowerCase().trim());
+  const menuPrincipal = menuBase.filter((item) => item.roles.includes(userRole) || (temBypassAdmin && item.roles.includes("admin")));
+  const menuSistemaFiltrado = menuSistemaBase.filter((item) => item.roles.includes(userRole) || (temBypassAdmin && item.roles.includes("admin")));
 
   // Se for página sem layout, renderizar apenas o conteúdo
   if (!mostrarLayout) {
