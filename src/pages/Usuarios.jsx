@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { User } from '@/entities/all';
+import { base44 } from '@/api/base44Client';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Users, ShieldAlert } from "lucide-react";
@@ -18,12 +18,12 @@ export default function UsuariosPage() {
     const carregarUsuarios = useCallback(async () => {
         setLoading(true);
         try {
-            const data = await User.list();
-            // Adicionando uma verificação para garantir que data seja um array
+            const response = await base44.functions.invoke('listarUsuarios', {});
+            const data = response?.data?.usuarios || [];
             setUsuarios(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error("Erro ao carregar usuários:", error);
-            setUsuarios([]); // Definir como array vazio em caso de erro
+            setUsuarios([]);
         } finally {
             setLoading(false);
         }
