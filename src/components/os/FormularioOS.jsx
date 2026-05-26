@@ -15,6 +15,7 @@ import { format } from 'date-fns';
 import { useToast } from "@/components/ui/use-toast"; // Import useToast
 import { base44 } from "@/api/base44Client";
 import { User } from "@/entities/all";
+import ModalQrCodePix from "./ModalQrCodePix";
 
 const formasPagamento = ["Dinheiro", "Cartão Débito", "Cartão Crédito", "PIX", "Transferência", "Convênio", "Múltiplas Formas"];
 
@@ -107,6 +108,13 @@ export default function FormularioOS({
   const [avisoCategoria, setAvisoCategoria] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const { toast } = useToast(); // Initialize useToast
+
+  // Estados para o modal de QR Code Pix
+  const [pixModalOpen, setPixModalOpen] = useState(false);
+  const [pixQrCode, setPixQrCode] = useState(null);
+  const [pixLoading, setPixLoading] = useState(false);
+  const [pixErro, setPixErro] = useState(null);
+  const [osSalvaPendente, setOsSalvaPendente] = useState(null);
 
   // Buscar usuário atual para salvar quem gerou a OS
   useEffect(() => {
@@ -661,8 +669,45 @@ export default function FormularioOS({
          });
       }
 
-      // Chamar onSalvar imediatamente para atualização otimista
-      onSalvar(novaOS);
+      // Verificar se é pagamento PIX (forma única ou múltiplas com PIX)
+      const temPixDireto = dados.forma_pagamento === 'PIX';
+      const temPixMultiplo = dados.forma_pagamento === 'Múltiplas Formas' &&
+        pagamentosDetalhados.some(p => p.forma === 'PIX');
+
+      if (temPixDireto || temPixMultiplo) {
+        // Calcular valor do PIX (total se único, ou apenas a parte PIX se múltiplo)
+        const valorPix = temPixMultiplo
+          ? pagamentosDetalhados.find(p => p.forma === 'PIX')?.valor || dados.valor_final
+          : dados.valor_final;
+
+        // Abrir modal e gerar QR Code
+        setOsSalvaPendente(novaOS);
+        setPixModalOpen(true);
+        setPixLoading(true);
+        setPixErro(null);
+        setPixQrCode(null);
+
+        try {
+          const pixRes = await base44.functions.invoke('gerarQrCodePix', {
+            ordem_servico_id: novaOS.id,
+            valor: valorPix
+          });
+
+          if (pixRes.data?.success && pixRes.data?.qr_code) {
+            setPixQrCode(pixRes.data.qr_code);
+          } else {
+            setPixErro(pixRes.data?.error || 'Não foi possível gerar o QR Code Pix.');
+          }
+        } catch (pixErr) {
+          console.error('Erro ao gerar QR Code Pix:', pixErr);
+          setPixErro('Erro ao gerar QR Code Pix: ' + (pixErr.message || 'Tente novamente.'));
+        } finally {
+          setPixLoading(false);
+        }
+      } else {
+        // Sem PIX: fluxo normal
+        onSalvar(novaOS);
+      }
     } catch (error) {
       console.error('❌ Erro ao criar OS:', error);
       toast({
@@ -1014,6 +1059,23 @@ export default function FormularioOS({
           </DialogFooter>
         </form>
       </DialogContent>
+
+      <ModalQrCodePix
+        open={pixModalOpen}
+        onClose={() => {
+          setPixModalOpen(false);
+          // Após fechar o modal de PIX, concluir o fluxo da OS
+          if (osSalvaPendente) {
+            onSalvar(osSalvaPendente);
+            setOsSalvaPendente(null);
+          }
+        }}
+        qrCode={pixQrCode}
+        valor={osSalvaPendente?.valor_final}
+        pacienteNome={paciente?.nome || agendamento?.paciente_nome}
+        loading={pixLoading}
+        erro={pixErro}
+      />
     </Dialog>
   );
 }
