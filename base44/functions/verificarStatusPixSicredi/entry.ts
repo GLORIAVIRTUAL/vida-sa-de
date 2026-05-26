@@ -27,7 +27,15 @@ Deno.serve(async (req) => {
       ? 'https://api-pix.sicredi.com.br'
       : 'https://api-pix-h.sicredi.com.br';
 
-    // Get OAuth token
+    // Get OAuth token with mTLS
+    const certPem = Deno.env.get('SICREDI_CERT_PEM');
+    const keyPem = Deno.env.get('SICREDI_KEY_PEM');
+
+    const tlsOptions = {
+      cert: certPem,
+      key: keyPem,
+    };
+
     const tokenResponse = await fetch(`${baseUrl}/oauth/token`, {
       method: 'POST',
       headers: {
@@ -38,6 +46,7 @@ Deno.serve(async (req) => {
         client_id: clientId,
         client_secret: clientSecret,
       }).toString(),
+      ...tlsOptions,
     });
 
     if (!tokenResponse.ok) {
