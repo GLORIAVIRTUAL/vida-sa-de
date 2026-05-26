@@ -1,4 +1,39 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import https from 'node:https';
+import { Buffer } from 'node:buffer';
+
+// Helper: makes HTTPS request with mTLS using node:https
+function mtlsRequest({ url, method, headers, body, cert, key }) {
+  return new Promise((resolve, reject) => {
+    const parsedUrl = new URL(url);
+    const options = {
+      hostname: parsedUrl.hostname,
+      port: parsedUrl.port || 443,
+      path: parsedUrl.pathname + parsedUrl.search,
+      method,
+      headers,
+      cert,
+      key,
+    };
+
+    const req = https.request(options, (res) => {
+      let data = '';
+      res.on('data', (chunk) => { data += chunk; });
+      res.on('end', () => {
+        resolve({
+          ok: res.statusCode >= 200 && res.statusCode < 300,
+          status: res.statusCode,
+          text: () => Promise.resolve(data),
+          json: () => Promise.resolve(JSON.parse(data)),
+        });
+      });
+    });
+
+    req.on('error', reject);
+    if (body) req.write(body);
+    req.end();
+  });
+}
 
 Deno.serve(async (req) => {
   try {
@@ -32,79 +67,83 @@ Deno.serve(async (req) => {
       ? 'https://api-pix.sicredi.com.br'
       : 'https://api-pix-h.sicredi.com.br';
 
-    // Step 1: Get OAuth token with mTLS (certificate + private key)
-    // For Sicredi, we need to use the certificate and key for mutual TLS authentication
-    const tlsOptions = {
-      cert: certPem,
-      key: keyPem,
-    };
+    // Step 1: Get OAuth token (Basic Auth + mTLS)
+    const basicAuth = btoa(`${clientId}:${clientSecret}`);
+    const tokenBody = new URLSearchParams({
+      grant_type: 'client_credentials',
+      scope: 'cob.write cob.read',
+    }).toString();
 
-    const tokenResponse = await fetch(`${baseUrl}/oauth/token`, {
+    const tokenResponse = await mtlsRequest({
+      url: `${baseUrl}/oauth/token`,
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': `Basic ${basicAuth}`,
+        'Content-Length': Buffer.byteLength(tokenBody),
       },
-      body: new URLSearchParams({
-        grant_type: 'client_credentials',
-        client_id: clientId,
-        client_secret: clientSecret,
-      }).toString(),
-      ...tlsOptions,
+      body: tokenBody,
+      cert: certPem,
+      key: keyPem,
     });
 
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text();
       console.error('Token error:', errorText);
-      return Response.json({ error: 'Failed to get OAuth token', details: errorText }, { status: 500 });
+      return Response.json({ error: 'Failed to get OAuth token', details: errorText, status: tokenResponse.status }, { status: 500 });
     }
 
     const tokenData = await tokenResponse.json();
     const accessToken = tokenData.access_token;
 
     if (!accessToken) {
-      return Response.json({ error: 'No access token returned' }, { status: 500 });
+      return Response.json({ error: 'No access token returned', tokenData }, { status: 500 });
     }
 
-    // Step 2: Generate QR Code (Immediate/Static)
-    const qrCodePayload = {
-      chave_pix: pixKey,
-      valor: valor,
-      descricao: `OS ${ordem_servico_id}`,
-      identificador_unico: ordem_servico_id,
-      tipo_qr: 'DINAMICO', // ou ESTATICO, dependendo de preferência
-    };
+    // Step 2: Generate dynamic Pix charge (cob)
+    const txid = ordem_servico_id.replace(/[^a-zA-Z0-9]/g, '').substring(0, 35).padEnd(26, '0');
+    
+    const cobPayload = JSON.stringify({
+      calendario: { expiracao: 3600 },
+      valor: { original: Number(valor).toFixed(2) },
+      chave: pixKey,
+      solicitacaoPagador: `OS ${ordem_servico_id}`,
+    });
 
-    const qrResponse = await fetch(`${baseUrl}/v2/cob`, {
-      method: 'POST',
+    const cobResponse = await mtlsRequest({
+      url: `${baseUrl}/api/v2/cob/${txid}`,
+      method: 'PUT',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(cobPayload),
       },
-      body: JSON.stringify(qrCodePayload),
+      body: cobPayload,
+      cert: certPem,
+      key: keyPem,
     });
 
-    if (!qrResponse.ok) {
-      const errorText = await qrResponse.text();
-      console.error('QR Code generation error:', errorText);
-      return Response.json({ error: 'Failed to generate QR code', details: errorText }, { status: 500 });
+    if (!cobResponse.ok) {
+      const errorText = await cobResponse.text();
+      console.error('Cob generation error:', errorText);
+      return Response.json({ error: 'Failed to generate Pix charge', details: errorText, status: cobResponse.status }, { status: 500 });
     }
 
-    const qrData = await qrResponse.json();
-
-    // Extract QR code image URL or content
-    const qrCode = qrData.qr_code || qrData.qrcode;
-    const transactionId = qrData.id || qrData.identificador_unico;
+    const cobData = await cobResponse.json();
 
     return Response.json({
       success: true,
-      qr_code: qrCode,
-      transaction_id: transactionId,
+      qr_code: cobData.pixCopiaECola,
+      location: cobData.location,
+      txid: cobData.txid || txid,
+      transaction_id: cobData.txid || txid,
       valor: valor,
       chave_pix: pixKey,
       ordem_servico_id: ordem_servico_id,
+      expiracao: cobData.calendario?.expiracao,
     });
   } catch (error) {
     console.error('Error:', error.message);
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: error.message, stack: error.stack }, { status: 500 });
   }
 });
