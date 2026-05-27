@@ -116,29 +116,28 @@ export default function ImportarVendasCartao() {
           continue;
         }
 
-        // FORMATO DA PLANILHA (SEM EMAIL):
+        // FORMATO DA PLANILHA (COM EMAIL - 21 colunas, índices 0-20):
         // 0: TITULAR/DEPENDENTE
         // 1: MODCAR (código)
         // 2: NOME
         // 3: CPF
-        // 4: (vazio/RG)
+        // 4: RG
         // 5: NASCIMENTO
         // 6: SEXO
         // 7: TELEFONE
-        // 8: (vazio)
+        // 8: EMAIL
         // 9: DATA VENDA
         // 10: CEP
-        // 11: TIPO LOGRADOURO (RUA, AV, etc)
-        // 12: LOGRADOURO (nome da rua)
-        // 13: NUMERO
-        // 14: COMPLEMENTO (vazio na maioria)
-        // 15: BAIRRO
-        // 16: CIDADE
-        // 17: ESTADO
-        // 18: PLANO
-        // 19: FORMA PGTO
-        // 20: VALOR
-        // 21: VALIDADE
+        // 11: ENDEREÇO (logradouro completo)
+        // 12: NUMERO
+        // 13: COMPLEMENTO
+        // 14: BAIRRO
+        // 15: CIDADE
+        // 16: ESTADO
+        // 17: PLANO
+        // 18: FORMA PGTO
+        // 19: VALOR
+        // 20: VENCIMENTO
 
         // Debug: mostrar colunas para análise
         console.log(`📋 Linha ${i}: ${colunas.length} colunas`, colunas.slice(0, 5));
@@ -151,21 +150,19 @@ export default function ImportarVendasCartao() {
         const dataNascimento = parseData(colunas[5]);
         const sexo = colunas[6] || '';
         const telefone = colunas[7] || '';
-        const email = ''; // Email removido - coluna não existe mais
+        const email = colunas[8] || '';
         const dataVenda = parseData(colunas[9]);
         const cep = colunas[10] || '';
-        const tipoLogradouro = colunas[11] || '';
-        const nomeLogradouro = colunas[12] || '';
-        const logradouro = tipoLogradouro && nomeLogradouro ? `${tipoLogradouro} ${nomeLogradouro}` : (tipoLogradouro || nomeLogradouro);
-        const numero = colunas[13] || '';
-        const complemento = colunas[14] || '';
-        const bairro = colunas[15] || '';
-        const cidade = colunas[16] || '';
-        const estado = colunas[17] || '';
-        const plano = colunas[18] || '';
-        const formaPagamento = colunas[19] || '';
-        const valorRaw = colunas[20] || '';
-        const validadeRaw = colunas[21] || '';
+        const logradouro = colunas[11] || '';
+        const numero = colunas[12] || '';
+        const complemento = colunas[13] || '';
+        const bairro = colunas[14] || '';
+        const cidade = colunas[15] || '';
+        const estado = colunas[16] || '';
+        const plano = colunas[17] || '';
+        const formaPagamento = colunas[18] || '';
+        const valorRaw = colunas[19] || '';
+        const validadeRaw = colunas[20] || '';
         
         // Limpar valor: remover "R$", espaços, e converter vírgula para ponto
         const valorLimpo = valorRaw.replace('R$', '').replace(/\s/g, '').replace(',', '.').replace(/[^\d.-]/g, '');
