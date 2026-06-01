@@ -1,0 +1,183 @@
+{
+  "name": "VendaCartao",
+  "type": "object",
+  "properties": {
+    "numero_venda": {
+      "type": "string",
+      "description": "N\u00famero \u00fanico da venda"
+    },
+    "tipo_plano": {
+      "type": "string",
+      "enum": [
+        "Individual \u00e0 Vista",
+        "Individual Parcelado",
+        "Familiar \u00e0 Vista",
+        "Familiar Parcelado",
+        "Grupo \u00e0 Vista",
+        "Grupo Parcelado"
+      ],
+      "description": "Tipo de plano contratado"
+    },
+    "titular": {
+      "type": "object",
+      "properties": {
+        "nome": {
+          "type": "string"
+        },
+        "cpf": {
+          "type": "string"
+        },
+        "data_nascimento": {
+          "type": "string",
+          "format": "date"
+        },
+        "telefone": {
+          "type": "string"
+        },
+        "endereco": {
+          "type": "object",
+          "properties": {
+            "cep": {
+              "type": "string"
+            },
+            "logradouro": {
+              "type": "string"
+            },
+            "numero": {
+              "type": "string"
+            },
+            "complemento": {
+              "type": "string"
+            },
+            "bairro": {
+              "type": "string"
+            },
+            "cidade": {
+              "type": "string"
+            },
+            "estado": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "description": "Dados do titular do plano"
+    },
+    "dependentes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string"
+          },
+          "cpf": {
+            "type": "string"
+          },
+          "data_nascimento": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "description": "Lista de dependentes (m\u00e1x 4 para Familiar, 9 para Grupo)"
+    },
+    "paciente_titular_id": {
+      "type": "string",
+      "description": "ID do paciente titular criado no sistema"
+    },
+    "pacientes_dependentes_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "IDs dos pacientes dependentes criados no sistema"
+    },
+    "quantidade_cartoes": {
+      "type": "number",
+      "description": "Quantidade de cart\u00f5es f\u00edsicos emitidos",
+      "default": 0
+    },
+    "valor_cartoes": {
+      "type": "number",
+      "description": "Valor total dos cart\u00f5es f\u00edsicos (R$ 5,00 cada)"
+    },
+    "valor_plano": {
+      "type": "number",
+      "description": "Valor do plano (sem os cart\u00f5es)"
+    },
+    "valor_total": {
+      "type": "number",
+      "description": "Valor total da venda (plano + cart\u00f5es)"
+    },
+    "forma_pagamento": {
+      "type": "string",
+      "enum": [
+        "Dinheiro",
+        "Cart\u00e3o D\u00e9bito",
+        "Cart\u00e3o Cr\u00e9dito",
+        "PIX",
+        "Transfer\u00eancia"
+      ],
+      "description": "Forma de pagamento"
+    },
+    "numero_parcelas": {
+      "type": "number",
+      "default": 1,
+      "description": "N\u00famero de parcelas (para planos parcelados)"
+    },
+    "valor_parcela": {
+      "type": "number",
+      "description": "Valor de cada parcela"
+    },
+    "data_venda": {
+      "type": "string",
+      "format": "date",
+      "description": "Data da venda"
+    },
+    "validade_cartao": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de validade do cart\u00e3o (1 ano a partir da venda)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Pendente",
+        "Ativo",
+        "Vencido",
+        "Cancelado",
+        "Falha Pagamento"
+      ],
+      "default": "Pendente",
+      "description": "Status do cart\u00e3o e pagamento"
+    },
+    "observacoes": {
+      "type": "string",
+      "description": "Observa\u00e7\u00f5es da venda"
+    },
+    "transaction_id": {
+      "type": "string",
+      "description": "ID da transa\u00e7\u00e3o na EvoluServices"
+    },
+    "bandeira_cartao": {
+      "type": "string",
+      "description": "Bandeira do cart\u00e3o utilizada (ex: VISA_CREDITO)"
+    },
+    "nsu": {
+      "type": "string",
+      "description": "NSU da transa\u00e7\u00e3o"
+    },
+    "autorizacao": {
+      "type": "string",
+      "description": "C\u00f3digo de autoriza\u00e7\u00e3o da transa\u00e7\u00e3o"
+    }
+  },
+  "required": [
+    "tipo_plano",
+    "titular",
+    "valor_total",
+    "forma_pagamento",
+    "data_venda"
+  ]
+}

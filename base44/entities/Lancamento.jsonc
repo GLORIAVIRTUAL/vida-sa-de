@@ -1,0 +1,87 @@
+{
+  "name": "Lancamento",
+  "type": "object",
+  "properties": {
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "Entrada",
+        "Sa\u00edda"
+      ],
+      "description": "Tipo do lan\u00e7amento"
+    },
+    "categoria": {
+      "type": "string",
+      "enum": [
+        "Receita Consultas",
+        "Receita Procedimentos",
+        "Receita Exames",
+        "Repasse M\u00e9dico",
+        "Repasse Laborat\u00f3rio",
+        "Aluguel",
+        "\u00c1gua/Luz",
+        "Material M\u00e9dico",
+        "Equipamentos",
+        "Marketing",
+        "Sal\u00e1rios",
+        "Impostos",
+        "Outros"
+      ],
+      "description": "Categoria do lan\u00e7amento"
+    },
+    "descricao": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o do lan\u00e7amento"
+    },
+    "valor": {
+      "type": "number",
+      "description": "Valor do lan\u00e7amento"
+    },
+    "data_lancamento": {
+      "type": "string",
+      "format": "date",
+      "description": "Data do lan\u00e7amento"
+    },
+    "forma_pagamento": {
+      "type": "string",
+      "enum": [
+        "Dinheiro",
+        "Cart\u00e3o D\u00e9bito",
+        "Cart\u00e3o Cr\u00e9dito",
+        "PIX",
+        "Transfer\u00eancia",
+        "Boleto"
+      ],
+      "description": "Forma de pagamento/recebimento"
+    },
+    "ordem_servico_id": {
+      "type": "string",
+      "description": "ID da ordem de servi\u00e7o relacionada (para receitas)"
+    },
+    "medico_id": {
+      "type": "string",
+      "description": "ID do m\u00e9dico relacionado (para repasses)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Realizado",
+        "Pendente",
+        "Cancelado"
+      ],
+      "default": "Realizado",
+      "description": "Status do lan\u00e7amento"
+    },
+    "observacoes": {
+      "type": "string",
+      "description": "Observa\u00e7\u00f5es do lan\u00e7amento"
+    }
+  },
+  "required": [
+    "tipo",
+    "categoria",
+    "descricao",
+    "valor",
+    "data_lancamento"
+  ]
+}

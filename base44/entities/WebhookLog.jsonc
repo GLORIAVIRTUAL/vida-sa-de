@@ -1,0 +1,35 @@
+{
+  "name": "WebhookLog",
+  "type": "object",
+  "properties": {
+    "endpoint": {
+      "type": "string",
+      "description": "Nome da fun\u00e7\u00e3o/endpoint chamado"
+    },
+    "method": {
+      "type": "string",
+      "description": "M\u00e9todo HTTP (POST, GET, etc)"
+    },
+    "body": {
+      "type": "string",
+      "description": "Conte\u00fado do corpo da requisi\u00e7\u00e3o (JSON stringified)"
+    },
+    "response_sent": {
+      "type": "string",
+      "description": "Resposta enviada pelo sistema"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "success",
+        "error",
+        "processing"
+      ],
+      "default": "processing"
+    }
+  },
+  "required": [
+    "endpoint",
+    "body"
+  ]
+}

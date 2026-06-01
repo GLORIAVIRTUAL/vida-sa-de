@@ -1,0 +1,26 @@
+{
+  "name": "ApiKey",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Nome para identificar a chave (ex: Chatbot)"
+    },
+    "key": {
+      "type": "string",
+      "description": "A chave de API secreta"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Ativo",
+        "Inativo"
+      ],
+      "default": "Ativo"
+    }
+  },
+  "required": [
+    "name",
+    "key"
+  ]
+}

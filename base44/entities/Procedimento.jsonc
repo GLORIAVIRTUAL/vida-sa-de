@@ -1,0 +1,123 @@
+{
+  "name": "Procedimento",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string",
+      "description": "Nome do procedimento"
+    },
+    "codigo": {
+      "type": "string",
+      "description": "C\u00f3digo do procedimento (TUSS, AMB, etc.)"
+    },
+    "especialidade": {
+      "type": "string",
+      "enum": [
+        "Cardiologia",
+        "Cl\u00ednico Geral",
+        "Dermatologia",
+        "Eletrocardiograma",
+        "Endocrinologia",
+        "Fisioterapeuta",
+        "Gastroenterologia",
+        "Geral",
+        "Geriatria",
+        "Ginecologia",
+        "Hidrogin\u00e1stica",
+        "Hidroterapia",
+        "Massoterapia",
+        "Nata\u00e7\u00e3o",
+        "Neurologia",
+        "Neuropediatra",
+        "Nutricionista",
+        "Odontologia",
+        "Oftalmologia",
+        "Optometrista",
+        "Ortopedia",
+        "Otorrinolaringologia",
+        "Pediatria",
+        "Pilates",
+        "Pneumologia",
+        "Psicologia",
+        "Psicopedagoga",
+        "Psiquiatria",
+        "Quiropraxia",
+        "Traumatologia",
+        "Urologia"
+      ],
+      "description": "Especialidade relacionada"
+    },
+    "duracao_minutos": {
+      "type": "number",
+      "description": "Dura\u00e7\u00e3o em minutos do procedimento"
+    },
+    "tipo_repasse": {
+      "type": "string",
+      "enum": [
+        "valor_fixo",
+        "percentual"
+      ],
+      "default": "valor_fixo",
+      "description": "Define se o repasse \u00e9 por valor fixo ou percentual"
+    },
+    "valor_repasse_medico": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Valor fixo de repasse ao m\u00e9dico (R$)"
+    },
+    "percentual_repasse_medico": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Percentual de repasse ao m\u00e9dico (%)"
+    },
+    "descricao": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o do procedimento"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Ativo",
+        "Inativo"
+      ],
+      "default": "Ativo"
+    },
+    "is_pacote": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se verdadeiro, este procedimento \u00e9 um pacote contendo v\u00e1rios servi\u00e7os"
+    },
+    "itens_pacote": {
+      "type": "array",
+      "description": "Lista de servi\u00e7os inclu\u00eddos no pacote",
+      "items": {
+        "type": "object",
+        "properties": {
+          "procedimento_id": {
+            "type": "string",
+            "description": "ID do procedimento inclu\u00eddo no pacote"
+          },
+          "nome": {
+            "type": "string",
+            "description": "Nome do procedimento (c\u00f3pia para refer\u00eancia)"
+          },
+          "quantidade": {
+            "type": "number",
+            "default": 1,
+            "description": "Quantidade deste servi\u00e7o no pacote"
+          }
+        }
+      }
+    },
+    "desconto_pacote": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Percentual de desconto aplicado ao pacote"
+    }
+  },
+  "required": [
+    "nome"
+  ]
+}

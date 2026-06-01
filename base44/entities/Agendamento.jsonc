@@ -1,0 +1,223 @@
+{
+  "name": "Agendamento",
+  "type": "object",
+  "properties": {
+    "paciente_id": {
+      "type": "string",
+      "description": "ID do paciente"
+    },
+    "paciente_nome": {
+      "type": "string",
+      "description": "Nome do paciente (c\u00f3pia para facilitar visualiza\u00e7\u00e3o)"
+    },
+    "medico_id": {
+      "type": "string",
+      "description": "ID do m\u00e9dico principal (para consultas)"
+    },
+    "data_agendamento": {
+      "type": "string",
+      "format": "date",
+      "description": "Data do agendamento"
+    },
+    "horario": {
+      "type": "string",
+      "pattern": "^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$",
+      "description": "Hor\u00e1rio do agendamento"
+    },
+    "tipo_servico": {
+      "type": "string",
+      "enum": [
+        "Consulta",
+        "Procedimento",
+        "Exame",
+        "Retorno",
+        "M\u00faltiplos Servi\u00e7os"
+      ],
+      "description": "Tipo do servi\u00e7o principal ou indicador de m\u00faltiplos servi\u00e7os"
+    },
+    "duracao_minutos": {
+      "type": "number",
+      "description": "Dura\u00e7\u00e3o do atendimento em minutos (ajust\u00e1vel pelo usu\u00e1rio no agendamento)"
+    },
+    "itens_servico": {
+      "type": "array",
+      "description": "Lista de servi\u00e7os inclu\u00eddos neste agendamento",
+      "items": {
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "Consulta",
+              "Procedimento",
+              "Exame",
+              "Retorno"
+            ]
+          },
+          "medico_id": {
+            "type": "string",
+            "description": "ID do m\u00e9dico para este servi\u00e7o"
+          },
+          "procedimento_id": {
+            "type": "string",
+            "description": "ID do procedimento"
+          },
+          "exame_id": {
+            "type": "string",
+            "description": "ID do exame"
+          },
+          "descricao": {
+            "type": "string",
+            "description": "Descri\u00e7\u00e3o do servi\u00e7o"
+          },
+          "valor": {
+            "type": "number",
+            "description": "Valor deste item"
+          }
+        }
+      }
+    },
+    "is_reserva": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se true, indica que \u00e9 apenas uma reserva de hor\u00e1rio (sem dados completos do paciente)"
+    },
+    "is_encaixe": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se true, indica que \u00e9 um encaixe (permite hor\u00e1rio duplicado)"
+    },
+    "is_recorrente": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se true, indica que faz parte de uma s\u00e9rie recorrente"
+    },
+    "recorrencia_tipo": {
+      "type": "string",
+      "enum": [
+        "Semanal",
+        "Quinzenal",
+        "Mensal"
+      ],
+      "description": "Tipo de recorr\u00eancia do agendamento"
+    },
+    "recorrencia_serie_id": {
+      "type": "string",
+      "description": "ID \u00fanico que agrupa todos os agendamentos da mesma s\u00e9rie recorrente"
+    },
+    "recorrencia_data_fim": {
+      "type": "string",
+      "format": "date",
+      "description": "Data final para gerar agendamentos recorrentes"
+    },
+    "procedimento_id": {
+      "type": "string",
+      "description": "ID do procedimento (se aplic\u00e1vel) - mantido para compatibilidade"
+    },
+    "exames_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "IDs dos exames (se aplic\u00e1vel) - mantido para compatibilidade"
+    },
+    "categoria_preco_id": {
+      "type": "string",
+      "description": "ID da Categoria de Pre\u00e7o (ex: Particular, Cart\u00e3o Mais Vida, Prefeitura)."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Agendado",
+        "Confirmado",
+        "Pago",
+        "Em Atendimento",
+        "Finalizado",
+        "Cancelado",
+        "N\u00e3o Compareceu"
+      ],
+      "default": "Agendado"
+    },
+    "valor_total": {
+      "type": "number",
+      "description": "Valor base do servi\u00e7o (antes de desconto/acr\u00e9scimo)"
+    },
+    "desconto_manual": {
+      "type": "number",
+      "default": 0,
+      "description": "Valor do desconto manual aplicado (em reais)"
+    },
+    "acrescimo_manual": {
+      "type": "number",
+      "default": 0,
+      "description": "Valor do acr\u00e9scimo manual aplicado (em reais)"
+    },
+    "valor_final": {
+      "type": "number",
+      "description": "Valor final ap\u00f3s desconto e acr\u00e9scimo (valor_total - desconto + acr\u00e9scimo)"
+    },
+    "forma_pagamento": {
+      "type": "string",
+      "enum": [
+        "Dinheiro",
+        "Cart\u00e3o D\u00e9bito",
+        "Cart\u00e3o Cr\u00e9dito",
+        "PIX",
+        "Transfer\u00eancia",
+        "Conv\u00eanio"
+      ],
+      "description": "Forma de pagamento"
+    },
+    "observacoes": {
+      "type": "string",
+      "description": "Observa\u00e7\u00f5es do agendamento"
+    },
+    "data_chegada": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data/hora que o paciente chegou"
+    },
+    "data_inicio_atendimento": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data/hora de in\u00edcio do atendimento"
+    },
+    "data_fim_atendimento": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data/hora de fim do atendimento"
+    },
+    "lembrete_equipe": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se deve enviar lembrete para a equipe"
+    },
+    "lembrete_dias_antes": {
+      "type": "number",
+      "default": 1,
+      "description": "Quantos dias antes avisar (0 = no dia, 1 = 1 dia antes, etc)"
+    },
+    "lembrete_equipe_notificado": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se o lembrete j\u00e1 foi enviado"
+    },
+    "agendado_por": {
+      "type": "string",
+      "description": "Nome de quem criou o agendamento (ex: 'Gl\u00f3ria' para chatbot ou nome do usu\u00e1rio)"
+    },
+    "agendado_por_tipo": {
+      "type": "string",
+      "enum": [
+        "chatbot",
+        "usuario"
+      ],
+      "description": "Tipo de origem do agendamento"
+    }
+  },
+  "required": [
+    "data_agendamento",
+    "horario",
+    "tipo_servico"
+  ]
+}

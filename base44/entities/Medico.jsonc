@@ -1,0 +1,204 @@
+{
+  "name": "Medico",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "ID do usu\u00e1rio do sistema associado a este m\u00e9dico"
+    },
+    "nome": {
+      "type": "string",
+      "description": "Nome completo do m\u00e9dico"
+    },
+    "crm": {
+      "type": "string",
+      "description": "N\u00famero do CRM"
+    },
+    "especialidade": {
+      "type": "string",
+      "description": "Especialidade principal (legado)"
+    },
+    "especialidades": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Lista de especialidades do profissional"
+    },
+    "telefone": {
+      "type": "string",
+      "description": "Telefone de contato"
+    },
+    "email": {
+      "type": "string",
+      "format": "email",
+      "description": "Email do m\u00e9dico"
+    },
+    "foto_url": {
+      "type": "string",
+      "description": "URL da foto do profissional"
+    },
+    "assinatura_digital": {
+      "type": "string",
+      "description": "Assinatura digital salva em base64 para reutiliza\u00e7\u00e3o"
+    },
+    "tipo_repasse": {
+      "type": "string",
+      "enum": [
+        "percentual",
+        "valor_fixo"
+      ],
+      "default": "percentual",
+      "description": "Define se o repasse \u00e9 por percentual ou valor fixo"
+    },
+    "percentual_repasse": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Percentual de repasse ao m\u00e9dico para consultas particulares"
+    },
+    "percentual_repasse_convenio": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Percentual de repasse padr\u00e3o para consultas de conv\u00eanios"
+    },
+    "percentual_repasse_procedimento": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Percentual de repasse ao m\u00e9dico para procedimentos particulares"
+    },
+    "percentual_repasse_procedimento_convenio": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Percentual de repasse padr\u00e3o para procedimentos de conv\u00eanios"
+    },
+    "valor_repasse_fixo": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Valor fixo de repasse para consultas particulares (em reais)"
+    },
+    "valor_repasse_fixo_convenio": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Valor fixo de repasse padr\u00e3o para consultas de conv\u00eanios (em reais)"
+    },
+    "valor_repasse_fixo_procedimento": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Valor fixo de repasse para procedimentos particulares (em reais)"
+    },
+    "valor_repasse_fixo_procedimento_convenio": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Valor fixo de repasse padr\u00e3o para procedimentos de conv\u00eanios (em reais)"
+    },
+    "repasses_por_categoria": {
+      "type": "array",
+      "description": "Configura\u00e7\u00e3o de repasse espec\u00edfico por categoria de pre\u00e7o/conv\u00eanio",
+      "items": {
+        "type": "object",
+        "properties": {
+          "categoria_id": {
+            "type": "string",
+            "description": "ID da categoria de pre\u00e7o"
+          },
+          "tipo_repasse": {
+            "type": "string",
+            "enum": [
+              "percentual",
+              "valor_fixo"
+            ]
+          },
+          "valor": {
+            "type": "number",
+            "description": "Percentual ou valor fixo de repasse para consultas"
+          },
+          "valor_procedimento": {
+            "type": "number",
+            "description": "Percentual ou valor fixo de repasse para procedimentos"
+          }
+        }
+      }
+    },
+    "tempo_consulta_minutos": {
+      "type": "number",
+      "description": "Dura\u00e7\u00e3o padr\u00e3o da consulta em minutos",
+      "default": 30
+    },
+    "horarios_atendimento": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "dia_semana": {
+            "type": "number",
+            "description": "Dia da semana (0=Domingo, 1=Segunda, 2=Ter\u00e7a, ...)"
+          },
+          "horario_inicio": {
+            "type": "string",
+            "pattern": "^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$"
+          },
+          "horario_fim": {
+            "type": "string",
+            "pattern": "^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$"
+          },
+          "recorrencia": {
+            "type": "string",
+            "enum": [
+              "Apenas uma vez",
+              "Toda Semana",
+              "1\u00aa e 3\u00aa Semana do M\u00eas",
+              "2\u00aa e 4\u00aa Semana do M\u00eas",
+              "Apenas 1\u00aa Semana do M\u00eas",
+              "Apenas 2\u00aa Semana do M\u00eas",
+              "Apenas 3\u00aa Semana do M\u00eas",
+              "Apenas 4\u00aa Semana do M\u00eas"
+            ],
+            "default": "Toda Semana",
+            "description": "Frequ\u00eancia do hor\u00e1rio de atendimento."
+          },
+          "data_especifica": {
+            "type": "string",
+            "format": "date",
+            "description": "Data espec\u00edfica para hor\u00e1rio \u00fanico (usado com recorr\u00eancia 'Apenas uma vez')"
+          },
+          "bloqueado": {
+            "type": "boolean",
+            "default": false,
+            "description": "Se true, esta agenda est\u00e1 bloqueada e n\u00e3o aparece nos agendamentos"
+          }
+        }
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Ativo",
+        "Inativo",
+        "F\u00e9rias"
+      ],
+      "default": "Ativo"
+    },
+    "tipo_atendimento": {
+      "type": "string",
+      "enum": [
+        "Hor\u00e1rios Marcados",
+        "Ordem de Chegada"
+      ],
+      "default": "Hor\u00e1rios Marcados",
+      "description": "Define como os agendamentos s\u00e3o gerenciados."
+    },
+    "limite_ordem_chegada": {
+      "type": "number",
+      "description": "N\u00famero de pacientes que podem ser agendados no mesmo hor\u00e1rio para 'Ordem de Chegada'.",
+      "default": 1
+    }
+  },
+  "required": [
+    "nome",
+    "crm"
+  ]
+}

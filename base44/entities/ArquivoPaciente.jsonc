@@ -1,0 +1,45 @@
+{
+  "name": "ArquivoPaciente",
+  "type": "object",
+  "properties": {
+    "paciente_id": {
+      "type": "string",
+      "description": "ID do paciente ao qual o arquivo pertence."
+    },
+    "medico_id": {
+      "type": "string",
+      "description": "ID do m\u00e9dico que fez o upload do arquivo."
+    },
+    "prontuario_id": {
+      "type": "string",
+      "description": "Opcional: ID do registro de prontu\u00e1rio espec\u00edfico, se o arquivo for relevante para uma consulta."
+    },
+    "file_url": {
+      "type": "string",
+      "description": "URL do arquivo armazenado."
+    },
+    "nome_arquivo": {
+      "type": "string",
+      "description": "Nome original do arquivo."
+    },
+    "descricao": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o ou nota sobre o arquivo."
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "Imagem",
+        "Documento",
+        "Exame"
+      ],
+      "default": "Documento",
+      "description": "Tipo do arquivo para facilitar a organiza\u00e7\u00e3o."
+    }
+  },
+  "required": [
+    "paciente_id",
+    "file_url",
+    "nome_arquivo"
+  ]
+}

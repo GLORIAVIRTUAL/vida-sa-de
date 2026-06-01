@@ -1,0 +1,71 @@
+{
+  "name": "Exame",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string",
+      "description": "Nome do exame"
+    },
+    "codigo": {
+      "type": "string",
+      "description": "C\u00f3digo do exame (TUSS, AMB, etc.)"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "Sangue",
+        "Urina",
+        "Fezes",
+        "Imagem",
+        "Cardiol\u00f3gico",
+        "Neurol\u00f3gico",
+        "Outros"
+      ],
+      "description": "Tipo do exame"
+    },
+    "laboratorio_parceiro": {
+      "type": "string",
+      "description": "Nome do laborat\u00f3rio parceiro"
+    },
+    "valor_particular": {
+      "type": "number",
+      "description": "Valor para pacientes particulares"
+    },
+    "valor_convenio": {
+      "type": "number",
+      "description": "Valor para conv\u00eanios"
+    },
+    "percentual_repasse_laboratorio": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Percentual de repasse ao laborat\u00f3rio"
+    },
+    "tempo_resultado": {
+      "type": "string",
+      "description": "Tempo para resultado (ex: 24h, 3 dias \u00fateis)"
+    },
+    "preparo_necessario": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se requer preparo especial"
+    },
+    "instrucoes_preparo": {
+      "type": "string",
+      "description": "Instru\u00e7\u00f5es de preparo"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Ativo",
+        "Inativo"
+      ],
+      "default": "Ativo"
+    }
+  },
+  "required": [
+    "nome",
+    "tipo",
+    "valor_particular"
+  ]
+}

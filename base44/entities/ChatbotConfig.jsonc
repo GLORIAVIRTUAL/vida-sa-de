@@ -1,0 +1,193 @@
+{
+  "name": "ChatbotConfig",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string",
+      "description": "Nome da configura\u00e7\u00e3o"
+    },
+    "ativo": {
+      "type": "boolean",
+      "default": true,
+      "description": "Se o chatbot est\u00e1 ativo"
+    },
+    "modelo_llm": {
+      "type": "string",
+      "enum": [
+        "gpt-4o",
+        "gpt-4o-mini",
+        "gpt-4-turbo",
+        "claude-3-5-sonnet",
+        "claude-3-opus",
+        "gemini-pro"
+      ],
+      "default": "gpt-4o-mini",
+      "description": "Modelo de IA a ser utilizado"
+    },
+    "prompt_sistema": {
+      "type": "string",
+      "description": "Prompt do sistema que define o comportamento do chatbot"
+    },
+    "informacoes_institucionais": {
+      "type": "string",
+      "description": "Texto institucional fixo da cl\u00ednica (endere\u00e7o, contatos, conv\u00eanios, servi\u00e7os, pol\u00edticas) usado para responder perguntas gerais."
+    },
+    "temperatura": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 2,
+      "default": 0.7,
+      "description": "Temperatura do modelo (0-2). Menor = mais focado, maior = mais criativo"
+    },
+    "palavras_chave": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "palavra": {
+            "type": "string"
+          },
+          "resposta_automatica": {
+            "type": "string"
+          },
+          "acoes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "description": "Palavras-chave que acionam respostas ou a\u00e7\u00f5es espec\u00edficas"
+    },
+    "campos_personalizados": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string"
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "texto",
+              "numero",
+              "data",
+              "booleano",
+              "opcao_multipla"
+            ]
+          },
+          "obrigatorio": {
+            "type": "boolean"
+          },
+          "opcoes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "description": "Campos personalizados para coletar dados espec\u00edficos"
+    },
+    "webhook_url": {
+      "type": "string",
+      "description": "URL do webhook para enviar eventos"
+    },
+    "webhook_eventos": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "nova_mensagem",
+          "conversa_iniciada",
+          "conversa_finalizada",
+          "agendamento_criado",
+          "dados_coletados"
+        ]
+      },
+      "description": "Eventos que acionam o webhook"
+    },
+    "api_integracao": {
+      "type": "object",
+      "properties": {
+        "url": {
+          "type": "string"
+        },
+        "metodo": {
+          "type": "string",
+          "enum": [
+            "GET",
+            "POST",
+            "PUT",
+            "PATCH"
+          ]
+        },
+        "headers": {
+          "type": "object"
+        },
+        "corpo_requisicao": {
+          "type": "string"
+        },
+        "autenticacao_tipo": {
+          "type": "string",
+          "enum": [
+            "nenhuma",
+            "bearer",
+            "api_key",
+            "basic"
+          ]
+        },
+        "autenticacao_valor": {
+          "type": "string"
+        }
+      },
+      "description": "Configura\u00e7\u00e3o de API HTTP para integra\u00e7\u00e3o externa"
+    },
+    "horario_atendimento": {
+      "type": "object",
+      "properties": {
+        "ativo": {
+          "type": "boolean"
+        },
+        "mensagem_fora_horario": {
+          "type": "string"
+        },
+        "horarios": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "dia_semana": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 6
+              },
+              "inicio": {
+                "type": "string"
+              },
+              "fim": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "limite_mensagens_dia": {
+      "type": "number",
+      "description": "Limite de mensagens por usu\u00e1rio por dia"
+    },
+    "timeout_conversa_minutos": {
+      "type": "number",
+      "default": 30,
+      "description": "Tempo em minutos para considerar conversa inativa"
+    }
+  },
+  "required": [
+    "nome",
+    "modelo_llm",
+    "prompt_sistema"
+  ]
+}

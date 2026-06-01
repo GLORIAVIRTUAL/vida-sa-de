@@ -1,0 +1,113 @@
+{
+  "name": "Paciente",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string",
+      "description": "Nome completo do paciente"
+    },
+    "cpf": {
+      "type": "string",
+      "description": "CPF do paciente"
+    },
+    "rg": {
+      "type": "string",
+      "description": "RG do paciente"
+    },
+    "data_nascimento": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de nascimento"
+    },
+    "telefone": {
+      "type": "string",
+      "description": "Telefone principal"
+    },
+    "telefone_secundario": {
+      "type": "string",
+      "description": "Telefone secund\u00e1rio"
+    },
+    "email": {
+      "type": "string",
+      "format": "email",
+      "description": "Email do paciente"
+    },
+    "endereco": {
+      "type": "object",
+      "properties": {
+        "cep": {
+          "type": "string"
+        },
+        "logradouro": {
+          "type": "string"
+        },
+        "numero": {
+          "type": "string"
+        },
+        "complemento": {
+          "type": "string"
+        },
+        "bairro": {
+          "type": "string"
+        },
+        "cidade": {
+          "type": "string"
+        },
+        "estado": {
+          "type": "string"
+        }
+      }
+    },
+    "convenio": {
+      "type": "string",
+      "description": "Nome do conv\u00eanio do paciente (usa as categorias de pre\u00e7o)"
+    },
+    "numero_carteira": {
+      "type": "string",
+      "description": "N\u00famero da carteirinha do conv\u00eanio"
+    },
+    "prioridade": {
+      "type": "string",
+      "enum": [
+        "Normal",
+        "Idoso (60+ anos)",
+        "Deficiente F\u00edsico",
+        "Gestante",
+        "Lactante",
+        "Crian\u00e7a de Colo",
+        "Pessoa com Crian\u00e7a de Colo"
+      ],
+      "default": "Normal",
+      "description": "Tipo de prioridade do paciente conforme lei"
+    },
+    "observacoes": {
+      "type": "string",
+      "description": "Observa\u00e7\u00f5es importantes sobre o paciente"
+    },
+    "como_conheceu": {
+      "type": "string",
+      "enum": [
+        "Google",
+        "Facebook",
+        "Instagram",
+        "Panfleto",
+        "R\u00e1dio",
+        "TV",
+        "Indica\u00e7\u00e3o",
+        "Passou na frente",
+        "Tik Tok",
+        "Outro"
+      ],
+      "description": "Como o paciente conheceu a cl\u00ednica"
+    },
+    "como_conheceu_outro": {
+      "type": "string",
+      "description": "Detalhes se a op\u00e7\u00e3o 'Outro' for selecionada"
+    }
+  },
+  "required": [
+    "nome",
+    "cpf",
+    "telefone"
+  ]
+}

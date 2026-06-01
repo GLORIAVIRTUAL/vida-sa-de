@@ -1,0 +1,32 @@
+{
+  "name": "AlunoTurma",
+  "type": "object",
+  "properties": {
+    "turma_id": {
+      "type": "string",
+      "description": "ID da turma"
+    },
+    "paciente_id": {
+      "type": "string",
+      "description": "ID do aluno/paciente"
+    },
+    "data_inicio": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de entrada na turma"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Ativo",
+        "Inativo",
+        "Trancado"
+      ],
+      "default": "Ativo"
+    }
+  },
+  "required": [
+    "turma_id",
+    "paciente_id"
+  ]
+}

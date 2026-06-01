@@ -1,0 +1,64 @@
+{
+  "name": "ScheduledNotification",
+  "type": "object",
+  "properties": {
+    "agendamento_id": {
+      "type": "string",
+      "description": "ID do agendamento relacionado"
+    },
+    "paciente_id": {
+      "type": "string",
+      "description": "ID do paciente que receber\u00e1 a notifica\u00e7\u00e3o"
+    },
+    "tipo_canal": {
+      "type": "string",
+      "enum": [
+        "whatsapp",
+        "sms",
+        "email"
+      ],
+      "description": "Canal de envio"
+    },
+    "telefone_destino": {
+      "type": "string",
+      "description": "N\u00famero de telefone formatado do destino"
+    },
+    "mensagem": {
+      "type": "string",
+      "description": "Conte\u00fado da mensagem a ser enviada"
+    },
+    "send_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data e hora exatas para o envio da notifica\u00e7\u00e3o"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "sent",
+        "error",
+        "cancelled"
+      ],
+      "default": "pending",
+      "description": "Status do agendamento de notifica\u00e7\u00e3o"
+    },
+    "processing_log": {
+      "type": "string",
+      "description": "Log de processamento, como mensagens de erro"
+    },
+    "sent_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data e hora em que a notifica\u00e7\u00e3o foi efetivamente enviada"
+    }
+  },
+  "required": [
+    "agendamento_id",
+    "paciente_id",
+    "tipo_canal",
+    "telefone_destino",
+    "mensagem",
+    "send_at"
+  ]
+}

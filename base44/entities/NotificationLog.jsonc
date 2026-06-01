@@ -1,0 +1,65 @@
+{
+  "name": "NotificationLog",
+  "type": "object",
+  "properties": {
+    "tipo_canal": {
+      "type": "string",
+      "enum": [
+        "whatsapp",
+        "sms",
+        "email"
+      ],
+      "description": "Tipo de canal usado para envio"
+    },
+    "api_message_id": {
+      "type": "string",
+      "description": "ID da mensagem retornado pela API (ex: Z-API)"
+    },
+    "telefone_destino": {
+      "type": "string",
+      "description": "N\u00famero de telefone formatado que recebeu a mensagem"
+    },
+    "mensagem_enviada": {
+      "type": "string",
+      "description": "Conte\u00fado da mensagem enviada"
+    },
+    "agendamento_id": {
+      "type": "string",
+      "description": "ID do agendamento relacionado (opcional)"
+    },
+    "paciente_nome": {
+      "type": "string",
+      "description": "Nome do paciente que recebeu"
+    },
+    "status_entrega": {
+      "type": "string",
+      "enum": [
+        "enviado",
+        "entregue",
+        "lido",
+        "falhou",
+        "pendente"
+      ],
+      "default": "pendente",
+      "description": "Status da entrega atualizado via webhook"
+    },
+    "timestamp_envio": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Quando foi enviado"
+    },
+    "resposta_api": {
+      "type": "string",
+      "description": "Resposta JSON da API de envio"
+    },
+    "erro": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o do erro (se houver)"
+    }
+  },
+  "required": [
+    "tipo_canal",
+    "telefone_destino",
+    "mensagem_enviada"
+  ]
+}

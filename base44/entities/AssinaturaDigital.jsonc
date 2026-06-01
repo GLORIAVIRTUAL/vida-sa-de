@@ -1,0 +1,127 @@
+{
+  "name": "AssinaturaDigital",
+  "type": "object",
+  "properties": {
+    "medico_id": {
+      "type": "string",
+      "description": "ID do m\u00e9dico que assinou o documento"
+    },
+    "prontuario_id": {
+      "type": "string",
+      "description": "ID do prontu\u00e1rio relacionado"
+    },
+    "paciente_id": {
+      "type": "string",
+      "description": "ID do paciente"
+    },
+    "tipo_documento": {
+      "type": "string",
+      "enum": [
+        "receituario_simples",
+        "receituario_especial",
+        "solicitacao_exames",
+        "laudo_medico",
+        "atestado"
+      ],
+      "description": "Tipo de documento assinado"
+    },
+    "hash_documento": {
+      "type": "string",
+      "description": "Hash SHA-256 do conte\u00fado do documento no momento da assinatura"
+    },
+    "conteudo_original": {
+      "type": "string",
+      "description": "Conte\u00fado completo do documento no momento da assinatura"
+    },
+    "dados_medico": {
+      "type": "object",
+      "description": "Dados do m\u00e9dico no momento da assinatura",
+      "properties": {
+        "nome": {
+          "type": "string"
+        },
+        "crm": {
+          "type": "string"
+        },
+        "especialidade": {
+          "type": "string"
+        }
+      }
+    },
+    "dados_paciente": {
+      "type": "object",
+      "description": "Dados do paciente no momento da assinatura",
+      "properties": {
+        "nome": {
+          "type": "string"
+        },
+        "cpf": {
+          "type": "string"
+        }
+      }
+    },
+    "timestamp_assinatura": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Data e hora exata da assinatura"
+    },
+    "ip_assinatura": {
+      "type": "string",
+      "description": "Endere\u00e7o IP de onde foi realizada a assinatura"
+    },
+    "localizacao": {
+      "type": "object",
+      "description": "Localiza\u00e7\u00e3o geogr\u00e1fica (se dispon\u00edvel)",
+      "properties": {
+        "latitude": {
+          "type": "number"
+        },
+        "longitude": {
+          "type": "number"
+        },
+        "cidade": {
+          "type": "string"
+        },
+        "estado": {
+          "type": "string"
+        }
+      }
+    },
+    "user_agent": {
+      "type": "string",
+      "description": "Informa\u00e7\u00f5es do navegador/dispositivo usado"
+    },
+    "assinatura_grafica": {
+      "type": "string",
+      "description": "Dados da assinatura gr\u00e1fica em base64 (se capturada)"
+    },
+    "codigo_verificacao": {
+      "type": "string",
+      "description": "C\u00f3digo \u00fanico para verifica\u00e7\u00e3o da assinatura"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "valida",
+        "invalidada",
+        "revogada"
+      ],
+      "default": "valida",
+      "description": "Status da assinatura"
+    },
+    "motivo_invalidacao": {
+      "type": "string",
+      "description": "Motivo da invalida\u00e7\u00e3o (se aplic\u00e1vel)"
+    }
+  },
+  "required": [
+    "medico_id",
+    "prontuario_id",
+    "paciente_id",
+    "tipo_documento",
+    "hash_documento",
+    "conteudo_original",
+    "timestamp_assinatura",
+    "codigo_verificacao"
+  ]
+}

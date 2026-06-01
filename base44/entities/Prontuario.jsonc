@@ -1,0 +1,87 @@
+{
+  "name": "Prontuario",
+  "type": "object",
+  "properties": {
+    "paciente_id": {
+      "type": "string",
+      "description": "ID do paciente"
+    },
+    "agendamento_id": {
+      "type": "string",
+      "description": "ID do agendamento que originou este registro"
+    },
+    "medico_id": {
+      "type": "string",
+      "description": "ID do m\u00e9dico que realizou o atendimento"
+    },
+    "data_atendimento": {
+      "type": "string",
+      "format": "date",
+      "description": "Data do registro no prontu\u00e1rio"
+    },
+    "perfil_paciente": {
+      "type": "string",
+      "description": "Informa\u00e7\u00f5es pessoais e de contexto sobre o paciente (estilo de vida, eventos importantes, etc.)."
+    },
+    "queixa_principal": {
+      "type": "string",
+      "description": "Queixa principal do paciente"
+    },
+    "historico_doenca_atual": {
+      "type": "string",
+      "description": "Hist\u00f3rico da doen\u00e7a atual (HDA)"
+    },
+    "anamnese_dirigida": {
+      "type": "array",
+      "description": "Checklist customiz\u00e1vel para anamnese dirigida (perguntas e respostas).",
+      "items": {
+        "type": "object",
+        "properties": {
+          "pergunta": {
+            "type": "string"
+          },
+          "checked": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "exame_fisico": {
+      "type": "string",
+      "description": "Notas sobre o exame f\u00edsico"
+    },
+    "hipotese_diagnostica": {
+      "type": "string",
+      "description": "Hip\u00f3tese diagn\u00f3stica ou CID"
+    },
+    "conduta": {
+      "type": "string",
+      "description": "Conduta m\u00e9dica adotada"
+    },
+    "prescricao_simples": {
+      "type": "string",
+      "description": "Prescri\u00e7\u00f5es de medicamentos de receitu\u00e1rio simples"
+    },
+    "prescricao_especial": {
+      "type": "string",
+      "description": "Prescri\u00e7\u00f5es de medicamentos de controle especial"
+    },
+    "solicitacao_exames": {
+      "type": "string",
+      "description": "Observa\u00e7\u00f5es sobre a solicita\u00e7\u00e3o de exames"
+    },
+    "exames_solicitados": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "IDs dos exames solicitados"
+    }
+  },
+  "required": [
+    "paciente_id",
+    "agendamento_id",
+    "medico_id",
+    "data_atendimento"
+  ]
+}

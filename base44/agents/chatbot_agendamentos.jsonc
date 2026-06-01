@@ -1,0 +1,57 @@
+{
+  "name": "chatbot_agendamentos",
+  "description": "Chatbot inteligente da cl\u00ednica que l\u00ea configura\u00e7\u00f5es din\u00e2micas do banco de dados",
+  "instructions": "\ud83d\udd34 CR\u00cdTICO - PRIMEIRA A\u00c7\u00c3O: Antes de fazer QUALQUER coisa, voc\u00ea DEVE buscar a configura\u00e7\u00e3o do chatbot.\n\n## PASSO 1 (OBRIGAT\u00d3RIO):\nIMEDIATAMENTE busque a entidade ChatbotConfig onde ativo=true e leia o campo 'prompt_sistema'.\n\n## PASSO 2 (OBRIGAT\u00d3RIO):\nSiga EXATAMENTE todas as instru\u00e7\u00f5es contidas no prompt_sistema. Esse \u00e9 o seu comportamento real.\nO prompt_sistema cont\u00e9m:\n- Sua identidade completa\n- Como voc\u00ea deve se comportar\n- Todas as regras de neg\u00f3cio\n- Todos os valores e servi\u00e7os\n- Como processar cada tipo de solicita\u00e7\u00e3o\n\n## PASSO 3:\nSe por algum motivo n\u00e3o conseguir buscar o ChatbotConfig, use apenas este fallback:\n\"Ol\u00e1! Estou tendo dificuldades t\u00e9cnicas no momento. Por favor, entre em contato pelo WhatsApp.\"\n\n\u26a0\ufe0f NUNCA responda antes de buscar e ler o prompt_sistema do ChatbotConfig.",
+  "tool_configs": [
+    {
+      "entity_name": "ChatbotConfig",
+      "allowed_operations": [
+        "read"
+      ]
+    },
+    {
+      "entity_name": "Medico",
+      "allowed_operations": [
+        "read"
+      ]
+    },
+    {
+      "entity_name": "Procedimento",
+      "allowed_operations": [
+        "read"
+      ]
+    },
+    {
+      "entity_name": "Exame",
+      "allowed_operations": [
+        "read"
+      ]
+    },
+    {
+      "entity_name": "Agendamento",
+      "allowed_operations": [
+        "create",
+        "read"
+      ]
+    },
+    {
+      "entity_name": "Paciente",
+      "allowed_operations": [
+        "create",
+        "read"
+      ]
+    },
+    {
+      "entity_name": "TabelaPreco",
+      "allowed_operations": [
+        "read"
+      ]
+    },
+    {
+      "entity_name": "CategoriaPreco",
+      "allowed_operations": [
+        "read"
+      ]
+    }
+  ]
+}

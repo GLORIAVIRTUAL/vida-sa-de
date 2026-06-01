@@ -1,0 +1,51 @@
+{
+  "name": "ChamadaPaciente",
+  "type": "object",
+  "properties": {
+    "paciente_nome": {
+      "type": "string",
+      "description": "Nome do paciente chamado"
+    },
+    "medico_nome": {
+      "type": "string",
+      "description": "Nome do m\u00e9dico que chamou"
+    },
+    "especialidade": {
+      "type": "string",
+      "description": "Especialidade do m\u00e9dico"
+    },
+    "horario": {
+      "type": "string",
+      "description": "Hor\u00e1rio do agendamento"
+    },
+    "prioridade": {
+      "type": "string",
+      "description": "Prioridade do paciente"
+    },
+    "agendamento_id": {
+      "type": "string",
+      "description": "ID do agendamento relacionado"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "ativa",
+        "exibida",
+        "expirada"
+      ],
+      "default": "ativa",
+      "description": "Status da chamada"
+    },
+    "exibida_em": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Quando foi exibida no painel"
+    }
+  },
+  "required": [
+    "paciente_nome",
+    "medico_nome",
+    "especialidade",
+    "horario"
+  ]
+}

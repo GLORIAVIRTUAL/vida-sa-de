@@ -1,0 +1,50 @@
+{
+  "name": "ModeloPrescricao",
+  "type": "object",
+  "properties": {
+    "medico_id": {
+      "type": "string",
+      "description": "ID do m\u00e9dico que criou o modelo"
+    },
+    "medicamento": {
+      "type": "string",
+      "description": "Nome do medicamento"
+    },
+    "concentracao": {
+      "type": "string",
+      "description": "Concentra\u00e7\u00e3o/dosagem (ex: 500mg, 50ml)"
+    },
+    "posologia": {
+      "type": "string",
+      "description": "Como tomar (ex: 1 comprimido de 8/8h)"
+    },
+    "duracao": {
+      "type": "string",
+      "description": "Dura\u00e7\u00e3o do tratamento (ex: por 7 dias)"
+    },
+    "observacoes": {
+      "type": "string",
+      "description": "Observa\u00e7\u00f5es adicionais (ex: tomar com alimentos)"
+    },
+    "tipo_receituario": {
+      "type": "string",
+      "enum": [
+        "simples",
+        "especial",
+        "ambos"
+      ],
+      "default": "simples",
+      "description": "Para qual tipo de receitu\u00e1rio este modelo se aplica"
+    },
+    "prescricao_completa": {
+      "type": "string",
+      "description": "Texto completo da prescri\u00e7\u00e3o formatado"
+    }
+  },
+  "required": [
+    "medico_id",
+    "medicamento",
+    "posologia",
+    "prescricao_completa"
+  ]
+}

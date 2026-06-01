@@ -99,6 +99,7 @@ export default function FluxoCaixa({ lancamentos, ordensServico, pacientes, onUp
   const [dataInicio, setDataInicio] = useState(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
   const [dataFim, setDataFim] = useState(format(endOfMonth(new Date()), 'yyyy-MM-dd'));
   const [formaPagamentoFiltro, setFormaPagamentoFiltro] = useState("todas");
+  const [tipoFiltro, setTipoFiltro] = useState("todos");
 
   const abrirForm = (tipo) => {
     setTipoLancamentoRetroativo(tipo);
@@ -170,11 +171,12 @@ export default function FluxoCaixa({ lancamentos, ordensServico, pacientes, onUp
       if (l.created_date && new Date(l.created_date) < dataInicioApp) return false;
       const dentroData = l.data_lancamento >= dataInicio && l.data_lancamento <= dataFim;
       const formaMatch = formaPagamentoFiltro === "todas" || l.forma_pagamento === formaPagamentoFiltro;
-      return dentroData && formaMatch;
+      const tipoMatch = tipoFiltro === "todos" || l.tipo === tipoFiltro;
+      return dentroData && formaMatch && tipoMatch;
     });
     // Excluir lançamentos cancelados e vinculados a OS canceladas
     return excluirLancamentosDeOSCanceladas(filtrados, ordensServico);
-  }, [lancamentos, ordensServico, dataInicio, dataFim, formaPagamentoFiltro]);
+  }, [lancamentos, ordensServico, dataInicio, dataFim, formaPagamentoFiltro, tipoFiltro]);
 
   const { totalEntradas, totalSaidas, saldo } = useMemo(() => {
     const entradas = lancamentosFiltrados.filter(l => l.tipo === "Entrada").reduce((sum, l) => sum + l.valor, 0);
@@ -374,6 +376,19 @@ export default function FluxoCaixa({ lancamentos, ordensServico, pacientes, onUp
                 onChange={(e) => setDataFim(e.target.value)}
                 className="w-40"
               />
+            </div>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="tipoFiltro" className="text-sm text-gray-600">Tipo:</Label>
+              <Select value={tipoFiltro} onValueChange={setTipoFiltro}>
+                <SelectTrigger id="tipoFiltro" className="w-44">
+                  <SelectValue placeholder="Todos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  <SelectItem value="Entrada">Apenas Entradas</SelectItem>
+                  <SelectItem value="Saída">Apenas Despesas</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex items-center gap-2">
               <Label htmlFor="formaPagamento" className="text-sm text-gray-600">Forma:</Label>
