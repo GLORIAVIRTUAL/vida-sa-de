@@ -26,7 +26,7 @@ function normalizePem(pem) {
 }
 
 // Helper: makes HTTPS request with mTLS using node:https
-function mtlsRequest({ url, method, headers, body, cert, key }) {
+function mtlsRequest({ url, method, headers, body, cert, key, ca }) {
   return new Promise((resolve, reject) => {
     const parsedUrl = new URL(url);
     const options = {
@@ -37,6 +37,7 @@ function mtlsRequest({ url, method, headers, body, cert, key }) {
       headers,
       cert,
       key,
+      ...(ca ? { ca } : {}),
     };
 
     const req = https.request(options, (res) => {
@@ -78,6 +79,7 @@ Deno.serve(async (req) => {
     const clientSecret = Deno.env.get('SICREDI_CLIENT_SECRET');
     const certPem = normalizePem(Deno.env.get('SICREDI_CERT_PEM'));
     const keyPem = normalizePem(Deno.env.get('SICREDI_KEY_PEM'));
+    const chainPem = normalizePem(Deno.env.get('SICREDI_CHAIN_PEM'));
     const pixKey = Deno.env.get('SICREDI_PIX_KEY');
     const ambiente = Deno.env.get('SICREDI_AMBIENTE') || 'homologacao';
 
@@ -89,6 +91,10 @@ Deno.serve(async (req) => {
     const baseUrl = ambiente === 'producao' 
       ? 'https://api-pix.sicredi.com.br'
       : 'https://api-pix-h.sicredi.com.br';
+
+    // Build full client cert chain: client cert + intermediate chain concatenated.
+    // Akamai/mTLS requires the client to present the full chain during the handshake.
+    const fullCert = chainPem ? `${certPem.trim()}\n${chainPem.trim()}\n` : certPem;
 
     // Step 1: Get OAuth token (Basic Auth + mTLS)
     const basicAuth = btoa(`${clientId}:${clientSecret}`);
@@ -108,7 +114,7 @@ Deno.serve(async (req) => {
         'Accept': 'application/json',
       },
       body: tokenBody,
-      cert: certPem,
+      cert: fullCert,
       key: keyPem,
     });
 
@@ -144,7 +150,7 @@ Deno.serve(async (req) => {
         'Content-Length': Buffer.byteLength(cobPayload),
       },
       body: cobPayload,
-      cert: certPem,
+      cert: fullCert,
       key: keyPem,
     });
 
