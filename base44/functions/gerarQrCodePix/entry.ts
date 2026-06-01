@@ -2,6 +2,29 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import https from 'node:https';
 import { Buffer } from 'node:buffer';
 
+// Helper: normalizes PEM content - reconstructs newlines if they were stripped
+function normalizePem(pem) {
+  if (!pem) return pem;
+  let content = pem.trim();
+  // If it already has proper newlines inside the base64 body, return as-is
+  if (content.includes('\n') && /-----BEGIN [^-]+-----\n/.test(content)) {
+    return content;
+  }
+  // Detect the header/footer labels
+  const headerMatch = content.match(/-----BEGIN ([^-]+)-----/);
+  const footerMatch = content.match(/-----END ([^-]+)-----/);
+  if (!headerMatch || !footerMatch) return content;
+  const header = headerMatch[0];
+  const footer = footerMatch[0];
+  // Extract the base64 body between header and footer
+  let body = content.substring(content.indexOf(header) + header.length, content.indexOf(footer));
+  // Remove all whitespace from the body
+  body = body.replace(/\s+/g, '');
+  // Re-wrap base64 body at 64 chars per line
+  const wrapped = body.match(/.{1,64}/g).join('\n');
+  return `${header}\n${wrapped}\n${footer}\n`;
+}
+
 // Helper: makes HTTPS request with mTLS using node:https
 function mtlsRequest({ url, method, headers, body, cert, key }) {
   return new Promise((resolve, reject) => {
@@ -53,8 +76,8 @@ Deno.serve(async (req) => {
     // Get credentials from environment
     const clientId = Deno.env.get('SICREDI_CLIENT_ID');
     const clientSecret = Deno.env.get('SICREDI_CLIENT_SECRET');
-    const certPem = Deno.env.get('SICREDI_CERT_PEM');
-    const keyPem = Deno.env.get('SICREDI_KEY_PEM');
+    const certPem = normalizePem(Deno.env.get('SICREDI_CERT_PEM'));
+    const keyPem = normalizePem(Deno.env.get('SICREDI_KEY_PEM'));
     const pixKey = Deno.env.get('SICREDI_PIX_KEY');
     const ambiente = Deno.env.get('SICREDI_AMBIENTE') || 'homologacao';
 
