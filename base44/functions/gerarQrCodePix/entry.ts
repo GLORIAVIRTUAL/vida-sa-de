@@ -110,7 +110,6 @@ Deno.serve(async (req) => {
         'Content-Type': 'application/x-www-form-urlencoded',
         'Authorization': `Basic ${basicAuth}`,
         'Content-Length': Buffer.byteLength(tokenBody),
-        'User-Agent': 'Mozilla/5.0 (compatible; GloriaClinica/1.0)',
         'Accept': 'application/json',
       },
       body: tokenBody,
