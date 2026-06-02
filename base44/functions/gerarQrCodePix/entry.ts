@@ -97,22 +97,18 @@ Deno.serve(async (req) => {
     const fullCert = chainPem ? `${certPem.trim()}\n${chainPem.trim()}\n` : certPem;
 
     // Step 1: Get OAuth token (Basic Auth + mTLS)
+    // Following the official Sicredi collection: grant_type goes in the query
+    // string, Content-Type is application/json and there is NO request body.
     const basicAuth = btoa(`${clientId}:${clientSecret}`);
-    const tokenBody = new URLSearchParams({
-      grant_type: 'client_credentials',
-      scope: 'cob.write cob.read',
-    }).toString();
 
     const tokenResponse = await mtlsRequest({
-      url: `${baseUrl}/oauth/token`,
+      url: `${baseUrl}/oauth/token?grant_type=client_credentials`,
       method: 'POST',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Type': 'application/json',
         'Authorization': `Basic ${basicAuth}`,
-        'Content-Length': Buffer.byteLength(tokenBody),
         'Accept': 'application/json',
       },
-      body: tokenBody,
       cert: fullCert,
       key: keyPem,
     });
@@ -141,7 +137,7 @@ Deno.serve(async (req) => {
     });
 
     const cobResponse = await mtlsRequest({
-      url: `${baseUrl}/api/v2/cob/${txid}`,
+      url: `${baseUrl}/api/v3/cob/${txid}`,
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
