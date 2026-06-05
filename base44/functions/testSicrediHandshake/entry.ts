@@ -32,35 +32,41 @@ Deno.serve(async (req) => {
 
     const fullCert = chainPem ? `${certPem.trim()}\n${chainPem.trim()}\n` : certPem;
 
-    const result = await new Promise((resolve) => {
-      const socket = tls.connect({
-        host,
-        port: 443,
-        cert: fullCert,
-        key: keyPem,
-        servername: host,
-        rejectUnauthorized: true,
-        timeout: 8000,
-      }, () => {
-        resolve({
-          connected: true,
-          authorized: socket.authorized,
-          authorizationError: socket.authorizationError ? String(socket.authorizationError) : null,
-          protocol: socket.getProtocol(),
-          cipher: socket.getCipher(),
+    function tryHandshake(certToSend, label) {
+      return new Promise((resolve) => {
+        const socket = tls.connect({
+          host,
+          port: 443,
+          cert: certToSend,
+          key: keyPem,
+          servername: host,
+          rejectUnauthorized: true,
+          timeout: 8000,
+        }, () => {
+          resolve({
+            label,
+            connected: true,
+            authorized: socket.authorized,
+            authorizationError: socket.authorizationError ? String(socket.authorizationError) : null,
+            protocol: socket.getProtocol(),
+            cipher: socket.getCipher(),
+          });
+          socket.end();
         });
-        socket.end();
+        socket.on('error', (err) => {
+          resolve({ label, connected: false, error: err.message, code: err.code });
+        });
+        socket.on('timeout', () => {
+          resolve({ label, connected: false, error: 'timeout' });
+          socket.destroy();
+        });
       });
-      socket.on('error', (err) => {
-        resolve({ connected: false, error: err.message, code: err.code });
-      });
-      socket.on('timeout', () => {
-        resolve({ connected: false, error: 'timeout' });
-        socket.destroy();
-      });
-    });
+    }
 
-    return Response.json({ host, ambiente, chain_present: !!chainPem, ...result });
+    const certOnly = await tryHandshake(certPem, 'cert_only');
+    const certPlusChain = await tryHandshake(fullCert, 'cert_plus_chain');
+
+    return Response.json({ host, ambiente, chain_present: !!chainPem, certOnly, certPlusChain });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
