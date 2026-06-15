@@ -1115,6 +1115,13 @@ export default function FormularioOS({
         pacienteNome={paciente?.nome || agendamento?.paciente_nome}
         loading={pixLoading}
         erro={pixErro}
+        ordemServicoId={osSalvaPendente?.id}
+        onPago={() => {
+          if (osSalvaPendente) {
+            onSalvar(osSalvaPendente);
+            setOsSalvaPendente(null);
+          }
+        }}
       />
     </Dialog>
   );
