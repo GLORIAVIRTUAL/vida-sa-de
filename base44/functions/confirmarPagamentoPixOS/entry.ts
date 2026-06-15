@@ -67,6 +67,17 @@ Deno.serve(async (req) => {
         transaction_id: transactionId,
       });
 
+      // Atualizar o agendamento vinculado para "Pago"
+      if (os.agendamento_id) {
+        try {
+          await base44.asServiceRole.entities.Agendamento.update(os.agendamento_id, {
+            status: 'Pago',
+          });
+        } catch (e) {
+          console.error('Falha ao atualizar agendamento:', e.message);
+        }
+      }
+
       await base44.asServiceRole.entities.AuditoriaOS.create({
         ordem_servico_id: os.id,
         numero_os: os.numero_os,
