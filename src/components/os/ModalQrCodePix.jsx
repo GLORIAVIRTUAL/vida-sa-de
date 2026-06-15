@@ -7,6 +7,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { useToast } from "@/components/ui/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { base44 } from "@/api/base44Client";
+import confetti from "canvas-confetti";
 
 export default function ModalQrCodePix({ open, onClose, qrCode, valor, pacienteNome, loading, erro, ordemServicoId, onPago }) {
   const [copiado, setCopiado] = useState(false);
@@ -32,6 +33,14 @@ export default function ModalQrCodePix({ open, onClose, qrCode, valor, pacienteN
       parou = true;
       if (intervalRef.current) clearInterval(intervalRef.current);
       setPago(true);
+      // Explosão de confetes 🎉
+      const fim = Date.now() + 1500;
+      const frame = () => {
+        confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#16a34a', '#22c55e', '#86efac'] });
+        confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#16a34a', '#22c55e', '#86efac'] });
+        if (Date.now() < fim) requestAnimationFrame(frame);
+      };
+      frame();
       toast({
         title: "Pagamento confirmado!",
         description: "O pagamento Pix foi recebido com sucesso.",
@@ -139,10 +148,20 @@ export default function ModalQrCodePix({ open, onClose, qrCode, valor, pacienteN
           )}
 
           {pago && (
-            <div className="flex flex-col items-center justify-center py-10 text-center">
-              <CheckCircle2 className="w-16 h-16 text-green-600 mb-4" />
-              <p className="text-xl font-bold text-green-800">Pagamento confirmado!</p>
-              <p className="text-gray-600 mt-1">O Pix foi recebido com sucesso.</p>
+            <div className="flex flex-col items-center justify-center py-10 text-center animate-in fade-in zoom-in duration-500">
+              <div className="relative mb-4">
+                <div className="absolute inset-0 bg-green-200 rounded-full blur-xl opacity-60 animate-pulse" />
+                <div className="relative bg-green-100 rounded-full p-5">
+                  <CheckCircle2 className="w-16 h-16 text-green-600" />
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-green-800">Pagamento realizado com sucesso! 🎉</p>
+              <p className="text-gray-600 mt-2">O Pix foi recebido e a OS foi marcada como paga.</p>
+              {valor && (
+                <p className="text-lg font-semibold text-green-700 mt-3">
+                  R$ {Number(valor).toFixed(2).replace('.', ',')}
+                </p>
+              )}
             </div>
           )}
 
