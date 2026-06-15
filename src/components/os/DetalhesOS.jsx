@@ -60,12 +60,40 @@ export default function DetalhesOS({ os, pacienteNome, medicoNome, categoriaNome
   const [gerandoPix, setGerandoPix] = useState(false);
   const [qrCodePix, setQrCodePix] = useState('');
   const [erroPix, setErroPix] = useState('');
+  const [confirmandoPix, setConfirmandoPix] = useState(false);
+  // Confirmação de pagamento Pix nesta sessão (true se o webhook/consulta confirmou)
+  const [pixConfirmadoSessao, setPixConfirmadoSessao] = useState(false);
 
   useEffect(() => {
     UserEntity.me().then((u) => setEmailUsuario((u?.email || '').toLowerCase().trim())).catch(() => {});
   }, []);
 
   const podeGerarPix = PIX_TESTE_EMAILS.includes(emailUsuario);
+  // Usuário restrito: só pode salvar "Pago" se houver confirmação do pagamento Pix
+  const usuarioRestritoPix = PIX_TESTE_EMAILS.includes(emailUsuario);
+
+  const handleConfirmarPix = async () => {
+    setConfirmandoPix(true);
+    try {
+      const res = await base44.functions.invoke('confirmarPagamentoPixOS', {
+        ordem_servico_id: os.id,
+      });
+      if (res.data?.success && res.data?.is_paid) {
+        setPixConfirmadoSessao(true);
+        setStatusPagamento('Pago');
+        toast({ title: "Pagamento confirmado!", description: res.data.message, className: "bg-green-50 border-green-200" });
+        if (onUpdate) onUpdate();
+      } else if (res.data?.success) {
+        toast({ title: "Ainda não pago", description: res.data.message || `Status atual: ${res.data.status}`, variant: "destructive" });
+      } else {
+        toast({ title: "Erro", description: res.data?.details || res.data?.error || "Não foi possível verificar.", variant: "destructive" });
+      }
+    } catch (err) {
+      toast({ title: "Erro", description: err.message || "Falha ao confirmar pagamento Pix.", variant: "destructive" });
+    } finally {
+      setConfirmandoPix(false);
+    }
+  };
 
   const handleGerarPix = async () => {
     setModalPixAberto(true);
@@ -96,6 +124,23 @@ export default function DetalhesOS({ os, pacienteNome, medicoNome, categoriaNome
   if (!os) return null;
 
   const handleSalvar = async () => {
+    // Regra: usuário restrito só pode salvar "Pago" em OS Pix com confirmação de pagamento
+    const ehOsPix = formaPagamento === 'PIX' || !!os.transaction_id;
+    if (
+      usuarioRestritoPix &&
+      statusPagamento === 'Pago' &&
+      os.status_pagamento !== 'Pago' &&
+      ehOsPix &&
+      !pixConfirmadoSessao
+    ) {
+      toast({
+        title: "Confirmação necessária",
+        description: "Você só pode marcar como Pago após confirmar o pagamento Pix. Use o botão 'Confirmar Pagamento Pix'.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setSalvando(true);
     try {
       let pagamentosDetalhados = [];
@@ -563,6 +608,18 @@ export default function DetalhesOS({ os, pacienteNome, medicoNome, categoriaNome
                 >
                   <QrCode className="w-4 h-4" />
                   Gerar Pix
+                </Button>
+              )}
+              {os.transaction_id && os.status_pagamento !== 'Pago' && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleConfirmarPix}
+                  disabled={confirmandoPix}
+                  className="gap-2"
+                >
+                  {confirmandoPix ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCcw className="w-4 h-4" />}
+                  Confirmar Pagamento Pix
                 </Button>
               )}
               <Button
