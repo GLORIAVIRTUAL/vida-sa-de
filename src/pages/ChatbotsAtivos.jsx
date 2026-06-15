@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   MessageCircle, Loader2, Send, RefreshCw, User, Phone, Calendar,
   TrendingUp, Clock, CheckCircle, XCircle, Activity, Users, Settings, Bot,
-  Image, Paperclip, Mic, Smile, Zap, Volume2, VolumeX, CalendarPlus, DollarSign, Bell
+  Image, Paperclip, Mic, Smile, Zap, Volume2, VolumeX, CalendarPlus, DollarSign, Bell, ArrowRightLeft
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -24,6 +24,7 @@ import ContatosTab from '../components/gloria/ContatosTab';
 import NotificacoesTab from '../components/gloria/NotificacoesTab';
 import { UserPlus } from 'lucide-react';
 import CadastroRapidoPaciente from '../components/pacientes/CadastroRapidoPaciente';
+import TransferirConversaModal from '../components/gloria/TransferirConversaModal';
 
 export const useContatosQuery = () => {
   return useQuery({
@@ -317,6 +318,7 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
   const [enviando, setEnviando] = useState(false);
   const [modoHumano, setModoHumano] = useState(false);
   const [modalCadastroAberto, setModalCadastroAberto] = useState(false);
+  const [modalTransferirAberto, setModalTransferirAberto] = useState(false);
   const [modalTemplatesAberto, setModalTemplatesAberto] = useState(false);
   const [templates, setTemplates] = useState([]);
   const [templateSelecionado, setTemplateSelecionado] = useState('');
@@ -893,6 +895,15 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
                       <UserPlus className="w-3 h-3 mr-1" />
                       Cadastrar
                     </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setModalTransferirAberto(true)}
+                      className="text-blue-600 hover:bg-blue-50"
+                    >
+                      <ArrowRightLeft className="w-3 h-3 mr-1" />
+                      Transferir
+                    </Button>
                     <Button variant="outline" size="sm" onClick={finalizarConversa} className="text-red-600 hover:bg-red-50">
                       <XCircle className="w-3 h-3 mr-1" />
                       Finalizar
@@ -1004,6 +1015,17 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
         onClose={() => setModalCadastroAberto(false)}
         nomeInicial={contatoSelecionado?.nome}
         telefoneInicial={contatoSelecionado?.telefone}
+      />
+
+      <TransferirConversaModal
+        open={modalTransferirAberto}
+        onClose={() => setModalTransferirAberto(false)}
+        contato={contatoSelecionado}
+        currentUser={currentUser}
+        onTransferido={(nomeDestino) => {
+          setContatoSelecionado(prev => prev ? { ...prev, atendente_atual: nomeDestino, atendimento_humano: true } : prev);
+          buscarContatos();
+        }}
       />
 
       {/* Modal de Templates Meta */}
