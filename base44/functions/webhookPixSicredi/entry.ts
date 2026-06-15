@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
 Deno.serve(async (req) => {
   try {
@@ -41,6 +41,17 @@ Deno.serve(async (req) => {
           data_pagamento: new Date().toISOString(),
           transaction_id: id,
         });
+
+        // Atualizar o agendamento vinculado para "Pago"
+        if (os.agendamento_id) {
+          try {
+            await base44.asServiceRole.entities.Agendamento.update(os.agendamento_id, {
+              status: 'Pago',
+            });
+          } catch (e) {
+            console.error('Falha ao atualizar agendamento:', e.message);
+          }
+        }
 
         // Create audit log
         await base44.asServiceRole.entities.AuditoriaOS.create({

@@ -19,7 +19,7 @@ export default function ModalQrCodePix({ open, onClose, qrCode, valor, pacienteN
   useEffect(() => { onPagoRef.current = onPago; }, [onPago]);
   useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
 
-  // Verificação automática de pagamento a cada 5 segundos enquanto o QR Code está visível
+  // Confirmação INSTANTÂNEA via subscription em tempo real + polling rápido de segurança
   useEffect(() => {
     if (!open || !qrCode || loading || erro || !ordemServicoId) {
       return;
@@ -27,6 +27,28 @@ export default function ModalQrCodePix({ open, onClose, qrCode, valor, pacienteN
 
     let parou = false;
 
+    const confirmar = () => {
+      if (parou) return;
+      parou = true;
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      setPago(true);
+      toast({
+        title: "Pagamento confirmado!",
+        description: "O pagamento Pix foi recebido com sucesso.",
+        className: "bg-green-50 border-green-200",
+      });
+      if (onPagoRef.current) onPagoRef.current();
+      setTimeout(() => { if (onCloseRef.current) onCloseRef.current(); }, 2500);
+    };
+
+    // 1) Tempo real: reage no instante em que o webhook do Sicredi marca a OS como Pago
+    const unsubscribe = base44.entities.OrdemServico.subscribe((event) => {
+      if (event.id === ordemServicoId && event.data?.status_pagamento === 'Pago') {
+        confirmar();
+      }
+    });
+
+    // 2) Segurança: consulta o Sicredi a cada 3s caso o webhook não chegue
     const verificar = async () => {
       if (parou) return;
       try {
@@ -34,16 +56,7 @@ export default function ModalQrCodePix({ open, onClose, qrCode, valor, pacienteN
           ordem_servico_id: ordemServicoId,
         });
         if (res.data?.success && res.data?.is_paid) {
-          parou = true;
-          if (intervalRef.current) clearInterval(intervalRef.current);
-          setPago(true);
-          toast({
-            title: "Pagamento confirmado!",
-            description: "O pagamento Pix foi recebido com sucesso.",
-            className: "bg-green-50 border-green-200",
-          });
-          if (onPagoRef.current) onPagoRef.current();
-          setTimeout(() => { if (onCloseRef.current) onCloseRef.current(); }, 2500);
+          confirmar();
         }
       } catch (err) {
         // silencioso - continua tentando
@@ -51,10 +64,11 @@ export default function ModalQrCodePix({ open, onClose, qrCode, valor, pacienteN
     };
 
     verificar();
-    intervalRef.current = setInterval(verificar, 5000);
+    intervalRef.current = setInterval(verificar, 3000);
     return () => {
       parou = true;
       if (intervalRef.current) clearInterval(intervalRef.current);
+      if (unsubscribe) unsubscribe();
     };
   }, [open, qrCode, loading, erro, ordemServicoId, toast]);
 
