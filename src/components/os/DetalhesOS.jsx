@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
+import { User as UserEntity } from "@/entities/all";
+import ModalQrCodePix from "./ModalQrCodePix";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -23,7 +25,8 @@ import {
   Save,
   X,
   Loader2,
-  RefreshCcw
+  RefreshCcw,
+  QrCode
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { base44 } from "@/api/base44Client";
@@ -49,6 +52,46 @@ export default function DetalhesOS({ os, pacienteNome, medicoNome, categoriaNome
   const [valorFinal, setValorFinal] = useState(os?.valor_final || 0);
   const [pagamento1, setPagamento1] = useState({ forma: os?.pagamentos_detalhados?.[0]?.forma || '', valor: os?.pagamentos_detalhados?.[0]?.valor || '' });
   const [pagamento2, setPagamento2] = useState({ forma: os?.pagamentos_detalhados?.[1]?.forma || '', valor: os?.pagamentos_detalhados?.[1]?.valor || '' });
+
+  // PIX Sicredi - liberado apenas para usuários de teste
+  const PIX_TESTE_EMAILS = ['dmpetrolina@gmail.com'];
+  const [emailUsuario, setEmailUsuario] = useState('');
+  const [modalPixAberto, setModalPixAberto] = useState(false);
+  const [gerandoPix, setGerandoPix] = useState(false);
+  const [qrCodePix, setQrCodePix] = useState('');
+  const [erroPix, setErroPix] = useState('');
+
+  useEffect(() => {
+    UserEntity.me().then((u) => setEmailUsuario((u?.email || '').toLowerCase().trim())).catch(() => {});
+  }, []);
+
+  const podeGerarPix = PIX_TESTE_EMAILS.includes(emailUsuario);
+
+  const handleGerarPix = async () => {
+    setModalPixAberto(true);
+    setGerandoPix(true);
+    setQrCodePix('');
+    setErroPix('');
+    try {
+      const res = await base44.functions.invoke('gerarQrCodePix', {
+        ordem_servico_id: os.id,
+        valor: Number(os.valor_final || 0).toFixed(2),
+        descricao: `OS ${os.numero_os || os.id?.substring(0, 6)} - ${pacienteNome || ''}`.trim(),
+      });
+      if (res.data?.success && res.data?.qr_code) {
+        setQrCodePix(res.data.qr_code);
+        if (res.data.transaction_id) {
+          await OrdemServico.update(os.id, { transaction_id: res.data.transaction_id });
+        }
+      } else {
+        setErroPix(res.data?.details || res.data?.error || 'Não foi possível gerar o Pix.');
+      }
+    } catch (err) {
+      setErroPix(err.message || 'Erro ao gerar Pix.');
+    } finally {
+      setGerandoPix(false);
+    }
+  };
 
   if (!os) return null;
 
@@ -511,15 +554,27 @@ export default function DetalhesOS({ os, pacienteNome, medicoNome, categoriaNome
               <FileText className="w-5 h-5 text-blue-600" />
               Detalhes da Ordem de Serviço
             </DialogTitle>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleImprimirRecibo}
-              className="gap-2"
-            >
-              <Printer className="w-4 h-4" />
-              Imprimir Recibo
-            </Button>
+            <div className="flex items-center gap-2">
+              {podeGerarPix && os.status_pagamento !== 'Pago' && (
+                <Button
+                  size="sm"
+                  onClick={handleGerarPix}
+                  className="gap-2 bg-green-600 hover:bg-green-700"
+                >
+                  <QrCode className="w-4 h-4" />
+                  Gerar Pix
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleImprimirRecibo}
+                className="gap-2"
+              >
+                <Printer className="w-4 h-4" />
+                Imprimir Recibo
+              </Button>
+            </div>
           </div>
         </DialogHeader>
 
@@ -925,6 +980,16 @@ export default function DetalhesOS({ os, pacienteNome, medicoNome, categoriaNome
           </DialogClose>
         </div>
       </DialogContent>
+
+      <ModalQrCodePix
+        open={modalPixAberto}
+        onClose={() => setModalPixAberto(false)}
+        qrCode={qrCodePix}
+        valor={os.valor_final}
+        pacienteNome={pacienteNome}
+        loading={gerandoPix}
+        erro={erroPix}
+      />
     </Dialog>
   );
 }
