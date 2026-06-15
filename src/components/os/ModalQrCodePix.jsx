@@ -13,28 +13,37 @@ export default function ModalQrCodePix({ open, onClose, qrCode, valor, pacienteN
   const [pago, setPago] = useState(false);
   const { toast } = useToast();
   const intervalRef = useRef(null);
+  // Refs para callbacks, evitando recriar o intervalo a cada render do componente pai
+  const onPagoRef = useRef(onPago);
+  const onCloseRef = useRef(onClose);
+  useEffect(() => { onPagoRef.current = onPago; }, [onPago]);
+  useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
 
   // Verificação automática de pagamento a cada 5 segundos enquanto o QR Code está visível
   useEffect(() => {
-    if (!open || !qrCode || loading || erro || pago || !ordemServicoId) {
+    if (!open || !qrCode || loading || erro || !ordemServicoId) {
       return;
     }
 
+    let parou = false;
+
     const verificar = async () => {
+      if (parou) return;
       try {
         const res = await base44.functions.invoke('confirmarPagamentoPixOS', {
           ordem_servico_id: ordemServicoId,
         });
         if (res.data?.success && res.data?.is_paid) {
-          setPago(true);
+          parou = true;
           if (intervalRef.current) clearInterval(intervalRef.current);
+          setPago(true);
           toast({
             title: "Pagamento confirmado!",
             description: "O pagamento Pix foi recebido com sucesso.",
             className: "bg-green-50 border-green-200",
           });
-          if (onPago) onPago();
-          setTimeout(() => onClose(), 2500);
+          if (onPagoRef.current) onPagoRef.current();
+          setTimeout(() => { if (onCloseRef.current) onCloseRef.current(); }, 2500);
         }
       } catch (err) {
         // silencioso - continua tentando
@@ -44,9 +53,10 @@ export default function ModalQrCodePix({ open, onClose, qrCode, valor, pacienteN
     verificar();
     intervalRef.current = setInterval(verificar, 5000);
     return () => {
+      parou = true;
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [open, qrCode, loading, erro, pago, ordemServicoId, onPago, onClose, toast]);
+  }, [open, qrCode, loading, erro, ordemServicoId, toast]);
 
   // Reseta estado de "pago" ao reabrir o modal
   useEffect(() => {
