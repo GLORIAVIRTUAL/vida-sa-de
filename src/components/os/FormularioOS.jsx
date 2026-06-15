@@ -109,9 +109,8 @@ export default function FormularioOS({
   const [currentUser, setCurrentUser] = useState(null);
   const { toast } = useToast(); // Initialize useToast
 
-  // PIX Sicredi - botão de teste liberado apenas para usuários autorizados
-  const PIX_TESTE_EMAILS = ['dmpetrolina@gmail.com'];
-  const podeGerarPixTeste = PIX_TESTE_EMAILS.includes((currentUser?.email || '').toLowerCase().trim());
+  // PIX Sicredi - geração de QR Code liberada para todos os usuários
+  const podeGerarPixTeste = true;
 
   // Estados para o modal de QR Code Pix
   const [pixModalOpen, setPixModalOpen] = useState(false);

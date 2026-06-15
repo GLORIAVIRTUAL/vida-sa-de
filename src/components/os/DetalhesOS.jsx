@@ -53,9 +53,7 @@ export default function DetalhesOS({ os, pacienteNome, medicoNome, categoriaNome
   const [pagamento1, setPagamento1] = useState({ forma: os?.pagamentos_detalhados?.[0]?.forma || '', valor: os?.pagamentos_detalhados?.[0]?.valor || '' });
   const [pagamento2, setPagamento2] = useState({ forma: os?.pagamentos_detalhados?.[1]?.forma || '', valor: os?.pagamentos_detalhados?.[1]?.valor || '' });
 
-  // PIX Sicredi - liberado apenas para usuários de teste
-  const PIX_TESTE_EMAILS = ['dmpetrolina@gmail.com'];
-  const [emailUsuario, setEmailUsuario] = useState('');
+  // PIX Sicredi - liberado para todos os usuários
   const [modalPixAberto, setModalPixAberto] = useState(false);
   const [gerandoPix, setGerandoPix] = useState(false);
   const [qrCodePix, setQrCodePix] = useState('');
@@ -64,13 +62,10 @@ export default function DetalhesOS({ os, pacienteNome, medicoNome, categoriaNome
   // Confirmação de pagamento Pix nesta sessão (true se o webhook/consulta confirmou)
   const [pixConfirmadoSessao, setPixConfirmadoSessao] = useState(false);
 
-  useEffect(() => {
-    UserEntity.me().then((u) => setEmailUsuario((u?.email || '').toLowerCase().trim())).catch(() => {});
-  }, []);
-
-  const podeGerarPix = PIX_TESTE_EMAILS.includes(emailUsuario);
-  // Usuário restrito: só pode salvar "Pago" se houver confirmação do pagamento Pix
-  const usuarioRestritoPix = PIX_TESTE_EMAILS.includes(emailUsuario);
+  // Geração de PIX liberada para todos
+  const podeGerarPix = true;
+  // Todos: só podem salvar "Pago" em OS Pix se houver confirmação do pagamento Pix
+  const usuarioRestritoPix = true;
 
   const handleConfirmarPix = async () => {
     setConfirmandoPix(true);
