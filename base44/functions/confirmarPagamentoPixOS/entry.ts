@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
-const PROXY_SERVER = Deno.env.get('PROXY_URL') || 'http://216.238.126.207:3000';
+const PROXY_SERVER = 'http://216.238.126.207:3000';
 
 Deno.serve(async (req) => {
   try {
