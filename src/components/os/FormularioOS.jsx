@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Save } from "lucide-react";
+import { Save, QrCode } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -108,6 +108,10 @@ export default function FormularioOS({
   const [avisoCategoria, setAvisoCategoria] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const { toast } = useToast(); // Initialize useToast
+
+  // PIX Sicredi - botão de teste liberado apenas para usuários autorizados
+  const PIX_TESTE_EMAILS = ['dmpetrolina@gmail.com'];
+  const podeGerarPixTeste = PIX_TESTE_EMAILS.includes((currentUser?.email || '').toLowerCase().trim());
 
   // Estados para o modal de QR Code Pix
   const [pixModalOpen, setPixModalOpen] = useState(false);
@@ -539,6 +543,31 @@ export default function FormularioOS({
       valor_final: valorComDesconto + novoJuros
     }));
   }, [dados.valor_total, dados.desconto, dados.cobrar_taxa, dados.forma_pagamento, dados.bandeira_cartao, dados.parcelas]);
+
+  // Gera o QR Code Pix diretamente (modo teste), sem precisar salvar a OS como PIX
+  const handleGerarPixTeste = async () => {
+    setPixModalOpen(true);
+    setPixLoading(true);
+    setPixErro(null);
+    setPixQrCode(null);
+    setOsSalvaPendente(null);
+    try {
+      const pixRes = await base44.functions.invoke('gerarQrCodePix', {
+        ordem_servico_id: agendamento?.id || 'teste',
+        valor: Number(dados.valor_final || 0).toFixed(2),
+        descricao: `Teste Pix - ${paciente?.nome || agendamento?.paciente_nome || ''}`.trim(),
+      });
+      if (pixRes.data?.success && pixRes.data?.qr_code) {
+        setPixQrCode(pixRes.data.qr_code);
+      } else {
+        setPixErro(pixRes.data?.details || pixRes.data?.error || 'Não foi possível gerar o QR Code Pix.');
+      }
+    } catch (pixErr) {
+      setPixErro('Erro ao gerar QR Code Pix: ' + (pixErr.message || 'Tente novamente.'));
+    } finally {
+      setPixLoading(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -1052,6 +1081,17 @@ export default function FormularioOS({
           </Card>
           <DialogFooter className="p-0 flex-shrink-0"> {/* Moved DialogFooter inside form for submit button */}
             <Button type="button" variant="outline" onClick={onCancelar}>Cancelar</Button>
+            {podeGerarPixTeste && (
+              <Button
+                type="button"
+                onClick={handleGerarPixTeste}
+                disabled={dados.valor_final === 0}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <QrCode className="w-4 h-4 mr-2" />
+                Gerar Pix Agora
+              </Button>
+            )}
             <Button type="submit" disabled={salvando || dados.valor_total === 0}>
               <Save className="w-4 h-4 mr-2" />
               {salvando ? "Salvando..." : "Salvar OS"}
