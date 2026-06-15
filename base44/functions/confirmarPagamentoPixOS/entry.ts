@@ -24,6 +24,17 @@ Deno.serve(async (req) => {
     }
     const os = ordens[0];
 
+    // ATALHO: se a OS já foi marcada como Pago (ex: pelo webhook do Sicredi),
+    // confirma imediatamente sem precisar consultar o Sicredi novamente.
+    if (os.status_pagamento === 'Pago') {
+      return Response.json({
+        success: true,
+        is_paid: true,
+        status: 'PAGA',
+        message: 'Pagamento já confirmado.',
+      });
+    }
+
     const transactionId = txid || os.transaction_id;
     if (!transactionId) {
       return Response.json({ error: 'Esta OS não possui transação Pix vinculada.' }, { status: 400 });
