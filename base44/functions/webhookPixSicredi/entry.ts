@@ -3,7 +3,21 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    
+
+    // Validação de segurança: token secreto na URL (?token=...)
+    const expectedToken = Deno.env.get('SICREDI_WEBHOOK_TOKEN');
+    const url = new URL(req.url);
+    const receivedToken = url.searchParams.get('token');
+    if (expectedToken && receivedToken !== expectedToken) {
+      console.warn('Webhook rejeitado: token inválido');
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // O Sicredi faz uma verificação GET ao registrar/validar o webhook
+    if (req.method === 'GET' || req.method === 'HEAD') {
+      return Response.json({ status: 'ok' }, { status: 200 });
+    }
+
     // Parse webhook payload
     const payload = await req.json();
     
