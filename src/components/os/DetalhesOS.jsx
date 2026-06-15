@@ -1046,6 +1046,12 @@ export default function DetalhesOS({ os, pacienteNome, medicoNome, categoriaNome
         pacienteNome={pacienteNome}
         loading={gerandoPix}
         erro={erroPix}
+        ordemServicoId={os.id}
+        onPago={() => {
+          setStatusPagamento('Pago');
+          setPixConfirmadoSessao(true);
+          if (onUpdate) onUpdate();
+        }}
       />
     </Dialog>
   );

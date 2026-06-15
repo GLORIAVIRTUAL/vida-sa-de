@@ -1,15 +1,57 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Copy, Check, Loader2, AlertCircle, QrCode } from "lucide-react";
+import { Copy, Check, Loader2, AlertCircle, QrCode, CheckCircle2 } from "lucide-react";
 import { QRCodeSVG } from 'qrcode.react';
 import { useToast } from "@/components/ui/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { base44 } from "@/api/base44Client";
 
-export default function ModalQrCodePix({ open, onClose, qrCode, valor, pacienteNome, loading, erro }) {
+export default function ModalQrCodePix({ open, onClose, qrCode, valor, pacienteNome, loading, erro, ordemServicoId, onPago }) {
   const [copiado, setCopiado] = useState(false);
+  const [pago, setPago] = useState(false);
   const { toast } = useToast();
+  const intervalRef = useRef(null);
+
+  // Verificação automática de pagamento a cada 5 segundos enquanto o QR Code está visível
+  useEffect(() => {
+    if (!open || !qrCode || loading || erro || pago || !ordemServicoId) {
+      return;
+    }
+
+    const verificar = async () => {
+      try {
+        const res = await base44.functions.invoke('confirmarPagamentoPixOS', {
+          ordem_servico_id: ordemServicoId,
+        });
+        if (res.data?.success && res.data?.is_paid) {
+          setPago(true);
+          if (intervalRef.current) clearInterval(intervalRef.current);
+          toast({
+            title: "Pagamento confirmado!",
+            description: "O pagamento Pix foi recebido com sucesso.",
+            className: "bg-green-50 border-green-200",
+          });
+          if (onPago) onPago();
+          setTimeout(() => onClose(), 2500);
+        }
+      } catch (err) {
+        // silencioso - continua tentando
+      }
+    };
+
+    verificar();
+    intervalRef.current = setInterval(verificar, 5000);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [open, qrCode, loading, erro, pago, ordemServicoId, onPago, onClose, toast]);
+
+  // Reseta estado de "pago" ao reabrir o modal
+  useEffect(() => {
+    if (open) setPago(false);
+  }, [open]);
 
   const handleCopiar = async () => {
     if (!qrCode) return;
@@ -72,7 +114,15 @@ export default function ModalQrCodePix({ open, onClose, qrCode, valor, pacienteN
             </Alert>
           )}
 
-          {qrCode && !loading && !erro && (
+          {pago && (
+            <div className="flex flex-col items-center justify-center py-10 text-center">
+              <CheckCircle2 className="w-16 h-16 text-green-600 mb-4" />
+              <p className="text-xl font-bold text-green-800">Pagamento confirmado!</p>
+              <p className="text-gray-600 mt-1">O Pix foi recebido com sucesso.</p>
+            </div>
+          )}
+
+          {qrCode && !loading && !erro && !pago && (
             <>
               <Card>
                 <CardContent className="p-4 flex justify-center bg-white">
@@ -112,6 +162,12 @@ export default function ModalQrCodePix({ open, onClose, qrCode, valor, pacienteN
                 <p className="text-xs text-gray-500 text-center mt-2">
                   Envie este código no chat para o cliente realizar o pagamento.
                 </p>
+                {ordemServicoId && (
+                  <div className="flex items-center justify-center gap-2 mt-3 text-sm text-blue-600">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Aguardando confirmação do pagamento...
+                  </div>
+                )}
               </div>
             </>
           )}
