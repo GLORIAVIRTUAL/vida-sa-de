@@ -42,6 +42,17 @@ Deno.serve(async (req) => {
 
     const cobData = JSON.parse(responseText);
 
+    // Salvar o txid na OS para permitir confirmação posterior (webhook ou consulta manual)
+    if (cobData.txid) {
+      try {
+        await base44.asServiceRole.entities.OrdemServico.update(ordem_servico_id, {
+          transaction_id: cobData.txid,
+        });
+      } catch (updateErr) {
+        console.error('Falha ao salvar txid na OS:', updateErr.message);
+      }
+    }
+
     return Response.json({
       success: true,
       qr_code: cobData.pixCopiaECola,

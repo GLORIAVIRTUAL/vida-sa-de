@@ -9,23 +9,30 @@ Deno.serve(async (req) => {
     
     console.log('Webhook Pix Sicredi recebido:', JSON.stringify(payload, null, 2));
 
-    // Extract transaction info
-    const { id, status, valor, pix, identificador_unico } = payload;
+    // Sicredi envia notificações Pix no formato { pix: [{ txid, valor, status, ... }] }
+    // Também tratamos o formato simplificado { id, status, valor }
+    const pixArray = Array.isArray(payload.pix) ? payload.pix : [];
+    const primeiroPix = pixArray[0] || {};
 
-    if (!id) {
+    const txid = payload.txid || primeiroPix.txid || payload.id;
+    const status = payload.status || primeiroPix.status;
+    const valor = payload.valor || primeiroPix.valor;
+    const id = txid;
+
+    if (!txid) {
       return Response.json({ error: 'Invalid webhook payload' }, { status: 400 });
     }
 
-    // Check if payment was received
-    const isPaid = status === 'RECEBIDA' || status === 'PAGA' || (pix && pix.length > 0);
+    // Pix recebido: se há registro de pix pago no array OU status confirmado
+    const isPaid = pixArray.length > 0 || status === 'RECEBIDA' || status === 'PAGA' || status === 'CONCLUIDA';
 
-    if (isPaid && identificador_unico) {
-      // Fetch the OS to update it
+    if (isPaid && txid) {
+      // Localizar a OS pelo transaction_id (txid salvo ao gerar o Pix)
       const ordensServico = await base44.asServiceRole.entities.OrdemServico.filter(
-        { id: identificador_unico }
+        { transaction_id: txid }
       );
 
-      if (ordensServico.length > 0) {
+      if (ordensServico.length > 0 && ordensServico[0].status_pagamento !== 'Pago') {
         const os = ordensServico[0];
 
         // Update OS status to "Pago"
