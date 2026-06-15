@@ -119,6 +119,7 @@ export default function FormularioOS({
   const [pixLoading, setPixLoading] = useState(false);
   const [pixErro, setPixErro] = useState(null);
   const [osSalvaPendente, setOsSalvaPendente] = useState(null);
+  const [pixValor, setPixValor] = useState(0);
 
   // Buscar usuário atual para salvar quem gerou a OS
   useEffect(() => {
@@ -544,17 +545,30 @@ export default function FormularioOS({
     }));
   }, [dados.valor_total, dados.desconto, dados.cobrar_taxa, dados.forma_pagamento, dados.bandeira_cartao, dados.parcelas]);
 
+  // Calcula o valor do PIX: se múltiplas formas, usa só a parte PIX; senão o valor final
+  const calcularValorPix = () => {
+    if (dados.forma_pagamento === 'Múltiplas Formas') {
+      let total = 0;
+      if (pagamento1.forma === 'PIX') total += parseFloat(pagamento1.valor) || 0;
+      if (pagamento2.forma === 'PIX') total += parseFloat(pagamento2.valor) || 0;
+      return total > 0 ? total : dados.valor_final;
+    }
+    return dados.valor_final;
+  };
+
   // Gera o QR Code Pix diretamente (modo teste), sem precisar salvar a OS como PIX
   const handleGerarPixTeste = async () => {
+    const valorPixTeste = calcularValorPix();
     setPixModalOpen(true);
     setPixLoading(true);
     setPixErro(null);
     setPixQrCode(null);
     setOsSalvaPendente(null);
+    setPixValor(valorPixTeste);
     try {
       const pixRes = await base44.functions.invoke('gerarQrCodePix', {
         ordem_servico_id: agendamento?.id || 'teste',
-        valor: Number(dados.valor_final || 0).toFixed(2),
+        valor: Number(valorPixTeste || 0).toFixed(2),
         descricao: `Teste Pix - ${paciente?.nome || agendamento?.paciente_nome || ''}`.trim(),
       });
       if (pixRes.data?.success && pixRes.data?.qr_code) {
@@ -716,6 +730,7 @@ export default function FormularioOS({
         setPixLoading(true);
         setPixErro(null);
         setPixQrCode(null);
+        setPixValor(valorPix);
 
         try {
           const pixRes = await base44.functions.invoke('gerarQrCodePix', {
@@ -1118,7 +1133,7 @@ export default function FormularioOS({
           }
         }}
         qrCode={pixQrCode}
-        valor={osSalvaPendente?.valor_final}
+        valor={pixValor}
         pacienteNome={paciente?.nome || agendamento?.paciente_nome}
         loading={pixLoading}
         erro={pixErro}
