@@ -661,16 +661,30 @@ export default function DetalhesOS({ os, pacienteNome, medicoNome, categoriaNome
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               {editando ? (
-                <Select value={statusPagamento} onValueChange={setStatusPagamento}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Pendente">Pendente</SelectItem>
-                    <SelectItem value="Pago">Pago</SelectItem>
-                    <SelectItem value="Cancelado">Cancelado</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div>
+                  <Select
+                    value={statusPagamento}
+                    onValueChange={setStatusPagamento}
+                    disabled={formaPagamento === 'PIX' && os.status_pagamento !== 'Pago'}
+                  >
+                    <SelectTrigger className="w-40">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Pendente">Pendente</SelectItem>
+                      {/* PIX só pode ser marcado como Pago pelo webhook do Sicredi */}
+                      {!(formaPagamento === 'PIX' && os.status_pagamento !== 'Pago') && (
+                        <SelectItem value="Pago">Pago</SelectItem>
+                      )}
+                      <SelectItem value="Cancelado">Cancelado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {formaPagamento === 'PIX' && os.status_pagamento !== 'Pago' && (
+                    <p className="text-xs text-gray-500 mt-1 max-w-[200px]">
+                      Confirmado automaticamente pelo Sicredi.
+                    </p>
+                  )}
+                </div>
               ) : (
                 <Badge className={`${statusPagamentoColors[os.status_pagamento]} text-sm px-4 py-1`}>
                   {os.status_pagamento}

@@ -630,7 +630,8 @@ export default function FormularioOS({
         pagamentos_detalhados: pagamentosDetalhados,
         parcelas: dados.parcelas,
         bandeira_cartao: dados.bandeira_cartao,
-        status_pagamento: dados.status_pagamento,
+        // PIX nunca é marcado como Pago manualmente — só o webhook do Sicredi confirma
+        status_pagamento: dados.forma_pagamento === 'PIX' ? 'Pendente' : dados.status_pagamento,
         observacoes: dados.observacoes,
         itens: dados.itens,
         valor_imposto: dados.valor_imposto,
@@ -921,8 +922,9 @@ export default function FormularioOS({
                 <div>
                   <Label>Status do Pagamento</Label>
                   <Select 
-                    value={dados.status_pagamento} 
+                    value={dados.forma_pagamento === 'PIX' ? 'Pendente' : dados.status_pagamento} 
                     onValueChange={(v) => setDados(prev => ({ ...prev, status_pagamento: v }))}
+                    disabled={dados.forma_pagamento === 'PIX'}
                   >
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -931,6 +933,11 @@ export default function FormularioOS({
                       <SelectItem value="Cancelado">Cancelado</SelectItem>
                     </SelectContent>
                   </Select>
+                  {dados.forma_pagamento === 'PIX' && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Status confirmado automaticamente pelo Sicredi após o pagamento.
+                    </p>
+                  )}
                 </div>
               </div>
 
