@@ -41,10 +41,30 @@ Deno.serve(async (req) => {
     const isPaid = pixArray.length > 0 || status === 'RECEBIDA' || status === 'PAGA' || status === 'CONCLUIDA';
 
     if (isPaid && txid) {
-      // Localizar a OS pelo transaction_id (txid salvo ao gerar o Pix)
-      const ordensServico = await base44.asServiceRole.entities.OrdemServico.filter(
+      // 1ª tentativa: localizar a OS pelo transaction_id exato (txid salvo ao gerar o Pix)
+      let ordensServico = await base44.asServiceRole.entities.OrdemServico.filter(
         { transaction_id: txid }
       );
+
+      // 2ª tentativa (fallback): se não achou pelo txid, busca uma OS PIX Pendente
+      // com o MESMO valor gerada recentemente. Isso cobre casos em que o Pix foi
+      // regerado (txid sobrescrito) e o cliente pagou um QR anterior.
+      if (ordensServico.length === 0 && valor != null) {
+        const valorNum = Number(valor);
+        const pendentes = await base44.asServiceRole.entities.OrdemServico.filter({
+          forma_pagamento: 'PIX',
+          status_pagamento: 'Pendente',
+        });
+        const limiteHoras = Date.now() - 6 * 60 * 60 * 1000; // últimas 6 horas
+        const candidatas = (pendentes || [])
+          .filter((o) => Math.abs(Number(o.valor_final) - valorNum) < 0.01)
+          .filter((o) => new Date(o.created_date).getTime() >= limiteHoras)
+          .sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+        if (candidatas.length > 0) {
+          ordensServico = [candidatas[0]];
+          console.log(`Fallback por valor: OS ${candidatas[0].numero_os} (R$ ${valor}) associada ao txid ${txid}`);
+        }
+      }
 
       if (ordensServico.length > 0 && ordensServico[0].status_pagamento !== 'Pago') {
         const os = ordensServico[0];
