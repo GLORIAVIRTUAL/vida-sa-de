@@ -24,7 +24,8 @@ export default function Faturas({ ordensServico, pacientes, medicos, procediment
     "Prefeitura de Pinhal",
     "Prefeitura de Tramandaí",
     "SMEC",
-    "FUMAM"
+    "FUMAM",
+    "Tem Saúde"
   ];
 
   // Filtrar categorias públicas disponíveis
