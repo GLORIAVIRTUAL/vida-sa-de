@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Save, QrCode } from "lucide-react";
+import { Save } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -110,7 +110,6 @@ export default function FormularioOS({
   const { toast } = useToast(); // Initialize useToast
 
   // PIX Sicredi - geração de QR Code liberada para todos os usuários
-  const podeGerarPixTeste = true;
 
   // Estados para o modal de QR Code Pix
   const [pixModalOpen, setPixModalOpen] = useState(false);
@@ -553,33 +552,6 @@ export default function FormularioOS({
       return total > 0 ? total : dados.valor_final;
     }
     return dados.valor_final;
-  };
-
-  // Gera o QR Code Pix diretamente (modo teste), sem precisar salvar a OS como PIX
-  const handleGerarPixTeste = async () => {
-    const valorPixTeste = calcularValorPix();
-    setPixModalOpen(true);
-    setPixLoading(true);
-    setPixErro(null);
-    setPixQrCode(null);
-    setOsSalvaPendente(null);
-    setPixValor(valorPixTeste);
-    try {
-      const pixRes = await base44.functions.invoke('gerarQrCodePix', {
-        ordem_servico_id: agendamento?.id || 'teste',
-        valor: Number(valorPixTeste || 0).toFixed(2),
-        descricao: `Teste Pix - ${paciente?.nome || agendamento?.paciente_nome || ''}`.trim(),
-      });
-      if (pixRes.data?.success && pixRes.data?.qr_code) {
-        setPixQrCode(pixRes.data.qr_code);
-      } else {
-        setPixErro(pixRes.data?.details || pixRes.data?.error || 'Não foi possível gerar o QR Code Pix.');
-      }
-    } catch (pixErr) {
-      setPixErro('Erro ao gerar QR Code Pix: ' + (pixErr.message || 'Tente novamente.'));
-    } finally {
-      setPixLoading(false);
-    }
   };
 
   const handleSubmit = async (e) => {
