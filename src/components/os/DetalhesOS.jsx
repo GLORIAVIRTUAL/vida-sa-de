@@ -660,7 +660,6 @@ export default function DetalhesOS({ os, pacienteNome, medicoNome, categoriaNome
                   <Select
                     value={statusPagamento}
                     onValueChange={setStatusPagamento}
-                    disabled={formaPagamento === 'PIX' && os.status_pagamento !== 'Pago'}
                   >
                     <SelectTrigger className="w-40">
                       <SelectValue />
@@ -676,7 +675,7 @@ export default function DetalhesOS({ os, pacienteNome, medicoNome, categoriaNome
                   </Select>
                   {formaPagamento === 'PIX' && os.status_pagamento !== 'Pago' && (
                     <p className="text-xs text-gray-500 mt-1 max-w-[200px]">
-                      Confirmado automaticamente pelo Sicredi.
+                      Pagamento confirmado automaticamente pelo Sicredi. Você ainda pode cancelar a OS.
                     </p>
                   )}
                 </div>
