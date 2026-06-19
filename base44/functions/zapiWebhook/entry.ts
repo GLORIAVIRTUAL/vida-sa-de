@@ -12,6 +12,21 @@ Deno.serve(async (req) => {
         
         console.log('📨 Z-API Webhook recebido:', JSON.stringify(payload, null, 2));
 
+        // 🔎 LOG BRUTO: grava todo payload recebido (exceto ecos da própria API)
+        // Serve para capturar o formato de mensagens vindas de Anúncio do Facebook (Click-to-WhatsApp)
+        if (payload.fromMe !== true && payload.fromApi !== true) {
+            try {
+                await base44.asServiceRole.entities.WebhookLog.create({
+                    endpoint: 'zapiWebhook',
+                    method: 'POST',
+                    body: JSON.stringify(payload).slice(0, 5000),
+                    status: 'processing'
+                });
+            } catch (logErr) {
+                console.warn('⚠️ Falha ao gravar WebhookLog bruto:', logErr.message);
+            }
+        }
+
         // IGNORAR mensagens enviadas pela própria API (fromApi=true ou fromMe=true)
         // Esses são callbacks da Z-API notificando que NOSSA mensagem foi enviada
         if (payload.fromApi === true) {
