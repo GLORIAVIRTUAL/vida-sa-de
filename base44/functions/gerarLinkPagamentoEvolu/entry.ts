@@ -21,7 +21,11 @@ Deno.serve(async (req) => {
             return Response.json({ error: 'Informe value e clientName' }, { status: 400 });
         }
 
-        const token = Deno.env.get('EVOLUSERVICES_TOKEN');
+        // Basic Auth: usuário:senha em base64
+        // O secret EVOLUSERVICES_TOKEN guarda a senha real
+        const evoluUser = 'gloria';
+        const evoluPass = Deno.env.get('EVOLUSERVICES_TOKEN');
+        const basicAuth = btoa(`${evoluUser}:${evoluPass}`);
         const merchantId = 'bcc1614f-431e-43cd-bf28-69020191c4dc';
 
         const payload = {
@@ -39,7 +43,7 @@ Deno.serve(async (req) => {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
+                'Authorization': `Basic ${basicAuth}`
             },
             body: JSON.stringify(payload)
         });
