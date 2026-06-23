@@ -18,9 +18,10 @@ export default function TransferirConversaModal({ open, onClose, contato, curren
     const carregarUsuarios = async () => {
       setCarregando(true);
       try {
-        const lista = await base44.entities.User.list();
+        const resp = await base44.functions.invoke('listarUsuariosTransferencia', {});
+        const lista = resp?.data?.usuarios || [];
         // Excluir o usuário atual da lista de destinos
-        setUsuarios((lista || []).filter(u => u.id !== currentUser?.id));
+        setUsuarios(lista.filter(u => u.id !== currentUser?.id));
       } catch (error) {
         console.error('Erro ao carregar usuários:', error);
       } finally {
