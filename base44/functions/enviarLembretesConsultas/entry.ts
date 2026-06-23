@@ -202,8 +202,8 @@ Deno.serve(async (req) => {
                 console.error(`❌ Erro ao enviar para ${paciente.nome}:`, error.message);
             }
 
-            // Pequeno delay entre envios para não sobrecarregar a API
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // Delay entre envios para não sobrecarregar a API e reduzir risco de bloqueio do WhatsApp
+            await new Promise(resolve => setTimeout(resolve, 5000));
         }
 
         console.log(`📊 Resumo: ${enviados} enviados, ${erros} erros`);
