@@ -11,19 +11,33 @@ export default function TransferirConversaModal({ open, onClose, contato, curren
   const [carregando, setCarregando] = useState(false);
   const [destinoId, setDestinoId] = useState('');
   const [transferindo, setTransferindo] = useState(false);
+  const [erro, setErro] = useState('');
 
   useEffect(() => {
     if (!open) return;
     setDestinoId('');
+    setErro('');
     const carregarUsuarios = async () => {
       setCarregando(true);
       try {
-        const resp = await base44.functions.invoke('listarUsuariosTransferencia', {});
-        const lista = resp?.data?.usuarios || [];
+        let lista = [];
+        try {
+          const resp = await base44.functions.invoke('listarUsuariosTransferencia', {});
+          lista = resp?.data?.usuarios || [];
+        } catch (errBackend) {
+          // Fallback: tenta listar direto (funciona para admins)
+          console.error('Falha na função de backend, usando fallback:', errBackend);
+          lista = (await base44.entities.User.list()) || [];
+        }
         // Excluir o usuário atual da lista de destinos
-        setUsuarios(lista.filter(u => u.id !== currentUser?.id));
+        const filtrada = lista.filter(u => u.id !== currentUser?.id);
+        setUsuarios(filtrada);
+        if (filtrada.length === 0) {
+          setErro('Nenhum outro usuário encontrado para transferir.');
+        }
       } catch (error) {
         console.error('Erro ao carregar usuários:', error);
+        setErro('Erro ao carregar usuários: ' + (error?.message || 'tente recarregar a página.'));
       } finally {
         setCarregando(false);
       }
@@ -103,6 +117,9 @@ export default function TransferirConversaModal({ open, onClose, contato, curren
                   ))}
                 </SelectContent>
               </Select>
+            )}
+            {erro && (
+              <p className="text-xs text-amber-600">{erro}</p>
             )}
           </div>
         </div>
