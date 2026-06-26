@@ -105,7 +105,7 @@ Deno.serve(async (req) => {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${bearerToken}`
+                        'bearer': bearerToken
                     },
                     body: JSON.stringify(payloadEvolu)
                 });
