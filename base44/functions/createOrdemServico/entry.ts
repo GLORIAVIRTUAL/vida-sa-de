@@ -84,33 +84,12 @@ Deno.serve(async (req) => {
             const callbackUrl = `https://${host}/functions/callbackOrdemServico`;
 
             try {
-                // Etapa 1: Basic Auth -> Bearer token
-                const evoluUser = 'gloria';
-                const evoluPass = Deno.env.get('EVOLUSERVICES_TOKEN');
-                const basicAuth = btoa(`${evoluUser}:${evoluPass}`);
+                // Bearer token já emitido pela EvoluServices (armazenado nas secrets)
+                const bearerToken = Deno.env.get('EVOLUSERVICES_TOKEN');
                 const merchantId = 'bcc1614f-431e-43cd-bf28-69020191c4dc';
+                if (!bearerToken) throw new Error('Token EvoluServices não configurado');
 
-                const tokenResp = await fetch('https://sandbox.evoluservices.com/remote/token', {
-                    method: 'POST',
-                    headers: { 'Authorization': `Basic ${basicAuth}` }
-                });
-                const tokenText = await tokenResp.text();
-                console.log('EvoluServices token response:', tokenResp.status, tokenText);
-
-                if (!tokenResp.ok) {
-                    throw new Error(`Falha ao obter token (${tokenResp.status}): ${tokenText}`);
-                }
-
-                let bearerToken;
-                try {
-                    const tokenJson = JSON.parse(tokenText);
-                    bearerToken = tokenJson.Bearer || tokenJson.bearer || tokenJson.token || tokenJson.access_token;
-                } catch {
-                    bearerToken = null;
-                }
-                if (!bearerToken) throw new Error('Token não encontrado na resposta da EvoluServices');
-
-                // Etapa 2: criar a transação
+                // Criar a transação na maquininha
                 const payloadEvolu = {
                     transaction: {
                         merchantId,

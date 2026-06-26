@@ -21,45 +21,15 @@ Deno.serve(async (req) => {
             return Response.json({ error: 'Informe value e clientName' }, { status: 400 });
         }
 
-        // Etapa 1: obter o Bearer token via Basic Auth (usuário:senha)
-        const evoluUser = 'gloria';
-        const evoluPass = Deno.env.get('EVOLUSERVICES_TOKEN');
-        const basicAuth = btoa(`${evoluUser}:${evoluPass}`);
+        // Bearer token já emitido pela EvoluServices (armazenado nas secrets)
+        const bearerToken = Deno.env.get('EVOLUSERVICES_TOKEN');
         const merchantId = 'bcc1614f-431e-43cd-bf28-69020191c4dc';
 
-        const tokenResp = await fetch('https://sandbox.evoluservices.com/remote/token', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Basic ${basicAuth}`
-            }
-        });
-
-        const tokenText = await tokenResp.text();
-        console.log('EvoluServices token response:', tokenResp.status, tokenText);
-
-        if (!tokenResp.ok) {
-            return Response.json(
-                { error: 'Falha ao obter token EvoluServices', status: tokenResp.status, details: tokenText },
-                { status: 502 }
-            );
-        }
-
-        let bearerToken;
-        try {
-            const tokenJson = JSON.parse(tokenText);
-            bearerToken = tokenJson.Bearer || tokenJson.bearer || tokenJson.token || tokenJson.access_token;
-        } catch {
-            bearerToken = null;
-        }
-
         if (!bearerToken) {
-            return Response.json(
-                { error: 'Token não encontrado na resposta', details: tokenText },
-                { status: 502 }
-            );
+            return Response.json({ error: 'Token EvoluServices não configurado' }, { status: 500 });
         }
 
-        // Etapa 2: usar o Bearer token para gerar o link de pagamento
+        // Usar o Bearer token para gerar o link de pagamento
         const payload = {
             transaction: {
                 merchantId,
