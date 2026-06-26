@@ -75,7 +75,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    const alteradoPorEmail = dadosAtuais?.updated_by || dadosAtuais?.created_by || null;
+    const alteradoPorEmail = dadosAtuais?.alterado_por_email || dadosAntigos?.alterado_por_email || null;
+    const alteradoPorNome = dadosAtuais?.alterado_por_nome || dadosAntigos?.alterado_por_nome || null;
 
     let resumo;
     if (eventType === 'create') {
@@ -93,7 +94,7 @@ Deno.serve(async (req) => {
       procedimento_nome: dadosAtuais?.nome || dadosAntigos?.nome || 'desconhecido',
       tipo_evento: eventType,
       alterado_por_email: alteradoPorEmail,
-      alterado_por_nome: null,
+      alterado_por_nome: alteradoPorNome,
       campos_alterados: camposAlterados,
       resumo: resumo.substring(0, 2000)
     });

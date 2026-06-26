@@ -195,6 +195,20 @@
       "type": "number",
       "description": "N\u00famero de pacientes que podem ser agendados no mesmo hor\u00e1rio para 'Ordem de Chegada'.",
       "default": 1
+    },
+    "alterado_por_email": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Email do usu\u00e1rio logado que fez a \u00faltima altera\u00e7\u00e3o (para auditoria)"
+    },
+    "alterado_por_nome": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Nome do usu\u00e1rio logado que fez a \u00faltima altera\u00e7\u00e3o (para auditoria)"
     }
   },
   "required": [

@@ -84,8 +84,9 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Tentar identificar quem fez a alteração via updated_by (se disponível) ou created_by
-    const alteradoPorEmail = dadosAtuais?.updated_by || dadosAtuais?.created_by || null;
+    // Quem fez a alteração: campos gravados pelo formulário no momento do save
+    const alteradoPorEmail = dadosAtuais?.alterado_por_email || dadosAntigos?.alterado_por_email || null;
+    const alteradoPorNome = dadosAtuais?.alterado_por_nome || dadosAntigos?.alterado_por_nome || null;
 
     // Construir resumo legível
     let resumo;
@@ -104,7 +105,7 @@ Deno.serve(async (req) => {
       medico_nome: dadosAtuais?.nome || dadosAntigos?.nome || 'desconhecido',
       tipo_evento: eventType,
       alterado_por_email: alteradoPorEmail,
-      alterado_por_nome: null,
+      alterado_por_nome: alteradoPorNome,
       campos_alterados: camposAlterados,
       resumo: resumo.substring(0, 2000)
     });

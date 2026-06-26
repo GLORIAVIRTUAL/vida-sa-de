@@ -241,8 +241,18 @@ export default function FormularioMedico({ medico, open, onClose, onUpdate }) {
 
       const tipoRepasse = formData.tipo_repasse || 'percentual';
 
+      // Capturar usuário logado para a auditoria registrar quem alterou
+      let usuarioLogado = null;
+      try {
+        usuarioLogado = await User.me();
+      } catch (e) {
+        console.warn('Não foi possível identificar o usuário logado:', e.message);
+      }
+
       const dadosParaSalvar = {
         user_id: formData.user_id || null,
+        alterado_por_email: usuarioLogado?.email || null,
+        alterado_por_nome: usuarioLogado?.full_name || usuarioLogado?.email || null,
         nome: formData.nome,
         crm: formData.crm,
         especialidade: formData.especialidade,

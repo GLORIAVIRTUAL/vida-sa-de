@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Procedimento, TabelaPreco } from '@/entities/all'; // TabelaPreco is already here, CategoriaPreco is not used in the outline, Procedimento is
+import { Procedimento, TabelaPreco, User } from '@/entities/all';
 import { Loader2, Plus, Trash2, Package } from 'lucide-react';
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -127,6 +127,14 @@ export default function FormularioProcedimento({ procedimento, categorias, preco
   const handleSave = async () => {
     setLoading(true);
     try {
+      // Capturar usuário logado para a auditoria registrar quem alterou
+      let usuarioLogado = null;
+      try {
+        usuarioLogado = await User.me();
+      } catch (e) {
+        console.warn('Não foi possível identificar o usuário logado:', e.message);
+      }
+
       // CORREÇÃO: Converte strings vazias para null para campos numéricos
       const dataToSave = {
         ...formData,
@@ -136,6 +144,8 @@ export default function FormularioProcedimento({ procedimento, categorias, preco
         percentual_repasse_medico: formData.tipo_repasse === 'percentual' && formData.percentual_repasse_medico ? Number(formData.percentual_repasse_medico) : null,
         desconto_pacote: formData.desconto_pacote ? Number(formData.desconto_pacote) : null,
         itens_pacote: formData.is_pacote ? formData.itens_pacote : [],
+        alterado_por_email: usuarioLogado?.email || null,
+        alterado_por_nome: usuarioLogado?.full_name || usuarioLogado?.email || null,
       };
 
       // 1. Salvar ou atualizar o procedimento principal
