@@ -24,22 +24,40 @@ Deno.serve(async (req) => {
         const status = payload.status || payload.transaction?.status;
         const nsu = payload.NSU || payload.nsu || payload.transaction?.nsu;
         const authorizationCode = payload.authorizationNumber || payload.authorizationCode || payload.authorization || payload.transaction?.authorizationCode;
+        const valorPayload = payload.value || payload.amount || payload.transaction?.value || payload.transaction?.amount;
 
-        if (!transactionId) {
-            console.error('❌ Transaction ID não encontrado no payload');
-            return Response.json({ error: 'Transaction ID missing' }, { status: 400 });
+        let ordemServico = null;
+
+        // 1) Tentar casar pelo transaction_id
+        if (transactionId) {
+            const osList = await base44.asServiceRole.entities.OrdemServico.filter({
+                transaction_id: transactionId
+            });
+            ordemServico = osList[0] || null;
         }
 
-        // Buscar OS pelo transaction_id
-        // Nota: Base44 filter retorna array
-        const osList = await base44.asServiceRole.entities.OrdemServico.filter({
-            transaction_id: transactionId
-        });
-
-        const ordemServico = osList[0];
+        // 2) Fallback: casar pela OS de cartão Pendente mais recente com o mesmo valor
+        // (o transactionId notificado pode diferir do mascarado salvo na criação)
+        if (!ordemServico) {
+            const pendentes = await base44.asServiceRole.entities.OrdemServico.filter(
+                { status_pagamento: 'Pendente' },
+                '-created_date',
+                50
+            );
+            const valorNum = valorPayload != null ? parseFloat(valorPayload) : null;
+            ordemServico = pendentes.find(os => {
+                const ehCartao = os.forma_pagamento === 'Cartão Crédito' || os.forma_pagamento === 'Cartão Débito';
+                if (!ehCartao) return false;
+                if (valorNum == null) return true; // sem valor no payload: pega a mais recente de cartão pendente
+                return Math.abs(Number(os.valor_final) - valorNum) < 0.01;
+            }) || null;
+            if (ordemServico) {
+                console.log('⚠️ OS casada por fallback (valor/pendente):', ordemServico.id);
+            }
+        }
 
         if (!ordemServico) {
-            console.error('❌ OS não encontrada para transactionId:', transactionId);
+            console.error('❌ OS não encontrada. transactionId:', transactionId, 'valor:', valorPayload);
             return Response.json({ error: 'Order not found' }, { status: 404 });
         }
 
@@ -56,6 +74,7 @@ Deno.serve(async (req) => {
 
         await base44.asServiceRole.entities.OrdemServico.update(ordemServico.id, {
             status_pagamento: novoStatus,
+            data_pagamento: novoStatus === 'Pago' ? new Date().toISOString() : ordemServico.data_pagamento,
             nsu: nsu || ordemServico.nsu,
             autorizacao: authorizationCode || ordemServico.autorizacao,
             observacoes: (ordemServico.observacoes || '') + `\n[Webhook]: Status atualizado para ${status}`

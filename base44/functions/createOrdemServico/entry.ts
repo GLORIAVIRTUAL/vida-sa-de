@@ -80,9 +80,10 @@ Deno.serve(async (req) => {
                 data_pagamento: null
             });
 
-            const host = req.headers.get("host") || "";
+            // A EvoluServices precisa acessar a função pelo subdomínio público do app
+            // (o domínio interno da plataforma retorna 403). Por isso usamos o host fixo do app.
             const appId = Deno.env.get("BASE44_APP_ID");
-            const callbackUrl = `https://${host}/api/apps/${appId}/functions/callbackOrdemServico`;
+            const callbackUrl = `https://${appId}.base44.app/api/apps/${appId}/functions/callbackOrdemServico`;
 
             try {
                 // Bearer token já emitido pela EvoluServices (armazenado nas secrets)
