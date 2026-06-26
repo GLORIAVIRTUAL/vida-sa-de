@@ -1,0 +1,79 @@
+{
+  "name": "AuditoriaProcedimento",
+  "type": "object",
+  "properties": {
+    "procedimento_id": {
+      "type": "string",
+      "description": "ID do procedimento que foi alterado"
+    },
+    "procedimento_nome": {
+      "type": "string",
+      "description": "Nome do procedimento no momento da altera\u00e7\u00e3o"
+    },
+    "tipo_evento": {
+      "type": "string",
+      "enum": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "description": "Tipo do evento de auditoria"
+    },
+    "alterado_por_email": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Email do usu\u00e1rio que fez a altera\u00e7\u00e3o"
+    },
+    "alterado_por_nome": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Nome do usu\u00e1rio que fez a altera\u00e7\u00e3o"
+    },
+    "campos_alterados": {
+      "type": "array",
+      "description": "Lista de campos que foram alterados com valores antigos e novos",
+      "items": {
+        "type": "object",
+        "properties": {
+          "campo": {
+            "type": "string"
+          },
+          "valor_antigo": {
+            "type": [
+              "string",
+              "number",
+              "boolean",
+              "array",
+              "object",
+              "null"
+            ],
+            "description": "Valor antigo do campo (qualquer tipo)"
+          },
+          "valor_novo": {
+            "type": [
+              "string",
+              "number",
+              "boolean",
+              "array",
+              "object",
+              "null"
+            ],
+            "description": "Valor novo do campo (qualquer tipo)"
+          }
+        }
+      }
+    },
+    "resumo": {
+      "type": "string",
+      "description": "Resumo leg\u00edvel das altera\u00e7\u00f5es"
+    }
+  },
+  "required": [
+    "procedimento_id",
+    "tipo_evento"
+  ]
+}
