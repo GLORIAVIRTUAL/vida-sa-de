@@ -621,8 +621,18 @@ export default function FormularioOS({
         pagamentos_detalhados: pagamentosDetalhados,
         parcelas: dados.parcelas,
         bandeira_cartao: dados.bandeira_cartao,
-        // PIX nunca é marcado como Pago manualmente — só o webhook do Sicredi confirma
-        status_pagamento: dados.forma_pagamento === 'PIX' ? 'Pendente' : dados.status_pagamento,
+        // PIX nunca é marcado como Pago manualmente — só o webhook do Sicredi confirma.
+        // Para o usuário de teste, cartão também não pode sair como "Pago" manualmente:
+        // a confirmação tem que vir da maquininha (callback da EvoluServices).
+        status_pagamento: (() => {
+          if (dados.forma_pagamento === 'PIX') return 'Pendente';
+          const emailUsuario = (currentUser?.email || '').toLowerCase().trim();
+          const cartao = dados.forma_pagamento === 'Cartão Crédito' || dados.forma_pagamento === 'Cartão Débito';
+          if (emailUsuario === 'dmpetrolina@gmail.com' && cartao && dados.status_pagamento === 'Pago') {
+            return 'Pendente';
+          }
+          return dados.status_pagamento;
+        })(),
         observacoes: dados.observacoes,
         itens: dados.itens,
         valor_imposto: dados.valor_imposto,
@@ -921,23 +931,41 @@ export default function FormularioOS({
 
                 <div>
                   <Label>Status do Pagamento</Label>
-                  <Select 
-                    value={dados.forma_pagamento === 'PIX' ? 'Pendente' : dados.status_pagamento} 
-                    onValueChange={(v) => setDados(prev => ({ ...prev, status_pagamento: v }))}
-                    disabled={dados.forma_pagamento === 'PIX'}
-                  >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Pendente">Pendente</SelectItem>
-                      <SelectItem value="Pago">Pago</SelectItem>
-                      <SelectItem value="Cancelado">Cancelado</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {dados.forma_pagamento === 'PIX' && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      Status confirmado automaticamente pelo Sicredi após o pagamento.
-                    </p>
-                  )}
+                  {(() => {
+                    // Para o usuário de teste, pagamentos por cartão/PIX só podem ser
+                    // confirmados como "Pago" pela maquininha/Sicredi (não manualmente)
+                    const emailUsuario = (currentUser?.email || '').toLowerCase().trim();
+                    const usuarioComBloqueio = emailUsuario === 'dmpetrolina@gmail.com';
+                    const formaValidadaExternamente = ['PIX', 'Cartão Crédito', 'Cartão Débito'].includes(dados.forma_pagamento);
+                    const bloquearPago = usuarioComBloqueio && formaValidadaExternamente && dados.status_pagamento !== 'Pago';
+
+                    return (
+                      <>
+                        <Select 
+                          value={dados.forma_pagamento === 'PIX' ? 'Pendente' : dados.status_pagamento} 
+                          onValueChange={(v) => setDados(prev => ({ ...prev, status_pagamento: v }))}
+                          disabled={dados.forma_pagamento === 'PIX'}
+                        >
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Pendente">Pendente</SelectItem>
+                            <SelectItem value="Pago" disabled={bloquearPago}>Pago</SelectItem>
+                            <SelectItem value="Cancelado">Cancelado</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {dados.forma_pagamento === 'PIX' && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            Status confirmado automaticamente pelo Sicredi após o pagamento.
+                          </p>
+                        )}
+                        {bloquearPago && dados.forma_pagamento !== 'PIX' && (
+                          <p className="text-xs text-amber-600 mt-1">
+                            O status "Pago" será confirmado automaticamente pela maquininha após a aprovação.
+                          </p>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
 
