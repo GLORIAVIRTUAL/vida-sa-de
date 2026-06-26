@@ -80,10 +80,12 @@ Deno.serve(async (req) => {
                 data_pagamento: null
             });
 
-            // A EvoluServices precisa acessar a função pelo subdomínio público do app
-            // (o domínio interno da plataforma retorna 403). Por isso usamos o host fixo do app.
-            const appId = Deno.env.get("BASE44_APP_ID");
-            const callbackUrl = `https://${appId}.base44.app/api/apps/${appId}/functions/callbackOrdemServico`;
+            // IMPORTANTE: A EvoluServices valida o domínio da callbackUrl e REJEITA
+            // domínios *.base44.app (retorna WEBSITE_FIELD_INVALID), o que impedia a
+            // transação de chegar na maquininha. Usamos a callbackUrl padrão aceita
+            // pela EvoluServices. A confirmação real do pagamento é conciliada pela
+            // função callbackOrdemServico (com fallback por valor/status).
+            const callbackUrl = 'https://api.owcloud.com.br/api/v1/Webhooks/evoluservicecallback';
 
             try {
                 // Bearer token já emitido pela EvoluServices (armazenado nas secrets)
