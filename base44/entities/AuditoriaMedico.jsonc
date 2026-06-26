@@ -42,8 +42,28 @@
           "campo": {
             "type": "string"
           },
-          "valor_antigo": {},
-          "valor_novo": {}
+          "valor_antigo": {
+            "type": [
+              "string",
+              "number",
+              "boolean",
+              "array",
+              "object",
+              "null"
+            ],
+            "description": "Valor antigo do campo (qualquer tipo)"
+          },
+          "valor_novo": {
+            "type": [
+              "string",
+              "number",
+              "boolean",
+              "array",
+              "object",
+              "null"
+            ],
+            "description": "Valor novo do campo (qualquer tipo)"
+          }
         }
       }
     },
