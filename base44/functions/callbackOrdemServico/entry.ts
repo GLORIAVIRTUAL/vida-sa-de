@@ -80,6 +80,18 @@ Deno.serve(async (req) => {
             observacoes: (ordemServico.observacoes || '') + `\n[Webhook]: Status atualizado para ${status}`
         });
 
+        // Ao confirmar o pagamento, refletir o status no agendamento vinculado
+        // (para que o card deixe de aparecer como "Agendado" e mostre a OS)
+        if (novoStatus === 'Pago' && ordemServico.agendamento_id) {
+            try {
+                await base44.asServiceRole.entities.Agendamento.update(ordemServico.agendamento_id, {
+                    status: 'Pago'
+                });
+            } catch (e) {
+                console.error('⚠️ Não foi possível atualizar o agendamento:', e.message);
+            }
+        }
+
         return Response.json({ success: true });
 
     } catch (error) {
