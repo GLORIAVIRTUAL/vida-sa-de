@@ -81,7 +81,8 @@ Deno.serve(async (req) => {
             });
 
             const host = req.headers.get("host") || "";
-            const callbackUrl = `https://${host}/functions/callbackOrdemServico`;
+            const appId = Deno.env.get("BASE44_APP_ID");
+            const callbackUrl = `https://${host}/api/apps/${appId}/functions/callbackOrdemServico`;
 
             try {
                 // Bearer token já emitido pela EvoluServices (armazenado nas secrets)
