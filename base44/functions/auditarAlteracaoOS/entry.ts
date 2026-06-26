@@ -77,7 +77,8 @@ Deno.serve(async (req) => {
 
     const tipoEventoFinal = foiCancelamento ? 'cancel' : eventType;
 
-    const alteradoPorEmail = dadosAtuais?.updated_by || dadosAtuais?.created_by || null;
+    const alteradoPorEmail = dadosAtuais?.alterado_por_email || dadosAntigos?.alterado_por_email || null;
+    const alteradoPorNome = dadosAtuais?.alterado_por_nome || dadosAntigos?.alterado_por_nome || dadosAtuais?.gerado_por || null;
 
     let resumo;
     if (eventType === 'create') {
@@ -98,7 +99,7 @@ Deno.serve(async (req) => {
       paciente_nome: dadosAtuais?.paciente_nome || dadosAntigos?.paciente_nome || null,
       tipo_evento: tipoEventoFinal,
       alterado_por_email: alteradoPorEmail,
-      alterado_por_nome: null,
+      alterado_por_nome: alteradoPorNome,
       status_anterior: dadosAntigos?.status_pagamento || null,
       status_novo: dadosAtuais?.status_pagamento || null,
       valor_final: dadosAtuais?.valor_final ?? dadosAntigos?.valor_final ?? null,

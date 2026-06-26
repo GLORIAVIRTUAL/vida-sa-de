@@ -148,12 +148,22 @@ export default function DetalhesOS({ os, pacienteNome, medicoNome, categoriaNome
         }
       }
 
+      // Capturar usuário logado para a auditoria registrar quem alterou
+      let usuarioLogado = null;
+      try {
+        usuarioLogado = await UserEntity.me();
+      } catch (e) {
+        console.warn('Não foi possível identificar o usuário logado:', e.message);
+      }
+
       await OrdemServico.update(os.id, {
         status_pagamento: statusPagamento,
         forma_pagamento: formaPagamento,
         pagamentos_detalhados: pagamentosDetalhados,
         valor_final: parseFloat(valorFinal) || 0,
-        data_pagamento: statusPagamento === 'Pago' ? new Date().toISOString() : null
+        data_pagamento: statusPagamento === 'Pago' ? new Date().toISOString() : null,
+        alterado_por_email: usuarioLogado?.email || null,
+        alterado_por_nome: usuarioLogado?.full_name || usuarioLogado?.email || null
       });
 
       toast({
