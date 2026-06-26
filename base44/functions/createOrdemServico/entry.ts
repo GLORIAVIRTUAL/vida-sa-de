@@ -64,95 +64,108 @@ Deno.serve(async (req) => {
         const novaOS = await base44.asServiceRole.entities.OrdemServico.create(dadosOS);
         console.log('✅ OS criada com ID:', novaOS.id);
 
-        // Verificar se há integração de pagamento configurada
-        let API_URL = Deno.env.get("EVOLUSERVICES_API_URL");
-        const API_TOKEN = Deno.env.get("EVOLUSERVICES_TOKEN");
-        const MERCHANT_ID = Deno.env.get("EVOLUSERVICES_MERCHANT_ID");
-        
-        const temIntegracaoPagamento = API_URL && API_TOKEN && MERCHANT_ID;
-        const isPagamentoIntegrado = temIntegracaoPagamento && (forma_pagamento === 'Cartão Crédito' || forma_pagamento === 'Cartão Débito') && bandeira_cartao;
+        // Integração EvoluServices (maquininha) — restrita ao usuário de teste por enquanto
+        const EMAILS_TESTE_CARTAO = ['dmpetrolina@gmail.com'];
+        const usuarioPodeTestarCartao = user.email && EMAILS_TESTE_CARTAO.includes(user.email.toLowerCase().trim());
+        const isCartao = (forma_pagamento === 'Cartão Crédito' || forma_pagamento === 'Cartão Débito') && bandeira_cartao;
+        const isPagamentoIntegrado = usuarioPodeTestarCartao && isCartao;
         let transactionResponse = null;
 
         if (isPagamentoIntegrado) {
-            console.log('💳 Iniciando transação na EvoluServices...');
-            
-            // Sanitizar URL
-            API_URL = API_URL.trim();
-            if (API_URL.endsWith('/')) API_URL = API_URL.slice(0, -1);
-            if (API_URL.endsWith('/remote/transaction')) API_URL = API_URL.replace('/remote/transaction', '');
-            
+            console.log('💳 Iniciando transação na EvoluServices (maquininha)...');
+
+            // Forçar status Pendente — só o callback da EvoluServices confirma o pagamento
+            await base44.asServiceRole.entities.OrdemServico.update(novaOS.id, {
+                status_pagamento: 'Pendente',
+                data_pagamento: null
+            });
+
             const host = req.headers.get("host") || "";
             const callbackUrl = `https://${host}/functions/callbackOrdemServico`;
-            
-            const payloadEvolu = {
-                transaction: {
-                    merchantId: MERCHANT_ID,
-                    value: parseFloat(valor_final).toFixed(2),
-                    installments: parcelas || 1,
-                    paymentBrand: bandeira_cartao,
-                    callbackUrl: callbackUrl,
-                    clientName: nomePaciente
-                }
-            };
-
-            console.log('📤 Enviando para API:', API_URL + '/remote/transaction');
 
             try {
-                const resp = await fetch(`${API_URL}/remote/transaction`, {
+                // Etapa 1: Basic Auth -> Bearer token
+                const evoluUser = 'gloria';
+                const evoluPass = Deno.env.get('EVOLUSERVICES_TOKEN');
+                const basicAuth = btoa(`${evoluUser}:${evoluPass}`);
+                const merchantId = 'bcc1614f-431e-43cd-bf28-69020191c4dc';
+
+                const tokenResp = await fetch('https://sandbox.evoluservices.com/remote/token', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Basic ${basicAuth}` }
+                });
+                const tokenText = await tokenResp.text();
+                console.log('EvoluServices token response:', tokenResp.status, tokenText);
+
+                if (!tokenResp.ok) {
+                    throw new Error(`Falha ao obter token (${tokenResp.status}): ${tokenText}`);
+                }
+
+                let bearerToken;
+                try {
+                    const tokenJson = JSON.parse(tokenText);
+                    bearerToken = tokenJson.Bearer || tokenJson.bearer || tokenJson.token || tokenJson.access_token;
+                } catch {
+                    bearerToken = null;
+                }
+                if (!bearerToken) throw new Error('Token não encontrado na resposta da EvoluServices');
+
+                // Etapa 2: criar a transação
+                const payloadEvolu = {
+                    transaction: {
+                        merchantId,
+                        value: parseFloat(valor_final).toFixed(2),
+                        installments: Number(parcelas) || 1,
+                        paymentBrand: bandeira_cartao,
+                        callbackUrl,
+                        clientName: nomePaciente
+                    }
+                };
+
+                const resp = await fetch('https://sandbox.evoluservices.com/remote/transaction', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'bearer': API_TOKEN
+                        'Authorization': `Bearer ${bearerToken}`
                     },
                     body: JSON.stringify(payloadEvolu)
                 });
 
-                transactionResponse = await resp.json();
-                console.log('📥 Resposta EvoluServices:', transactionResponse);
+                const respText = await resp.text();
+                try { transactionResponse = JSON.parse(respText); } catch { transactionResponse = { raw: respText }; }
+                console.log('📥 Resposta EvoluServices:', resp.status, respText);
 
                 const txId = transactionResponse.transactionId || transactionResponse.transaction?.transactionId;
                 const success = transactionResponse.success === "true" || transactionResponse.success === true;
 
-                // Salvar Transaction ID sempre que disponível, mesmo se success for false (para debug/consulta futura)
                 if (txId) {
-                    const status = transactionResponse.status || transactionResponse.transaction?.status;
-                    const statusUpper = String(status || '').toUpperCase();
-                    
-                    let novoStatus = 'Pendente';
-                    if (success && ['CONFIRMED', 'APPROVED', 'SUCESSO', 'PAID', 'CAPTURED', 'AUTHORIZED', 'COMPLETED'].includes(statusUpper)) {
-                        novoStatus = 'Pago';
-                    }
-
-                    console.log(`💾 Atualizando OS com TransactionID: ${txId} | Status: ${novoStatus}`);
-
+                    // Apenas guarda o transactionId. Status permanece Pendente até o callback aprovar.
                     await base44.asServiceRole.entities.OrdemServico.update(novaOS.id, {
-                        transaction_id: txId,
-                        status_pagamento: novoStatus,
-                        nsu: transactionResponse.nsu || transactionResponse.transaction?.nsu,
-                        autorizacao: transactionResponse.authorizationCode || transactionResponse.transaction?.authorizationCode,
-                        data_pagamento: novoStatus === 'Pago' ? new Date().toISOString() : null,
-                        observacoes: (novaOS.observacoes || '') + (success ? '' : `\n[Alerta]: API retornou success=false mas gerou ID. Status: ${status}`)
+                        transaction_id: txId
                     });
+                    console.log(`💾 OS aguardando pagamento na maquininha. TransactionID: ${txId}`);
                 }
 
-                if (resp.ok && success) {
-                    // Sucesso confirmado
-                } else {
+                if (!resp.ok || !success || !txId) {
                     await base44.asServiceRole.entities.OrdemServico.update(novaOS.id, {
-                        observacoes: (novaOS.observacoes || '') + `\n[Erro Pagamento]: ${transactionResponse.error || 'Falha na comunicação'}`
+                        observacoes: (novaOS.observacoes || '') + `\n[Erro Pagamento]: ${transactionResponse.error || respText || 'Falha na comunicação com a maquininha'}`
                     });
-                    // Não lançar erro para não perder a OS, mas retornar alerta
                     return Response.json({
-                        success: true,
-                        message: 'OS criada, mas houve erro ao comunicar com a maquininha. Verifique o status.',
+                        success: false,
+                        error: 'Não foi possível enviar para a maquininha. Verifique o terminal e tente novamente.',
                         os: novaOS,
                         transaction: transactionResponse
                     });
                 }
             } catch (err) {
-                console.error('Erro na chamada API:', err);
+                console.error('Erro na chamada EvoluServices:', err);
                 await base44.asServiceRole.entities.OrdemServico.update(novaOS.id, {
                     observacoes: (novaOS.observacoes || '') + `\n[Erro Pagamento]: ${err.message}`
+                });
+                return Response.json({
+                    success: false,
+                    error: 'Erro ao comunicar com a maquininha: ' + err.message,
+                    os: novaOS
                 });
             }
         }
@@ -160,6 +173,7 @@ Deno.serve(async (req) => {
         return Response.json({
             success: true,
             message: isPagamentoIntegrado ? 'Solicitação enviada para a maquininha' : 'Ordem de Serviço criada com sucesso',
+            aguardando_cartao: isPagamentoIntegrado,
             os: novaOS,
             transaction: transactionResponse
         });

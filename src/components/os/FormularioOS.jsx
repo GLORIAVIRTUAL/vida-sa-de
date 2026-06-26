@@ -16,6 +16,7 @@ import { useToast } from "@/components/ui/use-toast"; // Import useToast
 import { base44 } from "@/api/base44Client";
 import { User } from "@/entities/all";
 import ModalQrCodePix from "./ModalQrCodePix";
+import ModalAguardandoCartao from "./ModalAguardandoCartao";
 
 const formasPagamento = ["Dinheiro", "Cartão Débito", "Cartão Crédito", "PIX", "Transferência", "Convênio", "Múltiplas Formas"];
 
@@ -118,6 +119,11 @@ export default function FormularioOS({
   const [pixErro, setPixErro] = useState(null);
   const [osSalvaPendente, setOsSalvaPendente] = useState(null);
   const [pixValor, setPixValor] = useState(0);
+
+  // Estados para o modal de aguardo de pagamento no cartão (maquininha EvoluServices)
+  const [cartaoModalOpen, setCartaoModalOpen] = useState(false);
+  const [cartaoOsPendente, setCartaoOsPendente] = useState(null);
+  const [cartaoErro, setCartaoErro] = useState(null);
 
   // Buscar usuário atual para salvar quem gerou a OS
   useEffect(() => {
@@ -665,9 +671,17 @@ export default function FormularioOS({
 
       const novaOS = response.data.os;
       const transaction = response.data.transaction;
-      
+
       console.log('✅ OS processada com sucesso!');
       console.log('✅ ID da OS:', novaOS.id);
+
+      // Se foi enviado para a maquininha (cartão integrado), abrir modal de aguardo
+      if (response.data.aguardando_cartao) {
+        setCartaoOsPendente(novaOS);
+        setCartaoErro(null);
+        setCartaoModalOpen(true);
+        return;
+      }
 
       if (transaction) {
          toast({
@@ -1102,6 +1116,29 @@ export default function FormularioOS({
           if (osSalvaPendente) {
             onSalvar(osSalvaPendente);
             setOsSalvaPendente(null);
+          }
+        }}
+      />
+
+      <ModalAguardandoCartao
+        open={cartaoModalOpen}
+        onClose={() => {
+          setCartaoModalOpen(false);
+          if (cartaoOsPendente) {
+            onSalvar(cartaoOsPendente);
+            setCartaoOsPendente(null);
+          }
+        }}
+        valor={dados.valor_final}
+        pacienteNome={paciente?.nome || agendamento?.paciente_nome}
+        formaPagamento={dados.forma_pagamento}
+        loading={false}
+        erro={cartaoErro}
+        ordemServicoId={cartaoOsPendente?.id}
+        onPago={() => {
+          if (cartaoOsPendente) {
+            onSalvar(cartaoOsPendente);
+            setCartaoOsPendente(null);
           }
         }}
       />
