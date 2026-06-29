@@ -490,17 +490,17 @@ export default function Repasses() {
           </div>
 
           {Object.keys(repassesPorMedico).length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
+            <div key={`vazio-${filtros.mes}-${filtros.medico}`} className="text-center py-12 text-gray-500">
               <Receipt className="w-12 h-12 mx-auto mb-4 text-gray-300" />
               <p>Nenhum repasse encontrado para os filtros selecionados</p>
             </div>
           ) : (
-            <div className="space-y-6">
+            <div key={`lista-${filtros.mes}-${filtros.medico}`} className="space-y-6">
               {Object.values(repassesPorMedico).map(({ medico, ordens, totais }) => {
                 if (!medico) return null;
 
                 return (
-                  <Card key={medico.id} className="overflow-hidden">
+                  <Card key={`${medico.id}-${filtros.mes}-${filtros.medico}`} className="overflow-hidden">
                     <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-6">
                       <h3 className="text-xl font-bold">Dr(a). {medico.nome}</h3>
                       <p className="text-sm opacity-90">{medico.especialidade} - CRM: {medico.crm}</p>

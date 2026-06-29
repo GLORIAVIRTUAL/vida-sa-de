@@ -641,15 +641,15 @@ export default function Faturas({ ordensServico, pacientes, medicos, procediment
           </div>
 
           {faturasFiltradas.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
+            <div key={`vazio-${mesSelecionado}-${categoriaSelecionada}`} className="text-center py-12 text-gray-500">
               <FileText className="w-16 h-16 mx-auto mb-4 text-gray-300" />
               <p className="text-lg font-medium">Nenhuma fatura encontrada</p>
               <p className="text-sm">Não há atendimentos faturáveis para o período selecionado.</p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div key={`lista-${mesSelecionado}-${categoriaSelecionada}`} className="space-y-4">
               {faturasFiltradas.map((fatura) => (
-                <Card key={fatura.categoria_id} className="border-2 border-green-200">
+                <Card key={`${fatura.categoria_id}-${mesSelecionado}`} className="border-2 border-green-200">
                   <CardHeader className="bg-green-50">
                     <div className="flex justify-between items-start">
                       <div>
