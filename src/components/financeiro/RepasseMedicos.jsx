@@ -393,15 +393,15 @@ export default function RepasseMedicos({ ordensServico, medicos, pacientes, onRe
           </div>
 
           {repassesPorMedico.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
+            <div key={`vazio-${filtroData}`} className="text-center py-12 text-gray-500">
               <Clock className="w-12 h-12 mx-auto mb-4 text-gray-300" />
               <p>Nenhum repasse pendente para esta data</p>
               <p className="text-sm mt-2">Repasses aparecem aqui após as OS serem pagas e ainda não tiverem repasse realizado.</p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div key={`lista-${filtroData}`} className="space-y-4">
               {repassesPorMedico.map((grupo) => (
-                <Card key={grupo.medico.id} className="border-2 border-gray-200 hover:border-green-300 transition-colors">
+                <Card key={`${grupo.medico?.id}_${grupo.gerado_por || 'sem'}_${filtroData}`} className="border-2 border-gray-200 hover:border-green-300 transition-colors">
                   <CardContent className="p-6">
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
