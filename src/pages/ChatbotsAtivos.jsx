@@ -26,6 +26,7 @@ import { UserPlus } from 'lucide-react';
 import CadastroRapidoPaciente from '../components/pacientes/CadastroRapidoPaciente';
 import TransferirConversaModal from '../components/gloria/TransferirConversaModal';
 import { motivosColunas, motivoInteresseMap, classificarMotivo } from '../components/gloria/pipelineMotivos';
+import EspecialidadesTags from '../components/gloria/EspecialidadesTags';
 
 export const useContatosQuery = () => {
   return useQuery({
@@ -882,6 +883,7 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
                         ))}
                       </SelectContent>
                     </Select>
+                    <EspecialidadesTags />
                   </div>
                   <div className="flex items-center gap-2">
                     <Button 
