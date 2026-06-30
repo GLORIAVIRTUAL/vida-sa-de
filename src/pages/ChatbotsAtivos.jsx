@@ -878,37 +878,19 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
         <Card className={`flex flex-col ${chatExpandido ? "h-full" : "h-[500px]"}`}>
           {contatoSelecionado ? (
             <>
-              <CardHeader className={`border-b py-3 ${alarmeAtivo ? 'bg-gradient-to-r from-yellow-100 to-amber-100 animate-pulse' : 'bg-gradient-to-r from-blue-50 to-sky-50'}`}>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <div>
-                      <p className="font-semibold">{contatoSelecionado.nome || 'Cliente'}</p>
-                      <p className="text-xs text-gray-500">{contatoSelecionado.telefone}</p>
-                    </div>
-                    <Select value={classificarMotivo(contatoSelecionado)} onValueChange={marcarMotivo}>
-                      <SelectTrigger className="h-8 w-[200px] bg-white text-xs">
-                        <SelectValue placeholder="Motivo da conversa" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {motivosColunas.map((m) => (
-                          <SelectItem key={m.id} value={m.id}>
-                            <span className="flex items-center gap-2">
-                              <span className={`w-2 h-2 rounded-full ${m.cor}`} />
-                              {m.nome}
-                            </span>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <EspecialidadesTags contato={contatoSelecionado} onAdicionarTag={adicionarTagEspecialidade} />
+              <CardHeader className={`border-b py-3 space-y-3 ${alarmeAtivo ? 'bg-gradient-to-r from-yellow-100 to-amber-100 animate-pulse' : 'bg-gradient-to-r from-blue-50 to-sky-50'}`}>
+                {/* Linha 1: identificação + ações */}
+                <div className="flex items-start justify-between gap-3 flex-wrap">
+                  <div className="min-w-0">
+                    <p className="font-semibold truncate">{contatoSelecionado.nome || 'Cliente'}</p>
+                    <p className="text-xs text-gray-500">{contatoSelecionado.telefone}</p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 flex-wrap justify-end">
                     <Button 
                       variant="default"
                       size="sm"
                       className="bg-blue-600 hover:bg-blue-700 text-white"
                       onClick={() => {
-                        // Navegar imediatamente - a busca/criação do paciente será feita na página de Agendamentos
                         navigate(createPageUrl('Agendamentos'), {
                           state: {
                             dadosIniciais: {
@@ -972,6 +954,25 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
                       {chatExpandido ? <Minimize2 className="w-3 h-3" /> : <Maximize2 className="w-3 h-3" />}
                     </Button>
                   </div>
+                </div>
+                {/* Linha 2: classificadores */}
+                <div className="flex items-start gap-2 flex-wrap">
+                  <Select value={classificarMotivo(contatoSelecionado)} onValueChange={marcarMotivo}>
+                    <SelectTrigger className="h-8 w-[200px] bg-white text-xs">
+                      <SelectValue placeholder="Motivo da conversa" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {motivosColunas.map((m) => (
+                        <SelectItem key={m.id} value={m.id}>
+                          <span className="flex items-center gap-2">
+                            <span className={`w-2 h-2 rounded-full ${m.cor}`} />
+                            {m.nome}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <EspecialidadesTags contato={contatoSelecionado} onAdicionarTag={adicionarTagEspecialidade} />
                 </div>
                 {modoHumano && (
                   <div className="mt-2 p-2 bg-green-100 rounded-lg text-xs text-green-800 flex items-center gap-2">
