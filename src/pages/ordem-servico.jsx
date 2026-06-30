@@ -211,79 +211,61 @@ export default function OrdemDeServico() {
       setLoading(true);
       console.log(modoRapido ? '⚡ Carregamento rápido (apenas essenciais)' : '🔄 Carregamento completo');
 
-      // Delay para evitar rate limit (aumentado)
-      const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-      // Etapa 1: SEMPRE carregar Médicos e Categorias (essenciais) - sequencial
-      const medicosData = await Medico.list("nome", 500);
-      setMedicos(medicosData || []);
-      await delay(200); // Delay entre chamadas
-      
-      const categoriasData = await CategoriaPreco.list();
-      setCategorias(categoriasData || []);
-      await delay(200);
-      
-      // Se for modo rápido (vindo de um agendamento específico), carregar só o mínimo
       if (modoRapido) {
-        console.log('⚡ Modo rápido: carregando apenas procedimentos e exames');
-        
-        const procedimentosData = await Procedimento.list("-created_date", 500);
+        // Modo rápido: essenciais em paralelo, sem delays artificiais
+        const [medicosData, categoriasData, procedimentosData, examesData] = await Promise.all([
+          Medico.list("nome", 500),
+          CategoriaPreco.list(),
+          Procedimento.list("-created_date", 500),
+          Exame.list("-created_date", 500)
+        ]);
+        setMedicos(medicosData || []);
+        setCategorias(categoriasData || []);
         setProcedimentos(procedimentosData || []);
-        await delay(200);
-        
-        const examesData = await Exame.list("-created_date", 500);
         setExames(examesData || []);
-        
         // Não carregar ordens antigas no modo rápido
         setOrdens([]);
         setPacientes([]);
         setAgendamentos([]);
       } else {
-        // Modo completo: carregar tudo sequencialmente
-        await delay(300);
-
-        // Etapa 2: Ordens de Serviço
-        let ordensData = [];
-        try {
-          console.log('🔄 Carregando OS via função backend...', { dataInicio, dataFim });
-          const res = await base44.functions.invoke('listOrdensServico', { dataInicio, dataFim });
-          if (res?.data?.ordens) {
-            ordensData = res.data.ordens;
-            console.log('✅ OS carregadas via função:', ordensData.length);
-          } else {
+        // Modo completo: todas as listas em paralelo (sem esperas em sequência)
+        const ordensPromise = base44.functions.invoke('listOrdensServico', { dataInicio, dataFim })
+          .then(res => {
+            if (res?.data?.ordens) return res.data.ordens;
             throw new Error("Formato de resposta inválido");
-          }
-        } catch (err) {
-          console.warn("⚠️ Falha na função backend, usando fallback SDK:", err);
-          await delay(300);
-          ordensData = await OrdemServico.list("-data_execucao", 200);
-          console.log('✅ OS carregadas via fallback:', ordensData?.length);
-        }
+          })
+          .catch(async (err) => {
+            console.warn("⚠️ Falha na função backend, usando fallback SDK:", err);
+            return await OrdemServico.list("-data_execucao", 200);
+          });
+
+        const [
+          medicosData,
+          categoriasData,
+          ordensData,
+          pacientesData,
+          procedimentosData,
+          examesData,
+          agendamentosData,
+          tabelaPrecosData
+        ] = await Promise.all([
+          Medico.list("nome", 500),
+          CategoriaPreco.list(),
+          ordensPromise,
+          Paciente.list("nome", 500),
+          Procedimento.list("-created_date", 500),
+          Exame.list("-created_date", 500),
+          Agendamento.list("-data_agendamento", 200),
+          TabelaPreco.list()
+        ]);
+
+        setMedicos(medicosData || []);
+        setCategorias(categoriasData || []);
         setOrdens(ordensData || []);
-        await delay(300);
-
-        // Etapa 3: Pacientes
-        const pacientesData = await Paciente.list("nome", 500);
         setPacientes(pacientesData || []);
-        await delay(300);
-
-        // Etapa 4: Procedimentos
-        const procedimentosData = await Procedimento.list("-created_date", 500);
         setProcedimentos(procedimentosData || []);
-        await delay(300);
-        
-        // Etapa 5: Exames
-        const examesData = await Exame.list("-created_date", 500);
         setExames(examesData || []);
-        await delay(300);
-
-        // Etapa 6: Agendamentos
-        const agendamentosData = await Agendamento.list("-data_agendamento", 200);
         setAgendamentos(agendamentosData || []);
-        await delay(300);
-
-        // Etapa 7: Tabela de Preços
-        const tabelaPrecosData = await TabelaPreco.list();
         setTabelaPrecos(tabelaPrecosData || []);
       }
 

@@ -47,17 +47,10 @@ export default function ContatosTab({ onIniciarConversa }) {
   const carregarContatos = async () => {
     setLoading(true);
     try {
-      let todosContatos = [];
-      let skip = 0;
-      const batchSize = 500;
-      while (todosContatos.length < 10000) {
-        const lote = await base44.entities.Contato.list('-created_date', batchSize, skip);
-        if (!lote || lote.length === 0) break;
-        todosContatos = [...todosContatos, ...lote];
-        if (lote.length < batchSize) break;
-        skip += batchSize;
-      }
-      setContatos(todosContatos.slice(0, 10000));
+      // Carrega apenas os mais recentes para abrir rápido; a busca por texto
+      // consulta o banco diretamente (ver buscarNoBanco).
+      const lote = await base44.entities.Contato.list('-created_date', 1000);
+      setContatos(lote || []);
     } catch (error) {
       console.error('Erro ao carregar contatos:', error);
     } finally {
@@ -68,6 +61,41 @@ export default function ContatosTab({ onIniciarConversa }) {
   useEffect(() => {
     carregarContatos();
   }, []);
+
+  // Busca sob demanda no banco quando o usuário digita (nome ou telefone),
+  // para encontrar contatos que não estão entre os 1.000 mais recentes.
+  useEffect(() => {
+    const termo = busca.trim();
+    if (termo.length < 3) return;
+    const timer = setTimeout(async () => {
+      try {
+        const numeros = termo.replace(/\D/g, '');
+        const resultados = [];
+        // Busca por nome (case-insensitive parcial)
+        const porNome = await base44.entities.Contato.filter(
+          { nome: { $regex: termo, $options: 'i' } }, '-created_date', 200
+        ).catch(() => []);
+        resultados.push(...porNome);
+        // Busca por telefone, se o termo parece um número
+        if (numeros.length >= 4) {
+          const porTel = await base44.entities.Contato.filter(
+            { telefone: { $regex: numeros } }, '-created_date', 200
+          ).catch(() => []);
+          resultados.push(...porTel);
+        }
+        if (resultados.length > 0) {
+          setContatos(prev => {
+            const mapa = new Map(prev.map(c => [c.id, c]));
+            resultados.forEach(c => mapa.set(c.id, c));
+            return Array.from(mapa.values());
+          });
+        }
+      } catch (error) {
+        console.error('Erro na busca sob demanda:', error);
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [busca]);
 
   const [erroDuplicado, setErroDuplicado] = useState(null);
 

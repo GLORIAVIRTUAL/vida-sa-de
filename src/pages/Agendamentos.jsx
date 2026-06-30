@@ -28,7 +28,7 @@ import { cachedApiCall, clearCache } from "@/components/shared/apiThrottle";
 export default function Agendamentos() {
   const location = useLocation();
   const queryClient = useQueryClient();
-  const { data: agendamentos = [], isLoading: loadingAgendamentos } = useQuery({ queryKey: ['agendamentos'], queryFn: () => base44.entities.Agendamento.list('-data_agendamento', 10000), staleTime: 60000 });
+  const { data: agendamentos = [], isLoading: loadingAgendamentos } = useQuery({ queryKey: ['agendamentos'], queryFn: () => base44.entities.Agendamento.list('-data_agendamento', 3000), staleTime: 60000 });
   const { data: medicos = [], isLoading: loadingMedicos } = useQuery({ queryKey: ['medicos'], queryFn: () => base44.entities.Medico.list(), staleTime: 60000 });
   const { data: pacientes = [], isLoading: loadingPacientes } = useQuery({ queryKey: ['pacientes'], queryFn: () => base44.entities.Paciente.list('-created_date', 5000), staleTime: 60000 });
   const { data: procedimentos = [] } = useQuery({ queryKey: ['procedimentos'], queryFn: () => base44.entities.Procedimento.list(), staleTime: 60000 });

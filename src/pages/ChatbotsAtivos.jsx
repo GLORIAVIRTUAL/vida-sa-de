@@ -32,20 +32,14 @@ export const useContatosQuery = () => {
   return useQuery({
     queryKey: ['chatbots_contatos'],
     queryFn: async () => {
-      let todosContatos = [];
-      let skip = 0;
-      const batchSize = 500;
-      while (todosContatos.length < 10000) {
-        const lote = await base44.entities.Contato.list('-ultima_interacao', batchSize, skip);
-        if (!lote || lote.length === 0) break;
-        todosContatos = [...todosContatos, ...lote];
-        if (lote.length < batchSize) break;
-        skip += batchSize;
-      }
-      return todosContatos.slice(0, 10000);
+      // Carrega apenas as conversas mais recentes (sob demanda) para abrir rápido.
+      // O chat sempre trabalha com as interações mais recentes; o restante não precisa
+      // ser baixado de uma vez.
+      const lote = await base44.entities.Contato.list('-ultima_interacao', 1000);
+      return lote || [];
     },
-    staleTime: 15000,
-    refetchInterval: 15000,
+    staleTime: 30000,
+    refetchInterval: 30000,
   });
 };
 
