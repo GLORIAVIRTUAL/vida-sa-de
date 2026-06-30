@@ -1,7 +1,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { Stethoscope, Check } from 'lucide-react';
+import { Stethoscope, Check, ChevronDown } from 'lucide-react';
 
 // Lista de referência ampla de especialidades médicas/serviços de saúde
 const ESPECIALIDADES_REFERENCIA = [
@@ -20,6 +20,7 @@ const ESPECIALIDADES_REFERENCIA = [
 const normalizar = (s) => (s || '').toString().trim().toLowerCase();
 
 export default function EspecialidadesTags({ contato, onAdicionarTag }) {
+  const [aberto, setAberto] = React.useState(false);
   const { data: medicos = [], isLoading } = useQuery({
     queryKey: ['medicos_especialidades_chat'],
     queryFn: async () => base44.entities.Medico.filter({ status: 'Ativo' }),
@@ -57,18 +58,25 @@ export default function EspecialidadesTags({ contato, onAdicionarTag }) {
 
   return (
     <div className="rounded-lg border bg-white px-3 py-2 max-w-xl">
-      <div className="flex items-center gap-1 mb-1.5">
+      <button
+        type="button"
+        onClick={() => setAberto((v) => !v)}
+        className="flex items-center gap-1 w-full"
+      >
         <Stethoscope className="w-3.5 h-3.5 text-gray-500" />
         <span className="text-[11px] font-semibold text-gray-600">Especialidades (clique p/ adicionar tag)</span>
-        <span className="ml-auto flex items-center gap-2 text-[9px] text-gray-400">
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500" /> Tem</span>
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-gray-300" /> Não tem</span>
-        </span>
-      </div>
-      {isLoading ? (
+        {aberto && (
+          <span className="ml-auto flex items-center gap-2 text-[9px] text-gray-400">
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500" /> Tem</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-gray-300" /> Não tem</span>
+          </span>
+        )}
+        <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform ${aberto ? 'rotate-180' : ''} ${aberto ? '' : 'ml-auto'}`} />
+      </button>
+      {!aberto ? null : isLoading ? (
         <p className="text-[10px] text-gray-400">Carregando...</p>
       ) : (
-        <div className="flex flex-wrap gap-1 max-h-28 overflow-y-auto">
+        <div className="flex flex-wrap gap-1 max-h-28 overflow-y-auto mt-1.5">
           {todasEspecialidades.map((esp) => {
             const temNaClinica = especialidadesNaClinica.has(normalizar(esp));
             const jaTag = tagsAtuais.includes(normalizar(esp));
