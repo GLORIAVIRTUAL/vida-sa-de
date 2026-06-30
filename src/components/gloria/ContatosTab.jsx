@@ -418,6 +418,7 @@ export default function ContatosTab({ onIniciarConversa }) {
                     <TableHead>Telefone</TableHead>
                     <TableHead>Data</TableHead>
                     <TableHead>Motivo</TableHead>
+                    <TableHead>Especialidades</TableHead>
                     <TableHead>Origem</TableHead>
                     <TableHead className="w-24"></TableHead>
                   </TableRow>
@@ -442,6 +443,17 @@ export default function ContatosTab({ onIniciarConversa }) {
                       </TableCell>
                       <TableCell>
                         {getMotivoBadge(contato.interesses)}
+                      </TableCell>
+                      <TableCell>
+                        {contato.tags && contato.tags.length > 0 ? (
+                          <div className="flex flex-wrap gap-1 max-w-[220px]">
+                            {contato.tags.map((tag, i) => (
+                              <Badge key={i} className="bg-emerald-100 text-emerald-800 text-[10px]">{tag}</Badge>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-gray-300 text-xs">-</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline">{contato.origem || 'Site'}</Badge>
