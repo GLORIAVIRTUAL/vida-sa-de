@@ -396,6 +396,22 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
     }
   };
 
+  // Adicionar uma especialidade como tag do contato
+  const adicionarTagEspecialidade = async (especialidade) => {
+    if (!contatoSelecionado?.id || !especialidade) return;
+    const tagsAtuais = contatoSelecionado.tags || [];
+    const jaExiste = tagsAtuais.some(t => (t || '').trim().toLowerCase() === especialidade.trim().toLowerCase());
+    if (jaExiste) return;
+    const novasTags = [...tagsAtuais, especialidade];
+    setContatoSelecionado(prev => prev ? { ...prev, tags: novasTags } : prev);
+    try {
+      await base44.entities.Contato.update(contatoSelecionado.id, { tags: novasTags });
+      await buscarContatos();
+    } catch (error) {
+      console.error('Erro ao adicionar tag:', error);
+    }
+  };
+
   // Atualizar contato selecionado em tempo real
   const atualizarContatoSelecionado = async () => {
     if (!contatoSelecionado?.id) return;
@@ -883,7 +899,7 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
                         ))}
                       </SelectContent>
                     </Select>
-                    <EspecialidadesTags />
+                    <EspecialidadesTags contato={contatoSelecionado} onAdicionarTag={adicionarTagEspecialidade} />
                   </div>
                   <div className="flex items-center gap-2">
                     <Button 
