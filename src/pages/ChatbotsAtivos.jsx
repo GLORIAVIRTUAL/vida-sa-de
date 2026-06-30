@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   MessageCircle, Loader2, Send, RefreshCw, User, Phone, Calendar,
   TrendingUp, Clock, CheckCircle, XCircle, Activity, Users, Settings, Bot,
-  Image, Paperclip, Mic, Smile, Zap, Volume2, VolumeX, CalendarPlus, DollarSign, Bell, ArrowRightLeft
+  Image, Paperclip, Mic, Smile, Zap, Volume2, VolumeX, CalendarPlus, DollarSign, Bell, ArrowRightLeft, Maximize2, Minimize2
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -328,6 +328,7 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
   const [filtroStatus, setFiltroStatus] = useState('todos');
   const [filtroData, setFiltroData] = useState('');
   const [currentUser, setCurrentUser] = useState(null);
+  const [chatExpandido, setChatExpandido] = useState(false);
 
   useEffect(() => {
     base44.auth.me().then(u => setCurrentUser(u)).catch(() => {});
@@ -733,8 +734,10 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
   });
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-      <div className="lg:col-span-1">
+    <div className={chatExpandido
+      ? "fixed inset-0 z-50 bg-white p-4 grid grid-cols-1 lg:grid-cols-4 gap-4 overflow-auto"
+      : "grid grid-cols-1 lg:grid-cols-4 gap-4"}>
+      <div className={chatExpandido ? "hidden lg:block lg:col-span-1" : "lg:col-span-1"}>
          <Card>
            <CardHeader className="pb-2 space-y-2">
              <CardTitle className="text-sm flex items-center justify-between">
@@ -837,8 +840,8 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
          </Card>
        </div>
 
-      <div className="lg:col-span-3">
-        <Card className="h-[500px] flex flex-col">
+      <div className={chatExpandido ? "lg:col-span-4" : "lg:col-span-3"}>
+        <Card className={`flex flex-col ${chatExpandido ? "h-[calc(100vh-2rem)]" : "h-[500px]"}`}>
           {contatoSelecionado ? (
             <>
               <CardHeader className={`border-b py-3 ${alarmeAtivo ? 'bg-gradient-to-r from-yellow-100 to-amber-100 animate-pulse' : 'bg-gradient-to-r from-blue-50 to-sky-50'}`}>
@@ -907,6 +910,14 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
                     <Button variant="outline" size="sm" onClick={finalizarConversa} className="text-red-600 hover:bg-red-50">
                       <XCircle className="w-3 h-3 mr-1" />
                       Finalizar
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setChatExpandido(!chatExpandido)}
+                      title={chatExpandido ? "Recolher" : "Expandir tela"}
+                    >
+                      {chatExpandido ? <Minimize2 className="w-3 h-3" /> : <Maximize2 className="w-3 h-3" />}
                     </Button>
                   </div>
                 </div>
