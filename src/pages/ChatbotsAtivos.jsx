@@ -735,9 +735,9 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
 
   return (
     <div className={chatExpandido
-      ? "fixed inset-0 z-50 bg-white p-4 grid grid-cols-1 lg:grid-cols-4 gap-4 overflow-auto"
+      ? "fixed inset-0 z-50 bg-white p-4 flex flex-col gap-4"
       : "grid grid-cols-1 lg:grid-cols-4 gap-4"}>
-      <div className={chatExpandido ? "hidden lg:block lg:col-span-1" : "lg:col-span-1"}>
+      <div className={chatExpandido ? "hidden" : "lg:col-span-1"}>
          <Card>
            <CardHeader className="pb-2 space-y-2">
              <CardTitle className="text-sm flex items-center justify-between">
@@ -840,8 +840,8 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
          </Card>
        </div>
 
-      <div className={chatExpandido ? "lg:col-span-4" : "lg:col-span-3"}>
-        <Card className={`flex flex-col ${chatExpandido ? "h-[calc(100vh-2rem)]" : "h-[500px]"}`}>
+      <div className={chatExpandido ? "flex-1 min-h-0" : "lg:col-span-3"}>
+        <Card className={`flex flex-col ${chatExpandido ? "h-full" : "h-[500px]"}`}>
           {contatoSelecionado ? (
             <>
               <CardHeader className={`border-b py-3 ${alarmeAtivo ? 'bg-gradient-to-r from-yellow-100 to-amber-100 animate-pulse' : 'bg-gradient-to-r from-blue-50 to-sky-50'}`}>
