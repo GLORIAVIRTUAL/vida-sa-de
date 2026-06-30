@@ -1053,6 +1053,8 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
       } else if (field === 'tipo_servico' && nd.tipo_servico !== 'Consulta') { nd.procedimento_id = ''; }
       if (field === 'medico_id' && value) { const m = medicos.find(x => x.id === value); if (m?.tempo_consulta_minutos) nd.duracao_minutos = m.tempo_consulta_minutos.toString(); }
       if (field === 'desconto_manual' || field === 'acrescimo_manual') { const vb = parseFloat(nd.valor_total) || 0; const d = parseFloat(nd.desconto_manual) || 0; const a = parseFloat(nd.acrescimo_manual) || 0; nd.valor_final = Math.max(0, vb - d + a).toFixed(2).toString(); }
+      // Trocar a forma de pagamento NUNCA altera o valor: preserva o valor_final e o acréscimo manual já lançados
+      if (field === 'forma_pagamento') { nd.valor_final = prev.valor_final; nd.valor_total = prev.valor_total; nd.acrescimo_manual = prev.acrescimo_manual; nd.desconto_manual = prev.desconto_manual; }
       return nd;
     });
   };
