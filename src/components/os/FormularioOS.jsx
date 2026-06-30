@@ -86,6 +86,7 @@ export default function FormularioOS({
   const [dados, setDados] = useState({
     valor_total: 0,
     desconto: 0,
+    acrescimo: 0,
     juros: 0,
     valor_final: 0,
     forma_pagamento: "Dinheiro",
@@ -511,6 +512,7 @@ export default function FormularioOS({
       ...prev,
       valor_total: valorTotal,
       desconto: descontoAgendamento,
+      acrescimo: acrescimoAgendamento,
       valor_final: valorFinalCalculado,
       itens: itensOS,
       valor_imposto: valorImpostoFiscal,
@@ -521,7 +523,7 @@ export default function FormularioOS({
   }, [agendamento, medico, procedimento, procedimentos, exames, categorias, medicoSelecionadoId, medicos]);
 
   useEffect(() => {
-    let valorComDesconto = dados.valor_total - dados.desconto;
+    let valorComDesconto = dados.valor_total - dados.desconto + (dados.acrescimo || 0);
     let novoJuros = 0;
 
     if (dados.cobrar_taxa && ['Cartão Crédito', 'Cartão Débito'].includes(dados.forma_pagamento) && dados.bandeira_cartao) {
@@ -547,7 +549,7 @@ export default function FormularioOS({
       juros: novoJuros,
       valor_final: valorComDesconto + novoJuros
     }));
-  }, [dados.valor_total, dados.desconto, dados.cobrar_taxa, dados.forma_pagamento, dados.bandeira_cartao, dados.parcelas]);
+  }, [dados.valor_total, dados.desconto, dados.acrescimo, dados.cobrar_taxa, dados.forma_pagamento, dados.bandeira_cartao, dados.parcelas]);
 
   // Calcula o valor do PIX: se múltiplas formas, usa só a parte PIX; senão o valor final
   const calcularValorPix = () => {
