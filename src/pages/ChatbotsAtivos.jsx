@@ -962,7 +962,7 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
                                     ? 'text-green-600' 
                                     : 'text-blue-200'
                               }`}>
-                                {format(new Date(msg.timestamp), 'HH:mm', { locale: ptBR })}
+                                {format(new Date(msg.timestamp), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
                                 {msg.role === 'assistant' && (
                                   <span className={`ml-0.5 font-bold ${isHumano ? 'text-green-500' : 'text-blue-200'}`}>✓✓</span>
                                 )}
