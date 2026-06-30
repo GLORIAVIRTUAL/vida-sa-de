@@ -25,6 +25,7 @@ import NotificacoesTab from '../components/gloria/NotificacoesTab';
 import { UserPlus } from 'lucide-react';
 import CadastroRapidoPaciente from '../components/pacientes/CadastroRapidoPaciente';
 import TransferirConversaModal from '../components/gloria/TransferirConversaModal';
+import { motivosColunas, motivoInteresseMap, classificarMotivo } from '../components/gloria/pipelineMotivos';
 
 export const useContatosQuery = () => {
   return useQuery({
@@ -377,6 +378,21 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
 
   const buscarContatos = async () => {
     await queryClient.invalidateQueries({ queryKey: ['chatbots_contatos'] });
+  };
+
+  // Marcar manualmente o motivo da conversa: grava no contato e reflete no Pipeline
+  const marcarMotivo = async (motivoId) => {
+    if (!contatoSelecionado?.id || !motivoId) return;
+    const novoInteresse = motivoInteresseMap[motivoId] || 'Outro';
+    const interessesAtuais = contatoSelecionado.interesses || [];
+    const novosInteresses = [...interessesAtuais, novoInteresse];
+    setContatoSelecionado(prev => prev ? { ...prev, interesses: novosInteresses } : prev);
+    try {
+      await base44.entities.Contato.update(contatoSelecionado.id, { interesses: novosInteresses });
+      await buscarContatos();
+    } catch (error) {
+      console.error('Erro ao marcar motivo:', error);
+    }
   };
 
   // Atualizar contato selecionado em tempo real
@@ -846,9 +862,26 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
             <>
               <CardHeader className={`border-b py-3 ${alarmeAtivo ? 'bg-gradient-to-r from-yellow-100 to-amber-100 animate-pulse' : 'bg-gradient-to-r from-blue-50 to-sky-50'}`}>
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-semibold">{contatoSelecionado.nome || 'Cliente'}</p>
-                    <p className="text-xs text-gray-500">{contatoSelecionado.telefone}</p>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <div>
+                      <p className="font-semibold">{contatoSelecionado.nome || 'Cliente'}</p>
+                      <p className="text-xs text-gray-500">{contatoSelecionado.telefone}</p>
+                    </div>
+                    <Select value={classificarMotivo(contatoSelecionado)} onValueChange={marcarMotivo}>
+                      <SelectTrigger className="h-8 w-[200px] bg-white text-xs">
+                        <SelectValue placeholder="Motivo da conversa" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {motivosColunas.map((m) => (
+                          <SelectItem key={m.id} value={m.id}>
+                            <span className="flex items-center gap-2">
+                              <span className={`w-2 h-2 rounded-full ${m.cor}`} />
+                              {m.nome}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="flex items-center gap-2">
                     <Button 
@@ -1109,37 +1142,6 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
 }
 
 // ========== COMPONENTE: PIPELINE POR MOTIVO ==========
-import { Stethoscope, FlaskConical, CreditCard, FileText as FileTextIcon, Dumbbell, HelpCircle } from 'lucide-react';
-
-const motivosColunas = [
-  { id: 'agendamento_consulta', nome: 'Agendamento Consulta', cor: 'bg-blue-500', icon: Calendar },
-  { id: 'agendamento_exame', nome: 'Agendamento Exame', cor: 'bg-cyan-500', icon: FlaskConical },
-  { id: 'cancelamento', nome: 'Cancelamento', cor: 'bg-red-500', icon: XCircle },
-  { id: 'orcamento', nome: 'Orçamento', cor: 'bg-yellow-500', icon: DollarSign },
-  { id: 'cartao_mais_vida', nome: 'Cartão Mais Vida', cor: 'bg-purple-500', icon: CreditCard },
-  { id: 'resultado_exames', nome: 'Resultado Exames', cor: 'bg-green-500', icon: FileTextIcon },
-  { id: 'procedimentos', nome: 'Procedimentos', cor: 'bg-orange-500', icon: Stethoscope },
-  { id: 'turmas', nome: 'Turmas', cor: 'bg-teal-500', icon: Dumbbell },
-  { id: 'informacoes', nome: 'Informações Gerais', cor: 'bg-indigo-500', icon: HelpCircle },
-  { id: 'outros', nome: 'Outros', cor: 'bg-gray-500', icon: MessageCircle },
-];
-
-function classificarMotivo(contato) {
-  const interesse = (contato.interesses?.[contato.interesses.length - 1] || '').toLowerCase();
-  
-  if (interesse.includes('consulta') || (interesse.includes('agendamento') && !interesse.includes('exame'))) return 'agendamento_consulta';
-  if (interesse.includes('exame') && (interesse.includes('agendamento') || interesse.includes('agendar') || interesse.includes('marcar'))) return 'agendamento_exame';
-  if (interesse.includes('cancelamento') || interesse.includes('cancelar') || interesse.includes('desmarcar')) return 'cancelamento';
-  if (interesse.includes('orçamento') || interesse.includes('orcamento') || interesse.includes('preço') || interesse.includes('valor')) return 'orcamento';
-  if (interesse.includes('cartão') || interesse.includes('cartao') || interesse.includes('mais vida')) return 'cartao_mais_vida';
-  if (interesse.includes('resultado') || interesse.includes('laudo')) return 'resultado_exames';
-  if (interesse.includes('procedimento')) return 'procedimentos';
-  if (interesse.includes('turma') || interesse.includes('hidrogin') || interesse.includes('pilates')) return 'turmas';
-  if (interesse.includes('informaç') || interesse.includes('informac') || interesse.includes('dúvida') || interesse.includes('duvida')) return 'informacoes';
-  if (!interesse) return 'outros';
-  return 'outros';
-}
-
 function PipelineTab() {
   const queryClient = useQueryClient();
   const { data: todosContatos = [], isLoading: loading } = useContatosQuery();
@@ -1171,21 +1173,8 @@ function PipelineTab() {
     novoPipeline[destination.droppableId].splice(destination.index, 0, contatoMovido);
     setPipeline(novoPipeline);
 
-    // Mapear o id da coluna para o texto de interesse correspondente
-    const motivoMap = {
-      agendamento_consulta: 'Agendamento de Consulta',
-      agendamento_exame: 'Agendamento de Exame',
-      cancelamento: 'Cancelamento',
-      orcamento: 'Orçamento',
-      cartao_mais_vida: 'Cartão Mais Vida',
-      resultado_exames: 'Resultado de Exames',
-      procedimentos: 'Procedimentos',
-      turmas: 'Turmas (Hidroginástica/Pilates)',
-      informacoes: 'Informações Gerais',
-      outros: 'Outro'
-    };
     try {
-      const novoInteresse = motivoMap[destination.droppableId] || 'Outro';
+      const novoInteresse = motivoInteresseMap[destination.droppableId] || 'Outro';
       const interessesAtuais = contatoMovido.interesses || [];
       await base44.entities.Contato.update(draggableId, {
         interesses: [...interessesAtuais, novoInteresse]
