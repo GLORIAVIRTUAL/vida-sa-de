@@ -85,11 +85,10 @@ export default function EspecialidadesTags({ contato, onAdicionarTag }) {
                 type="button"
                 key={esp}
                 onClick={() => onAdicionarTag && onAdicionarTag(esp)}
-                disabled={jaTag}
-                title={jaTag ? 'Já é uma tag deste contato' : (temNaClinica ? 'Disponível na clínica — clique para adicionar tag' : 'Não disponível na clínica — clique para adicionar tag')}
+                title={jaTag ? 'Clique para remover a tag' : (temNaClinica ? 'Disponível na clínica — clique para adicionar tag' : 'Não disponível na clínica — clique para adicionar tag')}
                 className={`text-[10px] px-2 py-0.5 rounded-full border transition inline-flex items-center gap-1 ${
                   jaTag
-                    ? 'bg-blue-600 text-white border-blue-600 cursor-default'
+                    ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700'
                     : temNaClinica
                       ? 'bg-green-100 text-green-700 border-green-300 hover:bg-green-200'
                       : 'bg-gray-100 text-gray-400 border-gray-200 hover:bg-gray-200'

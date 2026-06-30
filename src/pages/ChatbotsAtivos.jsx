@@ -396,19 +396,20 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
     }
   };
 
-  // Adicionar uma especialidade como tag do contato
+  // Alternar uma especialidade como tag do contato (adiciona se não tiver, remove se já tiver)
   const adicionarTagEspecialidade = async (especialidade) => {
     if (!contatoSelecionado?.id || !especialidade) return;
     const tagsAtuais = contatoSelecionado.tags || [];
     const jaExiste = tagsAtuais.some(t => (t || '').trim().toLowerCase() === especialidade.trim().toLowerCase());
-    if (jaExiste) return;
-    const novasTags = [...tagsAtuais, especialidade];
+    const novasTags = jaExiste
+      ? tagsAtuais.filter(t => (t || '').trim().toLowerCase() !== especialidade.trim().toLowerCase())
+      : [...tagsAtuais, especialidade];
     setContatoSelecionado(prev => prev ? { ...prev, tags: novasTags } : prev);
     try {
       await base44.entities.Contato.update(contatoSelecionado.id, { tags: novasTags });
       await buscarContatos();
     } catch (error) {
-      console.error('Erro ao adicionar tag:', error);
+      console.error('Erro ao alternar tag:', error);
     }
   };
 
