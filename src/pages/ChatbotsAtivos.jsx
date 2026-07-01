@@ -492,13 +492,36 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
       return { ...prev, historico_mensagens: [...historicoAtual, novaMensagem] };
     });
 
-    // Fire-and-forget: envia em background, não bloqueia o input
+    // Envia em background (não bloqueia o input), mas AVISA o atendente se falhar
     base44.functions.invoke('enviarMensagemHumano', {
       phoneNumber: telefoneAlvo,
       messageText: texto,
       contatoId: contatoIdAlvo
+    }).then((resp) => {
+      if (resp?.data && resp.data.success === false) {
+        throw new Error(resp.data.error || 'Falha no envio');
+      }
     }).catch((error) => {
-      console.error('Erro ao enviar:', error?.message || error);
+      const detalhe = error?.response?.data?.error || error?.message || 'Erro desconhecido';
+      console.error('Erro ao enviar:', detalhe);
+      // Marcar a mensagem otimista como NÃO enviada, para o atendente saber
+      setContatoSelecionado(prev => {
+        if (!prev) return prev;
+        const hist = [...(prev.historico_mensagens || [])];
+        for (let i = hist.length - 1; i >= 0; i--) {
+          if (hist[i]?.timestamp === novaMensagem.timestamp && hist[i]?.content === novaMensagem.content) {
+            hist[i] = { ...hist[i], falha_envio: true };
+            break;
+          }
+        }
+        return { ...prev, historico_mensagens: hist };
+      });
+      alert(
+        '⚠️ A mensagem NÃO foi entregue ao cliente.\n\n' +
+        'Motivo: ' + detalhe + '\n\n' +
+        'Se o cliente não enviou mensagem nas últimas 24h, o WhatsApp bloqueia o envio de texto livre. ' +
+        'Nesse caso, use o botão de Template (Meta) para reiniciar a conversa.'
+      );
     });
   };
 
@@ -1022,7 +1045,11 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
                               }`}>
                                 {format(new Date(msg.timestamp), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
                                 {msg.role === 'assistant' && (
-                                  <span className={`ml-0.5 font-bold ${isHumano ? 'text-green-500' : 'text-blue-200'}`}>✓✓</span>
+                                  msg.falha_envio ? (
+                                    <span className="ml-0.5 font-bold text-red-500" title="Falha no envio - cliente não recebeu">⚠ não enviada</span>
+                                  ) : (
+                                    <span className={`ml-0.5 font-bold ${isHumano ? 'text-green-500' : 'text-blue-200'}`}>✓✓</span>
+                                  )
                                 )}
                               </div>
                             )}
