@@ -432,9 +432,17 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
     }
   };
 
+  // Manter referência sempre atual do texto digitado, sem recriar o intervalo
+  const inputMsgRef = useRef('');
+  useEffect(() => { inputMsgRef.current = inputMsg; }, [inputMsg]);
+
   // Atualizar apenas contato selecionado a cada 2 segundos (rápido)
+  // Pausa a atualização enquanto o atendente está digitando para não tirar o foco da caixa de texto
   useEffect(() => {
-    const interval = setInterval(atualizarContatoSelecionado, 2000);
+    const interval = setInterval(() => {
+      if (inputMsgRef.current.trim().length > 0) return;
+      atualizarContatoSelecionado();
+    }, 2000);
     return () => clearInterval(interval);
   }, [contatoSelecionado?.id]);
 
