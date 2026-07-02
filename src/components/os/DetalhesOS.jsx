@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { base44 } from "@/api/base44Client";
+import SenhaRetroativaDialog, { isDiaFechado, podeAlterarDiaFechado } from "@/components/financeiro/SenhaRetroativaDialog";
 
 const statusPagamentoColors = {
   "Pendente": "bg-yellow-100 text-yellow-800",
@@ -52,6 +53,34 @@ export default function DetalhesOS({ os, pacienteNome, medicoNome, categoriaNome
   const [valorFinal, setValorFinal] = useState(os?.valor_final || 0);
   const [pagamento1, setPagamento1] = useState({ forma: os?.pagamentos_detalhados?.[0]?.forma || '', valor: os?.pagamentos_detalhados?.[0]?.valor || '' });
   const [pagamento2, setPagamento2] = useState({ forma: os?.pagamentos_detalhados?.[1]?.forma || '', valor: os?.pagamentos_detalhados?.[1]?.valor || '' });
+
+  // Regra de dia fechado: OS de dias anteriores só pode ser editada por usuário autorizado (com senha)
+  const [currentUserEmail, setCurrentUserEmail] = useState('');
+  const [mostrarSenhaRetroativa, setMostrarSenhaRetroativa] = useState(false);
+  const [autorizadoRetroativo, setAutorizadoRetroativo] = useState(false);
+
+  useEffect(() => {
+    base44.auth.me().then(u => setCurrentUserEmail(u?.email || '')).catch(() => {});
+  }, []);
+
+  const tentarEditar = () => {
+    const dataReferencia = os?.data_execucao || (os?.created_date ? os.created_date.split('T')[0] : null);
+    if (isDiaFechado(dataReferencia)) {
+      if (!podeAlterarDiaFechado(currentUserEmail)) {
+        toast({
+          title: "Edição bloqueada",
+          description: "Esta OS é de um dia já fechado. Apenas o responsável financeiro pode editar OS de dias anteriores.",
+          variant: "destructive"
+        });
+        return;
+      }
+      if (!autorizadoRetroativo) {
+        setMostrarSenhaRetroativa(true);
+        return;
+      }
+    }
+    setEditando(true);
+  };
 
   // PIX Sicredi - liberado para todos os usuários
   const [modalPixAberto, setModalPixAberto] = useState(false);
@@ -644,7 +673,7 @@ export default function DetalhesOS({ os, pacienteNome, medicoNome, categoriaNome
           {/* Botão de editar */}
           <div className="flex justify-end">
             {!editando ? (
-              <Button variant="outline" size="sm" onClick={() => setEditando(true)} className="gap-2">
+              <Button variant="outline" size="sm" onClick={tentarEditar} className="gap-2">
                 <Edit className="w-4 h-4" />
                 Editar OS
               </Button>
@@ -1055,6 +1084,17 @@ export default function DetalhesOS({ os, pacienteNome, medicoNome, categoriaNome
           </DialogClose>
         </div>
       </DialogContent>
+
+      <SenhaRetroativaDialog
+        open={mostrarSenhaRetroativa}
+        onClose={() => setMostrarSenhaRetroativa(false)}
+        acao="editar"
+        onAutorizado={() => {
+          setAutorizadoRetroativo(true);
+          setMostrarSenhaRetroativa(false);
+          setEditando(true);
+        }}
+      />
 
       <ModalQrCodePix
         open={modalPixAberto}
