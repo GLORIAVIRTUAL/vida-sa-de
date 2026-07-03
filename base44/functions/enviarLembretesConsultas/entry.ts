@@ -2,8 +2,13 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
 
 Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
-    
+
     try {
+        // Payload opcional (continuação em cadeia)
+        let payload = {};
+        try { payload = await req.json(); } catch (_) { /* sem body */ }
+        const execucao = Number(payload?.execucao || 1);
+
         const user = await base44.auth.me();
         if (user?.role !== 'admin') {
             return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
@@ -70,7 +75,17 @@ Deno.serve(async (req) => {
         let erros = 0;
         const resultados = [];
 
+        // Orçamento de tempo por execução: evita estourar o limite da função.
+        // Se sobrar gente para notificar, a função se auto-reinvoca e continua.
+        const inicioExecucao = Date.now();
+        const TEMPO_LIMITE_MS = 30000;
+        let interrompidoPorTempo = false;
+
         for (const agendamento of agendamentosValidos) {
+            if (Date.now() - inicioExecucao > TEMPO_LIMITE_MS) {
+                interrompidoPorTempo = true;
+                break;
+            }
             // Pular se já foi notificado
             if (agendamentosNotificados.has(agendamento.id)) {
                 console.log(`⏭️ Agendamento ${agendamento.id} já notificado, pulando...`);
@@ -203,19 +218,34 @@ Deno.serve(async (req) => {
             }
 
             // Delay variável entre envios (entre 5s e 20s) para simular comportamento humano
-            // e reduzir o risco de bloqueio do WhatsApp por envios em massa no mesmo ritmo
-            const delayAleatorio = Math.floor(Math.random() * 15000) + 5000;
-            await new Promise(resolve => setTimeout(resolve, delayAleatorio));
+            // e reduzir o risco de bloqueio do WhatsApp por envios em massa no mesmo ritmo.
+            // Pula o delay se o orçamento de tempo já estourou (o break acontece na próxima volta).
+            if (Date.now() - inicioExecucao <= TEMPO_LIMITE_MS) {
+                const delayAleatorio = Math.floor(Math.random() * 15000) + 5000;
+                await new Promise(resolve => setTimeout(resolve, delayAleatorio));
+            }
         }
 
-        console.log(`📊 Resumo: ${enviados} enviados, ${erros} erros`);
+        // Se parou por tempo e ainda há agendamentos pendentes, dispara a continuação
+        if (interrompidoPorTempo && execucao < 15) {
+            console.log(`⏱️ Tempo limite atingido na execução ${execucao}, disparando continuação...`);
+            const continuacao = base44.functions.invoke('enviarLembretesConsultas', { execucao: execucao + 1 }).catch((e) => {
+                console.error('⚠️ Erro ao disparar continuação:', e.message);
+            });
+            // Aguarda só o suficiente para a requisição de continuação ser despachada
+            await Promise.race([continuacao, new Promise(resolve => setTimeout(resolve, 3000))]);
+        }
+
+        console.log(`📊 Resumo (execução ${execucao}): ${enviados} enviados, ${erros} erros${interrompidoPorTempo ? ' — continuação disparada' : ''}`);
 
         return Response.json({
             success: true,
+            execucao,
             dataAmanha,
             totalAgendamentos: agendamentosValidos.length,
             enviados,
             erros,
+            continuara: interrompidoPorTempo,
             resultados
         });
 
