@@ -44,6 +44,20 @@ export default function EnviarNotificacao({
     base44.auth.me().then(u => setCurrentUser(u)).catch(() => {});
   }, []);
   const [modeloSelecionado, setModeloSelecionado] = useState('lembrete_consulta');
+  const [pacienteCarregado, setPacienteCarregado] = useState(null);
+
+  // Se o paciente não veio nas props (lista local limitada) ou está sem telefone,
+  // buscar o cadastro completo direto do banco pelo ID do agendamento
+  useEffect(() => {
+    setPacienteCarregado(null);
+    if (aberto && (!paciente || !paciente.telefone) && agendamento?.paciente_id) {
+      base44.entities.Paciente.filter({ id: agendamento.paciente_id })
+        .then(r => { if (r?.[0]) setPacienteCarregado(r[0]); })
+        .catch(() => {});
+    }
+  }, [aberto, paciente, agendamento]);
+
+  const pacienteEfetivo = (paciente && paciente.telefone) ? paciente : (pacienteCarregado || paciente);
   const [mensagem, setMensagem] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [resultadoEnvio, setResultadoEnvio] = useState(null);
@@ -60,7 +74,7 @@ export default function EnviarNotificacao({
       const template = modelosMensagens[modeloSelecionado].template;
       
       // Valores padrão caso os dados não estejam disponíveis
-      const nomePaciente = paciente?.nome ? paciente.nome.split(' ')[0] : '';
+      const nomePaciente = pacienteEfetivo?.nome ? pacienteEfetivo.nome.split(' ')[0] : (agendamento?.paciente_nome ? agendamento.paciente_nome.split(' ')[0] : '');
       const nomeMedico = medico?.nome ? (medico.nome.startsWith('Dr') ? medico.nome : `Dr(a). ${medico.nome}`) : '[Nome do Médico]';
       const dataFormatada = agendamento?.data_agendamento 
         ? format(new Date(agendamento.data_agendamento + 'T00:00:00'), "dd 'de' MMMM", { locale: ptBR })
@@ -94,7 +108,7 @@ export default function EnviarNotificacao({
 
       setMensagem(mensagemPersonalizada);
     }
-  }, [aberto, agendamento, paciente, medico, modeloSelecionado]);
+  }, [aberto, agendamento, paciente, pacienteCarregado, medico, modeloSelecionado]);
   
   // Este useEffect reseta o estado do formulário apenas quando ele é aberto
   useEffect(() => {
@@ -119,8 +133,8 @@ export default function EnviarNotificacao({
       return;
     }
 
-    if (!paciente.telefone) {
-      alert('Paciente não possui telefone cadastrado.');
+    if (!pacienteEfetivo?.telefone) {
+      alert('Paciente não possui telefone cadastrado. Verifique o cadastro do paciente.');
       return;
     }
 
@@ -145,9 +159,9 @@ export default function EnviarNotificacao({
 
         await ScheduledNotification.create({
           agendamento_id: agendamento.id,
-          paciente_id: paciente.id,
+          paciente_id: pacienteEfetivo.id,
           tipo_canal: tipoCanal,
-          telefone_destino: paciente.telefone.replace(/\D/g, ''), // Enviar apenas números
+          telefone_destino: pacienteEfetivo.telefone.replace(/\D/g, ''), // Enviar apenas números
           mensagem: mensagem.trim(),
           send_at: sendAtDateTime.toISOString(),
           status: 'pending'
@@ -164,11 +178,11 @@ export default function EnviarNotificacao({
         const { base44 } = await import("@/api/base44Client");
         
         const resultado = await base44.functions.invoke('sendNotification', {
-          telefone: paciente.telefone,
+          telefone: pacienteEfetivo.telefone,
           mensagem: mensagem.trim(),
           tipo: tipoCanal,
           agendamento_id: agendamento.id,
-          paciente_nome: paciente.nome,
+          paciente_nome: pacienteEfetivo.nome,
           enviado_por_nome: currentUser?.display_name || currentUser?.full_name || 'Equipe'
         });
 
@@ -225,7 +239,7 @@ export default function EnviarNotificacao({
         <DialogHeader>
           <DialogTitle>Notificar Paciente</DialogTitle>
           <DialogDescription>
-            Envie lembretes e confirmações para <strong>{paciente?.nome}</strong>
+            Envie lembretes e confirmações para <strong>{pacienteEfetivo?.nome || agendamento?.paciente_nome}</strong>
           </DialogDescription>
         </DialogHeader>
         

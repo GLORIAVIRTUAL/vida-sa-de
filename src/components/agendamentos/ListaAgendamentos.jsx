@@ -76,14 +76,11 @@ export default function ListaAgendamentos({
   };
 
   const handleEnviarNotificacao = (agendamento) => {
-    const paciente = pacientes.find(p => p.id === agendamento.paciente_id);
-    const medico = medicos.find(m => m.id === agendamento.medico_id);
-    
-    if (!paciente || !medico) {
-      alert('Dados do paciente ou médico não encontrados.');
-      return;
-    }
+    const paciente = pacientes.find(p => p.id === agendamento.paciente_id) || null;
+    const medico = medicos.find(m => m.id === agendamento.medico_id) || null;
 
+    // Não bloquear se o paciente não estiver na lista local (limitada) —
+    // o diálogo de notificação busca o cadastro completo pelo ID do agendamento
     setAgendamentoSelecionado(agendamento);
     setPacienteSelecionado(paciente);
     setMedicoSelecionado(medico);
