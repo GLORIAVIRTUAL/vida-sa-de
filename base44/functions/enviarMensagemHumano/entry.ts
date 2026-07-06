@@ -31,8 +31,11 @@ Deno.serve(async (req) => {
     }
 
     let numero = phoneNumber.replace(/\D/g, '');
-    // Garantir que o número tenha o código do país (55 para Brasil) apenas para telefones reais
-    if (!numero.startsWith('55') && numero.length < 14) {
+    // Adicionar código do Brasil (55) APENAS se o número tiver formato local brasileiro:
+    // 10 dígitos (fixo DDD+8) ou 11 dígitos com 9 após o DDD (celular DDD+9XXXXXXXX).
+    // Números internacionais (ex: +1 902... do Canadá) são mantidos como estão.
+    const formatoLocalBR = numero.length === 10 || (numero.length === 11 && numero[2] === '9');
+    if (!numero.startsWith('55') && formatoLocalBR) {
       numero = '55' + numero;
     }
     // Usar display_name se existir, senão full_name
