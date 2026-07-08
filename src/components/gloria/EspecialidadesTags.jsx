@@ -7,7 +7,7 @@ import { Stethoscope, Check, ChevronDown } from 'lucide-react';
 const ESPECIALIDADES_REFERENCIA = [
   'Acupuntura', 'Alergologia', 'Anestesiologia', 'Angiologia', 'Cardiologia',
   'Cirurgia Geral', 'Cirurgia Plástica', 'Cirurgia Vascular', 'Clínico Geral',
-  'Dermatologia', 'Endocrinologia', 'Fisioterapeuta', 'Fonoaudiologia',
+  'Dermatologia', 'Ecografia', 'Endocrinologia', 'Fisioterapeuta', 'Fonoaudiologia',
   'Gastroenterologia', 'Geriatria', 'Ginecologia', 'Hematologia', 'Hidroginástica',
   'Hidroterapia', 'Infectologia', 'Mastologia', 'Massoterapia', 'Nefrologia',
   'Natação', 'Neurologia', 'Neuropediatra', 'Nutricionista', 'Obstetrícia',
@@ -18,6 +18,9 @@ const ESPECIALIDADES_REFERENCIA = [
 ];
 
 const normalizar = (s) => (s || '').toString().trim().toLowerCase();
+
+// Serviços que a clínica oferece mesmo sem médico ativo cadastrado com a especialidade
+const ESPECIALIDADES_FIXAS_CLINICA = ['Ecografia'];
 
 export default function EspecialidadesTags({ contato, onAdicionarTag }) {
   const [aberto, setAberto] = React.useState(false);
@@ -34,6 +37,7 @@ export default function EspecialidadesTags({ contato, onAdicionarTag }) {
       if (m.especialidade) set.add(normalizar(m.especialidade));
       (m.especialidades || []).forEach((e) => set.add(normalizar(e)));
     });
+    ESPECIALIDADES_FIXAS_CLINICA.forEach((e) => set.add(normalizar(e)));
     return set;
   }, [medicos]);
 
