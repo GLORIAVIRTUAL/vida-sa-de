@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
-const PROXY_SERVER = 'http://216.238.126.207:3000';
+// Usa hostname DNS (sslip.io resolve para o IP do servidor-ponte) pois o runtime bloqueia fetch direto a IPs
+const PROXY_SERVER = 'http://216.238.126.207.sslip.io:3000';
 
 Deno.serve(async (req) => {
   try {
