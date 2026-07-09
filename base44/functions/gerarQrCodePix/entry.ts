@@ -34,6 +34,16 @@ Deno.serve(async (req) => {
 
     if (!proxyResponse.ok) {
       console.error('Proxy/Sicredi error:', responseText);
+      // Registrar a falha para diagnóstico (visível em Logs de Webhook)
+      try {
+        await base44.asServiceRole.entities.WebhookLog.create({
+          endpoint: 'gerarQrCodePix',
+          method: 'POST',
+          body: JSON.stringify({ ordem_servico_id, valor, usuario: user.email }),
+          response_sent: `Erro HTTP ${proxyResponse.status}: ${responseText.slice(0, 500)}`,
+          status: 'error',
+        });
+      } catch (_) { /* não bloquear resposta por falha de log */ }
       return Response.json({
         error: 'Failed to generate Pix charge',
         details: responseText,
@@ -67,6 +77,17 @@ Deno.serve(async (req) => {
     });
   } catch (error) {
     console.error('Error:', error.message);
+    // Registrar a falha para diagnóstico (visível em Logs de Webhook)
+    try {
+      const base44Log = createClientFromRequest(req);
+      await base44Log.asServiceRole.entities.WebhookLog.create({
+        endpoint: 'gerarQrCodePix',
+        method: 'POST',
+        body: JSON.stringify({ erro: error.message }),
+        response_sent: `Exceção: ${error.message}`,
+        status: 'error',
+      });
+    } catch (_) { /* não bloquear resposta por falha de log */ }
     return Response.json({ error: error.message, stack: error.stack }, { status: 500 });
   }
 });
