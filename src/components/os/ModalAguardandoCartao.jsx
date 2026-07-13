@@ -54,8 +54,22 @@ export default function ModalAguardandoCartao({ open, onClose, valor, pacienteNo
       }
     });
 
+    // Fallback: verifica o status da OS a cada 5s caso a notificação em tempo real falhe
+    const intervalo = setInterval(async () => {
+      if (parou) return;
+      try {
+        const os = await base44.entities.OrdemServico.get(ordemServicoId);
+        if (os?.status_pagamento === 'Pago') {
+          confirmar();
+        }
+      } catch {
+        // ignora falha de rede momentânea, tenta novamente no próximo ciclo
+      }
+    }, 5000);
+
     return () => {
       parou = true;
+      clearInterval(intervalo);
       if (unsubscribe) unsubscribe();
     };
   }, [open, loading, erro, ordemServicoId, toast]);
