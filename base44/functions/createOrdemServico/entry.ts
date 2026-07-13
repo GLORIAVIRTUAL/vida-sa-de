@@ -95,10 +95,19 @@ Deno.serve(async (req) => {
             const callbackUrl = `https://${appId}.base44.app/api/apps/${appId}/functions/callbackOrdemServico`;
 
             try {
-                // Bearer token já emitido pela EvoluServices (armazenado nas secrets)
-                const bearerToken = Deno.env.get('EVOLUSERVICES_TOKEN');
-                const merchantId = 'bcc1614f-431e-43cd-bf28-69020191c4dc';
-                if (!bearerToken) throw new Error('Token EvoluServices não configurado');
+                // PRODUÇÃO EvoluServices — credenciais do estabelecimento Glória Virtual
+                const EVOLU_BASE = 'https://api.evoluservices.com';
+                const merchantId = '70b017c7-8eab-40a5-a277-abc56e930862';
+
+                // Obter Bearer token de produção (expira, então geramos a cada transação)
+                const tokenResp = await fetch(`${EVOLU_BASE}/remote/token`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ auth: { username: 'gloriavirtual', apiKey: 'gput096geXHC0DGR' } })
+                });
+                const tokenData = await tokenResp.json();
+                const bearerToken = tokenData.Bearer;
+                if (!tokenResp.ok || !bearerToken) throw new Error('Falha na autenticação com a EvoluServices (produção)');
 
                 // Criar a transação na maquininha
                 const payloadEvolu = {
@@ -112,7 +121,7 @@ Deno.serve(async (req) => {
                     }
                 };
 
-                const resp = await fetch('https://sandbox.evoluservices.com/remote/transaction', {
+                const resp = await fetch(`${EVOLU_BASE}/remote/transaction`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
