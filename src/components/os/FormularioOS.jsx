@@ -520,7 +520,7 @@ export default function FormularioOS({
       valor_repasse_laboratorio: repasseLab,
       valor_clinica: valorClinicaAjustado > 0 ? valorClinicaAjustado : 0
     }));
-  }, [agendamento, medico, procedimento, procedimentos, exames, categorias, medicoSelecionadoId, medicos]);
+  }, [agendamento, medico, procedimento, procedimentos, exames, categorias, medicoSelecionadoId, medicos, tabelaPrecos]);
 
   useEffect(() => {
     let valorComDesconto = dados.valor_total - dados.desconto + (dados.acrescimo || 0);

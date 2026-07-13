@@ -213,16 +213,18 @@ export default function OrdemDeServico() {
 
       if (modoRapido) {
         // Modo rápido: essenciais em paralelo, sem delays artificiais
-        const [medicosData, categoriasData, procedimentosData, examesData] = await Promise.all([
+        const [medicosData, categoriasData, procedimentosData, examesData, tabelaPrecosData] = await Promise.all([
           Medico.list("nome", 500),
           CategoriaPreco.list(),
           Procedimento.list("-created_date", 500),
-          Exame.list("-created_date", 500)
+          Exame.list("-created_date", 500),
+          TabelaPreco.list(null, 2000)
         ]);
         setMedicos(medicosData || []);
         setCategorias(categoriasData || []);
         setProcedimentos(procedimentosData || []);
         setExames(examesData || []);
+        setTabelaPrecos(tabelaPrecosData || []);
         // Não carregar ordens antigas no modo rápido
         setOrdens([]);
         setPacientes([]);
@@ -256,7 +258,7 @@ export default function OrdemDeServico() {
           Procedimento.list("-created_date", 500),
           Exame.list("-created_date", 500),
           Agendamento.list("-data_agendamento", 200),
-          TabelaPreco.list()
+          TabelaPreco.list(null, 2000)
         ]);
 
         setMedicos(medicosData || []);
