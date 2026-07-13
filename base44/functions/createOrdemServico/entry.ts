@@ -55,6 +55,15 @@ Deno.serve(async (req) => {
             parcelas: Number(body.parcelas) || 1
         };
         
+        // Segurança: se o pagamento envolve PIX (puro ou em múltiplas formas),
+        // o status só pode ser confirmado pelo webhook do Sicredi
+        const envolvePix = forma_pagamento === 'PIX' ||
+            (Array.isArray(body.pagamentos_detalhados) && body.pagamentos_detalhados.some(p => p?.forma === 'PIX'));
+        if (envolvePix) {
+            dadosOS.status_pagamento = 'Pendente';
+            dadosOS.data_pagamento = null;
+        }
+
         console.log('💾 Criando OS com valores:', {
             numero_os: dadosOS.numero_os,
             valor_final: dadosOS.valor_final,

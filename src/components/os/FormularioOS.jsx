@@ -602,6 +602,18 @@ export default function FormularioOS({
         if (pagamento2.forma && pagamento2.valor) {
           pagamentosDetalhados.push({ forma: pagamento2.forma, valor: parseFloat(pagamento2.valor) || 0 });
         }
+
+        // Validar: precisa das duas formas preenchidas e a soma deve bater com o total
+        const somaPagamentos = pagamentosDetalhados.reduce((sum, p) => sum + p.valor, 0);
+        if (pagamentosDetalhados.length < 2 || Math.abs(somaPagamentos - dados.valor_final) > 0.01) {
+          toast({
+            title: "Formas de pagamento incompletas",
+            description: `Preencha as duas formas de pagamento e certifique-se de que a soma (R$ ${somaPagamentos.toFixed(2)}) seja igual ao total de R$ ${dados.valor_final.toFixed(2)}.`,
+            variant: "destructive"
+          });
+          setSalvando(false);
+          return;
+        }
       }
 
       // Nome do usuário que está gerando a OS
@@ -628,6 +640,8 @@ export default function FormularioOS({
         // a confirmação tem que vir da maquininha (callback da EvoluServices).
         status_pagamento: (() => {
           if (dados.forma_pagamento === 'PIX') return 'Pendente';
+          // Múltiplas Formas com PIX: só o webhook do Sicredi confirma o pagamento
+          if (pagamentosDetalhados.some(p => p.forma === 'PIX')) return 'Pendente';
           const emailUsuario = (currentUser?.email || '').toLowerCase().trim();
           const cartao = dados.forma_pagamento === 'Cartão Crédito' || dados.forma_pagamento === 'Cartão Débito';
           if (emailUsuario === 'dmpetrolina@gmail.com' && cartao && dados.status_pagamento === 'Pago') {
@@ -940,13 +954,17 @@ export default function FormularioOS({
                     const usuarioComBloqueio = emailUsuario === 'dmpetrolina@gmail.com';
                     const formaValidadaExternamente = ['PIX', 'Cartão Crédito', 'Cartão Débito'].includes(dados.forma_pagamento);
                     const bloquearPago = usuarioComBloqueio && formaValidadaExternamente && dados.status_pagamento !== 'Pago';
+                    // Múltiplas Formas com PIX: mesmo tratamento do PIX puro
+                    const multiplasComPix = dados.forma_pagamento === 'Múltiplas Formas' &&
+                      (pagamento1.forma === 'PIX' || pagamento2.forma === 'PIX');
+                    const statusTravadoPix = dados.forma_pagamento === 'PIX' || multiplasComPix;
 
                     return (
                       <>
                         <Select 
-                          value={dados.forma_pagamento === 'PIX' ? 'Pendente' : dados.status_pagamento} 
+                          value={statusTravadoPix ? 'Pendente' : dados.status_pagamento} 
                           onValueChange={(v) => setDados(prev => ({ ...prev, status_pagamento: v }))}
-                          disabled={dados.forma_pagamento === 'PIX'}
+                          disabled={statusTravadoPix}
                         >
                           <SelectTrigger><SelectValue /></SelectTrigger>
                           <SelectContent>
@@ -955,12 +973,12 @@ export default function FormularioOS({
                             <SelectItem value="Cancelado">Cancelado</SelectItem>
                           </SelectContent>
                         </Select>
-                        {dados.forma_pagamento === 'PIX' && (
+                        {statusTravadoPix && (
                           <p className="text-xs text-gray-500 mt-1">
-                            Status confirmado automaticamente pelo Sicredi após o pagamento.
+                            Status confirmado automaticamente pelo Sicredi após o pagamento do PIX.
                           </p>
                         )}
-                        {bloquearPago && dados.forma_pagamento !== 'PIX' && (
+                        {bloquearPago && !statusTravadoPix && (
                           <p className="text-xs text-amber-600 mt-1">
                             O status "Pago" será confirmado automaticamente pela maquininha após a aprovação.
                           </p>
