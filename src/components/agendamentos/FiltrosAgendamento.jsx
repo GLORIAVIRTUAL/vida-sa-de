@@ -16,9 +16,11 @@ export default function FiltrosAgendamento({ filtros, onFiltrosChange, medicos }
   const medicosAgrupados = useMemo(() => {
     const medicosOdontologia = medicos.filter(m => normalizeString(m.especialidade) === 'ODONTOLOGIA');
     const medicosRuben = medicos.filter(m => normalizeString(m.nome).includes('RUBEN'));
+    const medicosDelazeri = medicos.filter(m => normalizeString(m.nome).includes('DELAZERI'));
     const outrosMedicos = medicos.filter(m => 
       normalizeString(m.especialidade) !== 'ODONTOLOGIA' &&
-      !normalizeString(m.nome).includes('RUBEN')
+      !normalizeString(m.nome).includes('RUBEN') &&
+      !normalizeString(m.nome).includes('DELAZERI')
     );
     
     const resultado = [];
@@ -51,6 +53,22 @@ export default function FiltrosAgendamento({ filtros, onFiltrosChange, medicos }
       });
     }
     
+    // Se tem múltiplos "Dr. Delazeri", criar opção única
+    if (medicosDelazeri.length > 1) {
+      resultado.push({
+        id: medicosDelazeri[0].id, // Usar o ID do primeiro para o filtro
+        nome: '🧠 Dr. Marco A. Delazeri',
+        especialidade: 'Múltiplas',
+        isAgrupado: true,
+        grupoIds: medicosDelazeri.map(m => m.id)
+      });
+    } else if (medicosDelazeri.length === 1) {
+      resultado.push({
+        ...medicosDelazeri[0],
+        isAgrupado: false
+      });
+    }
+
     // Adicionar outros médicos normalmente
     outrosMedicos.forEach(m => {
       resultado.push({

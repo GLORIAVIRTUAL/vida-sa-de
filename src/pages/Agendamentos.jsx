@@ -206,6 +206,23 @@ export default function Agendamentos() {
     return medicos.filter(m => normalizeString(m.nome).includes('RUBEN')).map(m => m.id);
   }, [medicos]);
 
+  // Identificar médicos "Dr. Delazeri" (agendas unificadas Neurologia/Neuropediatra)
+  const medicosDelazeri = useMemo(() => {
+    return medicos.filter(m => normalizeString(m.nome).includes('DELAZERI')).map(m => m.id);
+  }, [medicos]);
+
+  const [filtroAgendaDelazeri, setFiltroAgendaDelazeri] = useState("todos");
+
+  const filtroEhDelazeri = useMemo(() => {
+    return filtros.medico !== "todos" && medicosDelazeri.includes(filtros.medico);
+  }, [filtros.medico, medicosDelazeri]);
+
+  useEffect(() => {
+    if (!filtroEhDelazeri) {
+      setFiltroAgendaDelazeri("todos");
+    }
+  }, [filtroEhDelazeri]);
+
   // Se há busca, ignora o filtro de período e busca em todos os agendamentos
   const buscaAtiva = (filtros.busca || '').trim().length > 0;
   const baseAgendamentos = buscaAtiva
@@ -241,6 +258,14 @@ export default function Agendamentos() {
     } else if (medicosRuben.includes(filtros.medico)) {
       // Se o filtro é um "Ruben", mostrar agendamentos de TODOS os "Rubens"
       filtroMedico = medicosRuben.includes(agendamento.medico_id);
+    } else if (medicosDelazeri.includes(filtros.medico)) {
+      // Se o filtro é um "Delazeri", mostrar agendamentos de TODAS as agendas dele
+      filtroMedico = medicosDelazeri.includes(agendamento.medico_id);
+
+      // Sub-filtro por agenda específica (Neurologia/Neuropediatra)
+      if (filtroMedico && filtroAgendaDelazeri !== "todos") {
+        filtroMedico = agendamento.medico_id === filtroAgendaDelazeri;
+      }
     } else {
       filtroMedico = agendamento.medico_id === filtros.medico;
     }
@@ -684,6 +709,35 @@ export default function Agendamentos() {
                       onClick={() => setFiltroDentistaOdonto(d.id)}
                       className={filtroDentistaOdonto === d.id ? "bg-teal-600 hover:bg-teal-700 text-white" : "text-teal-700"}>
                       {d.nome}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Barra de seleção de agenda quando filtro é Dr. Delazeri */}
+          {(visualizacao === "lista" || visualizacao === "kanban") && filtroEhDelazeri && (() => {
+            const agendasDelazeri = medicos.filter(m => medicosDelazeri.includes(m.id));
+            return (
+              <div className="mb-4 flex items-center gap-2 bg-indigo-50 border border-indigo-200 rounded-lg p-3">
+                <span className="text-sm font-medium text-indigo-800 mr-2">🧠 Agenda de:</span>
+                <div className="flex bg-white rounded-lg p-1 border border-indigo-200">
+                  <Button
+                    variant={filtroAgendaDelazeri === "todos" ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setFiltroAgendaDelazeri("todos")}
+                    className={filtroAgendaDelazeri === "todos" ? "bg-indigo-600 hover:bg-indigo-700 text-white" : "text-indigo-700"}>
+                    Todos
+                  </Button>
+                  {agendasDelazeri.map(d => (
+                    <Button
+                      key={d.id}
+                      variant={filtroAgendaDelazeri === d.id ? "default" : "ghost"}
+                      size="sm"
+                      onClick={() => setFiltroAgendaDelazeri(d.id)}
+                      className={filtroAgendaDelazeri === d.id ? "bg-indigo-600 hover:bg-indigo-700 text-white" : "text-indigo-700"}>
+                      {d.especialidade}
                     </Button>
                   ))}
                 </div>
