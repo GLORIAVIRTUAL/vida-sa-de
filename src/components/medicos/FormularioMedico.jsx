@@ -50,6 +50,7 @@ export default function FormularioMedico({ medico, open, onClose, onUpdate }) {
     valor_repasse_fixo_convenio: 0,
     repasses_por_categoria: [],
     tempo_consulta_minutos: 30,
+    tempo_consulta_minutos_2: '',
     horarios_atendimento: [],
     status: 'Ativo',
     tipo_atendimento: 'Horários Marcados',
@@ -86,6 +87,7 @@ export default function FormularioMedico({ medico, open, onClose, onUpdate }) {
           valor_repasse_fixo_convenio: medico.valor_repasse_fixo_convenio || 0,
           repasses_por_categoria: medico.repasses_por_categoria || [],
           tempo_consulta_minutos: medico.tempo_consulta_minutos || 30,
+          tempo_consulta_minutos_2: medico.tempo_consulta_minutos_2 || '',
           horarios_atendimento: medico.horarios_atendimento || [],
           status: medico.status || 'Ativo',
           tipo_atendimento: medico.tipo_atendimento || 'Horários Marcados',
@@ -107,6 +109,7 @@ export default function FormularioMedico({ medico, open, onClose, onUpdate }) {
           valor_repasse_fixo_convenio: 0,
           repasses_por_categoria: [],
           tempo_consulta_minutos: 30,
+          tempo_consulta_minutos_2: '',
           horarios_atendimento: [],
           status: 'Ativo',
           tipo_atendimento: 'Horários Marcados',
@@ -271,6 +274,7 @@ export default function FormularioMedico({ medico, open, onClose, onUpdate }) {
         valor_repasse_fixo_procedimento_convenio: 0,
         repasses_por_categoria: repasses,
         tempo_consulta_minutos: parseInt(formData.tempo_consulta_minutos) || 30,
+        tempo_consulta_minutos_2: parseInt(formData.tempo_consulta_minutos_2) || null,
         horarios_atendimento: formData.horarios_atendimento || [],
         status: formData.status || 'Ativo',
         tipo_atendimento: formData.tipo_atendimento || 'Horários Marcados',
@@ -540,6 +544,18 @@ export default function FormularioMedico({ medico, open, onClose, onUpdate }) {
               </div>
 
               <div>
+                <Label htmlFor="tempo_consulta_2">2ª Duração da Consulta (minutos)</Label>
+                <Input
+                  id="tempo_consulta_2"
+                  type="number"
+                  value={formData.tempo_consulta_minutos_2}
+                  onChange={(e) => handleInputChange('tempo_consulta_minutos_2', e.target.value)}
+                  placeholder="Opcional (ex: 20)"
+                />
+                <p className="text-xs text-gray-500 mt-1">Se preenchido, poderá escolher qual duração usar em cada horário de atendimento.</p>
+              </div>
+
+              <div>
                 <Label htmlFor="status">Status</Label>
                 <Select value={formData.status} onValueChange={(value) => handleInputChange('status', value)}>
                   <SelectTrigger id="status">
@@ -569,7 +585,7 @@ export default function FormularioMedico({ medico, open, onClose, onUpdate }) {
                           <Lock className="w-3 h-3" /> AGENDA BLOQUEADA
                         </div>
                       )}
-                      <div className="grid grid-cols-5 gap-2">
+                      <div className={`grid ${formData.tempo_consulta_minutos_2 ? 'grid-cols-6' : 'grid-cols-5'} gap-2`}>
                         <div>
                           <Label className="text-xs">Dia da Semana</Label>
                           <Select 
@@ -633,6 +649,23 @@ export default function FormularioMedico({ medico, open, onClose, onUpdate }) {
                             placeholder="Opcional"
                           />
                         </div>
+                        {formData.tempo_consulta_minutos_2 && (
+                          <div>
+                            <Label className="text-xs">Duração</Label>
+                            <Select
+                              value={horario.tempo_consulta ? horario.tempo_consulta.toString() : 'padrao'}
+                              onValueChange={(value) => handleHorarioChange(index, 'tempo_consulta', value === 'padrao' ? null : parseInt(value))}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="padrao">{formData.tempo_consulta_minutos || 30} min (padrão)</SelectItem>
+                                <SelectItem value={formData.tempo_consulta_minutos_2.toString()}>{formData.tempo_consulta_minutos_2} min</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
                       </div>
                       {horario.data_especifica && (
                         <p className="text-xs text-blue-600">

@@ -633,7 +633,7 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
         horariosDoMedico = [...horariosDoMedico, ...horariosDesteMedico.map(h => ({
           ...h,
           medico_id: medico.id,
-          tempo_consulta: medico.tempo_consulta_minutos || 30
+          tempo_consulta: h.tempo_consulta || medico.tempo_consulta_minutos || 30
         }))];
       }
       
