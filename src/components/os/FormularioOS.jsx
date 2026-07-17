@@ -18,7 +18,7 @@ import { User } from "@/entities/all";
 import ModalQrCodePix from "./ModalQrCodePix";
 import ModalAguardandoCartao from "./ModalAguardandoCartao";
 
-const formasPagamento = ["Dinheiro", "Cartão Débito", "Cartão Crédito", "PIX", "Transferência", "Convênio", "Múltiplas Formas"];
+const formasPagamento = ["Dinheiro", "Cartão Débito", "Cartão Crédito", "PIX", "PIX Turmas", "Transferência", "Convênio", "Múltiplas Formas"];
 
 // Taxas padronizadas (Grupo 1 e Grupo 2)
 const taxasGrupo1 = { 1: 3.64, 2: 4.62, 3: 5.54, 4: 6.19, 5: 7.04, 6: 7.89, 7: 8.94, 8: 9.89, 9: 10.84, 10: 11.49, 11: 12.19, 12: 12.89 };
@@ -1066,6 +1066,7 @@ export default function FormularioOS({
                           <SelectItem value="Cartão Débito">Cartão Débito</SelectItem>
                           <SelectItem value="Cartão Crédito">Cartão Crédito</SelectItem>
                           <SelectItem value="PIX">PIX</SelectItem>
+                          <SelectItem value="PIX Turmas">PIX Turmas</SelectItem>
                           <SelectItem value="Transferência">Transferência</SelectItem>
                         </SelectContent>
                       </Select>
@@ -1094,6 +1095,7 @@ export default function FormularioOS({
                           <SelectItem value="Cartão Débito">Cartão Débito</SelectItem>
                           <SelectItem value="Cartão Crédito">Cartão Crédito</SelectItem>
                           <SelectItem value="PIX">PIX</SelectItem>
+                          <SelectItem value="PIX Turmas">PIX Turmas</SelectItem>
                           <SelectItem value="Transferência">Transferência</SelectItem>
                         </SelectContent>
                       </Select>

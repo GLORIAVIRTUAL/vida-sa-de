@@ -1840,6 +1840,7 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
                                      <SelectItem value="Cartão Débito">Cartão Débito</SelectItem>
                                      <SelectItem value="Cartão Crédito">Cartão Crédito</SelectItem>
                                      <SelectItem value="PIX">PIX</SelectItem>
+                                     <SelectItem value="PIX Turmas">PIX Turmas</SelectItem>
                                      <SelectItem value="Transferência">Transferência</SelectItem>
                                      <SelectItem value="Convênio">Convênio</SelectItem>
                                      <SelectItem value="Múltiplas Formas">Múltiplas Formas</SelectItem>

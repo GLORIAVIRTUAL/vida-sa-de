@@ -154,7 +154,7 @@
     },
     "valor_final": {
       "type": "number",
-      "description": "Valor final ap\u00f3s desconto e acr\u00e9scimo (valor_total - desconto + acr\u00e9scimo)"
+      "description": "Valor final ap\u00f3s desconto e acr\u00e9scimo (valor_total - desconto + acrescimo)"
     },
     "forma_pagamento": {
       "type": "string",
@@ -163,6 +163,7 @@
         "Cart\u00e3o D\u00e9bito",
         "Cart\u00e3o Cr\u00e9dito",
         "PIX",
+        "PIX Turmas",
         "Transfer\u00eancia",
         "Conv\u00eanio"
       ],
