@@ -31,9 +31,9 @@ Deno.serve(async (req) => {
         console.log('💰 Valor final:', valor_final);
 
         const isCartao = forma_pagamento === 'Cartão Crédito' || forma_pagamento === 'Cartão Débito';
-        // Integração com a EvoluServices temporariamente desativada: cartão é registrado manualmente.
-        const isPagamentoIntegrado = false;
-        if (isPagamentoIntegrado && isCartao && !bandeira_cartao) {
+        // Integração EvoluServices ativa para pagamentos com cartão.
+        const isPagamentoIntegrado = isCartao;
+        if (isPagamentoIntegrado && !bandeira_cartao) {
             await base44.asServiceRole.entities.WebhookLog.create({
                 endpoint: 'createOrdemServico:EvoluServices',
                 method: 'POST',
@@ -96,7 +96,7 @@ Deno.serve(async (req) => {
         const novaOS = await base44.asServiceRole.entities.OrdemServico.create(dadosOS);
         console.log('✅ OS criada com ID:', novaOS.id);
 
-        // Integração EvoluServices mantida no código, mas temporariamente desativada acima.
+        // Integração EvoluServices (maquininha de produção) para pagamentos com cartão.
         let transactionResponse = null;
         let pagamentoLog = null;
 
