@@ -590,16 +590,7 @@ export default function FormularioOS({
       const categoria = categorias?.find(c => c.id === categoriaId);
       console.log('✅ Categoria a ser salva:', categoria?.nome, '(ID:', categoriaId, ')');
 
-      const pagamentoCartao = dados.forma_pagamento === 'Cartão Crédito' || dados.forma_pagamento === 'Cartão Débito';
-      if (pagamentoCartao && !dados.bandeira_cartao) {
-        toast({
-          title: "Selecione a bandeira do cartão",
-          description: "A bandeira é obrigatória para enviar o pagamento à maquininha.",
-          variant: "destructive"
-        });
-        setSalvando(false);
-        return;
-      }
+      // Cartão é registrado manualmente enquanto a integração com a maquininha está desativada.
 
       // Obter nome do paciente para garantir envio
       const nomePaciente = paciente?.nome || agendamento?.paciente_nome;
@@ -646,15 +637,12 @@ export default function FormularioOS({
         pagamentos_detalhados: pagamentosDetalhados,
         parcelas: dados.parcelas,
         bandeira_cartao: dados.bandeira_cartao,
-        // PIX nunca é marcado como Pago manualmente — só o webhook do Sicredi confirma.
-        // Cartão só pode ser confirmado pelo callback da EvoluServices;
         // PIX só pode ser confirmado pelo webhook do Sicredi.
+        // Cartão é registrado manualmente enquanto a integração EvoluServices está desativada.
         status_pagamento: (() => {
           if (dados.forma_pagamento === 'PIX') return 'Pendente';
           // Múltiplas Formas com PIX: só o webhook do Sicredi confirma o pagamento
           if (pagamentosDetalhados.some(p => p.forma === 'PIX')) return 'Pendente';
-          const cartao = dados.forma_pagamento === 'Cartão Crédito' || dados.forma_pagamento === 'Cartão Débito';
-          if (cartao) return 'Pendente';
           return dados.status_pagamento;
         })(),
         observacoes: dados.observacoes,
@@ -956,10 +944,7 @@ export default function FormularioOS({
                 <div>
                   <Label>Status do Pagamento</Label>
                   {(() => {
-                    // Pagamentos por cartão só podem ser confirmados como "Pago"
-                    // pela maquininha; PIX continua sendo confirmado pelo Sicredi.
-                    const formaValidadaExternamente = ['PIX', 'Cartão Crédito', 'Cartão Débito'].includes(dados.forma_pagamento);
-                    const bloquearPago = formaValidadaExternamente && dados.status_pagamento !== 'Pago';
+                    // PIX continua sendo confirmado pelo Sicredi; cartão é registrado manualmente.
                     // Múltiplas Formas com PIX: mesmo tratamento do PIX puro
                     const multiplasComPix = dados.forma_pagamento === 'Múltiplas Formas' &&
                       (pagamento1.forma === 'PIX' || pagamento2.forma === 'PIX');
@@ -975,18 +960,13 @@ export default function FormularioOS({
                           <SelectTrigger><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="Pendente">Pendente</SelectItem>
-                            <SelectItem value="Pago" disabled={bloquearPago}>Pago</SelectItem>
+                            <SelectItem value="Pago">Pago</SelectItem>
                             <SelectItem value="Cancelado">Cancelado</SelectItem>
                           </SelectContent>
                         </Select>
                         {statusTravadoPix && (
                           <p className="text-xs text-gray-500 mt-1">
                             Status confirmado automaticamente pelo Sicredi após o pagamento do PIX.
-                          </p>
-                        )}
-                        {bloquearPago && !statusTravadoPix && (
-                          <p className="text-xs text-amber-600 mt-1">
-                            O status "Pago" será confirmado automaticamente pela maquininha após a aprovação.
                           </p>
                         )}
                       </>
