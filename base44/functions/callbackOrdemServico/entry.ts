@@ -12,11 +12,12 @@ Deno.serve(async (req) => {
         console.log('🔔 Webhook Recebido (OS):', JSON.stringify(payload));
 
         // Log inicial
-        await base44.asServiceRole.entities.WebhookLog.create({
-            endpoint: 'callbackOrdemServico',
+        const callbackLog = await base44.asServiceRole.entities.WebhookLog.create({
+            endpoint: 'callbackOrdemServico:EvoluServices',
             method: 'POST',
             body: JSON.stringify(payload),
-            status: 'processing'
+            status: 'processing',
+            response_sent: 'Callback recebido; buscando a Ordem de Serviço correspondente'
         });
 
         // Extração robusta de dados conforme documentação
@@ -58,6 +59,14 @@ Deno.serve(async (req) => {
 
         if (!ordemServico) {
             console.error('❌ OS não encontrada. transactionId:', transactionId, 'valor:', valorPayload);
+            await base44.asServiceRole.entities.WebhookLog.update(callbackLog.id, {
+                status: 'error',
+                response_sent: JSON.stringify({
+                    resultado: 'OS não encontrada',
+                    transaction_id: transactionId || null,
+                    valor: valorPayload || null
+                })
+            });
             return Response.json({ error: 'Order not found' }, { status: 404 });
         }
 
@@ -91,6 +100,20 @@ Deno.serve(async (req) => {
                 console.error('⚠️ Não foi possível atualizar o agendamento:', e.message);
             }
         }
+
+        await base44.asServiceRole.entities.WebhookLog.update(callbackLog.id, {
+            status: 'success',
+            response_sent: JSON.stringify({
+                resultado: 'OS atualizada',
+                ordem_servico_id: ordemServico.id,
+                numero_os: ordemServico.numero_os || null,
+                transaction_id: transactionId || null,
+                status_recebido: status || null,
+                status_pagamento: novoStatus,
+                nsu: nsu || null,
+                autorizacao: authorizationCode || null
+            })
+        });
 
         return Response.json({ success: true });
 

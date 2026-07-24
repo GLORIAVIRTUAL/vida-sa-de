@@ -77,9 +77,26 @@ Deno.serve(async (req) => {
         const isCartao = (forma_pagamento === 'Cartão Crédito' || forma_pagamento === 'Cartão Débito') && bandeira_cartao;
         const isPagamentoIntegrado = isCartao;
         let transactionResponse = null;
+        let pagamentoLog = null;
 
         if (isPagamentoIntegrado) {
             console.log('💳 Iniciando transação na EvoluServices (maquininha)...');
+            pagamentoLog = await base44.asServiceRole.entities.WebhookLog.create({
+                endpoint: 'createOrdemServico:EvoluServices',
+                method: 'POST',
+                body: JSON.stringify({
+                    etapa: 'envio_maquininha_producao',
+                    ordem_servico_id: novaOS.id,
+                    numero_os: novaOS.numero_os,
+                    forma_pagamento,
+                    bandeira_cartao,
+                    parcelas: Number(parcelas) || 1,
+                    valor: Number(valor_final) || 0,
+                    paciente_nome: nomePaciente
+                }),
+                status: 'processing',
+                response_sent: 'Preparando autenticação e envio para a maquininha de produção'
+            });
 
             // Forçar status Pendente — só o callback da EvoluServices confirma o pagamento
             await base44.asServiceRole.entities.OrdemServico.update(novaOS.id, {
@@ -135,6 +152,16 @@ Deno.serve(async (req) => {
                 const txId = transactionResponse.transactionId || transactionResponse.transaction?.transactionId;
                 const success = transactionResponse.success === "true" || transactionResponse.success === true;
 
+                await base44.asServiceRole.entities.WebhookLog.update(pagamentoLog.id, {
+                    status: resp.ok && success && txId ? 'success' : 'error',
+                    response_sent: JSON.stringify({
+                        http_status: resp.status,
+                        success,
+                        transaction_id: txId || null,
+                        resposta: transactionResponse
+                    })
+                });
+
                 if (txId) {
                     // Apenas guarda o transactionId. Status permanece Pendente até o callback aprovar.
                     await base44.asServiceRole.entities.OrdemServico.update(novaOS.id, {
@@ -156,6 +183,12 @@ Deno.serve(async (req) => {
                 }
             } catch (err) {
                 console.error('Erro na chamada EvoluServices:', err);
+                if (pagamentoLog?.id) {
+                    await base44.asServiceRole.entities.WebhookLog.update(pagamentoLog.id, {
+                        status: 'error',
+                        response_sent: JSON.stringify({ etapa: 'erro_envio_maquininha', erro: err.message })
+                    });
+                }
                 await base44.asServiceRole.entities.OrdemServico.update(novaOS.id, {
                     observacoes: (novaOS.observacoes || '') + `\n[Erro Pagamento]: ${err.message}`
                 });
