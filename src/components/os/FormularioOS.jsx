@@ -636,17 +636,14 @@ export default function FormularioOS({
         parcelas: dados.parcelas,
         bandeira_cartao: dados.bandeira_cartao,
         // PIX nunca é marcado como Pago manualmente — só o webhook do Sicredi confirma.
-        // Para o usuário de teste, cartão também não pode sair como "Pago" manualmente:
-        // a confirmação tem que vir da maquininha (callback da EvoluServices).
+        // Cartão só pode ser confirmado pelo callback da EvoluServices;
+        // PIX só pode ser confirmado pelo webhook do Sicredi.
         status_pagamento: (() => {
           if (dados.forma_pagamento === 'PIX') return 'Pendente';
           // Múltiplas Formas com PIX: só o webhook do Sicredi confirma o pagamento
           if (pagamentosDetalhados.some(p => p.forma === 'PIX')) return 'Pendente';
-          const emailUsuario = (currentUser?.email || '').toLowerCase().trim();
           const cartao = dados.forma_pagamento === 'Cartão Crédito' || dados.forma_pagamento === 'Cartão Débito';
-          if (emailUsuario === 'dmpetrolina@gmail.com' && cartao && dados.status_pagamento === 'Pago') {
-            return 'Pendente';
-          }
+          if (cartao) return 'Pendente';
           return dados.status_pagamento;
         })(),
         observacoes: dados.observacoes,
@@ -948,12 +945,10 @@ export default function FormularioOS({
                 <div>
                   <Label>Status do Pagamento</Label>
                   {(() => {
-                    // Para o usuário de teste, pagamentos por cartão/PIX só podem ser
-                    // confirmados como "Pago" pela maquininha/Sicredi (não manualmente)
-                    const emailUsuario = (currentUser?.email || '').toLowerCase().trim();
-                    const usuarioComBloqueio = emailUsuario === 'dmpetrolina@gmail.com';
+                    // Pagamentos por cartão só podem ser confirmados como "Pago"
+                    // pela maquininha; PIX continua sendo confirmado pelo Sicredi.
                     const formaValidadaExternamente = ['PIX', 'Cartão Crédito', 'Cartão Débito'].includes(dados.forma_pagamento);
-                    const bloquearPago = usuarioComBloqueio && formaValidadaExternamente && dados.status_pagamento !== 'Pago';
+                    const bloquearPago = formaValidadaExternamente && dados.status_pagamento !== 'Pago';
                     // Múltiplas Formas com PIX: mesmo tratamento do PIX puro
                     const multiplasComPix = dados.forma_pagamento === 'Múltiplas Formas' &&
                       (pagamento1.forma === 'PIX' || pagamento2.forma === 'PIX');

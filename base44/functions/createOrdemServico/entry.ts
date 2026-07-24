@@ -73,11 +73,9 @@ Deno.serve(async (req) => {
         const novaOS = await base44.asServiceRole.entities.OrdemServico.create(dadosOS);
         console.log('✅ OS criada com ID:', novaOS.id);
 
-        // Integração EvoluServices (maquininha) — restrita ao usuário de teste por enquanto
-        const EMAILS_TESTE_CARTAO = ['dmpetrolina@gmail.com'];
-        const usuarioPodeTestarCartao = user.email && EMAILS_TESTE_CARTAO.includes(user.email.toLowerCase().trim());
+        // Integração EvoluServices (maquininha de produção) para todos os usuários
         const isCartao = (forma_pagamento === 'Cartão Crédito' || forma_pagamento === 'Cartão Débito') && bandeira_cartao;
-        const isPagamentoIntegrado = usuarioPodeTestarCartao && isCartao;
+        const isPagamentoIntegrado = isCartao;
         let transactionResponse = null;
 
         if (isPagamentoIntegrado) {
