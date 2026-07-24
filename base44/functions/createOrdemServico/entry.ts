@@ -30,6 +30,27 @@ Deno.serve(async (req) => {
         console.log('👤 Nome do paciente:', nomePaciente);
         console.log('💰 Valor final:', valor_final);
 
+        const isCartao = forma_pagamento === 'Cartão Crédito' || forma_pagamento === 'Cartão Débito';
+        if (isCartao && !bandeira_cartao) {
+            await base44.asServiceRole.entities.WebhookLog.create({
+                endpoint: 'createOrdemServico:EvoluServices',
+                method: 'POST',
+                body: JSON.stringify({
+                    etapa: 'validacao_envio_maquininha',
+                    forma_pagamento,
+                    valor: Number(valor_final) || 0,
+                    paciente_nome: nomePaciente,
+                    usuario: user.email
+                }),
+                status: 'error',
+                response_sent: 'Pagamento não enviado: bandeira do cartão não informada'
+            });
+            return Response.json({
+                success: false,
+                error: 'Selecione a bandeira do cartão para enviar o pagamento à maquininha.'
+            }, { status: 400 });
+        }
+
         // 4. Criar Ordem de Serviço (Inicialmente Pendente)
         console.log('💾 Criando OS...');
         // Garantir que paciente_nome seja salvo se o campo existir na entidade (usuário pode ter adicionado)
@@ -74,7 +95,6 @@ Deno.serve(async (req) => {
         console.log('✅ OS criada com ID:', novaOS.id);
 
         // Integração EvoluServices (maquininha de produção) para todos os usuários
-        const isCartao = (forma_pagamento === 'Cartão Crédito' || forma_pagamento === 'Cartão Débito') && bandeira_cartao;
         const isPagamentoIntegrado = isCartao;
         let transactionResponse = null;
         let pagamentoLog = null;

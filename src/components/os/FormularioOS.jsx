@@ -590,6 +590,17 @@ export default function FormularioOS({
       const categoria = categorias?.find(c => c.id === categoriaId);
       console.log('✅ Categoria a ser salva:', categoria?.nome, '(ID:', categoriaId, ')');
 
+      const pagamentoCartao = dados.forma_pagamento === 'Cartão Crédito' || dados.forma_pagamento === 'Cartão Débito';
+      if (pagamentoCartao && !dados.bandeira_cartao) {
+        toast({
+          title: "Selecione a bandeira do cartão",
+          description: "A bandeira é obrigatória para enviar o pagamento à maquininha.",
+          variant: "destructive"
+        });
+        setSalvando(false);
+        return;
+      }
+
       // Obter nome do paciente para garantir envio
       const nomePaciente = paciente?.nome || agendamento?.paciente_nome;
 
