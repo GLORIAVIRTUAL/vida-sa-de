@@ -1078,6 +1078,11 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
       if (formData.tipo_servico === 'Múltiplos Serviços' && (!formData.itens_servico || formData.itens_servico.length === 0)) { erroValidacao("Adicione ao menos um serviço"); return; }
       if (formData.is_recorrente && (!formData.recorrencia_tipo || !formData.recorrencia_data_fim)) { erroValidacao("Para recorrentes, selecione frequência e data final."); return; }
 
+      if (formData.status === 'Pago' && agendamento?.status !== 'Pago') {
+        erroValidacao("O status Pago só pode ser definido pela Ordem de Serviço.");
+        return;
+      }
+
       const pacienteSelecionado = pacientesEncontrados.find(p => p.id === formData.paciente_id);
       const dados = { paciente_id: formData.paciente_id, paciente_nome: pacienteSelecionado?.nome || '', data_agendamento: formData.data_agendamento, horario: formData.horario, tipo_servico: formData.tipo_servico, categoria_preco_id: formData.categoria_preco_id, valor_total: parseFloat(formData.valor_total) || 0, desconto_manual: parseFloat(formData.desconto_manual) || 0, acrescimo_manual: parseFloat(formData.acrescimo_manual) || 0, valor_final: parseFloat(formData.valor_final) || parseFloat(formData.valor_total) || 0, status: formData.status || 'Agendado', forma_pagamento: formData.forma_pagamento || 'Dinheiro', is_encaixe: formData.is_encaixe || false, is_reserva: !formData.paciente_id, is_recorrente: formData.is_recorrente || false, lembrete_equipe: formData.lembrete_equipe || false, lembrete_dias_antes: parseInt(formData.lembrete_dias_antes) || 0 };
       if (formData.duracao_minutos) dados.duracao_minutos = parseInt(formData.duracao_minutos);
@@ -1849,18 +1854,25 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
                                  </div>
                                  <div>
                                  <Label htmlFor="status">Status</Label>
-                                 <Select value={formData.status} onValueChange={(v) => handleChange('status', v)}>
+                                 <Select
+                                   value={formData.status}
+                                   onValueChange={(v) => handleChange('status', v)}
+                                   disabled={agendamento?.status === 'Pago'}
+                                 >
                                    <SelectTrigger id="status" className="mt-1"><SelectValue /></SelectTrigger>
                                    <SelectContent>
                                      <SelectItem value="Agendado">Agendado</SelectItem>
                                      <SelectItem value="Confirmado">Confirmado</SelectItem>
-                                     <SelectItem value="Pago">Pago</SelectItem>
+                                     {agendamento?.status === 'Pago' && <SelectItem value="Pago">Pago</SelectItem>}
                                      <SelectItem value="Em Atendimento">Em Atendimento</SelectItem>
                                      <SelectItem value="Finalizado">Finalizado</SelectItem>
                                      <SelectItem value="Cancelado">Cancelado</SelectItem>
                                      <SelectItem value="Não Compareceu">Não Compareceu</SelectItem>
                                    </SelectContent>
                                  </Select>
+                                 {agendamento?.status === 'Pago' && (
+                                   <p className="text-xs text-gray-500 mt-1">Status definido pela Ordem de Serviço.</p>
+                                 )}
                                </div>
                              </div>
 
