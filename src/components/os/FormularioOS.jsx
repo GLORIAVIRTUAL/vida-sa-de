@@ -28,7 +28,7 @@ const taxasCartao = {
   credito: {
     'VISA_CREDITO': { label: 'Visa Crédito', taxas: taxasGrupo1 },
     'MASTERCARD_CREDITO': { label: 'Mastercard Crédito', taxas: taxasGrupo1 },
-    'HIPERCARD_CREDITO': { label: 'Hipercard Crédito', taxas: taxasGrupo1 },
+    'HIPERCARD': { label: 'Hipercard Crédito', taxas: taxasGrupo1 },
     'ELO_CREDITO': { label: 'Elo Crédito', taxas: taxasGrupo2 },
     'AMEX_CREDITO': { label: 'Amex Crédito', taxas: taxasGrupo2 },
     'DINERS_CREDITO': { label: 'Diners Crédito', taxas: taxasGrupo1 },
