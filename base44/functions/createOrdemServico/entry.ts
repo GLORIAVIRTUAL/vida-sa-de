@@ -133,7 +133,7 @@ Deno.serve(async (req) => {
             try {
                 // PRODUÇÃO EvoluServices — credenciais do estabelecimento Glória Virtual
                 const EVOLU_BASE = 'https://api.evoluservices.com';
-                const merchantId = '70b017c7-8eab-40a5-a277-abc56e930862';
+                const merchantId = '051e6146-62ee-4122-979a-9b3756cba249';
 
                 // Obter Bearer token de produção (expira, então geramos a cada transação)
                 const tokenResp = await fetch(`${EVOLU_BASE}/remote/token`, {
