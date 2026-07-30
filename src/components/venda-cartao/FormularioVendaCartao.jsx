@@ -616,7 +616,7 @@ export default function FormularioVendaCartao({ venda, onClose, onSave }) { // N
                         {formData.forma_pagamento === 'Cartão Crédito' ? (
                           <>
                             <SelectItem value="VISA_CREDITO">Visa Crédito</SelectItem>
-                            <SelectItem value="MASTERCARD_CREDITO">Mastercard Crédito</SelectItem>
+                            <SelectItem value="MASTERCARD">Mastercard Crédito</SelectItem>
                             <SelectItem value="ELO_CREDITO">Elo Crédito</SelectItem>
                             <SelectItem value="HIPERCARD">Hipercard Crédito</SelectItem>
                             <SelectItem value="AMEX_CREDITO">Amex Crédito</SelectItem>

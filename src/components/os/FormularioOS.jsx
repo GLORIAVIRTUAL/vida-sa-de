@@ -27,7 +27,7 @@ const taxasGrupo2 = { 1: 4.64, 2: 5.62, 3: 6.54, 4: 7.19, 5: 8.04, 6: 8.89, 7: 9
 const taxasCartao = {
   credito: {
     'VISA_CREDITO': { label: 'Visa Crédito', taxas: taxasGrupo1 },
-    'MASTERCARD_CREDITO': { label: 'Mastercard Crédito', taxas: taxasGrupo1 },
+    'MASTERCARD': { label: 'Mastercard Crédito', taxas: taxasGrupo1 },
     'HIPERCARD': { label: 'Hipercard Crédito', taxas: taxasGrupo1 },
     'ELO_CREDITO': { label: 'Elo Crédito', taxas: taxasGrupo2 },
     'AMEX_CREDITO': { label: 'Amex Crédito', taxas: taxasGrupo2 },

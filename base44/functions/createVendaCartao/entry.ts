@@ -217,7 +217,7 @@ Deno.serve(async (req) => {
                     merchantId: MERCHANT_ID,
                     value: parseFloat(valor_total).toFixed(2),
                     installments: body.numero_parcelas || 1,
-                    paymentBrand: bandeira_cartao,
+                    paymentBrand: bandeira_cartao === 'MASTERCARD_CREDITO' ? 'MASTERCARD' : bandeira_cartao,
                     callbackUrl: callbackUrl,
                     clientName: titular.nome
                 }
