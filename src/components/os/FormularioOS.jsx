@@ -28,17 +28,25 @@ const taxasCartao = {
   credito: {
     'VISA_CREDITO': { label: 'Visa Crédito', taxas: taxasGrupo1 },
     'MASTERCARD': { label: 'Mastercard Crédito', taxas: taxasGrupo1 },
-    'HIPERCARD': { label: 'Hipercard Crédito', taxas: taxasGrupo1 },
-    'ELO_CREDITO': { label: 'Elo Crédito', taxas: taxasGrupo2 },
-    'AMEX_CREDITO': { label: 'Amex Crédito', taxas: taxasGrupo2 },
-    'DINERS_CREDITO': { label: 'Diners Crédito', taxas: taxasGrupo1 },
-    'CABAL_CREDITO': { label: 'Cabal Crédito', taxas: taxasGrupo1 }
+    'AMEX': { label: 'American Express', taxas: taxasGrupo2 },
+    'DINERS': { label: 'Diners', taxas: taxasGrupo1 },
+    'HIPERCARD': { label: 'Hipercard', taxas: taxasGrupo1 },
+    'AURA': { label: 'Aura', taxas: taxasGrupo2 },
+    'SOROCRED': { label: 'Sorocred', taxas: taxasGrupo2 },
+    'ELO': { label: 'Elo Crédito', taxas: taxasGrupo2 },
+    'SICREDI': { label: 'Sicredi', taxas: taxasGrupo2 },
+    'HIPER': { label: 'Hiper', taxas: taxasGrupo2 },
+    'AGIPLAN': { label: 'Agiplan', taxas: taxasGrupo2 },
+    'BANESCARD': { label: 'Banescard', taxas: taxasGrupo2 },
+    'CREDZ': { label: 'CredZ', taxas: taxasGrupo2 },
+    'JCB': { label: 'JCB', taxas: taxasGrupo2 },
+    'CABAL': { label: 'Cabal', taxas: taxasGrupo1 },
+    'MAIS': { label: 'Mais', taxas: taxasGrupo2 }
   },
   debito: {
     'VISA_ELECTRON': { label: 'Visa Débito', taxa: 1.10 },
     'MAESTRO': { label: 'Mastercard Débito / Maestro', taxa: 1.10 },
-    'ELO_DEBITO': { label: 'Elo Débito', taxa: 1.98 },
-    'BANESCARD_DEBITO': { label: 'Banescard Débito', taxa: 1.10 }
+    'ELO_DEBITO': { label: 'Elo Débito', taxa: 1.98 }
   }
 };
 

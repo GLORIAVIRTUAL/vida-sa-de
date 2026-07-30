@@ -617,9 +617,20 @@ export default function FormularioVendaCartao({ venda, onClose, onSave }) { // N
                           <>
                             <SelectItem value="VISA_CREDITO">Visa Crédito</SelectItem>
                             <SelectItem value="MASTERCARD">Mastercard Crédito</SelectItem>
-                            <SelectItem value="ELO_CREDITO">Elo Crédito</SelectItem>
-                            <SelectItem value="HIPERCARD">Hipercard Crédito</SelectItem>
-                            <SelectItem value="AMEX_CREDITO">Amex Crédito</SelectItem>
+                            <SelectItem value="AMEX">American Express</SelectItem>
+                            <SelectItem value="DINERS">Diners</SelectItem>
+                            <SelectItem value="HIPERCARD">Hipercard</SelectItem>
+                            <SelectItem value="AURA">Aura</SelectItem>
+                            <SelectItem value="SOROCRED">Sorocred</SelectItem>
+                            <SelectItem value="ELO">Elo Crédito</SelectItem>
+                            <SelectItem value="SICREDI">Sicredi</SelectItem>
+                            <SelectItem value="HIPER">Hiper</SelectItem>
+                            <SelectItem value="AGIPLAN">Agiplan</SelectItem>
+                            <SelectItem value="BANESCARD">Banescard</SelectItem>
+                            <SelectItem value="CREDZ">CredZ</SelectItem>
+                            <SelectItem value="JCB">JCB</SelectItem>
+                            <SelectItem value="CABAL">Cabal</SelectItem>
+                            <SelectItem value="MAIS">Mais</SelectItem>
                           </>
                         ) : (
                           <>
