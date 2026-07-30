@@ -591,6 +591,21 @@ export default function FormularioOS({
       console.log('✅ Categoria a ser salva:', categoria?.nome, '(ID:', categoriaId, ')');
 
       const pagamentoCartao = dados.forma_pagamento === 'Cartão Crédito' || dados.forma_pagamento === 'Cartão Débito';
+      const valorBasePagamento = dados.valor_total - dados.desconto + (dados.acrescimo || 0);
+      let jurosPagamento = 0;
+
+      if (dados.cobrar_taxa && pagamentoCartao && dados.bandeira_cartao) {
+        const taxaPercentual = dados.forma_pagamento === 'Cartão Crédito'
+          ? taxasCartao.credito[dados.bandeira_cartao]?.taxas?.[dados.parcelas] || 0
+          : taxasCartao.debito[dados.bandeira_cartao]?.taxa || 0;
+
+        if (taxaPercentual > 0) {
+          jurosPagamento = valorBasePagamento / (1 - taxaPercentual / 100) - valorBasePagamento;
+        }
+      }
+
+      const valorFinalPagamento = valorBasePagamento + jurosPagamento;
+
       if (pagamentoCartao && !dados.bandeira_cartao) {
         toast({
           title: "Selecione a bandeira do cartão",
@@ -640,8 +655,8 @@ export default function FormularioOS({
         categoria_preco_id: categoriaId, // FORÇAR INCLUSÃO
         valor_total: dados.valor_total,
         desconto: dados.desconto,
-        juros: dados.juros,
-        valor_final: dados.valor_final,
+        juros: jurosPagamento,
+        valor_final: valorFinalPagamento,
         forma_pagamento: dados.forma_pagamento,
         pagamentos_detalhados: pagamentosDetalhados,
         parcelas: dados.parcelas,
