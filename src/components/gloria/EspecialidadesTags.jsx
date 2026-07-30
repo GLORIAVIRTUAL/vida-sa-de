@@ -5,7 +5,7 @@ import { Stethoscope, Check, ChevronDown } from 'lucide-react';
 
 // Lista de referência ampla de especialidades médicas/serviços de saúde
 const ESPECIALIDADES_REFERENCIA = [
-  'Acupuntura', 'Alergologia', 'Anestesiologia', 'Angiologia', 'Cardiologia',
+  'Acupuntura', 'Alergologia', 'Anestesiologia', 'Angiologia', 'ASO', 'Audiometria', 'Cardiologia',
   'Cirurgia Geral', 'Cirurgia Plástica', 'Cirurgia Vascular', 'Clínico Geral',
   'Colonoscopia', 'Dermatologia', 'Ecografia', 'Endocrinologia', 'Endoscopia',
   'Espirometria', 'Fisioterapeuta', 'Fonoaudiologia', 'Holter', 'Teste Ergométrico',
@@ -22,7 +22,7 @@ const ESPECIALIDADES_REFERENCIA = [
 const normalizar = (s) => (s || '').toString().trim().toLowerCase();
 
 // Serviços que a clínica oferece mesmo sem médico ativo cadastrado com a especialidade
-const ESPECIALIDADES_FIXAS_CLINICA = ['Ecografia', 'Vascular', 'Teste Ergométrico', 'Espirometria', 'Endoscopia', 'Colonoscopia', 'Holter'];
+const ESPECIALIDADES_FIXAS_CLINICA = ['ASO', 'Audiometria', 'Ecografia', 'Vascular', 'Teste Ergométrico', 'Espirometria', 'Endoscopia', 'Colonoscopia', 'Holter'];
 
 export default function EspecialidadesTags({ contato, onAdicionarTag }) {
   const [aberto, setAberto] = React.useState(false);
