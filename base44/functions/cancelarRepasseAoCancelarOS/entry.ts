@@ -40,9 +40,37 @@ export default async function(req) {
       ...extras
     });
 
+    const categoriasReceita = new Set([
+      'Receita Consultas',
+      'Receita Procedimentos',
+      'Receita Exames',
+      'Outros'
+    ]);
+    const lancamentosDaOS = await base44.asServiceRole.entities.Lancamento.filter({
+      ordem_servico_id: entityId,
+      tipo: 'Entrada'
+    });
+    const receitasAtivas = lancamentosDaOS.filter((lancamento) =>
+      categoriasReceita.has(lancamento.categoria) && lancamento.status !== 'Cancelado'
+    );
+
+    if (receitasAtivas.length > 0) {
+      await base44.asServiceRole.entities.Lancamento.bulkUpdate(
+        receitasAtivas.map((lancamento) => ({
+          id: lancamento.id,
+          status: 'Cancelado',
+          observacoes: `${lancamento.observacoes ? `${lancamento.observacoes}\n` : ''}Receita cancelada automaticamente porque a OS foi cancelada.`
+        }))
+      );
+    }
+
     if (!repasseRealizado || valorRepasse <= 0) {
       if (cancelamentoDireto) await concluirCancelamento();
-      return Response.json({ message: 'OS cancelada sem repasse realizado para estornar', skipped: true });
+      return Response.json({
+        message: 'OS cancelada e receita retirada do caixa; sem repasse realizado para estornar',
+        receitas_canceladas: receitasAtivas.length,
+        skipped: true
+      });
     }
 
     const estornosExistentes = await base44.asServiceRole.entities.Lancamento.filter({
