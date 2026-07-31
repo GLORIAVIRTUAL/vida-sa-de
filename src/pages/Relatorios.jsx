@@ -350,8 +350,13 @@ export default function Relatorios() {
       // Filtro de forma de pagamento
       if (filtros.formaPagamento !== 'todos' && os.forma_pagamento !== filtros.formaPagamento) return false;
       
-      // Filtro de status
-      if (filtros.statusPagamento !== 'todos' && os.status_pagamento !== filtros.statusPagamento) return false;
+      // Por padrão, os relatórios consideram somente OS pagas.
+      // Pendentes e canceladas aparecem apenas quando o respectivo status é escolhido.
+      if (filtros.statusPagamento === 'todos') {
+        if (os.status_pagamento !== 'Pago') return false;
+      } else if (os.status_pagamento !== filtros.statusPagamento) {
+        return false;
+      }
       
       return true;
     }).sort((a, b) => {
