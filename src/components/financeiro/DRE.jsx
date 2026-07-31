@@ -17,8 +17,9 @@ export default function DRE({ lancamentos, ordensServico = [], loading }) {
       mesAno: mesAnoFiltro
     });
 
-    // Excluir lançamentos de receita vinculados a OS canceladas para que a receita bata com o Total Vendido
-    const lancamentosPeriodo = excluirLancamentosDeOSCanceladas(lancamentosPeriodoRaw, ordensServico);
+    // Considerar somente lançamentos efetivados; pendentes não entram na DRE.
+    const lancamentosPeriodo = excluirLancamentosDeOSCanceladas(lancamentosPeriodoRaw, ordensServico)
+      .filter(lancamento => lancamento.status !== 'Pendente');
 
     const resumo = somarLancamentos(lancamentosPeriodo);
     const entradasPorCategoria = agruparLancamentosPorCategoria(lancamentosPeriodo, 'Entrada');
@@ -29,7 +30,7 @@ export default function DRE({ lancamentos, ordensServico = [], loading }) {
     const osAtivasPeriodo = ordensServico.filter(os => {
       if (!os.data_execucao) return false;
       const osYM = os.data_execucao.substring(0, 7);
-      return osYM === mesAnoFiltro && os.status_pagamento !== 'Cancelado';
+      return osYM === mesAnoFiltro && os.status_pagamento === 'Pago';
     });
 
     const receitaConsultas = osAtivasPeriodo
@@ -65,7 +66,7 @@ export default function DRE({ lancamentos, ordensServico = [], loading }) {
     const osPeriodo = ordensServico.filter(os => {
       if (!os.data_execucao) return false;
       const osYM = os.data_execucao.substring(0, 7);
-      return osYM === mesAnoFiltro && os.status_pagamento !== 'Cancelado';
+      return osYM === mesAnoFiltro && os.status_pagamento === 'Pago';
     });
     const impostoOS = osPeriodo.reduce((acc, os) => acc + (os.valor_imposto || 0), 0);
 
