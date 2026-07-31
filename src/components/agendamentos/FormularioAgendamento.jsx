@@ -30,6 +30,14 @@ const normalizeString = (str) => {
     return String(str).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
 }
 
+const validarNomePacienteParaEvolu = (nome) => {
+  const nomeTexto = String(nome || '');
+  if (!nomeTexto) return 'O paciente selecionado está sem nome cadastrado.';
+  if (nomeTexto !== nomeTexto.trim()) return 'O nome do paciente não pode ter espaços antes ou depois do nome. Corrija o cadastro do paciente.';
+  if (!/^\p{Lu}/u.test(nomeTexto)) return 'O nome do paciente deve começar com letra maiúscula. Corrija o cadastro do paciente.';
+  return null;
+};
+
 export default function FormularioAgendamento({ agendamento, dadosIniciais, todosAgendamentos, medicos, pacientes: pacientesProps, procedimentos, exames, categorias, tabelaPrecos, onSave, onClose }) {
   const { toast } = useToast();
   const [formData, setFormData] = useState({
@@ -1084,6 +1092,11 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
       }
 
       const pacienteSelecionado = pacientesEncontrados.find(p => p.id === formData.paciente_id);
+      const erroNomePaciente = validarNomePacienteParaEvolu(pacienteSelecionado?.nome);
+      if (erroNomePaciente) {
+        erroValidacao(erroNomePaciente);
+        return;
+      }
       const dados = { paciente_id: formData.paciente_id, paciente_nome: pacienteSelecionado?.nome || '', data_agendamento: formData.data_agendamento, horario: formData.horario, tipo_servico: formData.tipo_servico, categoria_preco_id: formData.categoria_preco_id, valor_total: parseFloat(formData.valor_total) || 0, desconto_manual: parseFloat(formData.desconto_manual) || 0, acrescimo_manual: parseFloat(formData.acrescimo_manual) || 0, valor_final: parseFloat(formData.valor_final) || parseFloat(formData.valor_total) || 0, status: formData.status || 'Agendado', forma_pagamento: formData.forma_pagamento || 'Dinheiro', is_encaixe: formData.is_encaixe || false, is_reserva: !formData.paciente_id, is_recorrente: formData.is_recorrente || false, lembrete_equipe: formData.lembrete_equipe || false, lembrete_dias_antes: parseInt(formData.lembrete_dias_antes) || 0 };
       if (formData.duracao_minutos) dados.duracao_minutos = parseInt(formData.duracao_minutos);
       const _dn=formData.observacoes?.match(/Dentista:\s*(.+?)(\n|$)/)?.[1]?.trim(),_dm=_dn&&medicos.find(m=>m.nome===_dn);dados.medico_id=_dm?_dm.id:(formData.medico_id||null);
