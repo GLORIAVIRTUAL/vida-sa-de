@@ -8,31 +8,41 @@ export default async function(req) {
   try {
     const base44 = createClientFromRequest(req);
     const payload = await req.json();
-    const event = payload?.event || {};
-    const data = payload?.data;
-    const oldData = payload?.old_data;
-    const entityId = event?.entity_id;
+    const cancelamentoDireto = Boolean(payload?.ordem_servico_id);
+    let event = payload?.event || {};
+    let data = payload?.data;
+    let oldData = payload?.old_data;
+    const entityId = payload?.ordem_servico_id || event?.entity_id;
+    const atualizacoesOS = payload?.atualizacoes_os || {};
 
-    if (event?.type !== 'update' || event?.entity_name !== 'OrdemServico') {
+    if (cancelamentoDireto) {
+      oldData = await base44.asServiceRole.entities.OrdemServico.get(entityId);
+      data = { ...oldData, ...atualizacoesOS, status_pagamento: 'Cancelado' };
+      event = { type: 'update', entity_name: 'OrdemServico', entity_id: entityId };
+    }
+
+    if (event?.type !== 'update' || event?.entity_name !== 'OrdemServico' || !entityId) {
       return Response.json({ message: 'Evento não aplicável.', skipped: true });
     }
 
-    if (data?.status_pagamento !== 'Cancelado' || oldData?.status_pagamento === 'Cancelado') {
+    if (data?.status_pagamento !== 'Cancelado' || (!cancelamentoDireto && oldData?.status_pagamento === 'Cancelado')) {
       return Response.json({ message: 'OS não foi cancelada agora, ignorando.', skipped: true });
-    }
-
-    if (!entityId) {
-      return Response.json({ error: 'entity_id ausente' }, { status: 400 });
     }
 
     const os = payload?.payload_too_large || !data
       ? await base44.asServiceRole.entities.OrdemServico.get(entityId)
       : data;
-    const valorRepasse = Number(oldData?.valor_repasse_medico ?? os?.valor_repasse_medico ?? 0);
+    const valorRepasse = Math.round(Number(oldData?.valor_repasse_medico ?? os?.valor_repasse_medico ?? 0) * 100) / 100;
     const repasseRealizado = oldData?.repasse_realizado === true || os?.repasse_realizado === true;
+    const concluirCancelamento = (extras = {}) => base44.asServiceRole.entities.OrdemServico.update(entityId, {
+      ...(cancelamentoDireto ? atualizacoesOS : {}),
+      status_pagamento: 'Cancelado',
+      ...extras
+    });
 
     if (!repasseRealizado || valorRepasse <= 0) {
-      return Response.json({ message: 'Sem repasse realizado para estornar', skipped: true });
+      if (cancelamentoDireto) await concluirCancelamento();
+      return Response.json({ message: 'OS cancelada sem repasse realizado para estornar', skipped: true });
     }
 
     const estornosExistentes = await base44.asServiceRole.entities.Lancamento.filter({
@@ -42,7 +52,12 @@ export default async function(req) {
     });
 
     if (estornosExistentes.length > 0) {
-      return Response.json({ message: 'Estorno já registrado', skipped: true });
+      await concluirCancelamento({ repasse_realizado: false, data_repasse: null });
+      return Response.json({
+        message: 'Estorno já registrado, nenhuma duplicidade criada',
+        skipped: true,
+        lancamento_estorno_id: estornosExistentes[0].id
+      });
     }
 
     let nomeMedico = '';
@@ -73,9 +88,7 @@ export default async function(req) {
       observacoes: `Estorno automático em ${horarioLocal} - OS cancelada (paciente: ${os.paciente_nome || 'N/A'}, data execução: ${os.data_execucao || 'N/A'})`
     });
 
-    await base44.asServiceRole.entities.OrdemServico.update(entityId, {
-      repasse_realizado: false
-    });
+    await concluirCancelamento({ repasse_realizado: false, data_repasse: null });
 
     return Response.json({
       message: 'Estorno de repasse criado com sucesso',

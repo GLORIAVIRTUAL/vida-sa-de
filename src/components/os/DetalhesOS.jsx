@@ -185,7 +185,7 @@ export default function DetalhesOS({ os, pacienteNome, medicoNome, categoriaNome
         console.warn('Não foi possível identificar o usuário logado:', e.message);
       }
 
-      await OrdemServico.update(os.id, {
+      const atualizacoesOS = {
         status_pagamento: statusPagamento,
         forma_pagamento: formaPagamento,
         pagamentos_detalhados: pagamentosDetalhados,
@@ -193,7 +193,16 @@ export default function DetalhesOS({ os, pacienteNome, medicoNome, categoriaNome
         data_pagamento: statusPagamento === 'Pago' ? new Date().toISOString() : null,
         alterado_por_email: usuarioLogado?.email || null,
         alterado_por_nome: usuarioLogado?.full_name || usuarioLogado?.email || null
-      });
+      };
+
+      if (statusPagamento === 'Cancelado' && os.status_pagamento !== 'Cancelado') {
+        await base44.functions.invoke('cancelarRepasseAoCancelarOS', {
+          ordem_servico_id: os.id,
+          atualizacoes_os: atualizacoesOS
+        });
+      } else {
+        await OrdemServico.update(os.id, atualizacoesOS);
+      }
 
       toast({
         title: "Sucesso!",
