@@ -68,7 +68,7 @@ export default async function(req) {
       data_lancamento: dataLocal,
       forma_pagamento: os.forma_pagamento || 'Dinheiro',
       ordem_servico_id: entityId,
-      medico_id: os.medico_id || null,
+      ...(os.medico_id ? { medico_id: os.medico_id } : {}),
       status: 'Realizado',
       observacoes: `Estorno automático em ${horarioLocal} - OS cancelada (paciente: ${os.paciente_nome || 'N/A'}, data execução: ${os.data_execucao || 'N/A'})`
     });
