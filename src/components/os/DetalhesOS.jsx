@@ -31,6 +31,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { base44 } from "@/api/base44Client";
 import SenhaRetroativaDialog, { isDiaFechado, podeAlterarDiaFechado } from "@/components/financeiro/SenhaRetroativaDialog";
+import garantirLancamentoPago from "@/components/os/garantirLancamentoPago";
 
 const statusPagamentoColors = {
   "Pendente": "bg-yellow-100 text-yellow-800",
@@ -202,6 +203,10 @@ export default function DetalhesOS({ os, pacienteNome, medicoNome, categoriaNome
         });
       } else {
         await OrdemServico.update(os.id, atualizacoesOS);
+      }
+
+      if (statusPagamento === 'Pago') {
+        await garantirLancamentoPago(os, atualizacoesOS);
       }
 
       toast({
