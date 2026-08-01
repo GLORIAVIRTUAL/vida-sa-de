@@ -14,7 +14,7 @@ import TagTable from '@/components/chat-relatorio/TagTable';
 export default function RelatorioChat({ embedded = false }) {
   const { toast } = useToast();
   const { data, isLoading, error } = useQuery({
-    queryKey: ['relatorio-chat', '2026-07'],
+    queryKey: ['relatorio-chat', '2026-07', 'conversas-unicas'],
     queryFn: async () => {
       const response = await base44.functions.invoke('relatorioChatMensal', { mes: '2026-07' });
       return response.data;
@@ -46,7 +46,7 @@ export default function RelatorioChat({ embedded = false }) {
           </Button>
         </header>
         <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <MetricCard titulo="Conversas no mês" valor={data.conversas} destaque="text-blue-600" />
+          <MetricCard titulo="Conversas únicas no mês" valor={data.conversas} destaque="text-blue-600" />
           <MetricCard titulo="Pacientes com tags" valor={data.pacientes_com_tags} destaque="text-green-600" />
           <MetricCard titulo="Marcações de tags" valor={data.total_tags} destaque="text-purple-600" />
         </section>

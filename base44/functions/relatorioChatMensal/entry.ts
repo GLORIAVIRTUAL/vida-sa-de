@@ -17,15 +17,59 @@ export default async function(req) {
       return Number.isFinite(timestamp) && timestamp >= inicio && timestamp < fim;
     };
 
-    const contatos = [];
+    const contatosBrutos = [];
     for (let skip = 0; skip < 10000; skip += 500) {
       const lote = await base44.asServiceRole.entities.Contato.list('-ultima_interacao', 500, skip);
-      contatos.push(...(lote || []));
+      contatosBrutos.push(...(lote || []));
       if (!lote || lote.length < 500) break;
     }
 
+    const contatosPorTelefone = new Map();
+    contatosBrutos.forEach((contato) => {
+      const telefone = String(contato.telefone || '').replace(/\D/g, '');
+      const chave = telefone.length >= 8 ? telefone.slice(-8) : contato.id;
+      const existente = contatosPorTelefone.get(chave);
+      if (!existente) {
+        contatosPorTelefone.set(chave, {
+          ...contato,
+          tags: [...(contato.tags || [])],
+          interesses: [...(contato.interesses || [])],
+          historico_mensagens: [...(contato.historico_mensagens || [])],
+          dados_extras: {
+            ...(contato.dados_extras || {}),
+            tag_historico: [...(contato.dados_extras?.tag_historico || [])]
+          }
+        });
+        return;
+      }
+
+      existente.tags.push(...(contato.tags || []));
+      existente.interesses.push(...(contato.interesses || []));
+      const mensagensExistentes = new Set(existente.historico_mensagens.map(
+        (mensagem) => `${mensagem.timestamp || ''}|${mensagem.role || ''}|${mensagem.content || ''}`
+      ));
+      (contato.historico_mensagens || []).forEach((mensagem) => {
+        const chaveMensagem = `${mensagem.timestamp || ''}|${mensagem.role || ''}|${mensagem.content || ''}`;
+        if (!mensagensExistentes.has(chaveMensagem)) {
+          mensagensExistentes.add(chaveMensagem);
+          existente.historico_mensagens.push(mensagem);
+        }
+      });
+      const eventosExistentes = new Set(existente.dados_extras.tag_historico.map(
+        (evento) => `${evento.timestamp || ''}|${evento.acao || ''}|${evento.tag || ''}|${evento.atendente || ''}`
+      ));
+      (contato.dados_extras?.tag_historico || []).forEach((evento) => {
+        const chaveEvento = `${evento.timestamp || ''}|${evento.acao || ''}|${evento.tag || ''}|${evento.atendente || ''}`;
+        if (!eventosExistentes.has(chaveEvento)) {
+          eventosExistentes.add(chaveEvento);
+          existente.dados_extras.tag_historico.push(evento);
+        }
+      });
+    });
+
+    const contatos = Array.from(contatosPorTelefone.values());
     const conversas = contatos.filter((contato) =>
-      (contato.historico_mensagens || []).some((mensagem) => dentroDoMes(mensagem.timestamp))
+      contato.historico_mensagens.some((mensagem) => dentroDoMes(mensagem.timestamp))
     );
     const tagsContagem = new Map();
     const atendentesContagem = new Map();
@@ -69,6 +113,7 @@ export default async function(req) {
     return Response.json({
       mes,
       conversas: conversas.length,
+      criterio_conversas: 'Contatos únicos por telefone com ao menos uma mensagem no mês.',
       pacientes_com_tags: conversas.filter((contato) => (contato.tags || []).length + (contato.interesses || []).length > 0).length,
       total_tags: tags.reduce((total, tag) => total + tag.quantidade, 0),
       tags,
