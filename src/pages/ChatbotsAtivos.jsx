@@ -27,6 +27,7 @@ import CadastroRapidoPaciente from '../components/pacientes/CadastroRapidoPacien
 import TransferirConversaModal from '../components/gloria/TransferirConversaModal';
 import { motivosColunas, motivoInteresseMap, classificarMotivo } from '../components/gloria/pipelineMotivos';
 import EspecialidadesTags from '../components/gloria/EspecialidadesTags';
+import RelatorioChat from './RelatorioChat';
 
 export const useContatosQuery = () => {
   return useQuery({
@@ -1501,7 +1502,7 @@ export default function ChatbotsAtivos() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 h-auto">
             <TabsTrigger value="chat" className="flex items-center gap-2">
               <MessageCircle className="w-4 h-4" />
               Conversas
@@ -1517,6 +1518,10 @@ export default function ChatbotsAtivos() {
             <TabsTrigger value="pipeline" className="flex items-center gap-2">
               <TrendingUp className="w-4 h-4" />
               Pipeline
+            </TabsTrigger>
+            <TabsTrigger value="relatorio" className="flex items-center gap-2">
+              <TrendingUp className="w-4 h-4" />
+              Relatório
             </TabsTrigger>
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <Activity className="w-4 h-4" />
@@ -1590,6 +1595,10 @@ export default function ChatbotsAtivos() {
 
           <TabsContent value="pipeline" className="mt-4">
             <PipelineTab />
+          </TabsContent>
+
+          <TabsContent value="relatorio" className="mt-4">
+            <RelatorioChat embedded />
           </TabsContent>
 
           <TabsContent value="dashboard" className="mt-4">

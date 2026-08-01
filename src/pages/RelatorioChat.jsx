@@ -1,14 +1,18 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { MessageSquareText, Loader2 } from 'lucide-react';
+import { MessageSquareText, Loader2, Download } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/components/ui/use-toast';
+import exportarRelatorioPdf from '@/components/chat-relatorio/exportarRelatorioPdf';
 import MetricCard from '@/components/chat-relatorio/MetricCard';
 import TagBarChart from '@/components/chat-relatorio/TagBarChart';
 import AtendenteRanking from '@/components/chat-relatorio/AtendenteRanking';
 import TagTable from '@/components/chat-relatorio/TagTable';
 
-export default function RelatorioChat() {
+export default function RelatorioChat({ embedded = false }) {
+  const { toast } = useToast();
   const { data, isLoading, error } = useQuery({
     queryKey: ['relatorio-chat', '2026-07'],
     queryFn: async () => {
@@ -21,12 +25,25 @@ export default function RelatorioChat() {
   if (isLoading) return <div className="flex min-h-[60vh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /></div>;
   if (error) return <div className="p-6"><Alert variant="destructive"><AlertDescription>Não foi possível carregar o relatório: {error.message}</AlertDescription></Alert></div>;
 
+  const handleExportar = () => {
+    const abriu = exportarRelatorioPdf(data);
+    toast({
+      title: abriu ? 'Relatório preparado' : 'Pop-up bloqueado',
+      description: abriu ? 'Escolha “Salvar como PDF” na tela de impressão.' : 'Permita pop-ups para exportar o relatório.'
+    });
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
+    <div className={embedded ? "py-2" : "min-h-screen bg-gray-50 p-4 md:p-6"}>
       <div className="mx-auto max-w-7xl space-y-6">
-        <header className="flex items-center gap-3">
-          <div className="rounded-xl bg-blue-600 p-3 text-white"><MessageSquareText className="h-6 w-6" /></div>
-          <div><h1 className="text-2xl font-bold text-gray-900">Relatório do Chat</h1><p className="text-sm text-gray-500">Dados de julho de 2026</p></div>
+        <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="rounded-xl bg-blue-600 p-3 text-white"><MessageSquareText className="h-6 w-6" /></div>
+            <div><h1 className="text-2xl font-bold text-gray-900">Relatório do Chat</h1><p className="text-sm text-gray-500">Dados de julho de 2026</p></div>
+          </div>
+          <Button onClick={handleExportar} className="bg-blue-600 hover:bg-blue-700">
+            <Download className="mr-2 h-4 w-4" />Exportar em PDF
+          </Button>
         </header>
         <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <MetricCard titulo="Conversas no mês" valor={data.conversas} destaque="text-blue-600" />
