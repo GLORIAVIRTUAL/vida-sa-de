@@ -381,9 +381,21 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
     const novoInteresse = motivoInteresseMap[motivoId] || 'Outro';
     const interessesAtuais = contatoSelecionado.interesses || [];
     const novosInteresses = [...interessesAtuais, novoInteresse];
-    setContatoSelecionado(prev => prev ? { ...prev, interesses: novosInteresses } : prev);
+    const novoEvento = {
+      tag: novoInteresse,
+      tipo: 'motivo',
+      acao: 'adicionar',
+      atendente: currentUser?.display_name || currentUser?.full_name || currentUser?.email || 'Não identificado',
+      atendente_id: currentUser?.id || null,
+      timestamp: new Date().toISOString()
+    };
+    const dadosExtras = {
+      ...(contatoSelecionado.dados_extras || {}),
+      tag_historico: [...(contatoSelecionado.dados_extras?.tag_historico || []), novoEvento]
+    };
+    setContatoSelecionado(prev => prev ? { ...prev, interesses: novosInteresses, dados_extras: dadosExtras } : prev);
     try {
-      await base44.entities.Contato.update(contatoSelecionado.id, { interesses: novosInteresses });
+      await base44.entities.Contato.update(contatoSelecionado.id, { interesses: novosInteresses, dados_extras: dadosExtras });
       await buscarContatos();
     } catch (error) {
       console.error('Erro ao marcar motivo:', error);
@@ -398,9 +410,21 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
     const novasTags = jaExiste
       ? tagsAtuais.filter(t => (t || '').trim().toLowerCase() !== especialidade.trim().toLowerCase())
       : [...tagsAtuais, especialidade];
-    setContatoSelecionado(prev => prev ? { ...prev, tags: novasTags } : prev);
+    const novoEvento = {
+      tag: especialidade,
+      tipo: 'especialidade',
+      acao: jaExiste ? 'remover' : 'adicionar',
+      atendente: currentUser?.display_name || currentUser?.full_name || currentUser?.email || 'Não identificado',
+      atendente_id: currentUser?.id || null,
+      timestamp: new Date().toISOString()
+    };
+    const dadosExtras = {
+      ...(contatoSelecionado.dados_extras || {}),
+      tag_historico: [...(contatoSelecionado.dados_extras?.tag_historico || []), novoEvento]
+    };
+    setContatoSelecionado(prev => prev ? { ...prev, tags: novasTags, dados_extras: dadosExtras } : prev);
     try {
-      await base44.entities.Contato.update(contatoSelecionado.id, { tags: novasTags });
+      await base44.entities.Contato.update(contatoSelecionado.id, { tags: novasTags, dados_extras: dadosExtras });
       await buscarContatos();
     } catch (error) {
       console.error('Erro ao alternar tag:', error);
