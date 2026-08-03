@@ -74,7 +74,9 @@ export default function FormularioOS({
   // CORREÇÃO: Resolver o médico correto considerando Odontologia (agenda unificada)
   // Se o agendamento tem "Dentista: NomeDoDentista" nas observações, usar o ID DESSE dentista
   const resolverMedicoId = (ag, meds, fallbackMedico) => {
-    if (ag?.tipo_servico === 'Exame') return null;
+    if (ag?.tipo_servico === 'Exame') {
+      return meds.find(m => normalizeString(m.nome) === 'EXAMES')?.id || null;
+    }
     const dentNome = ag?.observacoes?.match(/Dentista:\s*(.+?)(\n|$)/)?.[1]?.trim();
     if (dentNome) {
       const dentObj = meds.find(m => m.nome === dentNome);
@@ -657,7 +659,9 @@ export default function FormularioOS({
         agendamento_id: agendamento.id,
         paciente_id: agendamento.paciente_id,
         paciente_nome: nomePaciente,
-        medico_id: medicoSelecionadoId || null,
+        medico_id: agendamento.tipo_servico === 'Exame'
+          ? medicos.find(m => normalizeString(m.nome) === 'EXAMES')?.id || null
+          : medicoSelecionadoId || null,
         data_execucao: agendamento.data_agendamento,
         tipo_servico: agendamento.tipo_servico,
         categoria_preco_id: categoriaId, // FORÇAR INCLUSÃO
@@ -838,6 +842,7 @@ export default function FormularioOS({
                   <Select 
                     value={medicoSelecionadoId} 
                     onValueChange={(val) => setMedicoSelecionadoId(val)}
+                    disabled={agendamento?.tipo_servico === 'Exame'}
                   >
                     <SelectTrigger className="h-8 mt-1">
                       <SelectValue placeholder="Selecione o médico" />

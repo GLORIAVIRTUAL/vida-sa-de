@@ -234,6 +234,8 @@ export default function Relatorios() {
 
   // Função para obter nome do médico (ID ou fallback de itens)
   const obterNomeMedico = (os) => {
+    if (os.tipo_servico === 'Exame' && !os.medico_id) return 'EXAMES';
+
     // Primeiro verificar se existe médico real diferente nas observações do agendamento
     const medicoReal = obterMedicoRealDaOS(os);
     if (medicoReal) return medicoReal.nome;
@@ -260,6 +262,9 @@ export default function Relatorios() {
   // Obter o ID real do médico da OS (considerando agendas unificadas)
   const obterMedicoIdReal = (os) => {
     let medicoIdBase = os.medico_id;
+    if (os.tipo_servico === 'Exame' && !medicoIdBase) {
+      medicoIdBase = medicos.find(m => m.nome?.trim().toUpperCase() === 'EXAMES')?.id || 'sem_medico';
+    }
     if (MAPEAMENTO_MEDICOS_LEGADO[medicoIdBase]) {
       medicoIdBase = MAPEAMENTO_MEDICOS_LEGADO[medicoIdBase];
     }
