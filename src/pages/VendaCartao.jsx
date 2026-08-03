@@ -67,6 +67,8 @@ export default function VendaCartaoPage() {
   const [vendaParaEditar, setVendaParaEditar] = useState(null);
   const [busca, setBusca] = useState('');
   const [filtroStatus, setFiltroStatus] = useState('todos');
+  const [dataVendaInicio, setDataVendaInicio] = useState('');
+  const [dataVendaFim, setDataVendaFim] = useState('');
   
   const [modalCancelarAberto, setModalCancelarAberto] = useState(false);
   const [vendaParaCancelar, setVendaParaCancelar] = useState(null);
@@ -281,8 +283,10 @@ export default function VendaCartaoPage() {
     
     const matchBusca = matchTitular || matchDependente;
     const matchStatus = filtroStatus === 'todos' || venda.status === filtroStatus;
+    const matchDataInicio = !dataVendaInicio || venda.data_venda >= dataVendaInicio;
+    const matchDataFim = !dataVendaFim || venda.data_venda <= dataVendaFim;
     
-    return matchBusca && matchStatus;
+    return matchBusca && matchStatus && matchDataInicio && matchDataFim;
   });
 
   return (
@@ -346,8 +350,44 @@ export default function VendaCartaoPage() {
                 </div>
               </div>
               
-              <div className="flex items-center gap-2">
-                <Filter className="w-4 h-4 text-gray-500" />
+              <div className="flex items-end gap-2 flex-wrap w-full lg:w-auto">
+                <div className="space-y-1 flex-1 min-w-[135px] sm:flex-none">
+                  <Label htmlFor="data-venda-inicio" className="text-xs text-gray-600">Venda de</Label>
+                  <Input
+                    id="data-venda-inicio"
+                    type="date"
+                    value={dataVendaInicio}
+                    max={dataVendaFim || undefined}
+                    onChange={(e) => setDataVendaInicio(e.target.value)}
+                    className="w-full sm:w-40"
+                  />
+                </div>
+                <div className="space-y-1 flex-1 min-w-[135px] sm:flex-none">
+                  <Label htmlFor="data-venda-fim" className="text-xs text-gray-600">Venda até</Label>
+                  <Input
+                    id="data-venda-fim"
+                    type="date"
+                    value={dataVendaFim}
+                    min={dataVendaInicio || undefined}
+                    onChange={(e) => setDataVendaFim(e.target.value)}
+                    className="w-full sm:w-40"
+                  />
+                </div>
+                {(dataVendaInicio || dataVendaFim) && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      setDataVendaInicio('');
+                      setDataVendaFim('');
+                    }}
+                    aria-label="Limpar período"
+                    title="Limpar período"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                )}
+                <Filter className="w-4 h-4 text-gray-500 mb-2" />
                 <Button
                   variant={filtroStatus === 'todos' ? 'default' : 'outline'}
                   size="sm"
