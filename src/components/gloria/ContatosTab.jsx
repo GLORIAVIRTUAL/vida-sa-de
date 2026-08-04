@@ -63,6 +63,25 @@ export default function ContatosTab({ onIniciarConversa }) {
     carregarContatos();
   }, []);
 
+  const handleFiltrarEspecialidade = async (especialidade) => {
+    setFiltroEspecialidade(especialidade);
+    if (especialidade === 'todas') return;
+
+    setLoading(true);
+    try {
+      const resultados = await base44.entities.Contato.filter(
+        { tags: especialidade }, '-created_date', 500
+      );
+      setContatos(prev => {
+        const mapa = new Map(prev.map(contato => [contato.id, contato]));
+        (resultados || []).forEach(contato => mapa.set(contato.id, contato));
+        return Array.from(mapa.values());
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Busca sob demanda no banco quando o usuário digita (nome ou telefone),
   // para encontrar contatos que não estão entre os 1.000 mais recentes.
   useEffect(() => {
@@ -424,7 +443,7 @@ export default function ContatosTab({ onIniciarConversa }) {
               </Select>
             </div>
             <div className="w-full md:w-56">
-              <Select value={filtroEspecialidade} onValueChange={setFiltroEspecialidade}>
+              <Select value={filtroEspecialidade} onValueChange={handleFiltrarEspecialidade}>
                 <SelectTrigger>
                   <SelectValue placeholder="Filtrar por especialidade" />
                 </SelectTrigger>
