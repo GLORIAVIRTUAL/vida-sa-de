@@ -30,6 +30,7 @@ export default function ContatosTab({ onIniciarConversa }) {
   const [loading, setLoading] = useState(true);
   const [busca, setBusca] = useState('');
   const [filtroMotivo, setFiltroMotivo] = useState('todos');
+  const [filtroEspecialidade, setFiltroEspecialidade] = useState('todas');
   const [modalAberto, setModalAberto] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [novoContato, setNovoContato] = useState({
@@ -274,6 +275,13 @@ export default function ContatosTab({ onIniciarConversa }) {
     return <Badge className="bg-gray-100 text-gray-800">{interesses[interesses.length - 1]}</Badge>;
   };
 
+  const especialidadesDisponiveis = React.useMemo(() => {
+    const tags = contatos.flatMap(contato => contato.tags || [])
+      .map(tag => tag?.trim())
+      .filter(Boolean);
+    return [...new Set(tags)].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  }, [contatos]);
+
   const contatosFiltrados = contatos.filter(contato => {
     const buscaNumeros = busca.replace(/\D/g, '');
     const telNumeros = (contato.telefone || '').replace(/\D/g, '');
@@ -306,7 +314,10 @@ export default function ContatosTab({ onIniciarConversa }) {
         !ultimoInteresse.includes('resultado') && !ultimoInteresse.includes('procedimento') && !ultimoInteresse.includes('turma');
     }
     
-    return matchBusca && matchMotivo;
+    const matchEspecialidade = filtroEspecialidade === 'todas' ||
+      (contato.tags || []).some(tag => tag?.trim().toLowerCase() === filtroEspecialidade.toLowerCase());
+
+    return matchBusca && matchMotivo && matchEspecialidade;
   });
 
   if (loading) {
@@ -318,7 +329,7 @@ export default function ContatosTab({ onIniciarConversa }) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 min-w-0 max-w-full">
       {/* Cards de Estatísticas */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
@@ -412,6 +423,19 @@ export default function ContatosTab({ onIniciarConversa }) {
                 </SelectContent>
               </Select>
             </div>
+            <div className="w-full md:w-56">
+              <Select value={filtroEspecialidade} onValueChange={setFiltroEspecialidade}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filtrar por especialidade" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas as especialidades</SelectItem>
+                  {especialidadesDisponiveis.map(especialidade => (
+                    <SelectItem key={especialidade} value={especialidade}>{especialidade}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <Button onClick={carregarContatos} variant="outline" disabled={loading}>
               <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
               Atualizar
@@ -425,13 +449,13 @@ export default function ContatosTab({ onIniciarConversa }) {
       </Card>
 
       {/* Tabela */}
-      <Card>
+      <Card className="min-w-0 max-w-full overflow-hidden">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm">
             Contatos ({contatosFiltrados.length})
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="min-w-0">
           {contatosFiltrados.length === 0 ? (
             <div className="text-center py-12 text-gray-500">
               <Users className="w-12 h-12 mx-auto mb-4 text-gray-300" />
