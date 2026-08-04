@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { MessageSquareText, Loader2, Download } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
@@ -13,10 +13,19 @@ import TagTable from '@/components/chat-relatorio/TagTable';
 
 export default function RelatorioChat({ embedded = false }) {
   const { toast } = useToast();
+  const [mes, setMes] = useState('2026-07');
+  const mesesDisponiveis = Array.from({ length: 12 }, (_, indice) => {
+    const valor = `2026-${String(indice + 1).padStart(2, '0')}`;
+    const nome = new Intl.DateTimeFormat('pt-BR', { month: 'long' })
+      .format(new Date(2026, indice, 1));
+    return { valor, nome: `${nome.charAt(0).toUpperCase()}${nome.slice(1)} de 2026` };
+  });
+  const mesFormatado = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric', timeZone: 'UTC' })
+    .format(new Date(`${mes}-01T12:00:00Z`));
   const { data, isLoading, error } = useQuery({
-    queryKey: ['relatorio-chat', '2026-07', 'conversas-unicas'],
+    queryKey: ['relatorio-chat', mes, 'conversas-unicas'],
     queryFn: async () => {
-      const response = await base44.functions.invoke('relatorioChatMensal', { mes: '2026-07' });
+      const response = await base44.functions.invoke('relatorioChatMensal', { mes });
       return response.data;
     },
     staleTime: 300000
@@ -39,11 +48,24 @@ export default function RelatorioChat({ embedded = false }) {
         <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             <div className="rounded-xl bg-blue-600 p-3 text-white"><MessageSquareText className="h-6 w-6" /></div>
-            <div><h1 className="text-2xl font-bold text-gray-900">Relatório do Chat</h1><p className="text-sm text-gray-500">Dados de julho de 2026</p></div>
+            <div><h1 className="text-2xl font-bold text-gray-900">Relatório do Chat</h1><p className="text-sm text-gray-500">Dados de {mesFormatado}</p></div>
           </div>
-          <Button onClick={handleExportar} className="bg-blue-600 hover:bg-blue-700">
-            <Download className="mr-2 h-4 w-4" />Exportar em PDF
-          </Button>
+          <div className="flex items-center gap-3">
+            <label htmlFor="mes-relatorio" className="text-sm font-medium text-gray-700">Mês</label>
+            <select
+              id="mes-relatorio"
+              value={mes}
+              onChange={(event) => setMes(event.target.value)}
+              className="h-10 rounded-md border border-gray-300 bg-white px-3 text-sm"
+            >
+              {mesesDisponiveis.map((opcao) => (
+                <option key={opcao.valor} value={opcao.valor}>{opcao.nome}</option>
+              ))}
+            </select>
+            <Button onClick={handleExportar} className="bg-blue-600 hover:bg-blue-700">
+              <Download className="mr-2 h-4 w-4" />Exportar em PDF
+            </Button>
+          </div>
         </header>
         <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <MetricCard titulo="Conversas únicas no mês" valor={data.conversas} destaque="text-blue-600" />
