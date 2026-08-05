@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Search, Users, Phone, Calendar, FileText, RefreshCw, Loader2, Filter, UserPlus, MessageCircle, FolderOpen, Download, Image, File, Trash2, AlertCircle } from "lucide-react";
+import { Search, Users, Phone, Calendar, FileText, RefreshCw, Loader2, Filter, UserPlus, MessageCircle, FolderOpen, Download, Image, File, Trash2, AlertCircle, Printer } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -339,6 +339,34 @@ export default function ContatosTab({ onIniciarConversa }) {
     return matchBusca && matchMotivo && matchEspecialidade;
   });
 
+  const imprimirContatosFiltrados = () => {
+    const escapar = (valor) => String(valor || '-').replace(/[&<>"']/g, caractere => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+    })[caractere]);
+    const linhas = contatosFiltrados.map(contato => {
+      const data = contato.created_date
+        ? format(new Date(new Date(contato.created_date).getTime() - (3 * 60 * 60 * 1000)), 'dd/MM/yyyy HH:mm', { locale: ptBR })
+        : '-';
+      const motivo = contato.interesses?.[contato.interesses.length - 1] || 'Não informado';
+      const especialidades = contato.tags?.length ? contato.tags.join(', ') : '-';
+      return `<tr><td>${escapar(contato.nome || 'Não informado')}</td><td>${escapar(formatarTelefone(contato.telefone))}</td><td>${escapar(data)}</td><td>${escapar(motivo)}</td><td>${escapar(especialidades)}</td><td>${escapar(contato.origem || 'Site')}</td></tr>`;
+    }).join('');
+    const iframe = document.createElement('iframe');
+    iframe.setAttribute('data-testid', 'contatos-print-frame');
+    iframe.style.position = 'fixed';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    document.body.appendChild(iframe);
+    const documento = iframe.contentWindow.document;
+    documento.open();
+    documento.write(`<!doctype html><html><head><title>Lista de Contatos</title><style>body{font-family:Arial,sans-serif;color:#111;padding:24px}h1{font-size:22px;margin:0 0 6px}p{font-size:12px;color:#555;margin:0 0 18px}table{width:100%;border-collapse:collapse;font-size:11px}th,td{padding:7px;border:1px solid #ccc;text-align:left;vertical-align:top}th{background:#f1f5f9}@page{size:landscape;margin:12mm}</style></head><body><h1>Lista de Contatos</h1><p>${contatosFiltrados.length} contato(s) conforme os filtros selecionados</p><table><thead><tr><th>Nome</th><th>Telefone</th><th>Data</th><th>Motivo</th><th>Especialidades</th><th>Origem</th></tr></thead><tbody>${linhas}</tbody></table></body></html>`);
+    documento.close();
+    iframe.contentWindow.focus();
+    iframe.contentWindow.print();
+    setTimeout(() => iframe.remove(), 1000);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -458,6 +486,15 @@ export default function ContatosTab({ onIniciarConversa }) {
             <Button onClick={carregarContatos} variant="outline" disabled={loading}>
               <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
               Atualizar
+            </Button>
+            <Button
+              onClick={imprimirContatosFiltrados}
+              variant="outline"
+              disabled={contatosFiltrados.length === 0}
+              data-testid="imprimir-contatos"
+            >
+              <Printer className="w-4 h-4 mr-2" />
+              Imprimir lista
             </Button>
             <Button onClick={() => setModalAberto(true)} className="bg-green-600 hover:bg-green-700">
               <UserPlus className="w-4 h-4 mr-2" />
