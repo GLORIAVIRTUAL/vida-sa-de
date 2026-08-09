@@ -17,7 +17,7 @@ import { ptBR } from 'date-fns/locale';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import ProtectedRoute from '../components/auth/ProtectedRoute';
 import { OrdemServico, Medico, CategoriaPreco, Agendamento, Lancamento } from '@/entities/all';
-import { filtrarLancamentosPorPeriodo, somarLancamentos, excluirLancamentosDeOSCanceladas } from '../components/financeiro/financeiroUtils';
+import { filtrarLancamentosPorPeriodo, somarLancamentos, excluirLancamentosDeOSCanceladas, obterJurosOS, obterValorSemJurosOS } from '../components/financeiro/financeiroUtils';
 
 const CORES_GRAFICO = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
 
@@ -53,7 +53,7 @@ export default function Relatorios() {
     try {
       const salvos = localStorage.getItem('relatorios_filtros_v2');
       if (salvos) {
-        return JSON.parse(salvos);
+        return { juros: 'todos', ...JSON.parse(salvos) };
       }
     } catch (e) {}
     return {
@@ -62,6 +62,7 @@ export default function Relatorios() {
       medicoId: 'todos',
       categoriaNome: 'todos',
       formaPagamento: 'todos',
+      juros: 'todos',
       statusPagamento: 'todos',
       ordenacao: 'data'
     };
@@ -118,6 +119,7 @@ export default function Relatorios() {
               original_id: os.id,
               forma_pagamento: pg.forma || 'Não informado',
               valor_final: pg.valor || 0,
+              juros: obterJurosOS(os) * proporcao,
               valor_total: (os.valor_total || 0) * proporcao,
               valor_repasse_medico: (os.valor_repasse_medico || 0) * proporcao,
               valor_clinica: (os.valor_clinica || 0) * proporcao,
@@ -256,7 +258,7 @@ export default function Relatorios() {
   };
 
   const obterValorClinicaCalculado = (os) => {
-    return (os.valor_final || 0) - (os.valor_repasse_medico || 0) - (os.valor_repasse_laboratorio || 0) - (os.valor_imposto || 0);
+    return obterValorSemJurosOS(os) - (os.valor_repasse_medico || 0) - (os.valor_repasse_laboratorio || 0) - (os.valor_imposto || 0);
   };
 
   // Obter o ID real do médico da OS (considerando agendas unificadas)
@@ -354,6 +356,10 @@ export default function Relatorios() {
       
       // Filtro de forma de pagamento
       if (filtros.formaPagamento !== 'todos' && os.forma_pagamento !== filtros.formaPagamento) return false;
+
+      const filtroJuros = filtros.juros || 'todos';
+      if (filtroJuros === 'com' && obterJurosOS(os) <= 0) return false;
+      if (filtroJuros === 'sem' && obterJurosOS(os) > 0) return false;
       
       // Por padrão, os relatórios consideram somente OS pagas.
       // Pendentes e canceladas aparecem apenas quando o respectivo status é escolhido.
@@ -370,7 +376,7 @@ export default function Relatorios() {
       } else if (filtros.ordenacao === 'data') {
         return (b.data_execucao || '').localeCompare(a.data_execucao || '');
       } else if (filtros.ordenacao === 'valor') {
-        return (b.valor_final || 0) - (a.valor_final || 0);
+        return obterValorSemJurosOS(b) - obterValorSemJurosOS(a);
       }
       return 0;
     });
@@ -426,7 +432,7 @@ export default function Relatorios() {
     const resumo = somarLancamentos(lancamentosFinanceiros);
     // Usar o Total Vendido das OS como Receita para garantir consistência perfeita
     // (elimina qualquer discrepância entre lançamentos e OS)
-    const totalVendidoOS = dadosFiltrados.reduce((acc, os) => acc + (os.valor_final || 0), 0);
+    const totalVendidoOS = dadosFiltrados.reduce((acc, os) => acc + obterValorSemJurosOS(os), 0);
     return {
       ...resumo,
       entradas: totalVendidoOS,
@@ -437,7 +443,8 @@ export default function Relatorios() {
 
   // Calcular estatísticas
   const estatisticas = useMemo(() => {
-    const totalVendido = dadosFiltrados.reduce((acc, os) => acc + (os.valor_final || 0), 0);
+    const totalVendido = dadosFiltrados.reduce((acc, os) => acc + obterValorSemJurosOS(os), 0);
+    const totalJuros = dadosFiltrados.reduce((acc, os) => acc + obterJurosOS(os), 0);
     const totalRepasse = dadosFiltrados.reduce((acc, os) => acc + (os.valor_repasse_medico || 0), 0);
     const totalImposto = dadosFiltrados.reduce((acc, os) => acc + (os.valor_imposto || 0), 0);
     const totalClinica = dadosFiltrados.reduce((acc, os) => acc + obterValorClinicaCalculado(os), 0);
@@ -451,7 +458,7 @@ export default function Relatorios() {
         porFormaPagamento[forma] = { ids: new Set(), valor: 0 };
       }
       porFormaPagamento[forma].ids.add(os.original_id || os.id);
-      porFormaPagamento[forma].valor += (os.valor_final || 0);
+      porFormaPagamento[forma].valor += obterValorSemJurosOS(os);
     });
     Object.keys(porFormaPagamento).forEach(forma => {
       porFormaPagamento[forma].quantidade = porFormaPagamento[forma].ids.size;
@@ -466,7 +473,7 @@ export default function Relatorios() {
         porCategoria[nomeCategoria] = { ids: new Set(), valor: 0, repasse: 0 };
       }
       porCategoria[nomeCategoria].ids.add(os.original_id || os.id);
-      porCategoria[nomeCategoria].valor += (os.valor_final || 0);
+      porCategoria[nomeCategoria].valor += obterValorSemJurosOS(os);
       porCategoria[nomeCategoria].repasse += (os.valor_repasse_medico || 0);
     });
     Object.keys(porCategoria).forEach(cat => {
@@ -488,7 +495,7 @@ export default function Relatorios() {
         };
       }
       porMedicoId[medicoId].ids.add(os.original_id || os.id);
-      porMedicoId[medicoId].valor += (os.valor_final || 0);
+      porMedicoId[medicoId].valor += obterValorSemJurosOS(os);
       porMedicoId[medicoId].repasse += (os.valor_repasse_medico || 0);
     });
     Object.keys(porMedicoId).forEach(id => {
@@ -504,7 +511,7 @@ export default function Relatorios() {
         porMedico[nomeMedico] = { ids: new Set(), valor: 0, repasse: 0, medicoId: os.medico_id };
       }
       porMedico[nomeMedico].ids.add(os.original_id || os.id);
-      porMedico[nomeMedico].valor += (os.valor_final || 0);
+      porMedico[nomeMedico].valor += obterValorSemJurosOS(os);
       porMedico[nomeMedico].repasse += (os.valor_repasse_medico || 0);
     });
     Object.keys(porMedico).forEach(nome => {
@@ -514,6 +521,7 @@ export default function Relatorios() {
     
     return {
       totalVendido,
+      totalJuros,
       totalRepasse,
       totalImposto,
       totalClinica,
@@ -649,6 +657,9 @@ export default function Relatorios() {
     if (filtros.statusPagamento !== 'todos') {
       filtrosAplicados.push(`Status: ${filtros.statusPagamento}`);
     }
+    if ((filtros.juros || 'todos') !== 'todos') {
+      filtrosAplicados.push(`Juros: ${filtros.juros === 'com' ? 'Com juros' : 'Sem juros'}`);
+    }
     
     printWindow.document.write(`
       <html>
@@ -727,7 +738,7 @@ export default function Relatorios() {
                   <td>${os.paciente_nome || '-'}</td>
                   <td>${obterNomeMedico(os).split(' ').slice(0, 2).join(' ')}</td>
                   <td>${obterNomeCategoria(os)}</td>
-                  <td class="text-right">R$ ${(os.valor_final || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                  <td class="text-right">R$ ${obterValorSemJurosOS(os).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                   <td class="text-right"><strong>R$ ${(os.valor_repasse_medico || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong></td>
                 </tr>
               `).join('')}
@@ -757,7 +768,7 @@ export default function Relatorios() {
                   <td>${os.paciente_nome || '-'}</td>
                   <td>${obterNomeMedico(os).split(' ').slice(0, 2).join(' ')}</td>
                   <td>${obterNomeCategoria(os)}</td>
-                  <td class="text-right">R$ ${(os.valor_final || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                  <td class="text-right">R$ ${obterValorSemJurosOS(os).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                   <td class="text-right"><strong>R$ ${(os.valor_repasse_medico || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong></td>
                 </tr>
               `).join('')}
@@ -821,6 +832,9 @@ export default function Relatorios() {
     if (filtros.statusPagamento !== 'todos') {
       filtrosAplicados.push(`Status: ${filtros.statusPagamento}`);
     }
+    if ((filtros.juros || 'todos') !== 'todos') {
+      filtrosAplicados.push(`Juros: ${filtros.juros === 'com' ? 'Com juros' : 'Sem juros'}`);
+    }
     
     printWindow.document.write(`
       <html>
@@ -869,6 +883,10 @@ export default function Relatorios() {
               <span class="valor">R$ ${estatisticas.totalVendido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
             </div>
             <div class="stat-card">
+              <strong>Juros/Taxas (informativo)</strong><br/>
+              <span class="valor" style="color: #7c3aed;">R$ ${estatisticas.totalJuros.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+            </div>
+            <div class="stat-card">
               <strong>Receita Clínica</strong><br/>
               <span class="valor" style="color: #16a34a;">R$ ${estatisticas.totalClinica.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
             </div>
@@ -895,7 +913,8 @@ export default function Relatorios() {
                 <th>Médico</th>
                 <th>Categoria</th>
                 <th>Pagamento</th>
-                <th class="text-right">Valor</th>
+                <th class="text-right">Faturamento</th>
+                <th class="text-right">Juros</th>
                 <th class="text-right">Repasse</th>
                 <th class="text-right">Imposto</th>
                 <th class="text-right">Clínica</th>
@@ -911,7 +930,8 @@ export default function Relatorios() {
                   <td>${nomeMed.split(' ').slice(0, 2).join(' ')}</td>
                   <td>${nomeCat}</td>
                   <td>${os.forma_pagamento || '-'}</td>
-                  <td class="text-right">R$ ${(os.valor_final || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                  <td class="text-right">R$ ${obterValorSemJurosOS(os).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                  <td class="text-right">R$ ${obterJurosOS(os).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                   <td class="text-right">R$ ${(os.valor_repasse_medico || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                   <td class="text-right">R$ ${(os.valor_imposto || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                   <td class="text-right">R$ ${obterValorClinicaCalculado(os).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
@@ -922,6 +942,7 @@ export default function Relatorios() {
               <tr class="total">
                 <td colspan="5"><strong>TOTAL</strong></td>
                 <td class="text-right"><strong>R$ ${estatisticas.totalVendido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong></td>
+                <td class="text-right"><strong>R$ ${estatisticas.totalJuros.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong></td>
                 <td class="text-right"><strong>R$ ${estatisticas.totalRepasse.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong></td>
                 <td class="text-right"><strong>R$ ${estatisticas.totalImposto.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong></td>
                 <td class="text-right"><strong>R$ ${estatisticas.totalClinica.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong></td>
@@ -985,7 +1006,7 @@ export default function Relatorios() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+                      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
                 <div>
                   <Label>Data Início</Label>
                   <Input
@@ -1057,6 +1078,19 @@ export default function Relatorios() {
                   </Select>
                 </div>
                 <div>
+                  <Label>Juros do cartão</Label>
+                  <Select value={filtros.juros || 'todos'} onValueChange={(v) => setFiltros({ ...filtros, juros: v })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos</SelectItem>
+                      <SelectItem value="com">Com juros</SelectItem>
+                      <SelectItem value="sem">Sem juros</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
                   <Label>Status</Label>
                   <Select value={filtros.statusPagamento} onValueChange={(v) => setFiltros({ ...filtros, statusPagamento: v })}>
                     <SelectTrigger>
@@ -1088,12 +1122,19 @@ export default function Relatorios() {
           </Card>
 
           {/* Cards Financeiros (baseado em Lançamentos - igual Gestão Financeira) */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-4 mb-4">
             <Card className="relative overflow-hidden">
               <div className="absolute top-0 right-0 w-20 h-20 transform translate-x-6 -translate-y-6 bg-green-500 rounded-full opacity-10" />
               <CardContent className="p-4">
                 <p className="text-xs font-medium text-gray-500 mb-1">Receita (Entradas)</p>
                 <p className="text-2xl font-bold">{formatCurrency(estatisticasFinanceiras.entradas)}</p>
+              </CardContent>
+            </Card>
+            <Card className="relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-20 h-20 transform translate-x-6 -translate-y-6 bg-violet-500 rounded-full opacity-10" />
+              <CardContent className="p-4">
+                <p className="text-xs font-medium text-gray-500 mb-1">Juros/Taxas (informativo)</p>
+                <p className="text-2xl font-bold text-violet-600">{formatCurrency(estatisticas.totalJuros)}</p>
               </CardContent>
             </Card>
             <Card className="relative overflow-hidden">
@@ -1129,7 +1170,7 @@ export default function Relatorios() {
           </div>
 
           {/* Cards de Resumo OS (detalhamento das ordens de serviço) */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
             <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
@@ -1142,6 +1183,18 @@ export default function Relatorios() {
               </CardContent>
             </Card>
             
+            <Card className="bg-gradient-to-br from-violet-500 to-violet-600 text-white">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-violet-100 text-sm">Juros/Taxas (informativo)</p>
+                    <p className="text-2xl font-bold">{formatCurrency(estatisticas.totalJuros)}</p>
+                  </div>
+                  <CreditCard className="w-10 h-10 text-violet-200" />
+                </div>
+              </CardContent>
+            </Card>
+
             <Card className="bg-gradient-to-br from-red-500 to-red-600 text-white">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
@@ -1329,7 +1382,8 @@ export default function Relatorios() {
                           <TableHead>Categoria</TableHead>
                           <TableHead>Pagamento</TableHead>
                           <TableHead>Status</TableHead>
-                          <TableHead className="text-right">Valor</TableHead>
+                          <TableHead className="text-right">Faturamento</TableHead>
+                          <TableHead className="text-right">Juros</TableHead>
                           <TableHead className="text-right">Repasse</TableHead>
                           <TableHead className="text-right">Imposto</TableHead>
                           <TableHead className="text-right">Clínica</TableHead>
@@ -1353,7 +1407,8 @@ export default function Relatorios() {
                                   {os.status_pagamento || 'Pendente'}
                                 </Badge>
                               </TableCell>
-                              <TableCell className="text-right font-medium">{formatCurrency(os.valor_final)}</TableCell>
+                              <TableCell className="text-right font-medium">{formatCurrency(obterValorSemJurosOS(os))}</TableCell>
+                              <TableCell className="text-right text-violet-600">{formatCurrency(obterJurosOS(os))}</TableCell>
                               <TableCell className="text-right text-purple-600">{formatCurrency(os.valor_repasse_medico)}</TableCell>
                               <TableCell className="text-right text-amber-600">{formatCurrency(os.valor_imposto)}</TableCell>
                               <TableCell className="text-right text-green-600">{formatCurrency(obterValorClinicaCalculado(os))}</TableCell>
@@ -1362,7 +1417,7 @@ export default function Relatorios() {
                         })}
                         {dadosFiltrados.length > 2000 && (
                           <TableRow>
-                            <TableCell colSpan={10} className="text-center text-gray-500">
+                            <TableCell colSpan={11} className="text-center text-gray-500">
                               Mostrando 2000 de {dadosFiltrados.length} registros. Use os filtros para refinar.
                             </TableCell>
                           </TableRow>
@@ -1376,6 +1431,10 @@ export default function Relatorios() {
                     <div className="text-right">
                       <p className="text-sm text-gray-500">Total Vendido</p>
                       <p className="text-xl font-bold text-blue-600">{formatCurrency(estatisticas.totalVendido)}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-gray-500">Juros (informativo)</p>
+                      <p className="text-xl font-bold text-violet-600">{formatCurrency(estatisticas.totalJuros)}</p>
                     </div>
                     <div className="text-right">
                       <p className="text-sm text-gray-500">Total Repasse</p>
@@ -1518,7 +1577,7 @@ export default function Relatorios() {
                         porCategoriaLocal[nomeCat] = { ids: new Set(), valor: 0 };
                       }
                       porCategoriaLocal[nomeCat].ids.add(os.original_id || os.id);
-                      porCategoriaLocal[nomeCat].valor += (os.valor_final || 0);
+                      porCategoriaLocal[nomeCat].valor += obterValorSemJurosOS(os);
                     });
                     Object.keys(porCategoriaLocal).forEach(cat => {
                       porCategoriaLocal[cat].quantidade = porCategoriaLocal[cat].ids.size;
@@ -1533,7 +1592,7 @@ export default function Relatorios() {
                         porPagamentoLocal[forma] = { ids: new Set(), valor: 0 };
                       }
                       porPagamentoLocal[forma].ids.add(os.original_id || os.id);
-                      porPagamentoLocal[forma].valor += (os.valor_final || 0);
+                      porPagamentoLocal[forma].valor += obterValorSemJurosOS(os);
                     });
                     Object.keys(porPagamentoLocal).forEach(forma => {
                       porPagamentoLocal[forma].quantidade = porPagamentoLocal[forma].ids.size;
@@ -1649,7 +1708,7 @@ export default function Relatorios() {
                                         <TableCell className="font-medium">{os.paciente_nome || '-'}</TableCell>
                                         <TableCell><Badge variant="outline" className="text-xs">{nomeCat}</Badge></TableCell>
                                         <TableCell>{os.forma_pagamento || '-'}</TableCell>
-                                        <TableCell className="text-right">{formatCurrency(os.valor_final)}</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(obterValorSemJurosOS(os))}</TableCell>
                                         <TableCell className="text-right text-purple-600">{formatCurrency(os.valor_repasse_medico)}</TableCell>
                                       </TableRow>
                                     );
@@ -1791,7 +1850,7 @@ export default function Relatorios() {
                                 <TableCell className="font-medium">{os.paciente_nome || '-'}</TableCell>
                                 <TableCell>{obterNomeMedico(os).split(' ').slice(0, 2).join(' ')}</TableCell>
                                 <TableCell><Badge variant="outline" className="text-xs">{obterNomeCategoria(os)}</Badge></TableCell>
-                                <TableCell className="text-right">{formatCurrency(os.valor_final)}</TableCell>
+                                <TableCell className="text-right">{formatCurrency(obterValorSemJurosOS(os))}</TableCell>
                                 <TableCell className="text-right font-bold text-blue-600">{formatCurrency(os.valor_repasse_medico)}</TableCell>
                               </TableRow>
                             ))
@@ -1834,7 +1893,7 @@ export default function Relatorios() {
                                 <TableCell className="font-medium">{os.paciente_nome || '-'}</TableCell>
                                 <TableCell>{obterNomeMedico(os).split(' ').slice(0, 2).join(' ')}</TableCell>
                                 <TableCell><Badge variant="outline" className="text-xs">{obterNomeCategoria(os)}</Badge></TableCell>
-                                <TableCell className="text-right">{formatCurrency(os.valor_final)}</TableCell>
+                                <TableCell className="text-right">{formatCurrency(obterValorSemJurosOS(os))}</TableCell>
                                 <TableCell className="text-right font-bold text-orange-600">{formatCurrency(os.valor_repasse_medico)}</TableCell>
                                 <TableCell>
                                   <Badge className="bg-green-100 text-green-800">
@@ -1885,7 +1944,7 @@ export default function Relatorios() {
                                 <TableCell className="font-medium">{os.paciente_nome || '-'}</TableCell>
                                 <TableCell>{obterNomeMedico(os).split(' ').slice(0, 2).join(' ')}</TableCell>
                                 <TableCell><Badge variant="outline" className="text-xs">{obterNomeCategoria(os)}</Badge></TableCell>
-                                <TableCell className="text-right">{formatCurrency(os.valor_final)}</TableCell>
+                                <TableCell className="text-right">{formatCurrency(obterValorSemJurosOS(os))}</TableCell>
                                 <TableCell className="text-right font-bold text-green-600">{formatCurrency(os.valor_repasse_medico)}</TableCell>
                               </TableRow>
                             ))}

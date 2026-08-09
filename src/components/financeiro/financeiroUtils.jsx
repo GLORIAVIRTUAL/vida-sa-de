@@ -1,5 +1,22 @@
 export const APP_START_DATE = new Date('2026-01-20T13:40:00');
 
+export function obterJurosOS(os) {
+  return Math.max(Number(os?.juros) || 0, 0);
+}
+
+export function obterValorSemJurosOS(os) {
+  return Math.max((Number(os?.valor_final) || 0) - obterJurosOS(os), 0);
+}
+
+export function obterValorLancamentoSemJuros(lancamento, ordensServico = []) {
+  const valor = Number(lancamento?.valor) || 0;
+  if (lancamento?.tipo !== 'Entrada' || !lancamento?.ordem_servico_id) return valor;
+
+  const os = ordensServico.find(ordem => ordem.id === lancamento.ordem_servico_id);
+  if (!os || Math.abs(valor - (Number(os.valor_final) || 0)) > 0.02) return valor;
+  return obterValorSemJurosOS(os);
+}
+
 export function filtrarLancamentosValidos(lancamentos = []) {
   return lancamentos.filter((lancamento) => {
     if (!lancamento?.data_lancamento || !lancamento?.created_date) return false;

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { TrendingUp, TrendingDown, Printer, Calendar, Lock, Eye, Trash2 } from "lucide-react";
+import { TrendingUp, TrendingDown, Printer, Calendar, Lock, Eye, Trash2, DollarSign } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -19,7 +19,7 @@ import {
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Lancamento } from "@/entities/all";
-import { excluirLancamentosDeOSCanceladas } from "./financeiroUtils";
+import { excluirLancamentosDeOSCanceladas, obterJurosOS, obterValorLancamentoSemJuros } from "./financeiroUtils";
 
 import FormularioLancamento from "./FormularioLancamento";
 import SenhaRetroativaDialog, { isDiaFechado, podeAlterarDiaFechado } from "./SenhaRetroativaDialog";
@@ -174,9 +174,22 @@ export default function FluxoCaixa({ lancamentos, ordensServico, pacientes, onUp
       const tipoMatch = tipoFiltro === "todos" || l.tipo === tipoFiltro;
       return dentroData && formaMatch && tipoMatch;
     });
-    // Excluir lançamentos cancelados e vinculados a OS canceladas
-    return excluirLancamentosDeOSCanceladas(filtrados, ordensServico);
+    // Excluir lançamentos cancelados e vinculados a OS canceladas; entradas de OS ficam sem juros.
+    return excluirLancamentosDeOSCanceladas(filtrados, ordensServico)
+      .map(lancamento => ({
+        ...lancamento,
+        valor: obterValorLancamentoSemJuros(lancamento, ordensServico)
+      }));
   }, [lancamentos, ordensServico, dataInicio, dataFim, formaPagamentoFiltro, tipoFiltro]);
+
+  const totalJurosInformativo = useMemo(() => {
+    const osIds = new Set(lancamentosFiltrados
+      .filter(lancamento => lancamento.tipo === 'Entrada' && lancamento.ordem_servico_id)
+      .map(lancamento => lancamento.ordem_servico_id));
+    return ordensServico
+      .filter(os => osIds.has(os.id))
+      .reduce((total, os) => total + obterJurosOS(os), 0);
+  }, [lancamentosFiltrados, ordensServico]);
 
   const { totalEntradas, totalSaidas, saldo } = useMemo(() => {
     const entradas = lancamentosFiltrados.filter(l => l.tipo === "Entrada").reduce((sum, l) => sum + l.valor, 0);
@@ -241,6 +254,10 @@ export default function FluxoCaixa({ lancamentos, ordensServico, pacientes, onUp
           <div class="summary-card entradas">
             <p>Total Entradas</p>
             <p class="valor">R$ ${totalEntradas.toFixed(2)}</p>
+          </div>
+          <div class="summary-card" style="background:#f3e8ff;color:#6b21a8;">
+            <p>Juros/Taxas (informativo)</p>
+            <p class="valor">R$ ${totalJurosInformativo.toFixed(2)}</p>
           </div>
           <div class="summary-card saidas">
             <p>Total Saídas</p>
@@ -421,7 +438,7 @@ export default function FluxoCaixa({ lancamentos, ordensServico, pacientes, onUp
       </Card>
 
       {/* Resumo do Caixa */}
-      <div className="grid md:grid-cols-3 gap-4">
+      <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-4">
         <Card className="bg-green-50 border-green-200">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -432,6 +449,20 @@ export default function FluxoCaixa({ lancamentos, ordensServico, pacientes, onUp
                 </p>
               </div>
               <TrendingUp className="w-8 h-8 text-green-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-violet-50 border-violet-200">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-violet-600">Juros/Taxas (informativo)</p>
+                <p className="text-2xl font-bold text-violet-700">
+                  {formatarValor(totalJurosInformativo)}
+                </p>
+              </div>
+              <DollarSign className="w-8 h-8 text-violet-600" />
             </div>
           </CardContent>
         </Card>

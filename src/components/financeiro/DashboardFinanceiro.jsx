@@ -4,7 +4,7 @@ import { TrendingUp, TrendingDown, DollarSign, FileText, Calculator, Users } fro
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { filtrarLancamentosPorPeriodo, somarLancamentos, excluirLancamentosDeOSCanceladas } from "./financeiroUtils";
+import { filtrarLancamentosPorPeriodo, somarLancamentos, excluirLancamentosDeOSCanceladas, obterJurosOS, obterValorSemJurosOS, obterValorLancamentoSemJuros } from "./financeiroUtils";
 
 export default function DashboardFinanceiro({ lancamentos = [], ordensServico = [], loading }) {
   const hoje = new Date();
@@ -41,8 +41,9 @@ export default function DashboardFinanceiro({ lancamentos = [], ordensServico = 
     const osNaoCanceladasMesAtual = ordensServico.filter(os => os.data_execucao?.substring(0, 7) === mesAtualStr && os.status_pagamento !== 'Cancelado');
     const osNaoCanceladasMesAnterior = ordensServico.filter(os => os.data_execucao?.substring(0, 7) === mesAnteriorStr && os.status_pagamento !== 'Cancelado');
 
-    const receitaMesAtual = parseFloat(osNaoCanceladasMesAtual.reduce((acc, os) => acc + (os.valor_final || 0), 0).toFixed(2));
-    const receitaMesAnterior = parseFloat(osNaoCanceladasMesAnterior.reduce((acc, os) => acc + (os.valor_final || 0), 0).toFixed(2));
+    const receitaMesAtual = parseFloat(osNaoCanceladasMesAtual.reduce((acc, os) => acc + obterValorSemJurosOS(os), 0).toFixed(2));
+    const receitaMesAnterior = parseFloat(osNaoCanceladasMesAnterior.reduce((acc, os) => acc + obterValorSemJurosOS(os), 0).toFixed(2));
+    const jurosMesAtual = parseFloat(osNaoCanceladasMesAtual.reduce((acc, os) => acc + obterJurosOS(os), 0).toFixed(2));
 
     const impostoMesAtual = osNaoCanceladasMesAtual.reduce((acc, os) => acc + (os.valor_imposto || 0), 0);
     const impostoMesAnterior = osNaoCanceladasMesAnterior.reduce((acc, os) => acc + (os.valor_imposto || 0), 0);
@@ -52,6 +53,7 @@ export default function DashboardFinanceiro({ lancamentos = [], ordensServico = 
 
     return {
       receitaMesAtual,
+      jurosMesAtual,
       despesaMesAtual,
       impostoMesAtual: parseFloat(impostoMesAtual.toFixed(2)),
       lucroMesAtual,
@@ -71,6 +73,13 @@ export default function DashboardFinanceiro({ lancamentos = [], ordensServico = 
       bgColor: "bg-green-500",
       textColor: "text-green-600",
       trend: `${stats.crescimentoReceita > 0 ? '+' : ''}${stats.crescimentoReceita.toFixed(1)}%`
+    },
+    {
+      title: "Juros/Taxas (informativo)",
+      value: `R$ ${stats.jurosMesAtual.toFixed(2)}`,
+      icon: DollarSign,
+      bgColor: "bg-violet-500",
+      textColor: "text-violet-600"
     },
     {
       title: "Despesas Mensais",
@@ -105,7 +114,7 @@ export default function DashboardFinanceiro({ lancamentos = [], ordensServico = 
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         {cards.map((card, index) => (
           <Card key={index} className="relative overflow-hidden">
             <div className={`absolute top-0 right-0 w-20 h-20 transform translate-x-6 -translate-y-6 ${card.bgColor} rounded-full opacity-10`} />
@@ -150,6 +159,12 @@ export default function DashboardFinanceiro({ lancamentos = [], ordensServico = 
                 <span className="font-medium text-green-800">Total de Entradas</span>
                 <span className="font-bold text-green-600">
                   R$ {stats.receitaMesAtual.toFixed(2)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center p-3 bg-violet-50 rounded-lg">
+                <span className="font-medium text-violet-800">Juros/Taxas de Cartão (informativo)</span>
+                <span className="font-bold text-violet-600">
+                  R$ {stats.jurosMesAtual.toFixed(2)}
                 </span>
               </div>
               <div className="flex justify-between items-center p-3 bg-red-50 rounded-lg">
@@ -213,7 +228,7 @@ export default function DashboardFinanceiro({ lancamentos = [], ordensServico = 
                     <span className={`font-semibold text-sm ${
                       lancamento.tipo === "Entrada" ? 'text-green-600' : 'text-red-600'
                     }`}>
-                      {lancamento.tipo === "Entrada" ? '+' : '-'}R$ {lancamento.valor.toFixed(2)}
+                      {lancamento.tipo === "Entrada" ? '+' : '-'}R$ {obterValorLancamentoSemJuros(lancamento, ordensServico).toFixed(2)}
                     </span>
                   </div>
                 ))}

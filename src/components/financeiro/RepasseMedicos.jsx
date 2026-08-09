@@ -11,6 +11,7 @@ import { OrdemServico, Lancamento } from "@/entities/all";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { obterValorSemJurosOS } from "./financeiroUtils";
 
 export default function RepasseMedicos({ ordensServico, medicos, pacientes, onRepasseRealizado }) {
   const [filtroData, setFiltroData] = useState(format(new Date(), "yyyy-MM-dd"));
@@ -58,7 +59,7 @@ export default function RepasseMedicos({ ordensServico, medicos, pacientes, onRe
       }
 
       grupos[chaveGrupo].ordens.push(os);
-      grupos[chaveGrupo].total_bruto += os.valor_final || 0;
+      grupos[chaveGrupo].total_bruto += obterValorSemJurosOS(os);
       grupos[chaveGrupo].total_imposto += os.valor_imposto || 0;
       grupos[chaveGrupo].total_repasse += os.valor_repasse_medico || 0;
       grupos[chaveGrupo].total_clinica += os.valor_clinica || 0;
@@ -289,7 +290,7 @@ export default function RepasseMedicos({ ordensServico, medicos, pacientes, onRe
               <tr>
                 <th>Paciente</th>
                 <th>Serviço</th>
-                <th>Valor Total</th>
+                <th>Faturamento sem Juros</th>
                 <th>Repasse</th>
               </tr>
             </thead>
@@ -301,7 +302,7 @@ export default function RepasseMedicos({ ordensServico, medicos, pacientes, onRe
                   <tr>
                     <td>${nomePaciente}</td>
                     <td>${os.tipo_servico}</td>
-                    <td>R$ ${os.valor_final.toFixed(2)}</td>
+                    <td>R$ ${obterValorSemJurosOS(os).toFixed(2)}</td>
                     <td><strong>R$ ${os.valor_repasse_medico.toFixed(2)}</strong></td>
                   </tr>
                 `;
@@ -315,7 +316,7 @@ export default function RepasseMedicos({ ordensServico, medicos, pacientes, onRe
               <span class="info-value">${grupoMedico.quantidade}</span>
             </div>
             <div class="info-row">
-              <span class="info-label">Valor Bruto Total:</span>
+              <span class="info-label">Faturamento sem Juros:</span>
               <span class="info-value">R$ ${grupoMedico.total_bruto.toFixed(2)}</span>
             </div>
             <div class="info-row">
@@ -421,7 +422,7 @@ export default function RepasseMedicos({ ordensServico, medicos, pacientes, onRe
                             <p className="text-2xl font-bold text-blue-900">{grupo.quantidade}</p>
                           </div>
                           <div className="bg-gray-50 p-3 rounded">
-                            <p className="text-xs text-gray-600 font-semibold">VALOR BRUTO</p>
+                            <p className="text-xs text-gray-600 font-semibold">FATURAMENTO SEM JUROS</p>
                             <p className="text-lg font-bold text-gray-900">R$ {grupo.total_bruto.toFixed(2)}</p>
                           </div>
                           {grupo.total_imposto > 0 && (
@@ -461,7 +462,7 @@ export default function RepasseMedicos({ ordensServico, medicos, pacientes, onRe
                           <TableRow>
                             <TableHead>Paciente</TableHead>
                             <TableHead>Serviço</TableHead>
-                            <TableHead>Valor Total</TableHead>
+                            <TableHead>Faturamento sem Juros</TableHead>
                             <TableHead>Repasse</TableHead>
                           </TableRow>
                         </TableHeader>
@@ -473,7 +474,7 @@ export default function RepasseMedicos({ ordensServico, medicos, pacientes, onRe
                               <TableRow key={os.id}>
                                 <TableCell>{nomePaciente}</TableCell>
                                 <TableCell>{os.tipo_servico}</TableCell>
-                                <TableCell>R$ {os.valor_final.toFixed(2)}</TableCell>
+                                <TableCell>R$ {obterValorSemJurosOS(os).toFixed(2)}</TableCell>
                                 <TableCell className="font-bold text-green-600">
                                   R$ {os.valor_repasse_medico.toFixed(2)}
                                 </TableCell>

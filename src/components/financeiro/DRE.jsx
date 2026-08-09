@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { TrendingUp, TrendingDown, Calculator, Percent } from "lucide-react";
 import { format, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { agruparLancamentosPorCategoria, filtrarLancamentosPorPeriodo, somarLancamentos, excluirLancamentosDeOSCanceladas } from "./financeiroUtils";
+import { agruparLancamentosPorCategoria, filtrarLancamentosPorPeriodo, somarLancamentos, excluirLancamentosDeOSCanceladas, obterJurosOS, obterValorSemJurosOS } from "./financeiroUtils";
 
 export default function DRE({ lancamentos, ordensServico = [], loading }) {
   const [mesAno, setMesAno] = useState(format(new Date(), "yyyy-MM"));
@@ -35,13 +35,13 @@ export default function DRE({ lancamentos, ordensServico = [], loading }) {
 
     const receitaConsultas = osAtivasPeriodo
       .filter(os => os.tipo_servico === 'Consulta')
-      .reduce((acc, os) => acc + (os.valor_final || 0), 0);
+      .reduce((acc, os) => acc + obterValorSemJurosOS(os), 0);
     const receitaProcedimentos = osAtivasPeriodo
       .filter(os => os.tipo_servico === 'Procedimento')
-      .reduce((acc, os) => acc + (os.valor_final || 0), 0);
+      .reduce((acc, os) => acc + obterValorSemJurosOS(os), 0);
     const receitaExames = osAtivasPeriodo
       .filter(os => os.tipo_servico === 'Exame')
-      .reduce((acc, os) => acc + (os.valor_final || 0), 0);
+      .reduce((acc, os) => acc + obterValorSemJurosOS(os), 0);
 
     // Outras Receitas: lançamentos de Entrada SEM vínculo com OS (ex.: vendas de cartão, taxas, etc.)
     const outrasReceitas = lancamentosPeriodo
@@ -70,6 +70,7 @@ export default function DRE({ lancamentos, ordensServico = [], loading }) {
     });
     const impostoOS = osPeriodo.reduce((acc, os) => acc + (os.valor_imposto || 0), 0);
 
+    const jurosCartao = osAtivasPeriodo.reduce((acc, os) => acc + obterJurosOS(os), 0);
     const receitaBruta = receitaConsultas + receitaProcedimentos + receitaExames + outrasReceitas;
     const totalDespesas = resumo.saidas;
     const lucroLiquido = receitaBruta - totalDespesas - impostoOS;
@@ -82,6 +83,7 @@ export default function DRE({ lancamentos, ordensServico = [], loading }) {
         procedimentos: receitaProcedimentos,
         exames: receitaExames,
         outras: outrasReceitas,
+        jurosCartao,
         total: receitaBruta
       },
       despesas: {
@@ -217,6 +219,10 @@ export default function DRE({ lancamentos, ordensServico = [], loading }) {
             <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
               <span className="font-medium">Outras Entradas</span>
               <span className="font-bold text-green-600">R$ {dre.receitas.outras.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-violet-50 rounded-lg border border-violet-200">
+              <span className="font-medium text-violet-800">Juros/Taxas de Cartão (informativo)</span>
+              <span className="font-bold text-violet-600">R$ {dre.receitas.jurosCartao.toFixed(2)}</span>
             </div>
             <div className="border-t-2 border-green-200 pt-3">
               <div className="flex justify-between items-center">

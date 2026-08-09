@@ -10,6 +10,7 @@ import { ptBR } from "date-fns/locale";
 import { OrdemServico, Medico, Paciente } from "@/entities/all";
 import { safeApiCall } from "@/components/shared/apiThrottle";
 import { Separator } from "@/components/ui/separator";
+import { obterValorSemJurosOS } from "./financeiroUtils";
 
 export default function Repasses() {
   const [ordens, setOrdens] = useState([]);
@@ -76,7 +77,7 @@ export default function Repasses() {
     acc[medicoId].ordens.push(os);
     
     // Somar totais
-    acc[medicoId].totais.valor_total_os += os.valor_final;
+    acc[medicoId].totais.valor_total_os += obterValorSemJurosOS(os);
     acc[medicoId].totais.imposto_total += os.valor_imposto || 0;
     acc[medicoId].totais.repasse_total += os.valor_repasse_medico || 0;
     acc[medicoId].totais.valor_clinica_total += os.valor_clinica || 0;
@@ -305,7 +306,7 @@ export default function Repasses() {
           <div class="totais-medico">
             <div class="totais-grid">
               <div class="total-item valor">
-                <div class="total-label">💵 VALOR TOTAL DAS OS</div>
+                <div class="total-label">💵 FATURAMENTO SEM JUROS</div>
                 <div class="total-value">R$ ${totais.valor_total_os.toFixed(2)}</div>
                 <div style="font-size: 11px; color: #6b7280; margin-top: 5px;">
                   ${totais.quantidade_atendimentos} atendimento(s)
@@ -347,7 +348,7 @@ export default function Repasses() {
                   <th>OS</th>
                   <th>Paciente</th>
                   <th>Serviço</th>
-                  <th class="text-right">Valor Bruto</th>
+                  <th class="text-right">Faturamento sem Juros</th>
                   <th class="text-right">Impostos</th>
                   <th class="text-right">Repasse Médico</th>
                   <th class="text-right">Valor Clínica</th>
@@ -365,7 +366,7 @@ export default function Repasses() {
             <td>#${os.numero_os || os.id?.substring(0, 8)}</td>
             <td>${paciente?.nome || "N/A"}</td>
             <td>${os.tipo_servico}</td>
-            <td class="text-right">R$ ${os.valor_final.toFixed(2)}</td>
+            <td class="text-right">R$ ${obterValorSemJurosOS(os).toFixed(2)}</td>
             <td class="text-right" style="color: #ef4444;">${(os.valor_imposto || 0) > 0 ? `- R$ ${(os.valor_imposto).toFixed(2)}` : '-'}</td>
             <td class="text-right" style="color: #8b5cf6; font-weight: bold;">R$ ${(os.valor_repasse_medico || 0).toFixed(2)}</td>
             <td class="text-right" style="color: #10b981; font-weight: bold;">R$ ${(os.valor_clinica || 0).toFixed(2)}</td>
@@ -512,7 +513,7 @@ export default function Repasses() {
                       <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500">
                         <div className="flex items-center gap-2 mb-2">
                           <DollarSign className="w-5 h-5 text-blue-600" />
-                          <span className="text-xs font-semibold text-blue-900">VALOR BRUTO</span>
+                          <span className="text-xs font-semibold text-blue-900">FATURAMENTO SEM JUROS</span>
                         </div>
                         <p className="text-2xl font-bold text-blue-600">
                           R$ {totais.valor_total_os.toFixed(2)}
@@ -575,7 +576,7 @@ export default function Repasses() {
                               <TableHead>OS</TableHead>
                               <TableHead>Paciente</TableHead>
                               <TableHead>Serviço</TableHead>
-                              <TableHead className="text-right">Valor Bruto</TableHead>
+                              <TableHead className="text-right">Faturamento sem Juros</TableHead>
                               <TableHead className="text-right">Impostos</TableHead>
                               <TableHead className="text-right">Repasse Médico</TableHead>
                               <TableHead className="text-right">Valor Clínica</TableHead>
@@ -600,7 +601,7 @@ export default function Repasses() {
                                     <Badge>{os.tipo_servico}</Badge>
                                   </TableCell>
                                   <TableCell className="text-right font-semibold">
-                                    R$ {os.valor_final.toFixed(2)}
+                                    R$ {obterValorSemJurosOS(os).toFixed(2)}
                                   </TableCell>
                                   <TableCell className="text-right text-red-600">
                                     {(os.valor_imposto || 0) > 0 ? `- R$ ${(os.valor_imposto).toFixed(2)}` : '-'}
