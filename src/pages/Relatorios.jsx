@@ -79,7 +79,7 @@ export default function Relatorios() {
 
   useEffect(() => {
     carregarDados();
-  }, []);
+  }, [filtros.dataInicio]);
 
   const carregarDados = async () => {
     setLoading(true);
