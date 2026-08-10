@@ -79,7 +79,7 @@ export default function Relatorios() {
 
   useEffect(() => {
     carregarDados();
-  }, [filtros.dataInicio]);
+  }, []);
 
   const carregarDados = async () => {
     setLoading(true);
@@ -1013,6 +1013,7 @@ export default function Relatorios() {
                     type="date"
                     value={filtros.dataInicio}
                     onChange={(e) => setFiltros({ ...filtros, dataInicio: e.target.value })}
+                    onBlur={carregarDados}
                   />
                 </div>
                 <div>
