@@ -58,6 +58,29 @@ const normalizeString = (str) => {
   return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
 };
 
+const calcularDistribuicaoFinanceira = ({
+  valorTotal,
+  desconto,
+  acrescimo,
+  percentualImposto,
+  percentualRepasse,
+  repasseFixo,
+  repasseLaboratorio
+}) => {
+  const valorBase = Math.max(0, valorTotal - desconto + acrescimo);
+  const valorImposto = valorBase * (percentualImposto / 100);
+  const baseRepasse = valorBase - valorImposto;
+  const valorRepasseMedico = repasseFixo > 0
+    ? repasseFixo
+    : baseRepasse * (percentualRepasse / 100);
+
+  return {
+    valorImposto,
+    valorRepasseMedico,
+    valorClinica: Math.max(0, valorBase - valorImposto - valorRepasseMedico - repasseLaboratorio)
+  };
+};
+
 export default function FormularioOS({
   agendamento,
   medico,
@@ -110,7 +133,9 @@ export default function FormularioOS({
     valor_clinica: 0,
     cobrar_taxa: false,
     pagamentos_detalhados: [],
-    valor_imposto: 0
+    valor_imposto: 0,
+    percentual_repasse_aplicado: 0,
+    repasse_fixo_aplicado: 0
   });
   
   // Estados para múltiplas formas de pagamento
@@ -389,6 +414,8 @@ export default function FormularioOS({
 
     let repasseMedico = 0;
     let repasseLab = 0;
+    let percentual = 0;
+    let repasseFixo = 0;
 
     if (medicoAtual && valorTotal > 0) {
       const categoriaNome = categorias?.find(c => c.id === agendamento.categoria_preco_id)?.nome || '';
@@ -400,9 +427,6 @@ export default function FormularioOS({
       // Categorias isentas de imposto: Particular e Cartão Mais Vida
       const isentoImposto = isParticular || isCartaoMaisVida;
 
-      let percentual = 0;
-      let repasseFixo = 0;
-      
       // Verificar tipo de repasse do médico (valor_fixo ou percentual)
       const tipoRepasse = medicoAtual.tipo_repasse || 'percentual';
 
@@ -528,38 +552,54 @@ export default function FormularioOS({
       valor_imposto: valorImpostoFiscal,
       valor_repasse_medico: repasseMedico,
       valor_repasse_laboratorio: repasseLab,
-      valor_clinica: valorClinicaAjustado > 0 ? valorClinicaAjustado : 0
+      valor_clinica: valorClinicaAjustado > 0 ? valorClinicaAjustado : 0,
+      percentual_repasse_aplicado: percentual,
+      repasse_fixo_aplicado: repasseFixo
     }));
   }, [agendamento, medico, procedimento, procedimentos, exames, categorias, medicoSelecionadoId, medicos, tabelaPrecos]);
 
   useEffect(() => {
-    let valorComDesconto = dados.valor_total - dados.desconto + (dados.acrescimo || 0);
+    const valorComDesconto = Math.max(0, dados.valor_total - dados.desconto + (dados.acrescimo || 0));
     let novoJuros = 0;
 
     if (dados.cobrar_taxa && ['Cartão Crédito', 'Cartão Débito'].includes(dados.forma_pagamento) && dados.bandeira_cartao) {
       let taxaPercentual = 0;
 
       if (dados.forma_pagamento === 'Cartão Crédito') {
-        // Acessar .taxas pois agora o objeto tem label e taxas
         taxaPercentual = taxasCartao.credito[dados.bandeira_cartao]?.taxas?.[dados.parcelas] || 0;
       } else if (dados.forma_pagamento === 'Cartão Débito') {
-        // Acessar .taxa
         taxaPercentual = taxasCartao.debito[dados.bandeira_cartao]?.taxa || 0;
       }
 
       if (taxaPercentual > 0) {
-        const taxaDecimal = taxaPercentual / 100;
-        const valorComTaxa = valorComDesconto / (1 - taxaDecimal);
-        novoJuros = valorComTaxa - valorComDesconto;
+        novoJuros = valorComDesconto / (1 - taxaPercentual / 100) - valorComDesconto;
       }
     }
+
+    const categoriaNome = categorias?.find(c => c.id === agendamento?.categoria_preco_id)?.nome || '';
+    const categoriaNormalizada = normalizeString(categoriaNome);
+    const isentoImposto = categoriaNormalizada === 'PARTICULAR' ||
+      (categoriaNormalizada.includes('CARTAO') && categoriaNormalizada.includes('MAIS') && categoriaNormalizada.includes('VIDA'));
+
+    const distribuicao = calcularDistribuicaoFinanceira({
+      valorTotal: dados.valor_total,
+      desconto: dados.desconto,
+      acrescimo: dados.acrescimo || 0,
+      percentualImposto: isentoImposto ? 0 : 10,
+      percentualRepasse: dados.percentual_repasse_aplicado,
+      repasseFixo: dados.repasse_fixo_aplicado,
+      repasseLaboratorio: dados.valor_repasse_laboratorio
+    });
 
     setDados(prev => ({
       ...prev,
       juros: novoJuros,
-      valor_final: valorComDesconto + novoJuros
+      valor_final: valorComDesconto + novoJuros,
+      valor_imposto: distribuicao.valorImposto,
+      valor_repasse_medico: distribuicao.valorRepasseMedico,
+      valor_clinica: distribuicao.valorClinica
     }));
-  }, [dados.valor_total, dados.desconto, dados.acrescimo, dados.cobrar_taxa, dados.forma_pagamento, dados.bandeira_cartao, dados.parcelas]);
+  }, [dados.valor_total, dados.desconto, dados.acrescimo, dados.cobrar_taxa, dados.forma_pagamento, dados.bandeira_cartao, dados.parcelas, dados.percentual_repasse_aplicado, dados.repasse_fixo_aplicado, dados.valor_repasse_laboratorio, agendamento, categorias]);
 
   // Calcula o valor do PIX: se múltiplas formas, usa só a parte PIX; senão o valor final
   const calcularValorPix = () => {
@@ -615,6 +655,18 @@ export default function FormularioOS({
       }
 
       const valorFinalPagamento = valorBasePagamento + jurosPagamento;
+      const categoriaNormalizada = normalizeString(categoria?.nome || '');
+      const isentoImposto = categoriaNormalizada === 'PARTICULAR' ||
+        (categoriaNormalizada.includes('CARTAO') && categoriaNormalizada.includes('MAIS') && categoriaNormalizada.includes('VIDA'));
+      const distribuicaoPagamento = calcularDistribuicaoFinanceira({
+        valorTotal: dados.valor_total,
+        desconto: dados.desconto,
+        acrescimo: dados.acrescimo || 0,
+        percentualImposto: isentoImposto ? 0 : 10,
+        percentualRepasse: dados.percentual_repasse_aplicado,
+        repasseFixo: dados.repasse_fixo_aplicado,
+        repasseLaboratorio: dados.valor_repasse_laboratorio
+      });
 
       if (pagamentoCartao && !dados.bandeira_cartao) {
         toast({
@@ -683,10 +735,10 @@ export default function FormularioOS({
         })(),
         observacoes: dados.observacoes,
         itens: dados.itens,
-        valor_imposto: dados.valor_imposto,
-        valor_repasse_medico: dados.valor_repasse_medico,
+        valor_imposto: distribuicaoPagamento.valorImposto,
+        valor_repasse_medico: distribuicaoPagamento.valorRepasseMedico,
         valor_repasse_laboratorio: dados.valor_repasse_laboratorio,
-        valor_clinica: dados.valor_clinica,
+        valor_clinica: distribuicaoPagamento.valorClinica,
         gerado_por: nomeUsuario // Nome do usuário que gerou a OS
       };
 
