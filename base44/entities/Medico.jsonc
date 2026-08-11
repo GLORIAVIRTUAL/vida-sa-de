@@ -115,10 +115,6 @@
           "valor": {
             "type": "number",
             "description": "Percentual ou valor fixo de repasse para consultas"
-          },
-          "valor_procedimento": {
-            "type": "number",
-            "description": "Percentual ou valor fixo de repasse para procedimentos"
           }
         }
       }
