@@ -61,8 +61,7 @@ export default async function(req) {
     let registroNome = dadosReferencia.nome || registroId;
     let categoriaNome = null;
     if (origem === 'TabelaPreco') {
-      const procedimento = await base44.asServiceRole.entities.Procedimento.get(dadosReferencia.procedimento_id);
-      registroNome = procedimento?.nome || dadosReferencia.procedimento_id || registroId;
+      registroNome = dadosReferencia.procedimento_id || registroId;
       categoriaNome = categoriasPorId[dadosReferencia.categoria_id] || dadosReferencia.categoria_id || null;
     }
 
