@@ -541,6 +541,7 @@ export default function OrdemDeServico() {
                     <TableHead>Data</TableHead>
                     <TableHead>Paciente</TableHead>
                     <TableHead>Médico</TableHead>
+                    <TableHead>Convênio</TableHead>
                     <TableHead>Valor</TableHead>
                     <TableHead>Status Pag.</TableHead>
                     <TableHead>Ações</TableHead>
@@ -550,12 +551,12 @@ export default function OrdemDeServico() {
                   {loading ?
                 Array(5).fill(0).map((_, i) =>
                 <TableRow key={i}>
-                        <TableCell colSpan={6}><Skeleton className="h-6 w-full" /></TableCell>
+                        <TableCell colSpan={7}><Skeleton className="h-6 w-full" /></TableCell>
                       </TableRow>
                 ) :
                 ordensFiltradas.length === 0 ?
                 <TableRow>
-                      <TableCell colSpan={6} className="h-24 text-center">
+                      <TableCell colSpan={7} className="h-24 text-center">
                         Nenhuma ordem de serviço encontrada.
                       </TableCell>
                     </TableRow> :
@@ -569,6 +570,7 @@ export default function OrdemDeServico() {
                           <TableCell>{dataExecucao && !isNaN(dataExecucao.getTime()) ? format(dataExecucao, 'dd/MM/yyyy') : 'N/A'}</TableCell>
                           <TableCell>{os.paciente_nome || getNome(os.paciente_id, 'paciente')}</TableCell>
                           <TableCell>{getNome(os.medico_id, 'medico')}</TableCell>
+                          <TableCell>{categorias.find((categoria) => categoria.id === os.categoria_preco_id)?.nome || 'Não informado'}</TableCell>
                           <TableCell>R$ {os.valor_final?.toFixed(2)}</TableCell>
                           <TableCell>
                             <Badge className={`${statusPagamentoColors[os.status_pagamento]}`}>

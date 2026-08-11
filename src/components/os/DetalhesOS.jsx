@@ -762,8 +762,8 @@ export default function DetalhesOS({ os, pacienteNome, medicoNome, categoriaNome
 
           <Separator />
 
-          {/* Informações do Paciente e Médico */}
-          <div className="grid md:grid-cols-2 gap-4">
+          {/* Informações do Paciente, Médico e Convênio */}
+          <div className="grid md:grid-cols-3 gap-4">
             <div className="bg-blue-50 p-4 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
                 <User className="w-5 h-5 text-blue-600" />
@@ -781,6 +781,14 @@ export default function DetalhesOS({ os, pacienteNome, medicoNome, categoriaNome
                 <p className="text-lg">{medicoNome}</p>
               </div>
             )}
+
+            <div className="bg-purple-50 p-4 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <Building2 className="w-5 h-5 text-purple-600" />
+                <h4 className="font-semibold text-purple-900">Convênio</h4>
+              </div>
+              <p className="text-lg">{categoriaNome || 'Não informado'}</p>
+            </div>
           </div>
 
           <Separator />
