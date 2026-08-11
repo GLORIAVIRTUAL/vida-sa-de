@@ -175,7 +175,9 @@ export default function FormularioProcedimento({ procedimento, categorias, preco
               valor: valorNumerico,
               tipo_repasse,
               valor_repasse,
-              percentual_repasse
+              percentual_repasse,
+              alterado_por_email: usuarioLogado?.email || null,
+              alterado_por_nome: usuarioLogado?.full_name || usuarioLogado?.email || null
             });
           } else {
             // Criar novo preço
@@ -185,11 +187,17 @@ export default function FormularioProcedimento({ procedimento, categorias, preco
               valor: valorNumerico,
               tipo_repasse,
               valor_repasse,
-              percentual_repasse
+              percentual_repasse,
+              alterado_por_email: usuarioLogado?.email || null,
+              alterado_por_nome: usuarioLogado?.full_name || usuarioLogado?.email || null
             });
           }
         } else if (precoExistente) {
-          // Deletar preço se o campo for esvaziado
+          // Registrar o responsável antes de excluir a configuração
+          await TabelaPreco.update(precoExistente.id, {
+            alterado_por_email: usuarioLogado?.email || null,
+            alterado_por_nome: usuarioLogado?.full_name || usuarioLogado?.email || null
+          });
           return TabelaPreco.delete(precoExistente.id);
         }
         return Promise.resolve();

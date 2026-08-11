@@ -30,6 +30,20 @@
     "percentual_repasse": {
       "type": "number",
       "description": "Percentual de repasse ao m\u00e9dico para esta categoria (%)"
+    },
+    "alterado_por_email": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Email do usu\u00e1rio que fez a \u00faltima altera\u00e7\u00e3o"
+    },
+    "alterado_por_nome": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Nome do usu\u00e1rio que fez a \u00faltima altera\u00e7\u00e3o"
     }
   },
   "required": [
