@@ -119,7 +119,7 @@ function MainLayout({ children, currentPageName, currentUser, onUserUpdate }) {
   { name: "Resultados Exames", page: "ResultadosExames", icon: FileText, roles: ["admin", "user"] },
   { name: "Venda Cartão", page: "VendaCartao", icon: CreditCard, roles: ["admin", "user"] },
   { name: "Financeiro", page: "Financeiro", icon: DollarSign, roles: ["admin"] },
-  { name: "Relatórios", page: "Relatorios", icon: FileText, roles: ["admin"] },
+  { name: "Relatórios", page: "Relatorios", icon: FileText, roles: ["admin"], permission: "can_access_reports" },
   { name: "Performance", page: "Performance", icon: Activity, roles: ["admin"] },
   { name: "Usuários", page: "Usuarios", icon: Users, roles: ["admin"] }];
 
@@ -150,7 +150,7 @@ function MainLayout({ children, currentPageName, currentUser, onUserUpdate }) {
   // Emails com permissões especiais (veem itens de admin mesmo sem o role)
   const ADMIN_BYPASS_EMAILS = ['cristianogoldani@yahoo.com.br'];
   const temBypassAdmin = currentUser?.email && ADMIN_BYPASS_EMAILS.includes(currentUser.email.toLowerCase().trim());
-  const menuPrincipal = menuBase.filter((item) => item.roles.includes(userRole) || (temBypassAdmin && item.roles.includes("admin")));
+  const menuPrincipal = menuBase.filter((item) => item.roles.includes(userRole) || (temBypassAdmin && item.roles.includes("admin")) || (item.permission && currentUser?.[item.permission]));
   const menuSistemaFiltrado = menuSistemaBase.filter((item) => item.roles.includes(userRole) || (temBypassAdmin && item.roles.includes("admin")));
 
   // Se for página sem layout, renderizar apenas o conteúdo

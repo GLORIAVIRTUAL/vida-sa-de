@@ -971,7 +971,7 @@ export default function Relatorios() {
   }
 
   return (
-    <ProtectedRoute requiredRole="admin" fallbackMessage="Apenas administradores podem acessar relatórios.">
+    <ProtectedRoute requiredRole="admin" requiredPermission="can_access_reports" fallbackMessage="Você não tem permissão para acessar relatórios.">
       <div className="p-6 bg-gray-50 min-h-screen" ref={printRef}>
         <div className="max-w-7xl mx-auto">
           {/* Header */}

@@ -14,7 +14,7 @@ const ADMIN_EMAILS = ['cristianogoldani@yahoo.com.br'];
  *   fallbackMessage?: string
  * }} props
  */
-export default function ProtectedRoute({ children, requiredRole, fallbackMessage }) {
+export default function ProtectedRoute({ children, requiredRole, requiredPermission, fallbackMessage }) {
   const [user, setUser] = React.useState(null);
   const [loading, setLoading] = React.useState(true);
 
@@ -42,8 +42,9 @@ export default function ProtectedRoute({ children, requiredRole, fallbackMessage
   
   // Verificar se o email do usuário tem permissão especial
   const temPermissaoEspecial = user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase());
+  const temPermissaoDireta = requiredPermission && user?.[requiredPermission] === true;
 
-  if (!user || (!rolesPermitidos.includes(userRole) && !temPermissaoEspecial)) {
+  if (!user || (!rolesPermitidos.includes(userRole) && !temPermissaoEspecial && !temPermissaoDireta)) {
     return (
       <div className="p-6 flex items-center justify-center min-h-[60vh]">
         <Card className="w-full max-w-lg text-center shadow-lg bg-red-50 border-red-200">

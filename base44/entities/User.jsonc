@@ -15,6 +15,11 @@
       ],
       "default": "user",
       "description": "Papel do usu\u00e1rio na aplica\u00e7\u00e3o"
+    },
+    "can_access_reports": {
+      "type": "boolean",
+      "default": false,
+      "description": "Permite acesso espec\u00edfico \u00e0 p\u00e1gina de relat\u00f3rios sem conceder perfil administrativo."
     }
   },
   "required": [
