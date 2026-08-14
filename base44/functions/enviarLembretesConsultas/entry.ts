@@ -8,6 +8,7 @@ Deno.serve(async (req) => {
         let payload = {};
         try { payload = await req.json(); } catch (_) { /* sem body */ }
         const execucao = Number(payload?.execucao || 1);
+        const dryRun = payload?.dryRun === true;
 
         const user = await base44.auth.me();
         if (user?.role !== 'admin') {
@@ -61,10 +62,30 @@ Deno.serve(async (req) => {
                 .map(n => n.agendamento_id)
         );
 
-        // Buscar dados dos pacientes
+        // Buscar diretamente cada paciente vinculado, sem limite por antiguidade do cadastro
         const pacientesIds = [...new Set(agendamentosValidos.map(a => a.paciente_id).filter(Boolean))];
-        const todosPacientes = await base44.asServiceRole.entities.Paciente.list('-created_date', 1000);
-        const pacientesMap = new Map(todosPacientes.map(p => [p.id, p]));
+        const pacientesResultados = await Promise.allSettled(
+            pacientesIds.map(id => base44.asServiceRole.entities.Paciente.get(id))
+        );
+        const pacientesMap = new Map();
+        pacientesResultados.forEach((resultado, index) => {
+            if (resultado.status === 'fulfilled' && resultado.value) {
+                pacientesMap.set(pacientesIds[index], resultado.value);
+            } else {
+                console.error(`⚠️ Paciente não localizado: ${pacientesIds[index]}`);
+            }
+        });
+
+        if (dryRun) {
+            return Response.json({
+                success: true,
+                dryRun: true,
+                dataAmanha,
+                totalAgendamentos: agendamentosValidos.length,
+                pacientesVinculados: pacientesIds.length,
+                pacientesLocalizados: pacientesMap.size
+            });
+        }
 
         // Buscar médicos para incluir nome
         const medicosIds = [...new Set(agendamentosValidos.map(a => a.medico_id).filter(Boolean))];
