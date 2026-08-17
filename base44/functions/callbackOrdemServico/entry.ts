@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
+import { garantirLancamentoReceita } from '../../shared/garantirLancamentoReceita.ts';
 
 Deno.serve(async (req) => {
     try {
@@ -91,6 +92,16 @@ Deno.serve(async (req) => {
 
         // Ao confirmar o pagamento, refletir o status no agendamento vinculado
         // (para que o card deixe de aparecer como "Agendado" e mostre a OS)
+        // Ao confirmar o pagamento, gerar a receita no fluxo de caixa
+        if (novoStatus === 'Pago') {
+            try {
+                const resLanc = await garantirLancamentoReceita(base44, ordemServico);
+                console.log('💰 Lançamento de receita:', JSON.stringify(resLanc));
+            } catch (e) {
+                console.error('⚠️ Falha ao criar lançamento de receita:', e.message);
+            }
+        }
+
         if (novoStatus === 'Pago' && ordemServico.agendamento_id) {
             try {
                 await base44.asServiceRole.entities.Agendamento.update(ordemServico.agendamento_id, {

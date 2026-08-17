@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { garantirLancamentoReceita } from '../../shared/garantirLancamentoReceita.ts';
 
 // Usa hostname DNS (sslip.io resolve para o IP do servidor-ponte) pois o runtime bloqueia fetch direto a IPs
 const PROXY_SERVER = 'http://216.238.126.207.sslip.io:3000';
@@ -28,6 +29,11 @@ Deno.serve(async (req) => {
     // ATALHO: se a OS já foi marcada como Pago (ex: pelo webhook do Sicredi),
     // confirma imediatamente sem precisar consultar o Sicredi novamente.
     if (os.status_pagamento === 'Pago') {
+      try {
+        await garantirLancamentoReceita(base44, os);
+      } catch (e) {
+        console.error('Falha ao criar lançamento de receita:', e.message);
+      }
       return Response.json({
         success: true,
         is_paid: true,
@@ -88,6 +94,13 @@ Deno.serve(async (req) => {
         } catch (e) {
           console.error('Falha ao atualizar agendamento:', e.message);
         }
+      }
+
+      try {
+        const resLanc = await garantirLancamentoReceita(base44, os);
+        console.log('Lançamento de receita:', JSON.stringify(resLanc));
+      } catch (e) {
+        console.error('Falha ao criar lançamento de receita:', e.message);
       }
 
       await base44.asServiceRole.entities.AuditoriaOS.create({

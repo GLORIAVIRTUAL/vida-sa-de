@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { garantirLancamentoReceita } from '../../shared/garantirLancamentoReceita.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -105,6 +106,14 @@ Deno.serve(async (req) => {
           ],
           resumo: `Pagamento Pix confirmado pelo Sicredi. Valor: R$ ${valor}. ID transação: ${id}`,
         });
+
+        // Gerar a receita no fluxo de caixa
+        try {
+          const res = await garantirLancamentoReceita(base44, os);
+          console.log(`Lançamento de receita (OS ${os.numero_os}):`, JSON.stringify(res));
+        } catch (e) {
+          console.error('Falha ao criar lançamento de receita:', e.message);
+        }
 
         console.log(`OS ${os.numero_os} marcada como Pago`);
       }
