@@ -38,8 +38,9 @@ export default function DashboardFinanceiro({ lancamentos = [], ordensServico = 
     const mesAtualStr = format(inicioMesAtual, 'yyyy-MM');
     const mesAnteriorStr = format(inicioMesAnterior, 'yyyy-MM');
 
-    const osNaoCanceladasMesAtual = ordensServico.filter(os => os.data_execucao?.substring(0, 7) === mesAtualStr && os.status_pagamento !== 'Cancelado');
-    const osNaoCanceladasMesAnterior = ordensServico.filter(os => os.data_execucao?.substring(0, 7) === mesAnteriorStr && os.status_pagamento !== 'Cancelado');
+    // Apenas OS efetivamente pagas entram como receita (mesma regra da DRE e dos Relatórios)
+    const osNaoCanceladasMesAtual = ordensServico.filter(os => os.data_execucao?.substring(0, 7) === mesAtualStr && os.status_pagamento === 'Pago');
+    const osNaoCanceladasMesAnterior = ordensServico.filter(os => os.data_execucao?.substring(0, 7) === mesAnteriorStr && os.status_pagamento === 'Pago');
 
     const receitaMesAtual = parseFloat(osNaoCanceladasMesAtual.reduce((acc, os) => acc + obterValorSemJurosOS(os), 0).toFixed(2));
     const receitaMesAnterior = parseFloat(osNaoCanceladasMesAnterior.reduce((acc, os) => acc + obterValorSemJurosOS(os), 0).toFixed(2));

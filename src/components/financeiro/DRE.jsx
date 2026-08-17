@@ -42,6 +42,10 @@ export default function DRE({ lancamentos, ordensServico = [], loading }) {
     const receitaExames = osAtivasPeriodo
       .filter(os => os.tipo_servico === 'Exame')
       .reduce((acc, os) => acc + obterValorSemJurosOS(os), 0);
+    // OS com outros tipos (ex.: Múltiplos Serviços) não podem ficar fora da receita
+    const receitaOutrosServicos = osAtivasPeriodo
+      .filter(os => !['Consulta', 'Procedimento', 'Exame'].includes(os.tipo_servico))
+      .reduce((acc, os) => acc + obterValorSemJurosOS(os), 0);
 
     // Outras Receitas: lançamentos de Entrada SEM vínculo com OS (ex.: vendas de cartão, taxas, etc.)
     const outrasReceitas = lancamentosPeriodo
@@ -71,7 +75,7 @@ export default function DRE({ lancamentos, ordensServico = [], loading }) {
     const impostoOS = osPeriodo.reduce((acc, os) => acc + (os.valor_imposto || 0), 0);
 
     const jurosCartao = osAtivasPeriodo.reduce((acc, os) => acc + obterJurosOS(os), 0);
-    const receitaBruta = receitaConsultas + receitaProcedimentos + receitaExames + outrasReceitas;
+    const receitaBruta = receitaConsultas + receitaProcedimentos + receitaExames + receitaOutrosServicos + outrasReceitas;
     const totalDespesas = resumo.saidas;
     const lucroLiquido = receitaBruta - totalDespesas - impostoOS;
     const margemLiquida = receitaBruta > 0 ? (lucroLiquido / receitaBruta) * 100 : 0;
@@ -82,6 +86,7 @@ export default function DRE({ lancamentos, ordensServico = [], loading }) {
         consultas: receitaConsultas,
         procedimentos: receitaProcedimentos,
         exames: receitaExames,
+        outrosServicos: receitaOutrosServicos,
         outras: outrasReceitas,
         jurosCartao,
         total: receitaBruta
@@ -215,6 +220,10 @@ export default function DRE({ lancamentos, ordensServico = [], loading }) {
             <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
               <span className="font-medium">Exames</span>
               <span className="font-bold text-green-600">R$ {dre.receitas.exames.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+              <span className="font-medium">Outros Serviços</span>
+              <span className="font-bold text-green-600">R$ {dre.receitas.outrosServicos.toFixed(2)}</span>
             </div>
             <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
               <span className="font-medium">Outras Entradas</span>
