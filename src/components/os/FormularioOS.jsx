@@ -1220,7 +1220,7 @@ export default function FormularioOS({
           </Card>
           <DialogFooter className="p-0 flex-shrink-0"> {/* Moved DialogFooter inside form for submit button */}
             <Button type="button" variant="outline" onClick={onCancelar}>Cancelar</Button>
-            <Button type="submit" disabled={salvando || dados.valor_total === 0}>
+            <Button type="submit" disabled={salvando || dados.valor_final <= 0}>
               <Save className="w-4 h-4 mr-2" />
               {salvando ? "Salvando..." : "Salvar OS"}
             </Button>
