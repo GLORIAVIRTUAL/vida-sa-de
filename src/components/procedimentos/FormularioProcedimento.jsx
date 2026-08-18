@@ -207,6 +207,8 @@ export default function FormularioProcedimento({ procedimento, categorias, preco
       onSave();
     } catch (error) {
       console.error("Erro ao salvar procedimento:", error);
+      const detalhe = error?.response?.data?.detail || error?.response?.data?.message || error?.message || 'Erro desconhecido';
+      alert(`Não foi possível salvar: ${typeof detalhe === 'string' ? detalhe : JSON.stringify(detalhe)}`);
     } finally {
       setLoading(false);
     }
