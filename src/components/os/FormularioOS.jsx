@@ -572,7 +572,7 @@ export default function FormularioOS({
       }
 
       if (taxaPercentual > 0) {
-        novoJuros = valorComDesconto / (1 - taxaPercentual / 100) - valorComDesconto;
+        novoJuros = Math.round((valorComDesconto / (1 - taxaPercentual / 100) - valorComDesconto) * 100) / 100;
       }
     }
 
@@ -594,7 +594,7 @@ export default function FormularioOS({
     setDados(prev => ({
       ...prev,
       juros: novoJuros,
-      valor_final: valorComDesconto + novoJuros,
+      valor_final: Math.round((valorComDesconto + novoJuros) * 100) / 100,
       valor_imposto: distribuicao.valorImposto,
       valor_repasse_medico: distribuicao.valorRepasseMedico,
       valor_clinica: distribuicao.valorClinica
@@ -650,11 +650,11 @@ export default function FormularioOS({
           : taxasCartao.debito[dados.bandeira_cartao]?.taxa || 0;
 
         if (taxaPercentual > 0) {
-          jurosPagamento = valorBasePagamento / (1 - taxaPercentual / 100) - valorBasePagamento;
+          jurosPagamento = Math.round((valorBasePagamento / (1 - taxaPercentual / 100) - valorBasePagamento) * 100) / 100;
         }
       }
 
-      const valorFinalPagamento = valorBasePagamento + jurosPagamento;
+      const valorFinalPagamento = Math.round((valorBasePagamento + jurosPagamento) * 100) / 100;
       const categoriaNormalizada = normalizeString(categoria?.nome || '');
       const isentoImposto = categoriaNormalizada === 'PARTICULAR' ||
         (categoriaNormalizada.includes('CARTAO') && categoriaNormalizada.includes('MAIS') && categoriaNormalizada.includes('VIDA'));
