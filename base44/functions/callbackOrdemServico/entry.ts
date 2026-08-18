@@ -48,10 +48,21 @@ Deno.serve(async (req) => {
             );
             const valorNum = valorPayload != null ? parseFloat(valorPayload) : null;
             ordemServico = pendentes.find(os => {
-                const ehCartao = os.forma_pagamento === 'Cartão Crédito' || os.forma_pagamento === 'Cartão Débito';
+                const partesCartao = (os.pagamentos_detalhados || []).filter(p => String(p.forma || '').startsWith('Cartão'));
+                const ehCartao = os.forma_pagamento === 'Cartão Crédito'
+                    || os.forma_pagamento === 'Cartão Débito'
+                    || (os.forma_pagamento === 'Múltiplas Formas' && partesCartao.length > 0);
                 if (!ehCartao) return false;
                 if (valorNum == null) return true; // sem valor no payload: pega a mais recente de cartão pendente
-                return Math.abs(Number(os.valor_final) - valorNum) < 0.01;
+
+                // Valores que a maquininha pode ter cobrado: total da OS, cada parte no cartão ou a soma delas
+                const candidatos = [Number(os.valor_final)];
+                partesCartao.forEach(p => candidatos.push(Number(p.valor || 0)));
+                if (partesCartao.length > 1) {
+                    candidatos.push(partesCartao.reduce((s, p) => s + Number(p.valor || 0), 0));
+                }
+                // Tolerância para juros de parcelamento somados ao valor enviado à maquininha (até 25%)
+                return candidatos.some(v => v > 0 && (Math.abs(v - valorNum) < 0.01 || (valorNum > v && valorNum <= v * 1.25)));
             }) || null;
             if (ordemServico) {
                 console.log('⚠️ OS casada por fallback (valor/pendente):', ordemServico.id);
