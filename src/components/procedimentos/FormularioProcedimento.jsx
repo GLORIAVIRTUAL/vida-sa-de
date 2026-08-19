@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Procedimento, TabelaPreco, User } from '@/entities/all';
 import { Loader2, Plus, Trash2, Package } from 'lucide-react';
 import { Checkbox } from "@/components/ui/checkbox";
+import InputNumero from "@/components/shared/InputNumero";
 
 const especialidades = [
   "Cardiologia", "Clínico Geral", "Dermatologia", "Eletrocardiograma", "Endocrinologia", "Fisioterapeuta",
@@ -250,7 +251,7 @@ export default function FormularioProcedimento({ procedimento, categorias, preco
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="duracao_minutos">Duração (min)</Label>
-                <Input type="number" id="duracao_minutos" name="duracao_minutos" value={formData.duracao_minutos} onChange={handleChange} />
+                <InputNumero id="duracao_minutos" name="duracao_minutos" value={formData.duracao_minutos} onChange={handleChange} />
               </div>
               <div className="space-y-1">
                 <Label>Repasse do Procedimento</Label>
@@ -265,9 +266,9 @@ export default function FormularioProcedimento({ procedimento, categorias, preco
                     </SelectContent>
                   </Select>
                   {formData.tipo_repasse === 'valor_fixo' ? (
-                    <Input type="number" id="valor_repasse_medico" name="valor_repasse_medico" value={formData.valor_repasse_medico} onChange={handleChange} placeholder="0.00" className="flex-1 min-w-[80px]" />
+                    <InputNumero id="valor_repasse_medico" name="valor_repasse_medico" value={formData.valor_repasse_medico} onChange={handleChange} placeholder="0.00" className="flex-1 min-w-[80px]" />
                   ) : (
-                    <Input type="number" id="percentual_repasse_medico" name="percentual_repasse_medico" value={formData.percentual_repasse_medico} onChange={handleChange} placeholder="0 a 100" min="0" max="100" className="flex-1 min-w-[80px]" />
+                    <InputNumero id="percentual_repasse_medico" name="percentual_repasse_medico" value={formData.percentual_repasse_medico} onChange={handleChange} placeholder="0 a 100" min="0" max="100" className="flex-1 min-w-[80px]" />
                   )}
                 </div>
                 <p className="text-xs text-gray-500">
@@ -312,8 +313,7 @@ export default function FormularioProcedimento({ procedimento, categorias, preco
                 <div className="grid grid-cols-1 gap-3">
                   <div>
                     <Label htmlFor={`preco-${cat.id}`} className="text-xs text-gray-500">Valor do Procedimento (R$)</Label>
-                    <Input
-                      type="number"
+                    <InputNumero
                       id={`preco-${cat.id}`}
                       value={precoData.valor}
                       onChange={(e) => handlePrecoChange(cat.id, 'valor', e.target.value)}
@@ -334,16 +334,14 @@ export default function FormularioProcedimento({ procedimento, categorias, preco
                         </SelectContent>
                       </Select>
                       {precoData.tipo_repasse === 'valor_fixo' ? (
-                        <Input 
-                          type="number" 
+                        <InputNumero 
                           value={precoData.valor_repasse} 
                           onChange={(e) => handlePrecoChange(cat.id, 'valor_repasse', e.target.value)} 
                           placeholder="0.00" 
                           className="flex-1 bg-white" 
                         />
                       ) : (
-                        <Input 
-                          type="number" 
+                        <InputNumero 
                           value={precoData.percentual_repasse} 
                           onChange={(e) => handlePrecoChange(cat.id, 'percentual_repasse', e.target.value)} 
                           placeholder="0 a 100" 
@@ -417,8 +415,7 @@ export default function FormularioProcedimento({ procedimento, categorias, preco
                   {/* Desconto do pacote */}
                   <div className="pt-3 border-t mt-3">
                     <Label htmlFor="desconto_pacote">Desconto do Pacote (%)</Label>
-                    <Input
-                      type="number"
+                    <InputNumero
                       id="desconto_pacote"
                       name="desconto_pacote"
                       min="0"
