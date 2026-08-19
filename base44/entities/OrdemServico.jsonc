@@ -140,6 +140,20 @@
           },
           "valor": {
             "type": "number"
+          },
+          "bandeira_cartao": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Bandeira do cart\u00e3o desta forma de pagamento (obrigat\u00f3ria para cart\u00e3o)"
+          },
+          "parcelas": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "N\u00famero de parcelas desta forma de pagamento (cart\u00e3o de cr\u00e9dito)"
           }
         }
       }

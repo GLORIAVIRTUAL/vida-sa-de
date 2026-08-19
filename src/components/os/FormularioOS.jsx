@@ -17,6 +17,7 @@ import { base44 } from "@/api/base44Client";
 import { User } from "@/entities/all";
 import ModalQrCodePix from "./ModalQrCodePix";
 import ModalAguardandoCartao from "./ModalAguardandoCartao";
+import DetalheCartaoPagamento from "./DetalheCartaoPagamento";
 
 const formasPagamento = ["Dinheiro", "Cartão Débito", "Cartão Crédito", "PIX", "PIX Turmas", "Transferência", "Convênio", "Múltiplas Formas"];
 
@@ -139,8 +140,8 @@ export default function FormularioOS({
   });
   
   // Estados para múltiplas formas de pagamento
-  const [pagamento1, setPagamento1] = useState({ forma: '', valor: '' });
-  const [pagamento2, setPagamento2] = useState({ forma: '', valor: '' });
+  const [pagamento1, setPagamento1] = useState({ forma: '', valor: '', bandeira: '', parcelas: 1 });
+  const [pagamento2, setPagamento2] = useState({ forma: '', valor: '', bandeira: '', parcelas: 1 });
   const [salvando, setSalvando] = useState(false);
   const [avisoCategoria, setAvisoCategoria] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
@@ -160,6 +161,8 @@ export default function FormularioOS({
   const [cartaoModalOpen, setCartaoModalOpen] = useState(false);
   const [cartaoOsPendente, setCartaoOsPendente] = useState(null);
   const [cartaoErro, setCartaoErro] = useState(null);
+  // PIX restante de uma OS com Múltiplas Formas (gerado após o cartão)
+  const [pixPendenteMultiplo, setPixPendenteMultiplo] = useState(null);
 
   // Buscar usuário atual para salvar quem gerou a OS
   useEffect(() => {
@@ -612,6 +615,34 @@ export default function FormularioOS({
     return dados.valor_final;
   };
 
+  // Abre o modal de PIX e gera o QR Code para a OS informada
+  const abrirPixParaOS = async (os, valorPix) => {
+    setOsSalvaPendente(os);
+    setPixModalOpen(true);
+    setPixLoading(true);
+    setPixErro(null);
+    setPixQrCode(null);
+    setPixValor(valorPix);
+
+    try {
+      const pixRes = await base44.functions.invoke('gerarQrCodePix', {
+        ordem_servico_id: os.id,
+        valor: valorPix
+      });
+
+      if (pixRes.data?.success && pixRes.data?.qr_code) {
+        setPixQrCode(pixRes.data.qr_code);
+      } else {
+        setPixErro(pixRes.data?.error || 'Não foi possível gerar o QR Code Pix.');
+      }
+    } catch (pixErr) {
+      console.error('Erro ao gerar QR Code Pix:', pixErr);
+      setPixErro('Erro ao gerar QR Code Pix: ' + (pixErr.message || 'Tente novamente.'));
+    } finally {
+      setPixLoading(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSalvando(true);
@@ -684,11 +715,29 @@ export default function FormularioOS({
       // Montar array de pagamentos detalhados se for Múltiplas Formas
       let pagamentosDetalhados = [];
       if (dados.forma_pagamento === 'Múltiplas Formas') {
-        if (pagamento1.forma && pagamento1.valor) {
-          pagamentosDetalhados.push({ forma: pagamento1.forma, valor: parseFloat(pagamento1.valor) || 0 });
-        }
-        if (pagamento2.forma && pagamento2.valor) {
-          pagamentosDetalhados.push({ forma: pagamento2.forma, valor: parseFloat(pagamento2.valor) || 0 });
+        const montarPagamento = (p) => {
+          const item = { forma: p.forma, valor: parseFloat(p.valor) || 0 };
+          if (['Cartão Crédito', 'Cartão Débito'].includes(p.forma)) {
+            item.bandeira_cartao = p.bandeira || null;
+            item.parcelas = p.forma === 'Cartão Crédito' ? (Number(p.parcelas) || 1) : 1;
+          }
+          return item;
+        };
+        if (pagamento1.forma && pagamento1.valor) pagamentosDetalhados.push(montarPagamento(pagamento1));
+        if (pagamento2.forma && pagamento2.valor) pagamentosDetalhados.push(montarPagamento(pagamento2));
+
+        // Bandeira é obrigatória para a maquininha aceitar a requisição
+        const cartaoSemBandeira = pagamentosDetalhados.find(
+          p => ['Cartão Crédito', 'Cartão Débito'].includes(p.forma) && !p.bandeira_cartao
+        );
+        if (cartaoSemBandeira) {
+          toast({
+            title: "Selecione a bandeira do cartão",
+            description: `Informe a bandeira (e as parcelas) do pagamento em ${cartaoSemBandeira.forma} para enviar à maquininha.`,
+            variant: "destructive"
+          });
+          setSalvando(false);
+          return;
         }
 
         // Validar: precisa das duas formas preenchidas e a soma deve bater com o total
@@ -703,6 +752,9 @@ export default function FormularioOS({
           return;
         }
       }
+
+      // Parte paga com cartão dentro de "Múltiplas Formas" (enviada à maquininha)
+      const cartaoMultiplo = pagamentosDetalhados.find(p => ['Cartão Crédito', 'Cartão Débito'].includes(p.forma)) || null;
 
       // Nome do usuário que está gerando a OS
       const nomeUsuario = currentUser?.display_name || currentUser?.full_name || currentUser?.email;
@@ -723,8 +775,8 @@ export default function FormularioOS({
         valor_final: valorFinalPagamento,
         forma_pagamento: dados.forma_pagamento,
         pagamentos_detalhados: pagamentosDetalhados,
-        parcelas: dados.parcelas,
-        bandeira_cartao: dados.bandeira_cartao,
+        parcelas: cartaoMultiplo ? (cartaoMultiplo.parcelas || 1) : dados.parcelas,
+        bandeira_cartao: cartaoMultiplo ? cartaoMultiplo.bandeira_cartao : dados.bandeira_cartao,
         // PIX só pode ser confirmado pelo webhook do Sicredi e cartão pelo retorno da maquininha.
         status_pagamento: (() => {
           if (dados.forma_pagamento === 'PIX') return 'Pendente';
@@ -787,6 +839,8 @@ export default function FormularioOS({
 
       // Se foi enviado para a maquininha (cartão integrado), abrir modal de aguardo
       if (response.data.aguardando_cartao) {
+        const pixNaMultipla = pagamentosDetalhados.find(p => p.forma === 'PIX');
+        setPixPendenteMultiplo(pixNaMultipla ? { os: novaOS, valor: pixNaMultipla.valor } : null);
         setCartaoOsPendente(novaOS);
         setCartaoErro(null);
         setCartaoModalOpen(true);
@@ -819,31 +873,7 @@ export default function FormularioOS({
           ? pagamentosDetalhados.find(p => p.forma === 'PIX')?.valor || dados.valor_final
           : dados.valor_final;
 
-        // Abrir modal e gerar QR Code
-        setOsSalvaPendente(novaOS);
-        setPixModalOpen(true);
-        setPixLoading(true);
-        setPixErro(null);
-        setPixQrCode(null);
-        setPixValor(valorPix);
-
-        try {
-          const pixRes = await base44.functions.invoke('gerarQrCodePix', {
-            ordem_servico_id: novaOS.id,
-            valor: valorPix
-          });
-
-          if (pixRes.data?.success && pixRes.data?.qr_code) {
-            setPixQrCode(pixRes.data.qr_code);
-          } else {
-            setPixErro(pixRes.data?.error || 'Não foi possível gerar o QR Code Pix.');
-          }
-        } catch (pixErr) {
-          console.error('Erro ao gerar QR Code Pix:', pixErr);
-          setPixErro('Erro ao gerar QR Code Pix: ' + (pixErr.message || 'Tente novamente.'));
-        } finally {
-          setPixLoading(false);
-        }
+        await abrirPixParaOS(novaOS, valorPix);
       } else {
         // Sem PIX: fluxo normal
         onSalvar(novaOS);
@@ -1018,8 +1048,8 @@ export default function FormularioOS({
                     onValueChange={(v) => {
                       setDados(prev => ({ ...prev, forma_pagamento: v, bandeira_cartao: null, parcelas: 1 }));
                       if (v !== 'Múltiplas Formas') {
-                        setPagamento1({ forma: '', valor: '' });
-                        setPagamento2({ forma: '', valor: '' });
+                        setPagamento1({ forma: '', valor: '', bandeira: '', parcelas: 1 });
+                        setPagamento2({ forma: '', valor: '', bandeira: '', parcelas: 1 });
                       }
                     }}
                   >
@@ -1141,7 +1171,7 @@ export default function FormularioOS({
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <Label className="text-sm">Forma 1</Label>
-                      <Select value={pagamento1.forma} onValueChange={(v) => setPagamento1(prev => ({ ...prev, forma: v }))}>
+                      <Select value={pagamento1.forma} onValueChange={(v) => setPagamento1(prev => ({ ...prev, forma: v, bandeira: '', parcelas: 1 }))}>
                         <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="Dinheiro">Dinheiro</SelectItem>
@@ -1166,11 +1196,19 @@ export default function FormularioOS({
                     </div>
                   </div>
 
+                  {['Cartão Crédito', 'Cartão Débito'].includes(pagamento1.forma) && (
+                    <DetalheCartaoPagamento
+                      pagamento={pagamento1}
+                      taxasCartao={taxasCartao}
+                      onChange={(patch) => setPagamento1(prev => ({ ...prev, ...patch }))}
+                    />
+                  )}
+
                   {/* Pagamento 2 */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <Label className="text-sm">Forma 2</Label>
-                      <Select value={pagamento2.forma} onValueChange={(v) => setPagamento2(prev => ({ ...prev, forma: v }))}>
+                      <Select value={pagamento2.forma} onValueChange={(v) => setPagamento2(prev => ({ ...prev, forma: v, bandeira: '', parcelas: 1 }))}>
                         <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="Dinheiro">Dinheiro</SelectItem>
@@ -1194,6 +1232,14 @@ export default function FormularioOS({
                       />
                     </div>
                   </div>
+
+                  {['Cartão Crédito', 'Cartão Débito'].includes(pagamento2.forma) && (
+                    <DetalheCartaoPagamento
+                      pagamento={pagamento2}
+                      taxasCartao={taxasCartao}
+                      onChange={(patch) => setPagamento2(prev => ({ ...prev, ...patch }))}
+                    />
+                  )}
 
                   {/* Total das formas */}
                   {(pagamento1.valor || pagamento2.valor) && (
@@ -1256,6 +1302,13 @@ export default function FormularioOS({
         open={cartaoModalOpen}
         onClose={() => {
           setCartaoModalOpen(false);
+          if (pixPendenteMultiplo) {
+            const pix = pixPendenteMultiplo;
+            setPixPendenteMultiplo(null);
+            setCartaoOsPendente(null);
+            abrirPixParaOS(pix.os, pix.valor);
+            return;
+          }
           if (cartaoOsPendente) {
             onSalvar(cartaoOsPendente);
             setCartaoOsPendente(null);
@@ -1268,6 +1321,14 @@ export default function FormularioOS({
         erro={cartaoErro}
         ordemServicoId={cartaoOsPendente?.id}
         onPago={() => {
+          if (pixPendenteMultiplo) {
+            const pix = pixPendenteMultiplo;
+            setPixPendenteMultiplo(null);
+            setCartaoModalOpen(false);
+            setCartaoOsPendente(null);
+            abrirPixParaOS(pix.os, pix.valor);
+            return;
+          }
           if (cartaoOsPendente) {
             onSalvar(cartaoOsPendente);
             setCartaoOsPendente(null);

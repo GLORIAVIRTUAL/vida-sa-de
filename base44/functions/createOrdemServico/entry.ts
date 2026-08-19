@@ -31,9 +31,16 @@ Deno.serve(async (req) => {
         console.log('💰 Valor final:', valor_final);
 
         const isCartao = forma_pagamento === 'Cartão Crédito' || forma_pagamento === 'Cartão Débito';
-        // Integração EvoluServices ativa para pagamentos com cartão.
-        const isPagamentoIntegrado = isCartao;
-        if (isPagamentoIntegrado && !bandeira_cartao) {
+        // Parte paga com cartão dentro de "Múltiplas Formas"
+        const cartaoMultiplo = forma_pagamento === 'Múltiplas Formas' && Array.isArray(body.pagamentos_detalhados)
+            ? body.pagamentos_detalhados.find(p => p?.forma === 'Cartão Crédito' || p?.forma === 'Cartão Débito')
+            : null;
+        // Integração EvoluServices ativa para pagamentos com cartão (inclusive parte do cartão em múltiplas formas).
+        const isPagamentoIntegrado = isCartao || !!cartaoMultiplo;
+        const bandeiraTransacao = cartaoMultiplo ? cartaoMultiplo.bandeira_cartao : bandeira_cartao;
+        const parcelasTransacao = Number(cartaoMultiplo ? cartaoMultiplo.parcelas : parcelas) || 1;
+        const valorTransacao = Number(cartaoMultiplo ? cartaoMultiplo.valor : valor_final) || 0;
+        if (isPagamentoIntegrado && !bandeiraTransacao) {
             await base44.asServiceRole.entities.WebhookLog.create({
                 endpoint: 'createOrdemServico:EvoluServices',
                 method: 'POST',
@@ -110,9 +117,9 @@ Deno.serve(async (req) => {
                     ordem_servico_id: novaOS.id,
                     numero_os: novaOS.numero_os,
                     forma_pagamento,
-                    bandeira_cartao,
-                    parcelas: Number(parcelas) || 1,
-                    valor: Number(valor_final) || 0,
+                    bandeira_cartao: bandeiraTransacao,
+                    parcelas: parcelasTransacao,
+                    valor: valorTransacao,
                     paciente_nome: nomePaciente
                 }),
                 status: 'processing',
@@ -149,9 +156,9 @@ Deno.serve(async (req) => {
                 const payloadEvolu = {
                     transaction: {
                         merchantId,
-                        value: parseFloat(valor_final).toFixed(2),
-                        installments: Number(parcelas) || 1,
-                        paymentBrand: bandeira_cartao === 'MASTERCARD_CREDITO' ? 'MASTERCARD' : bandeira_cartao,
+                        value: valorTransacao.toFixed(2),
+                        installments: parcelasTransacao,
+                        paymentBrand: bandeiraTransacao === 'MASTERCARD_CREDITO' ? 'MASTERCARD' : bandeiraTransacao,
                         callbackUrl,
                         clientName: nomePaciente
                     }
