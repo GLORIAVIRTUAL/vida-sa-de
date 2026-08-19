@@ -17,6 +17,7 @@ import { base44 } from "@/api/base44Client";
 import { User } from "@/entities/all";
 import ModalQrCodePix from "./ModalQrCodePix";
 import ModalAguardandoCartao from "./ModalAguardandoCartao";
+import InputNumero from "@/components/shared/InputNumero";
 import DetalheCartaoPagamento from "./DetalheCartaoPagamento";
 
 const formasPagamento = ["Dinheiro", "Cartão Débito", "Cartão Crédito", "PIX", "PIX Turmas", "Transferência", "Convênio", "Múltiplas Formas"];
@@ -994,8 +995,7 @@ export default function FormularioOS({
                   <TableRow>
                     <TableCell className="text-right">Desconto (R$)</TableCell>
                     <TableCell className="text-right">
-                      <Input
-                        type="number"
+                      <InputNumero
                         value={dados.desconto}
                         onChange={e => setDados(prev => ({ ...prev, desconto: parseFloat(e.target.value) || 0 }))}
                         className="text-right w-32"
@@ -1185,8 +1185,7 @@ export default function FormularioOS({
                     </div>
                     <div>
                       <Label className="text-sm">Valor (R$)</Label>
-                      <Input
-                        type="number"
+                      <InputNumero
                         step="0.01"
                         min="0"
                         placeholder="0,00"
@@ -1222,8 +1221,7 @@ export default function FormularioOS({
                     </div>
                     <div>
                       <Label className="text-sm">Valor (R$)</Label>
-                      <Input
-                        type="number"
+                      <InputNumero
                         step="0.01"
                         min="0"
                         placeholder="0,00"
