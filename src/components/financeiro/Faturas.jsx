@@ -1,4 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { OrdemServico } from '@/entities/all';
+import { Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,8 +12,10 @@ import { FileText, Printer, Calendar, DollarSign, Building2, Download, User, Act
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-export default function Faturas({ ordensServico, pacientes, medicos, procedimentos, exames, categorias }) {
+export default function Faturas({ pacientes, medicos, procedimentos, exames, categorias }) {
   const [mesSelecionado, setMesSelecionado] = useState(format(new Date(), "yyyy-MM"));
+  const [ordensServico, setOrdensServico] = useState([]);
+  const [carregandoOS, setCarregandoOS] = useState(true);
   const [categoriaSelecionada, setCategoriaSelecionada] = useState("todas");
   const [filtroProfissional, setFiltroProfissional] = useState("todos");
   const [filtroServico, setFiltroServico] = useState("todos");
@@ -27,6 +31,27 @@ export default function Faturas({ ordensServico, pacientes, medicos, procediment
     "FUMAM",
     "Tem Saúde"
   ];
+
+  // Buscar as OS do mês selecionado (independente do período carregado na página)
+  useEffect(() => {
+    let ativo = true;
+    const buscar = async () => {
+      setCarregandoOS(true);
+      const inicio = mesSelecionado + '-01';
+      const fim = format(endOfMonth(new Date(inicio + 'T00:00:00')), 'yyyy-MM-dd');
+      const lista = await OrdemServico.filter(
+        { data_execucao: { $gte: inicio, $lte: fim } },
+        '-data_execucao',
+        5000
+      );
+      if (ativo) {
+        setOrdensServico(lista || []);
+        setCarregandoOS(false);
+      }
+    };
+    buscar();
+    return () => { ativo = false; };
+  }, [mesSelecionado]);
 
   // Filtrar categorias públicas disponíveis
   const categoriasDisponiveis = useMemo(() => {
@@ -528,7 +553,7 @@ export default function Faturas({ ordensServico, pacientes, medicos, procediment
                   <SelectValue placeholder="Selecione o mês" />
                 </SelectTrigger>
                 <SelectContent>
-                  {Array.from({ length: 12 }, (_, i) => {
+                  {Array.from({ length: 24 }, (_, i) => {
                     const date = new Date();
                     date.setMonth(date.getMonth() - i);
                     const value = format(date, 'yyyy-MM');
@@ -640,7 +665,12 @@ export default function Faturas({ ordensServico, pacientes, medicos, procediment
             </div>
           </div>
 
-          {faturasFiltradas.length === 0 ? (
+          {carregandoOS ? (
+            <div className="text-center py-12 text-gray-500">
+              <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin text-green-600" />
+              <p className="text-sm">Carregando atendimentos do mês...</p>
+            </div>
+          ) : faturasFiltradas.length === 0 ? (
             <div key={`vazio-${mesSelecionado}-${categoriaSelecionada}`} className="text-center py-12 text-gray-500">
               <FileText className="w-16 h-16 mx-auto mb-4 text-gray-300" />
               <p className="text-lg font-medium">Nenhuma fatura encontrada</p>

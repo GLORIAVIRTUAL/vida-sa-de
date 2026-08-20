@@ -200,7 +200,6 @@ export default function Financeiro() {
 
             <TabsContent value="faturas">
               <Faturas 
-                ordensServico={ordensServico}
                 pacientes={pacientes}
                 medicos={medicos}
                 procedimentos={data.procedimentos}
