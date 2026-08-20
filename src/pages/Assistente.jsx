@@ -52,7 +52,7 @@ export default function Assistente() {
   };
 
   return (
-    <div className="p-6 max-w-4xl mx-auto h-full flex flex-col">
+    <div className="p-6 max-w-4xl mx-auto h-[calc(100vh-9rem)] flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Bot className="w-6 h-6 text-blue-600" />
