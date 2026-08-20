@@ -10,14 +10,18 @@ Deno.serve(async (req) => {
         const execucao = Number(payload?.execucao || 1);
         const dryRun = payload?.dryRun === true;
 
-        const user = await base44.auth.me();
-        if (user?.role !== 'admin') {
-            return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
-        }
-
         const instanceId = Deno.env.get('ZAPI_INSTANCE_ID');
         const token = Deno.env.get('ZAPI_TOKEN');
         const clientToken = Deno.env.get('ZAPI_CLIENT_TOKEN');
+
+        // Continuação interna da fila é autorizada pela chave interna; demais chamadas exigem admin
+        const continuacaoInterna = Number(payload?.execucao || 1) > 1 && payload?.internalKey === clientToken;
+        if (!continuacaoInterna) {
+            const user = await base44.auth.me();
+            if (user?.role !== 'admin') {
+                return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
+            }
+        }
 
         if (!instanceId || !token || !clientToken) {
             return Response.json({ error: 'Z-API não configurado' }, { status: 500 });
@@ -99,7 +103,7 @@ Deno.serve(async (req) => {
         // Orçamento de tempo por execução: evita estourar o limite da função.
         // Se sobrar gente para notificar, a função se auto-reinvoca e continua.
         const inicioExecucao = Date.now();
-        const TEMPO_LIMITE_MS = 30000;
+        const TEMPO_LIMITE_MS = 60000;
         let interrompidoPorTempo = false;
 
         for (const agendamento of agendamentosValidos) {
@@ -242,7 +246,7 @@ Deno.serve(async (req) => {
             // e reduzir o risco de bloqueio do WhatsApp por envios em massa no mesmo ritmo.
             // Pula o delay se o orçamento de tempo já estourou (o break acontece na próxima volta).
             if (Date.now() - inicioExecucao <= TEMPO_LIMITE_MS) {
-                const delayAleatorio = Math.floor(Math.random() * 15000) + 5000;
+                const delayAleatorio = Math.floor(Math.random() * 4000) + 3000;
                 await new Promise(resolve => setTimeout(resolve, delayAleatorio));
             }
         }
@@ -250,7 +254,7 @@ Deno.serve(async (req) => {
         // Se parou por tempo e ainda há agendamentos pendentes, dispara a continuação
         if (interrompidoPorTempo && execucao < 15) {
             console.log(`⏱️ Tempo limite atingido na execução ${execucao}, disparando continuação...`);
-            const continuacao = base44.functions.invoke('enviarLembretesConsultas', { execucao: execucao + 1 }).catch((e) => {
+            const continuacao = base44.functions.invoke('enviarLembretesConsultas', { execucao: execucao + 1, internalKey: clientToken }).catch((e) => {
                 console.error('⚠️ Erro ao disparar continuação:', e.message);
             });
             // Aguarda só o suficiente para a requisição de continuação ser despachada
