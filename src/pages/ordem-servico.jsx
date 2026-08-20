@@ -13,6 +13,7 @@ import { useToast } from "@/components/ui/use-toast";
 
 import FormularioOS from "../components/os/FormularioOS";
 import DetalhesOS from "../components/os/DetalhesOS";
+import resolverCategoriaReceita from "@/components/os/categoriaReceita";
 import {
   Table,
   TableBody,
@@ -311,10 +312,7 @@ export default function OrdemDeServico() {
         const nomePaciente = novaOS.paciente_nome || pacientes.find((p) => p.id === novaOS.paciente_id)?.nome || 'Paciente Não Identificado';
         const tipoServico = agendamentoParaOS.tipo_servico;
 
-        let categoriaReceita = "Outros";
-        if (tipoServico === "Consulta") categoriaReceita = "Receita Consultas";else
-        if (tipoServico === "Procedimento") categoriaReceita = "Receita Procedimentos";else
-        if (tipoServico === "Exame") categoriaReceita = "Receita Exames";
+        const categoriaReceita = resolverCategoriaReceita(novaOS);
 
         let descricaoConvenio = "";
         if (agendamentoParaOS.convenio) {

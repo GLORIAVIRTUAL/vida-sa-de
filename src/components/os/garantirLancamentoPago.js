@@ -1,10 +1,6 @@
 import { base44 } from "@/api/base44Client";
 
-const categoriasPorServico = {
-  Consulta: "Receita Consultas",
-  Procedimento: "Receita Procedimentos",
-  Exame: "Receita Exames"
-};
+import resolverCategoriaReceita from "@/components/os/categoriaReceita";
 
 export default async function garantirLancamentoPago(os, atualizacoes) {
   const existentes = await base44.entities.Lancamento.filter({
@@ -17,7 +13,7 @@ export default async function garantirLancamentoPago(os, atualizacoes) {
   const valor = Number(atualizacoes.valor_final) || 0;
   await base44.entities.Lancamento.create({
     tipo: "Entrada",
-    categoria: categoriasPorServico[os.tipo_servico] || "Outros",
+    categoria: resolverCategoriaReceita(os),
     descricao: `Receita: ${os.tipo_servico} de ${os.paciente_nome || "Paciente Não Identificado"}`,
     valor,
     data_lancamento: os.data_execucao || new Date().toISOString().split("T")[0],

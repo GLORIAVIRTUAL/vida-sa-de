@@ -1042,6 +1042,8 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
   const [skipNextPriceRecalc, setSkipNextPriceRecalc] = useState(false);
   useEffect(() => {
     if (skipNextPriceRecalc) { setSkipNextPriceRecalc(false); return; }
+    // Múltiplos Serviços tem o total calculado pela lista de itens (recalcularTotalMultiplosServicos)
+    if (formData.tipo_servico === 'Múltiplos Serviços') return;
     let total = 0;
     const pc = Array.isArray(categorias) ? categorias.find(c => normalizeString(c.nome) === 'PARTICULAR') : null;
     if (formData.tipo_servico === 'Consulta') { if (formData.medico_id && formData.categoria_preco_id) total = buscarPrecoConsulta(formData.medico_id, formData.categoria_preco_id); }
@@ -1261,7 +1263,7 @@ export default function FormularioAgendamento({ agendamento, dadosIniciais, todo
     if (ni.descricao) { const novos = [...formData.itens_servico, ni]; handleChange('itens_servico', novos); recalcularTotalMultiplosServicos(novos); }
   };
   const removerItemServico = (itemId) => { const novos = formData.itens_servico.filter(i => i.id !== itemId); handleChange('itens_servico', novos); recalcularTotalMultiplosServicos(novos); };
-  const recalcularTotalMultiplosServicos = (itens) => { const total = itens.reduce((s, i) => s + (i.valor || 0), 0); setFormData(prev => ({ ...prev, valor_total: total.toFixed(2).toString() })); };
+  const recalcularTotalMultiplosServicos = (itens) => { const total = itens.reduce((s, i) => s + (i.valor || 0), 0); setFormData(prev => { const d = parseFloat(prev.desconto_manual) || 0; const a = parseFloat(prev.acrescimo_manual) || 0; return { ...prev, valor_total: total.toFixed(2).toString(), valor_final: Math.max(0, total - d + a).toFixed(2).toString() }; }); };
 
   const handleMouseDownResize = (e) => { e.preventDefault(); setRedimensionandoExames(true); const startY = e.clientY; const startH = alturaListaExames; const onMove = (ev) => setAlturaListaExames(Math.max(100, Math.min(400, startH + (ev.clientY - startY)))); const onUp = () => { setRedimensionandoExames(false); document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); }; document.addEventListener('mousemove', onMove); document.addEventListener('mouseup', onUp); };
 
