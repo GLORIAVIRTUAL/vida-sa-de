@@ -111,6 +111,7 @@ function MainLayout({ children, currentPageName, currentUser, onUserUpdate }) {
   { name: "Pacientes", page: "Pacientes", icon: Users, roles: ["admin", "user"] },
   { name: "Ordens de Serviço", page: "ordem-servico", icon: ClipboardList, roles: ["admin", "user"] },
   { name: "Glória", page: "ChatbotsAtivos", icon: MessageSquare, roles: ["admin", "user"], customLogo: true },
+  { name: "Assistente IA", page: "Assistente", icon: MessageSquare, roles: ["admin", "user", "medico"] },
   { name: "Painel TV", page: "Atendimento", icon: Computer, roles: ["admin", "user"] },
   { name: "Portal do Médico", page: "PortalMedico", icon: Stethoscope, roles: ["medico"] },
   { name: "Médicos", page: "Medicos", icon: Stethoscope, roles: ["admin", "user"] },
