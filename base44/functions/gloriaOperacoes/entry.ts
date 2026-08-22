@@ -8,6 +8,9 @@ import {
   precoConsultaCore, orcamentoCore, listarMedicosAtivos,
   garantirContato, buscarPacientesPorTelefone, buscarPacientePorCpf, criarPacienteSeguro
 } from '../../shared/gloriaCore.ts';
+import {
+  especialidadesDisponiveisCore, medicosPorEspecialidadeCore, especialidadesDaAgendaCore
+} from '../../shared/gloriaAgenda.ts';
 
 export default async function (req: Request): Promise<Response> {
   try {
@@ -41,6 +44,15 @@ export default async function (req: Request): Promise<Response> {
         };
         break;
       }
+      case 'especialidades':
+        resultado = await especialidadesDisponiveisCore(sr);
+        break;
+      case 'medicos_por_especialidade':
+        resultado = await medicosPorEspecialidadeCore(sr, body);
+        break;
+      case 'especialidades_da_agenda':
+        resultado = await especialidadesDaAgendaCore(sr, body);
+        break;
       case 'slots':
         resultado = await getAvailableSlotsCore(sr, body);
         break;
