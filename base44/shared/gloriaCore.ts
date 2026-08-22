@@ -192,6 +192,7 @@ export async function garantirContato(sr, telefone, nome) {
     nome: nome || '',
     origem: 'WhatsApp',
     status: 'Novo',
+    atendimento_humano: false,
     gloria_estado: 'OCIOSO',
     ultima_interacao: new Date().toISOString()
   });
