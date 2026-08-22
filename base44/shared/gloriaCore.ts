@@ -779,9 +779,14 @@ export async function precoConsultaCore(sr, { medico_id, especialidade }) {
   }
   if (!esp) return erroSeguro('ESPECIALIDADE_INDEFINIDA', 'Especialidade não identificada.');
 
+  // Regra determinística: procedimento ativo de consulta cuja especialidade
+  // cadastrada é exatamente a do médico. Se houver 0 ou mais de 1, não escolhe.
   const ativos = await sr.entities.Procedimento.filter({ status: 'Ativo' });
-  const alvo = normalizarTexto('consulta ' + esp);
-  const candidatos = ativos.filter((p) => normalizarTexto(p.nome) === alvo);
+  const espNorm = normalizarTexto(esp);
+  const candidatos = ativos.filter((p) =>
+    normalizarTexto(p.especialidade) === espNorm &&
+    normalizarTexto(p.nome).startsWith('consulta')
+  );
   if (candidatos.length !== 1) {
     return erroSeguro('PRECO_INDETERMINADO', 'Valor não pôde ser determinado. Consultar na recepção.');
   }
