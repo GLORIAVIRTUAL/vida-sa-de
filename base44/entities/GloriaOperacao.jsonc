@@ -1,0 +1,182 @@
+{
+  "name": "GloriaOperacao",
+  "type": "object",
+  "properties": {
+    "chave_idempotencia": {
+      "type": "string",
+      "description": "Chave \u00fanica da opera\u00e7\u00e3o (evita execu\u00e7\u00e3o duplicada)"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "AGENDAR",
+        "CANCELAR",
+        "REMARCAR",
+        "CONFIRMAR",
+        "LOCK_SLOT"
+      ],
+      "description": "Tipo da opera\u00e7\u00e3o determin\u00edstica"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Iniciada",
+        "Concluida",
+        "Falha",
+        "Revertida",
+        "Expirada"
+      ],
+      "default": "Iniciada",
+      "description": "Status da opera\u00e7\u00e3o"
+    },
+    "lock_token": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Token do lock persistente"
+    },
+    "lock_expira_em": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time",
+      "description": "Expira\u00e7\u00e3o do lock persistente"
+    },
+    "telefone_canonico": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Telefone normalizado do solicitante"
+    },
+    "message_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Mensagem que originou a opera\u00e7\u00e3o"
+    },
+    "paciente_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Paciente envolvido"
+    },
+    "medico_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "M\u00e9dico envolvido"
+    },
+    "agendamento_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Agendamento resultante ou afetado"
+    },
+    "agendamento_anterior_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Agendamento original em caso de remarca\u00e7\u00e3o"
+    },
+    "data": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date",
+      "description": "Data alvo da opera\u00e7\u00e3o"
+    },
+    "hora": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Hor\u00e1rio alvo da opera\u00e7\u00e3o (HH:mm)"
+    },
+    "slot_chave": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Chave do slot (agenda + data + hor\u00e1rio + assento) usada no lock"
+    },
+    "entrada": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Entrada validada da opera\u00e7\u00e3o (sem dados sens\u00edveis)"
+    },
+    "resultado": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Resultado da opera\u00e7\u00e3o"
+    },
+    "erro": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Erro seguro da opera\u00e7\u00e3o"
+    },
+    "confirmacao_token_hash": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "SHA-256 do token de confirma\u00e7\u00e3o (nunca o token em claro)"
+    },
+    "confirmacao_token_expira_em": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time",
+      "description": "Expira\u00e7\u00e3o do token de confirma\u00e7\u00e3o"
+    },
+    "confirmacao_token_usado_em": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time",
+      "description": "Quando o token foi usado (uso \u00fanico)"
+    }
+  },
+  "required": [
+    "chave_idempotencia",
+    "tipo"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

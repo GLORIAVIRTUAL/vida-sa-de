@@ -1,0 +1,169 @@
+{
+  "name": "GloriaJob",
+  "type": "object",
+  "properties": {
+    "chave_evento": {
+      "type": "string",
+      "description": "Chave \u00fanica do evento (canal + messageId) para idempot\u00eancia"
+    },
+    "correlation_id": {
+      "type": "string",
+      "description": "ID de correla\u00e7\u00e3o do processamento"
+    },
+    "canal": {
+      "type": "string",
+      "enum": [
+        "whatsapp",
+        "meta",
+        "interno"
+      ],
+      "default": "whatsapp",
+      "description": "Canal de origem"
+    },
+    "telefone_canonico": {
+      "type": "string",
+      "description": "Telefone normalizado can\u00f4nico do remetente"
+    },
+    "message_id": {
+      "type": "string",
+      "description": "ID da mensagem original do provedor"
+    },
+    "remetente_nome": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Nome exibido do remetente"
+    },
+    "texto": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Texto da mensagem recebida"
+    },
+    "media_tipo": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Tipo de m\u00eddia (image, document, audio, video)"
+    },
+    "media_url": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "URL permanente da m\u00eddia ap\u00f3s upload"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Pendente",
+        "Processando",
+        "ProntoParaEnvio",
+        "Enviado",
+        "Falha",
+        "Ignorado"
+      ],
+      "default": "Pendente",
+      "description": "Status do job na fila"
+    },
+    "tentativas": {
+      "type": "number",
+      "default": 0,
+      "description": "N\u00famero de tentativas de processamento"
+    },
+    "proxima_tentativa_em": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time",
+      "description": "Momento da pr\u00f3xima tentativa (backoff)"
+    },
+    "lock_token": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Token do lock de processamento"
+    },
+    "lock_expira_em": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time",
+      "description": "Expira\u00e7\u00e3o do lock de processamento"
+    },
+    "resposta_texto": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Resposta gerada, pronta para envio"
+    },
+    "resposta_arquivo_url": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Arquivo a ser enviado junto da resposta"
+    },
+    "texto_entregue": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se o texto j\u00e1 foi entregue (evita reenvio quando s\u00f3 o documento falha)"
+    },
+    "zapi_message_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "ID da mensagem retornado pela Z-API no envio"
+    },
+    "erro": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Mensagem de erro segura (sem dados sens\u00edveis)"
+    },
+    "processado_em": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time",
+      "description": "Quando o job foi conclu\u00eddo"
+    }
+  },
+  "required": [
+    "chave_evento",
+    "telefone_canonico",
+    "message_id"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

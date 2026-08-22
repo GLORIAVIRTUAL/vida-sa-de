@@ -25,6 +25,13 @@
       },
       "description": "Lista de especialidades do profissional"
     },
+    "agenda_compartilhada_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Identificador de agenda compartilhada. Vazio = agenda independente. Registros com o mesmo valor compartilham disponibilidade."
+    },
     "telefone": {
       "type": "string",
       "description": "Telefone de contato"
