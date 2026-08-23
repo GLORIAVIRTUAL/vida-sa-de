@@ -423,7 +423,7 @@ export async function processarTurno(sr, { contato, texto, mediaUrl }) {
       if (extraido.medico) return await informarDiasAtendimento(sr, extraido.medico);
       return resposta(PARA_HUMANO, 'AGUARDANDO_HUMANO');
     case 'SAUDACAO':
-      return resposta('Olá! Sou a Glória, do Centro Vida Saúde. Posso te ajudar a agendar, confirmar ou cancelar uma consulta. O que você precisa?', 'OCIOSO');
+      return resposta('Olá! Sou a Glória, do Centro Vida Saúde. Posso te ajudar a agendar consultas, exames e procedimentos, confirmar ou cancelar atendimentos, passar valores e também com o Cartão Mais Vida Saúde. O que você precisa?', 'OCIOSO');
     default: {
       // Agradecimento/despedida encerra a conversa com cordialidade.
       const t = normalizarTexto(texto || '');
