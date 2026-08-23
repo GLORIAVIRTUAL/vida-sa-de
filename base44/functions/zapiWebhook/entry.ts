@@ -48,6 +48,20 @@ export default async function (req: Request): Promise<Response> {
       return Response.json({ message: 'Payload sem telefone ou messageId' });
     }
 
+    // Foto de perfil do WhatsApp: guarda no contato para exibir no chat.
+    const fotoPerfil = payload.senderPhoto || payload.photo || payload.chatPhoto || null;
+    if (fotoPerfil) {
+      try {
+        const achados = await sr.entities.Contato.filter({ telefone_normalizado: telefone });
+        const contato = achados[0] || (await sr.entities.Contato.filter({ telefone }))[0];
+        if (contato && contato.foto_url !== fotoPerfil) {
+          await sr.entities.Contato.update(contato.id, { foto_url: fotoPerfil });
+        }
+      } catch (erroFoto) {
+        console.warn('zapiWebhook: falha ao salvar foto do contato', erroFoto && erroFoto.message);
+      }
+    }
+
     // Idempotência: um job por mensagem do provedor.
     const chaveEvento = 'whatsapp:' + messageId;
     const existentes = await sr.entities.GloriaJob.filter({ chave_evento: chaveEvento });

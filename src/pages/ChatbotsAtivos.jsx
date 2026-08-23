@@ -27,6 +27,7 @@ import CadastroRapidoPaciente from '../components/pacientes/CadastroRapidoPacien
 import TransferirConversaModal from '../components/gloria/TransferirConversaModal';
 import { motivosColunas, motivoInteresseMap, classificarMotivo } from '../components/gloria/pipelineMotivos';
 import EspecialidadesTags from '../components/gloria/EspecialidadesTags';
+import AvatarContato from '../components/gloria/AvatarContato';
 import RelatorioChat from './RelatorioChat';
 
 export const useContatosQuery = () => {
@@ -889,10 +890,11 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
                        } ${contato.conversa_finalizada ? 'opacity-50' : ''}`}
                      >
                        <div className="flex items-center gap-2 mb-1">
+                         <AvatarContato contato={contato} size={32} />
                          <p className="font-semibold text-sm truncate flex-1">{contato.nome || 'Cliente'}</p>
                          <span className="text-[10px] text-gray-400">{ultimaIntercao}</span>
                        </div>
-                       <div className="flex items-center gap-2">
+                       <div className="flex items-center gap-2 pl-10">
                          <p className="text-xs text-gray-500 truncate flex-1">{contato.telefone}</p>
                          {numMensagens > 0 && (
                            <Badge className="bg-blue-100 text-blue-700 text-[9px] px-1 py-0">{numMensagens}</Badge>
@@ -931,9 +933,12 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
               <CardHeader className={`border-b py-3 space-y-3 ${alarmeAtivo ? 'bg-gradient-to-r from-yellow-100 to-amber-100 animate-pulse' : 'bg-gradient-to-r from-blue-50 to-sky-50'}`}>
                 {/* Linha 1: identificação + ações */}
                 <div className="flex items-start justify-between gap-3 flex-wrap">
-                  <div className="min-w-0">
-                    <p className="font-semibold truncate">{contatoSelecionado.nome || 'Cliente'}</p>
-                    <p className="text-xs text-gray-500">{contatoSelecionado.telefone}</p>
+                  <div className="min-w-0 flex items-center gap-3">
+                    <AvatarContato contato={contatoSelecionado} size={40} />
+                    <div className="min-w-0">
+                      <p className="font-semibold truncate">{contatoSelecionado.nome || 'Cliente'}</p>
+                      <p className="text-xs text-gray-500">{contatoSelecionado.telefone}</p>
+                    </div>
                   </div>
                   <div className="flex items-center gap-1.5 flex-wrap justify-end">
                     <Button 

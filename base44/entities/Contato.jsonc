@@ -17,6 +17,13 @@
       ],
       "description": "Telefone can\u00f4nico normalizado (somente d\u00edgitos, com DDI/DDD) usado para busca exata"
     },
+    "foto_url": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "URL da foto de perfil do WhatsApp do contato"
+    },
     "email": {
       "type": "string",
       "format": "email",
