@@ -135,14 +135,19 @@ async function listarAgendamentos(sr, telefone, acao, titulo) {
   if (agendamentos.length === 1) {
     return resposta(
       titulo + '\n\n' + rotulos[0] + '\n\nResponda *SIM* para confirmar.',
-      acao === 'CANCELAR' ? 'CANCELAMENTO_CONFIRMACAO' : 'CONFIRMACAO_CONSULTA',
-      { acao, agendamento_id: agendamentos[0].id, rotulo: rotulos[0] }
+      acao === 'CONFIRMAR' ? 'CONFIRMACAO_CONSULTA' : 'CANCELAMENTO_CONFIRMACAO',
+      { acao, agendamento_id: agendamentos[0].id, rotulo: rotulos[0], medico_id: agendamentos[0].medico_id }
     );
   }
   return resposta(
     titulo + '\n\n' + listar(rotulos) + '\n\nResponda com o número.',
     'CANCELAMENTO_SELECAO',
-    { acao, opcoes: rotulos, agendamentos: agendamentos.map((a) => a.id) }
+    {
+      acao,
+      opcoes: rotulos,
+      agendamentos: agendamentos.map((a) => a.id),
+      medicos_ids: agendamentos.map((a) => a.medico_id)
+    }
   );
 }
 
@@ -319,21 +324,30 @@ export async function processarTurno(sr, { contato, texto, mediaUrl }) {
       const i = escolher(dados.opcoes || [], extraido, texto);
       const id = (dados.agendamentos || [])[i];
       if (i < 0 || !id) return resposta('Não entendi. Responda com o número da consulta, por favor.', estadoAtual, dados);
+      const base = { acao: dados.acao, agendamento_id: id, rotulo: dados.opcoes[i], medico_id: (dados.medicos_ids || [])[i] };
       if (dados.acao === 'CONFIRMAR') {
-        return resposta('Confirma sua presença na consulta de ' + dados.opcoes[i] + '? Responda *SIM*.', 'CONFIRMACAO_CONSULTA', { acao: 'CONFIRMAR', agendamento_id: id, rotulo: dados.opcoes[i] });
+        return resposta('Confirma sua presença na consulta de ' + dados.opcoes[i] + '? Responda *SIM*.', 'CONFIRMACAO_CONSULTA', base);
       }
-      return resposta('Confirma o cancelamento da consulta de ' + dados.opcoes[i] + '? Responda *SIM*.', 'CANCELAMENTO_CONFIRMACAO', { acao: 'CANCELAR', agendamento_id: id, rotulo: dados.opcoes[i] });
+      if (dados.acao === 'REMARCAR') {
+        return resposta('Vou desmarcar a consulta de ' + dados.opcoes[i] + ' e buscar um novo horário. Confirma? Responda *SIM*.', 'CANCELAMENTO_CONFIRMACAO', base);
+      }
+      return resposta('Confirma o cancelamento da consulta de ' + dados.opcoes[i] + '? Responda *SIM*.', 'CANCELAMENTO_CONFIRMACAO', base);
     }
     case 'CANCELAMENTO_CONFIRMACAO': {
       if (extraido.negativa) return resposta('Ok, mantive sua consulta como está.', 'OCIOSO');
-      if (!extraido.confirmacao) return resposta('Responda *SIM* para cancelar ou *NÃO* para manter.', estadoAtual, dados);
+      if (!extraido.confirmacao) return resposta('Responda *SIM* para confirmar ou *NÃO* para manter como está.', estadoAtual, dados);
       const res = await cancelAppointmentCore(sr, {
         chave_idempotencia: 'CANCELAR:' + dados.agendamento_id,
         agendamento_id: dados.agendamento_id,
         telefone_canonico: telefone,
-        motivo: 'Cancelado pelo paciente no WhatsApp'
+        motivo: dados.acao === 'REMARCAR' ? 'Remarcação solicitada pelo paciente no WhatsApp' : 'Cancelado pelo paciente no WhatsApp'
       });
       if (!res.ok) return resposta(res.mensagem, 'OCIOSO');
+      if (dados.acao === 'REMARCAR' && dados.medico_id) {
+        const medico = await sr.entities.Medico.get(dados.medico_id).catch(() => null);
+        if (medico) return await pedirHorario(sr, medico.especialidade, { id: medico.id, nome: medico.nome });
+      }
+      if (dados.acao === 'REMARCAR') return await pedirEspecialidade(sr);
       return resposta('Consulta de ' + dados.rotulo + ' cancelada. Se quiser reagendar, estou por aqui.', 'OCIOSO');
     }
     case 'CONFIRMACAO_CONSULTA': {
@@ -372,8 +386,9 @@ export async function processarTurno(sr, { contato, texto, mediaUrl }) {
     case 'AGENDAR':
       return await pedirEspecialidade(sr);
     case 'CANCELAR':
+      return await listarAgendamentos(sr, telefone, 'CANCELAR', 'Qual consulta você quer cancelar?');
     case 'REMARCAR':
-      return await listarAgendamentos(sr, telefone, 'CANCELAR', 'Qual consulta você quer cancelar? Depois posso buscar um novo horário para você.');
+      return await listarAgendamentos(sr, telefone, 'REMARCAR', 'Qual consulta você quer remarcar?');
     case 'CONFIRMAR':
       return await listarAgendamentos(sr, telefone, 'CONFIRMAR', 'Qual consulta você quer confirmar?');
     case 'ORCAMENTO': {

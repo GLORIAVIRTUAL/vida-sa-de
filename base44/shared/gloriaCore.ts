@@ -53,6 +53,19 @@ export function variantesTelefone(canonico) {
     if (v.length === 12 || v.length === 13) {
       saida.push('+' + v);
     }
+    // Máscaras usadas nos cadastros antigos: (51)998330123, (51) 99833-0123...
+    if (v.length === 10 || v.length === 11) {
+      const ddd = v.slice(0, 2);
+      const num = v.slice(2);
+      const pre = num.slice(0, num.length - 4);
+      const suf = num.slice(-4);
+      saida.push(
+        '(' + ddd + ')' + num,
+        '(' + ddd + ') ' + num,
+        '(' + ddd + ')' + pre + '-' + suf,
+        '(' + ddd + ') ' + pre + '-' + suf
+      );
+    }
   }
   return Array.from(new Set(saida));
 }
