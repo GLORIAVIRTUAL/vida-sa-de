@@ -403,9 +403,9 @@ export async function processarTurno(sr, { contato, texto, mediaUrl }) {
 
   // Pergunta sobre o Cartão Mais Vida Saúde: responde com o material cadastrado.
   const txt = normalizarTexto(texto || '');
-  const perguntaCartao = ['cartao mais vida', 'mais vida saude', 'cartao de vcs', 'cartao de voces', 'plano de vcs', 'plano de voces', 'cartao', 'plano']
+  const perguntaCartao = ['cartao mais vida', 'mais vida saude', 'cartao de vcs', 'cartao de voces', 'plano de vcs', 'plano de voces', 'aceitam plano', 'aceita plano', 'tem plano', 'tem cartao']
     .some((k) => txt.includes(k));
-  if (perguntaCartao && !['AGENDAR', 'CANCELAR', 'REMARCAR', 'CONFIRMAR'].includes(extraido.intencao)) {
+  if (perguntaCartao && !['AGENDAR', 'CANCELAR', 'REMARCAR', 'CONFIRMAR', 'PRECO', 'ORCAMENTO'].includes(extraido.intencao)) {
     const info = await infoCartaoCore(sr);
     if (info) {
       return resposta(
