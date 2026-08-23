@@ -9,6 +9,7 @@ import {
 } from './gloriaCore.ts';
 import { especialidadesDisponiveisCore, medicosPorEspecialidadeCore } from './gloriaAgenda.ts';
 import { medicoPorNomeCore, diasAtendimentoCore } from './gloriaHorariosMedico.ts';
+import { precoPorTermoCore, precoConsultaPorEspecialidadeCore } from './gloriaPrecos.ts';
 import { extrairIntencao } from './gloriaLlm.ts';
 
 const EXPIRA_MINUTOS = 60;
@@ -142,6 +143,50 @@ async function listarAgendamentos(sr, telefone, acao, titulo) {
     titulo + '\n\n' + listar(rotulos) + '\n\nResponda com o número.',
     'CANCELAMENTO_SELECAO',
     { acao, opcoes: rotulos, agendamentos: agendamentos.map((a) => a.id) }
+  );
+}
+
+function reais(valor) {
+  return 'R$ ' + valor.toFixed(2).replace('.', ',');
+}
+
+// Responde "quanto custa...?" usando apenas valores cadastrados no sistema.
+async function informarPreco(sr, extraido) {
+  const brutos = Array.isArray(extraido.itens_orcamento) ? extraido.itens_orcamento : [];
+  // "consulta" sem especificação é resolvido pela especialidade informada.
+  const termos = brutos.filter((t) => {
+    const n = normalizarTexto(t);
+    if (['consulta', 'consultas'].includes(n)) return false;
+    // Com especialidade conhecida, a consulta já é respondida pelo bloco abaixo.
+    return !(extraido.especialidade && n.startsWith('consulta'));
+  });
+
+  const blocos = [];
+  const naoEncontrados = [];
+
+  if (extraido.especialidade) {
+    const res = await precoConsultaPorEspecialidadeCore(sr, { especialidade: extraido.especialidade });
+    if (res.ok) blocos.push(res);
+    else naoEncontrados.push('consulta de ' + extraido.especialidade);
+  }
+
+  for (const termo of termos.slice(0, 5)) {
+    const res = await precoPorTermoCore(sr, { termo });
+    if (res.ok) blocos.push(res);
+    else naoEncontrados.push(termo);
+  }
+
+  if (blocos.length === 0) return resposta(PARA_HUMANO, 'AGUARDANDO_HUMANO');
+
+  const linhas = blocos.map((b) =>
+    '*' + b.nome + '*\n' + b.valores.map((v) => '• ' + v.categoria + ': ' + reais(v.valor)).join('\n')
+  );
+  const pendentes = naoEncontrados.length
+    ? '\n\nSobre ' + naoEncontrados.join(', ') + ', a recepção confirma o valor para você.'
+    : '';
+  return resposta(
+    linhas.join('\n\n') + pendentes + '\n\nQuer que eu veja um horário disponível?',
+    'OCIOSO'
   );
 }
 
@@ -293,6 +338,7 @@ export async function processarTurno(sr, { contato, texto, mediaUrl }) {
     case 'ORCAMENTO': {
       const itens = Array.isArray(extraido.itens_orcamento) ? extraido.itens_orcamento : [];
       if (itens.length === 0 || mediaUrl) return resposta(PARA_HUMANO, 'AGUARDANDO_HUMANO');
+      if (itens.length <= 2 || extraido.especialidade) return await informarPreco(sr, extraido);
       const res = await orcamentoCore(sr, { itens });
       if (!res.ok || res.itens.length === 0) return resposta(PARA_HUMANO, 'AGUARDANDO_HUMANO');
       const linhas = res.itens.map((i) => '• ' + i.nome + ': R$ ' + i.valor.toFixed(2).replace('.', ','));
@@ -305,6 +351,8 @@ export async function processarTurno(sr, { contato, texto, mediaUrl }) {
         'OCIOSO'
       );
     }
+    case 'PRECO':
+      return await informarPreco(sr, extraido);
     case 'DIAS_ATENDIMENTO':
       return await informarDiasAtendimento(sr, extraido.medico);
     case 'INFORMACAO':
