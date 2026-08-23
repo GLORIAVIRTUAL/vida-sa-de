@@ -63,6 +63,7 @@ export async function extrairIntencao(sr, { texto, historico, estado, opcoes_ofe
 
   const resposta = await sr.integrations.Core.InvokeLLM({
     prompt,
+    model: 'gpt_5_4',
     response_json_schema: ESQUEMA_EXTRACAO
   });
   return resposta || { intencao: 'OUTRO' };
@@ -79,7 +80,7 @@ export async function redigirResposta(sr, { objetivo, dados }) {
     JSON.stringify(dados || {}).slice(0, 3000)
   ].join('\n');
 
-  const texto = await sr.integrations.Core.InvokeLLM({ prompt });
+  const texto = await sr.integrations.Core.InvokeLLM({ prompt, model: 'gpt_5_4' });
   return typeof texto === 'string' ? texto.trim() : '';
 }
 
