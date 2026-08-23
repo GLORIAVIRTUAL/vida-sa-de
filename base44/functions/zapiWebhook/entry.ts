@@ -111,6 +111,15 @@ export default async function (req: Request): Promise<Response> {
       status: 'Pendente'
     });
 
+    // Processamento imediato: responde na hora, sem esperar a automação.
+    try {
+      const tokenInterno = Deno.env.get('GLORIA_INTERNAL_TOKEN');
+      await sr.functions.invoke('processarConversaGloria', { token_interno: tokenInterno });
+      await sr.functions.invoke('processarFilaGloria', { token_interno: tokenInterno });
+    } catch (erroProcessamento) {
+      console.warn('zapiWebhook: processamento imediato falhou', erroProcessamento && erroProcessamento.message);
+    }
+
     return Response.json({ message: 'Mensagem enfileirada' });
   } catch (erro) {
     console.error('zapiWebhook: erro', erro && erro.message);
