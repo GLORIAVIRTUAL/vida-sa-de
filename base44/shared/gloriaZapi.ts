@@ -41,6 +41,23 @@ export async function enviarTexto(telefone, mensagem) {
   };
 }
 
+// Foto de perfil do WhatsApp de um número (usada para exibir avatar no chat).
+export async function buscarFotoPerfil(telefone) {
+  const { instanceId, token, clientToken } = credenciais();
+  if (!instanceId || !token || !telefone) return null;
+  const url = 'https://api.z-api.io/instances/' + instanceId + '/token/' + token +
+    '/profile-picture?phone=' + encodeURIComponent(telefone);
+  const resposta = await fetch(url, { headers: cabecalhos(clientToken) });
+  if (!resposta.ok) return null;
+  const bruto = await resposta.text();
+  try {
+    const dados = JSON.parse(bruto);
+    return dados.link || dados.url || dados.profileThumbnail || null;
+  } catch (_e) {
+    return null;
+  }
+}
+
 export async function enviarDocumento(telefone, urlArquivo, nomeArquivo) {
   const { instanceId, token, clientToken } = credenciais();
   if (!instanceId || !token) return { ok: false, erro: 'ZAPI_NAO_CONFIGURADO' };
