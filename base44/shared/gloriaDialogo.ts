@@ -244,7 +244,8 @@ async function informarDiasAtendimento(sr, nomeMedico) {
   return resposta(
     res.nome + ' atende nos seguintes dias:\n\n' + linhas.join('\n') +
     '\n\nQuer que eu veja os próximos horários livres para agendar?',
-    'OCIOSO'
+    'OCIOSO',
+    { medico_id: encontrados[0].id, medico_nome: res.nome, especialidade: encontrados[0].especialidade }
   );
 }
 
@@ -390,6 +391,13 @@ export async function processarTurno(sr, { contato, texto, mediaUrl }) {
       return null; // atendimento humano em andamento: a Glória não responde
     default:
       break;
+  }
+
+  // Se acabamos de oferecer horários de um médico, "quero/sim" segue com ele.
+  const afirmativo = ['sim', 'quero', 'queria', 'pode', 'pode ser', 'claro', 'por favor', 'isso', 'ok', 'vamos', 'gostaria', 'aceito', 'bora']
+    .some((a) => normalizarTexto(texto || '') === a || normalizarTexto(texto || '').startsWith(a + ' '));
+  if (dados.medico_id && !expirado && (extraido.confirmacao || afirmativo || extraido.intencao === 'AGENDAR')) {
+    return await pedirHorario(sr, dados.especialidade, { id: dados.medico_id, nome: dados.medico_nome });
   }
 
   // Estado OCIOSO: nova intenção.
