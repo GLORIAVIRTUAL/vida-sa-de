@@ -11,6 +11,7 @@ import { especialidadesDisponiveisCore, medicosPorEspecialidadeCore } from './gl
 import { medicoPorNomeCore, diasAtendimentoCore } from './gloriaHorariosMedico.ts';
 import { precoPorTermoCore, precoConsultaPorEspecialidadeCore, categoriasPrecoCore } from './gloriaPrecos.ts';
 import { extrairIntencao } from './gloriaLlm.ts';
+import { infoCartaoCore } from './gloriaCartao.ts';
 
 const EXPIRA_MINUTOS = 60;
 
@@ -398,6 +399,20 @@ export async function processarTurno(sr, { contato, texto, mediaUrl }) {
     .some((a) => normalizarTexto(texto || '') === a || normalizarTexto(texto || '').startsWith(a + ' '));
   if (dados.medico_id && !expirado && (extraido.confirmacao || afirmativo || extraido.intencao === 'AGENDAR')) {
     return await pedirHorario(sr, dados.especialidade, { id: dados.medico_id, nome: dados.medico_nome });
+  }
+
+  // Pergunta sobre o Cartão Mais Vida Saúde: responde com o material cadastrado.
+  const txt = normalizarTexto(texto || '');
+  const perguntaCartao = ['cartao mais vida', 'mais vida saude', 'cartao de vcs', 'cartao de voces', 'plano de vcs', 'plano de voces', 'cartao', 'plano']
+    .some((k) => txt.includes(k));
+  if (perguntaCartao && !['AGENDAR', 'CANCELAR', 'REMARCAR', 'CONFIRMAR'].includes(extraido.intencao)) {
+    const info = await infoCartaoCore(sr);
+    if (info) {
+      return resposta(
+        info + '\n\nQuer que eu chame alguém da recepção para fazer seu cartão?',
+        'OCIOSO'
+      );
+    }
   }
 
   // Estado OCIOSO: nova intenção.
