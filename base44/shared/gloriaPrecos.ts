@@ -3,6 +3,8 @@
 
 import { normalizarTexto } from './gloriaCore.ts';
 
+const MAX_VARIACOES = 6;
+
 // Todas as categorias ativas são consideradas; "Particular" sempre primeiro.
 async function categoriasAlvo(sr) {
   const ativas = await sr.entities.CategoriaPreco.filter({ status: 'Ativo' });
@@ -19,44 +21,60 @@ export async function categoriasPrecoCore(sr) {
   return cats.map((c) => c.nome);
 }
 
-// Busca por nome exato; se não achar, por conteúdo (só aceita resultado único).
+// Busca por nome exato; senão por conteúdo. Pode retornar várias variações
+// (ex: "Hidroginástica 1x/2x/3x") para que todas sejam informadas ao cliente.
 function localizar(lista, termo) {
   const alvo = normalizarTexto(termo);
-  if (!alvo) return null;
+  if (!alvo) return [];
   const exato = lista.filter((i) => normalizarTexto(i.nome) === alvo);
-  if (exato.length === 1) return exato[0];
+  if (exato.length > 0) return exato;
   const palavras = alvo.split(' ').filter((p) => p.length > 2);
+  if (palavras.length === 0) return [];
   const parcial = lista.filter((i) => {
     const nome = normalizarTexto(i.nome);
-    return palavras.length > 0 && palavras.every((p) => nome.includes(p));
+    return palavras.every((p) => nome.includes(p));
   });
-  if (parcial.length === 1) return parcial[0];
-  return null;
+  return parcial
+    .slice()
+    .sort((a, b) => String(a.nome).localeCompare(String(b.nome)))
+    .slice(0, MAX_VARIACOES);
 }
 
-// Retorna { nome, valores: [{ categoria, valor }] } para um exame/procedimento/consulta.
+// Retorna { ok, itens: [{ nome, valores: [{ categoria, valor }] }] }.
 export async function precoPorTermoCore(sr, { termo }) {
   const cats = await categoriasAlvo(sr);
   if (cats.length === 0) return { ok: false };
 
   const procedimentos = await sr.entities.Procedimento.filter({ status: 'Ativo' });
-  const proc = localizar(procedimentos, termo);
-  if (proc) {
-    const tabelas = await sr.entities.TabelaPreco.filter({ procedimento_id: proc.id });
-    const valores = cats
-      .map((c) => {
-        const achado = tabelas.find((t) => t.categoria_id === c.id && typeof t.valor === 'number' && t.valor > 0);
-        return achado ? { categoria: c.nome, valor: achado.valor } : null;
-      })
-      .filter(Boolean);
-    if (valores.length > 0) return { ok: true, nome: proc.nome, valores };
+  const procs = localizar(procedimentos, termo);
+  if (procs.length > 0) {
+    const itens = [];
+    for (const proc of procs) {
+      const tabelas = await sr.entities.TabelaPreco.filter({ procedimento_id: proc.id });
+      const valores = cats
+        .map((c) => {
+          const achado = tabelas.find((t) => t.categoria_id === c.id && typeof t.valor === 'number' && t.valor > 0);
+          return achado ? { categoria: c.nome, valor: achado.valor } : null;
+        })
+        .filter(Boolean);
+      if (valores.length > 0) itens.push({ nome: proc.nome, valores });
+    }
+    if (itens.length > 0) return { ok: true, itens };
     return { ok: false };
   }
 
   const exames = await sr.entities.Exame.filter({ status: 'Ativo' });
-  const exame = localizar(exames, termo);
-  if (exame && typeof exame.valor_particular === 'number' && exame.valor_particular > 0) {
-    return { ok: true, nome: exame.nome, valores: [{ categoria: 'Particular', valor: exame.valor_particular }] };
+  const encontrados = localizar(exames, termo).filter(
+    (e) => typeof e.valor_particular === 'number' && e.valor_particular > 0
+  );
+  if (encontrados.length > 0) {
+    return {
+      ok: true,
+      itens: encontrados.map((e) => ({
+        nome: e.nome,
+        valores: [{ categoria: 'Particular', valor: e.valor_particular }]
+      }))
+    };
   }
   return { ok: false };
 }

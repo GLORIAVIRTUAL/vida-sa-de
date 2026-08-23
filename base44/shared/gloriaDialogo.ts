@@ -180,13 +180,13 @@ async function informarPreco(sr, extraido, categoria) {
 
   if (extraido.especialidade) {
     const res = await precoConsultaPorEspecialidadeCore(sr, { especialidade: extraido.especialidade });
-    if (res.ok) blocos.push(res);
+    if (res.ok) blocos.push(...res.itens);
     else naoEncontrados.push('consulta de ' + extraido.especialidade);
   }
 
   for (const termo of termos.slice(0, 5)) {
     const res = await precoPorTermoCore(sr, { termo });
-    if (res.ok) blocos.push(res);
+    if (res.ok) blocos.push(...res.itens);
     else naoEncontrados.push(termo);
   }
 
@@ -249,7 +249,7 @@ export async function processarTurno(sr, { contato, texto, mediaUrl }) {
     dataHoje: hojeLocal()
   });
 
-  if (extraido.intencao === 'FALAR_COM_HUMANO') {
+  if (extraido.intencao === 'FALAR_COM_HUMANO' && estadoAtual !== 'PRECO_CONVENIO') {
     return resposta(PARA_HUMANO, 'AGUARDANDO_HUMANO');
   }
 
@@ -344,8 +344,18 @@ export async function processarTurno(sr, { contato, texto, mediaUrl }) {
       return resposta('Presença confirmada para ' + dados.rotulo + '. Obrigada!', 'OCIOSO');
     }
     case 'PRECO_CONVENIO': {
-      const i = escolher(dados.opcoes || [], extraido, texto);
-      const categoria = (dados.categorias || [])[i];
+      const t = normalizarTexto(texto || '');
+      // "não tenho convênio", "particular", "sou particular" → Particular.
+      if (extraido.negativa || t.includes('particular') || t.includes('nao tenho') || t.includes('nenhum')) {
+        return await informarPreco(sr, dados.extraido || {}, 'Particular');
+      }
+      const categorias = dados.categorias || [];
+      let i = escolher(dados.opcoes || [], extraido, texto);
+      // Casamento parcial pelo nome do convênio ("tenho o cartão mais vida").
+      if (i < 0 && t.length >= 3) {
+        i = categorias.findIndex((c) => t.includes(normalizarTexto(c)));
+      }
+      const categoria = categorias[i];
       if (i < 0 || !categoria) {
         return resposta('Não entendi. Responda com o número da opção do seu convênio (ou 1 se não tiver).', estadoAtual, dados);
       }
