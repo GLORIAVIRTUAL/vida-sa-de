@@ -179,6 +179,7 @@
         "REMARCACAO_CONFIRMACAO",
         "RESULTADO_EXAME_CPF",
         "ORCAMENTO_ITENS",
+        "PRECO_CONVENIO",
         "AGUARDANDO_HUMANO"
       ],
       "default": "OCIOSO",

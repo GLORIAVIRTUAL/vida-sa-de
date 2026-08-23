@@ -5,11 +5,11 @@ import {
   normalizarTelefone, normalizarTexto, hojeLocal,
   buscarPacientesPorTelefone, buscarPacientePorCpf, criarPacienteSeguro,
   nomeCompletoValido, validarCpf, proximosHorariosCore,
-  createAppointmentCore, cancelAppointmentCore, confirmAppointmentCore, orcamentoCore
+  createAppointmentCore, cancelAppointmentCore, confirmAppointmentCore
 } from './gloriaCore.ts';
 import { especialidadesDisponiveisCore, medicosPorEspecialidadeCore } from './gloriaAgenda.ts';
 import { medicoPorNomeCore, diasAtendimentoCore } from './gloriaHorariosMedico.ts';
-import { precoPorTermoCore, precoConsultaPorEspecialidadeCore } from './gloriaPrecos.ts';
+import { precoPorTermoCore, precoConsultaPorEspecialidadeCore, categoriasPrecoCore } from './gloriaPrecos.ts';
 import { extrairIntencao } from './gloriaLlm.ts';
 
 const EXPIRA_MINUTOS = 60;
@@ -151,7 +151,21 @@ function reais(valor) {
 }
 
 // Responde "quanto custa...?" usando apenas valores cadastrados no sistema.
-async function informarPreco(sr, extraido) {
+// Pergunta obrigatória no início de todo orçamento.
+async function pedirConvenio(sr, extraido) {
+  const nomes = await categoriasPrecoCore(sr);
+  const convenios = nomes.filter((n) => normalizarTexto(n) !== 'particular');
+  if (convenios.length === 0) return await informarPreco(sr, extraido, 'Particular');
+  const opcoes = ['Não tenho convênio (Particular)'].concat(convenios);
+  return resposta(
+    'Antes de passar os valores: você tem algum convênio da clínica?\n\n' + listar(opcoes) +
+    '\n\nResponda com o número.',
+    'PRECO_CONVENIO',
+    { opcoes, categorias: ['Particular'].concat(convenios), extraido }
+  );
+}
+
+async function informarPreco(sr, extraido, categoria) {
   const brutos = Array.isArray(extraido.itens_orcamento) ? extraido.itens_orcamento : [];
   // "consulta" sem especificação é resolvido pela especialidade informada.
   const termos = brutos.filter((t) => {
@@ -178,9 +192,18 @@ async function informarPreco(sr, extraido) {
 
   if (blocos.length === 0) return resposta(PARA_HUMANO, 'AGUARDANDO_HUMANO');
 
-  const linhas = blocos.map((b) =>
-    '*' + b.nome + '*\n' + b.valores.map((v) => '• ' + v.categoria + ': ' + reais(v.valor)).join('\n')
-  );
+  // Mostra só Particular e o convênio informado pelo cliente.
+  const permitidas = ['particular', normalizarTexto(categoria || 'Particular')];
+  const linhas = [];
+  for (const b of blocos) {
+    const valores = b.valores.filter((v) => permitidas.includes(normalizarTexto(v.categoria)));
+    if (valores.length === 0) {
+      naoEncontrados.push(b.nome);
+      continue;
+    }
+    linhas.push('*' + b.nome + '*\n' + valores.map((v) => '• ' + v.categoria + ': ' + reais(v.valor)).join('\n'));
+  }
+  if (linhas.length === 0) return resposta(PARA_HUMANO, 'AGUARDANDO_HUMANO');
   const pendentes = naoEncontrados.length
     ? '\n\nSobre ' + naoEncontrados.join(', ') + ', a recepção confirma o valor para você.'
     : '';
@@ -320,6 +343,14 @@ export async function processarTurno(sr, { contato, texto, mediaUrl }) {
       if (!res.ok) return resposta(res.mensagem, 'OCIOSO');
       return resposta('Presença confirmada para ' + dados.rotulo + '. Obrigada!', 'OCIOSO');
     }
+    case 'PRECO_CONVENIO': {
+      const i = escolher(dados.opcoes || [], extraido, texto);
+      const categoria = (dados.categorias || [])[i];
+      if (i < 0 || !categoria) {
+        return resposta('Não entendi. Responda com o número da opção do seu convênio (ou 1 se não tiver).', estadoAtual, dados);
+      }
+      return await informarPreco(sr, dados.extraido || {}, categoria);
+    }
     case 'AGUARDANDO_HUMANO':
       return null; // atendimento humano em andamento: a Glória não responde
     default:
@@ -337,22 +368,11 @@ export async function processarTurno(sr, { contato, texto, mediaUrl }) {
       return await listarAgendamentos(sr, telefone, 'CONFIRMAR', 'Qual consulta você quer confirmar?');
     case 'ORCAMENTO': {
       const itens = Array.isArray(extraido.itens_orcamento) ? extraido.itens_orcamento : [];
-      if (itens.length === 0 || mediaUrl) return resposta(PARA_HUMANO, 'AGUARDANDO_HUMANO');
-      if (itens.length <= 2 || extraido.especialidade) return await informarPreco(sr, extraido);
-      const res = await orcamentoCore(sr, { itens });
-      if (!res.ok || res.itens.length === 0) return resposta(PARA_HUMANO, 'AGUARDANDO_HUMANO');
-      const linhas = res.itens.map((i) => '• ' + i.nome + ': R$ ' + i.valor.toFixed(2).replace('.', ','));
-      const pendentes = res.desconhecidos.length
-        ? '\n\nNão localizei o valor de: ' + res.desconhecidos.join(', ') + '. A recepção pode confirmar.'
-        : '';
-      return resposta(
-        'Valores particulares:\n\n' + linhas.join('\n') +
-        '\n\n*Total: R$ ' + res.total.toFixed(2).replace('.', ',') + '*' + pendentes,
-        'OCIOSO'
-      );
+      if ((itens.length === 0 && !extraido.especialidade) || mediaUrl) return resposta(PARA_HUMANO, 'AGUARDANDO_HUMANO');
+      return await pedirConvenio(sr, extraido);
     }
     case 'PRECO':
-      return await informarPreco(sr, extraido);
+      return await pedirConvenio(sr, extraido);
     case 'DIAS_ATENDIMENTO':
       return await informarDiasAtendimento(sr, extraido.medico);
     case 'INFORMACAO':

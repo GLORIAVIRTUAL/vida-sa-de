@@ -3,13 +3,20 @@
 
 import { normalizarTexto } from './gloriaCore.ts';
 
-const CATEGORIAS = ['Particular', 'Cartão Mais Vida'];
-
+// Todas as categorias ativas são consideradas; "Particular" sempre primeiro.
 async function categoriasAlvo(sr) {
   const ativas = await sr.entities.CategoriaPreco.filter({ status: 'Ativo' });
-  return CATEGORIAS
-    .map((nome) => ativas.find((c) => normalizarTexto(c.nome) === normalizarTexto(nome)))
-    .filter(Boolean);
+  return ativas.slice().sort((a, b) => {
+    const pa = normalizarTexto(a.nome) === 'particular' ? 0 : 1;
+    const pb = normalizarTexto(b.nome) === 'particular' ? 0 : 1;
+    return pa - pb || String(a.nome).localeCompare(String(b.nome));
+  });
+}
+
+// Nomes das categorias/convênios ativos (para oferecer ao cliente).
+export async function categoriasPrecoCore(sr) {
+  const cats = await categoriasAlvo(sr);
+  return cats.map((c) => c.nome);
 }
 
 // Busca por nome exato; se não achar, por conteúdo (só aceita resultado único).
