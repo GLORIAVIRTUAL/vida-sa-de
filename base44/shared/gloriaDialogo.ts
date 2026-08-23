@@ -152,9 +152,11 @@ async function informarDiasAtendimento(sr, nomeMedico) {
   if (encontrados.length !== 1) return resposta(PARA_HUMANO, 'AGUARDANDO_HUMANO');
 
   const res = await diasAtendimentoCore(sr, { medico_id: encontrados[0].id });
-  if (!res.ok || res.dias.length === 0) return resposta(PARA_HUMANO, 'AGUARDANDO_HUMANO');
+  const datas = res.ok ? (res.datas || []) : [];
+  if (!res.ok || (res.dias.length === 0 && datas.length === 0)) return resposta(PARA_HUMANO, 'AGUARDANDO_HUMANO');
 
-  const linhas = res.dias.map((d) => '• ' + d.dia + ': ' + d.horarios.join(', '));
+  const linhas = res.dias.map((d) => '• ' + d.dia + ': ' + d.horarios.join(', '))
+    .concat(datas.map((d) => '• ' + d.dia + ', ' + dataBr(d.data) + ': ' + d.horarios.join(', ')));
   return resposta(
     res.nome + ' atende nos seguintes dias:\n\n' + linhas.join('\n') +
     '\n\nQuer que eu veja os próximos horários livres para agendar?',
