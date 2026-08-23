@@ -158,19 +158,24 @@ function reais(valor) {
 // Responde "quanto custa...?" usando apenas valores cadastrados no sistema.
 // Pergunta obrigatória no início de todo orçamento.
 async function pedirConvenio(sr, extraido) {
+  // Só pergunta o convênio se algum item pedido existir no cadastro.
+  const resolvido = await resolverBlocos(sr, extraido);
+  if (resolvido.blocos.length === 0) return resposta(PARA_HUMANO, 'AGUARDANDO_HUMANO');
+
   const nomes = await categoriasPrecoCore(sr);
   const convenios = nomes.filter((n) => normalizarTexto(n) !== 'particular');
-  if (convenios.length === 0) return await informarPreco(sr, extraido, 'Particular');
+  if (convenios.length === 0) return informarPreco(resolvido, 'Particular');
   const opcoes = ['Não tenho convênio (Particular)'].concat(convenios);
   return resposta(
     'Antes de passar os valores: você tem algum convênio da clínica?\n\n' + listar(opcoes) +
     '\n\nResponda com o número.',
     'PRECO_CONVENIO',
-    { opcoes, categorias: ['Particular'].concat(convenios), extraido }
+    { opcoes, categorias: ['Particular'].concat(convenios), resolvido }
   );
 }
 
-async function informarPreco(sr, extraido, categoria) {
+// Busca no cadastro os valores dos itens pedidos (sem depender do convênio).
+async function resolverBlocos(sr, extraido) {
   const brutos = Array.isArray(extraido.itens_orcamento) ? extraido.itens_orcamento : [];
   // "consulta" sem especificação é resolvido pela especialidade informada.
   const termos = brutos.filter((t) => {
@@ -195,6 +200,12 @@ async function informarPreco(sr, extraido, categoria) {
     else naoEncontrados.push(termo);
   }
 
+  return { blocos, naoEncontrados };
+}
+
+function informarPreco(resolvido, categoria) {
+  const blocos = resolvido.blocos || [];
+  const naoEncontrados = (resolvido.naoEncontrados || []).slice();
   if (blocos.length === 0) return resposta(PARA_HUMANO, 'AGUARDANDO_HUMANO');
 
   // Mostra só Particular e o convênio informado pelo cliente.
@@ -361,7 +372,7 @@ export async function processarTurno(sr, { contato, texto, mediaUrl }) {
       const t = normalizarTexto(texto || '');
       // "não tenho convênio", "particular", "sou particular" → Particular.
       if (extraido.negativa || t.includes('particular') || t.includes('nao tenho') || t.includes('nenhum')) {
-        return await informarPreco(sr, dados.extraido || {}, 'Particular');
+        return informarPreco(dados.resolvido || {}, 'Particular');
       }
       const categorias = dados.categorias || [];
       let i = escolher(dados.opcoes || [], extraido, texto);
@@ -373,7 +384,7 @@ export async function processarTurno(sr, { contato, texto, mediaUrl }) {
       if (i < 0 || !categoria) {
         return resposta('Não entendi. Responda com o número da opção do seu convênio (ou 1 se não tiver).', estadoAtual, dados);
       }
-      return await informarPreco(sr, dados.extraido || {}, categoria);
+      return informarPreco(dados.resolvido || {}, categoria);
     }
     case 'AGUARDANDO_HUMANO':
       return null; // atendimento humano em andamento: a Glória não responde
@@ -405,8 +416,15 @@ export async function processarTurno(sr, { contato, texto, mediaUrl }) {
       return resposta(PARA_HUMANO, 'AGUARDANDO_HUMANO');
     case 'SAUDACAO':
       return resposta('Olá! Sou a Glória, do Centro Vida Saúde. Posso te ajudar a agendar, confirmar ou cancelar uma consulta. O que você precisa?', 'OCIOSO');
-    default:
+    default: {
+      // Agradecimento/despedida encerra a conversa com cordialidade.
+      const t = normalizarTexto(texto || '');
+      const despedida = ['obrigado', 'obrigada', 'obg', 'valeu', 'tchau', 'ate logo', 'ate mais', 'boa noite', 'bom dia'];
+      if (t.length <= 40 && despedida.some((d) => t.includes(d))) {
+        return resposta('Eu que agradeço! Qualquer coisa, estou por aqui. Boa sorte e até logo! 😊', 'OCIOSO');
+      }
       return resposta(PARA_HUMANO, 'AGUARDANDO_HUMANO');
+    }
   }
 }
 
