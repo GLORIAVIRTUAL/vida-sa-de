@@ -24,6 +24,11 @@
       ],
       "description": "URL da foto de perfil do WhatsApp do contato"
     },
+    "foto_verificada": {
+      "type": "boolean",
+      "default": false,
+      "description": "Se a busca da foto de perfil j\u00e1 foi feita (evita repetir consulta para quem n\u00e3o tem foto p\u00fablica)"
+    },
     "email": {
       "type": "string",
       "format": "email",
