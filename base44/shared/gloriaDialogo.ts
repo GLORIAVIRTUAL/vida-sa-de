@@ -417,11 +417,24 @@ export async function processarTurno(sr, { contato, texto, mediaUrl }) {
     }
     case 'PRECO':
       return await pedirConvenio(sr, extraido);
-    case 'DIAS_ATENDIMENTO':
+    case 'DIAS_ATENDIMENTO': {
+      const t = normalizarTexto(texto || '');
+      const citado = extraido.medico && normalizarTexto(extraido.medico)
+        .split(' ')
+        .some((p) => p.length >= 4 && t.includes(p));
+      if (!citado) return resposta(PARA_HUMANO, 'AGUARDANDO_HUMANO');
       return await informarDiasAtendimento(sr, extraido.medico);
-    case 'INFORMACAO':
-      if (extraido.medico) return await informarDiasAtendimento(sr, extraido.medico);
+    }
+    case 'INFORMACAO': {
+      // Só trata como pergunta sobre médico se o nome estiver na mensagem atual
+      // (evita reaproveitar o médico citado antes no histórico).
+      const t = normalizarTexto(texto || '');
+      const citado = extraido.medico && normalizarTexto(extraido.medico)
+        .split(' ')
+        .some((p) => p.length >= 4 && t.includes(p));
+      if (citado) return await informarDiasAtendimento(sr, extraido.medico);
       return resposta(PARA_HUMANO, 'AGUARDANDO_HUMANO');
+    }
     case 'SAUDACAO':
       return resposta('Olá! Sou a Glória, do Centro Vida Saúde. Posso te ajudar a agendar consultas, exames e procedimentos, confirmar ou cancelar atendimentos, passar valores e também com o Cartão Mais Vida Saúde. O que você precisa?', 'OCIOSO');
     default: {
