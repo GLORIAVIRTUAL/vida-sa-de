@@ -158,13 +158,19 @@ function reais(valor) {
 
 // Responde "quanto custa...?" usando apenas valores cadastrados no sistema.
 // Pergunta obrigatória no início de todo orçamento.
-async function pedirConvenio(sr, extraido) {
+async function pedirConvenio(sr, extraido, texto) {
   // Só pergunta o convênio se algum item pedido existir no cadastro.
-  const resolvido = await resolverBlocos(sr, extraido);
+  const resolvido = await resolverBlocos(sr, extraido, texto);
   if (resolvido.blocos.length === 0) return resposta(PARA_HUMANO, 'AGUARDANDO_HUMANO');
 
   const nomes = await categoriasPrecoCore(sr);
   const convenios = nomes.filter((n) => normalizarTexto(n) !== 'particular');
+
+  // Se o cliente já disse o convênio na própria pergunta, não pergunta de novo.
+  const t = normalizarTexto(texto || '');
+  const citado = convenios.find((c) => t.includes(normalizarTexto(c)));
+  if (citado) return informarPreco(resolvido, citado);
+  if (t.includes('particular')) return informarPreco(resolvido, 'Particular');
   if (convenios.length === 0) return informarPreco(resolvido, 'Particular');
   const opcoes = ['Não tenho convênio (Particular)'].concat(convenios);
   return resposta(
@@ -176,7 +182,7 @@ async function pedirConvenio(sr, extraido) {
 }
 
 // Busca no cadastro os valores dos itens pedidos (sem depender do convênio).
-async function resolverBlocos(sr, extraido) {
+async function resolverBlocos(sr, extraido, texto) {
   const brutos = Array.isArray(extraido.itens_orcamento) ? extraido.itens_orcamento : [];
   // "consulta" sem especificação é resolvido pela especialidade informada.
   const termos = brutos.filter((t) => {
@@ -192,7 +198,13 @@ async function resolverBlocos(sr, extraido) {
   if (extraido.especialidade) {
     const res = await precoConsultaPorEspecialidadeCore(sr, { especialidade: extraido.especialidade });
     if (res.ok) blocos.push(...res.itens);
-    else naoEncontrados.push('consulta de ' + extraido.especialidade);
+    else {
+      // Pode não ser especialidade de consulta (ex: "Ecografia de abdome"):
+      // busca o próprio termo em procedimentos e exames.
+      const direto = await precoPorTermoCore(sr, { termo: extraido.especialidade });
+      if (direto.ok) blocos.push(...direto.itens);
+      else naoEncontrados.push(extraido.especialidade);
+    }
   }
 
   for (const termo of termos.slice(0, 5)) {
@@ -201,12 +213,34 @@ async function resolverBlocos(sr, extraido) {
     else naoEncontrados.push(termo);
   }
 
-  return { blocos, naoEncontrados };
+  // Se a IA não extraiu nada útil, procura direto pelas palavras da mensagem.
+  if (blocos.length === 0 && texto) {
+    const limpo = normalizarTexto(texto)
+      .replace(/[?!.,]/g, ' ')
+      .split(' ')
+      .filter((p) => p.length > 3 && !['quanto', 'quando', 'custa', 'valor', 'valores', 'preco', 'pelo', 'pela', 'para', 'particular', 'cartao', 'mais', 'vida', 'saude', 'uma', 'voces'].includes(p))
+      .join(' ');
+    if (limpo) {
+      const res = await precoPorTermoCore(sr, { termo: limpo });
+      if (res.ok) blocos.push(...res.itens);
+    }
+  }
+
+  const vistos = new Set();
+  const unicos = blocos.filter((b) => {
+    const k = normalizarTexto(b.nome);
+    if (vistos.has(k)) return false;
+    vistos.add(k);
+    return true;
+  });
+  return { blocos: unicos, naoEncontrados };
 }
 
 function informarPreco(resolvido, categoria) {
   const blocos = resolvido.blocos || [];
-  const naoEncontrados = (resolvido.naoEncontrados || []).slice();
+  // Termos não localizados só interessam quando nada foi encontrado; se já
+  // achamos valores, não confundir o cliente com variações do mesmo pedido.
+  const naoEncontrados = [];
   if (blocos.length === 0) return resposta(PARA_HUMANO, 'AGUARDANDO_HUMANO');
 
   // Mostra só Particular e o convênio informado pelo cliente.
@@ -428,10 +462,10 @@ export async function processarTurno(sr, { contato, texto, mediaUrl }) {
     case 'ORCAMENTO': {
       const itens = Array.isArray(extraido.itens_orcamento) ? extraido.itens_orcamento : [];
       if ((itens.length === 0 && !extraido.especialidade) || mediaUrl) return resposta(PARA_HUMANO, 'AGUARDANDO_HUMANO');
-      return await pedirConvenio(sr, extraido);
+      return await pedirConvenio(sr, extraido, texto);
     }
     case 'PRECO':
-      return await pedirConvenio(sr, extraido);
+      return await pedirConvenio(sr, extraido, texto);
     case 'DIAS_ATENDIMENTO': {
       const t = normalizarTexto(texto || '');
       const citado = extraido.medico && normalizarTexto(extraido.medico)
