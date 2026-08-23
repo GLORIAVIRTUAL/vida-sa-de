@@ -14,8 +14,9 @@ const ESQUEMA_EXTRACAO = {
       type: 'string',
       enum: [
         'SAUDACAO', 'AGENDAR', 'CANCELAR', 'REMARCAR', 'CONFIRMAR', 'PRECO',
-        'ORCAMENTO', 'RESULTADO_EXAME', 'INFORMACAO', 'FALAR_COM_HUMANO', 'OUTRO'
-      ]
+        'ORCAMENTO', 'RESULTADO_EXAME', 'DIAS_ATENDIMENTO', 'INFORMACAO', 'FALAR_COM_HUMANO', 'OUTRO'
+      ],
+      description: 'Use DIAS_ATENDIMENTO quando o cliente pergunta em que dias ou horários um profissional atende na clínica'
     },
     confirmacao: { type: 'boolean', description: 'Cliente confirmou explicitamente (sim, confirmo, pode marcar)' },
     negativa: { type: 'boolean', description: 'Cliente negou ou recusou explicitamente' },

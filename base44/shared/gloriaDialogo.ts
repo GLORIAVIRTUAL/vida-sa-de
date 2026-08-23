@@ -8,6 +8,7 @@ import {
   createAppointmentCore, cancelAppointmentCore, confirmAppointmentCore, orcamentoCore
 } from './gloriaCore.ts';
 import { especialidadesDisponiveisCore, medicosPorEspecialidadeCore } from './gloriaAgenda.ts';
+import { medicoPorNomeCore, diasAtendimentoCore } from './gloriaHorariosMedico.ts';
 import { extrairIntencao } from './gloriaLlm.ts';
 
 const EXPIRA_MINUTOS = 60;
@@ -141,6 +142,23 @@ async function listarAgendamentos(sr, telefone, acao, titulo) {
     titulo + '\n\n' + listar(rotulos) + '\n\nResponda com o número.',
     'CANCELAMENTO_SELECAO',
     { acao, opcoes: rotulos, agendamentos: agendamentos.map((a) => a.id) }
+  );
+}
+
+// Responde "que dia o Dr. X atende?" com os dias reais da agenda.
+async function informarDiasAtendimento(sr, nomeMedico) {
+  const busca = await medicoPorNomeCore(sr, { nome: nomeMedico });
+  const encontrados = busca.ok ? busca.medicos : [];
+  if (encontrados.length !== 1) return resposta(PARA_HUMANO, 'AGUARDANDO_HUMANO');
+
+  const res = await diasAtendimentoCore(sr, { medico_id: encontrados[0].id });
+  if (!res.ok || res.dias.length === 0) return resposta(PARA_HUMANO, 'AGUARDANDO_HUMANO');
+
+  const linhas = res.dias.map((d) => '• ' + d.dia + ': ' + d.horarios.join(', '));
+  return resposta(
+    res.nome + ' atende nos seguintes dias:\n\n' + linhas.join('\n') +
+    '\n\nQuer que eu veja os próximos horários livres para agendar?',
+    'OCIOSO'
   );
 }
 
@@ -285,6 +303,11 @@ export async function processarTurno(sr, { contato, texto, mediaUrl }) {
         'OCIOSO'
       );
     }
+    case 'DIAS_ATENDIMENTO':
+      return await informarDiasAtendimento(sr, extraido.medico);
+    case 'INFORMACAO':
+      if (extraido.medico) return await informarDiasAtendimento(sr, extraido.medico);
+      return resposta(PARA_HUMANO, 'AGUARDANDO_HUMANO');
     case 'SAUDACAO':
       return resposta('Olá! Sou a Glória, do Centro Vida Saúde. Posso te ajudar a agendar, confirmar ou cancelar uma consulta. O que você precisa?', 'OCIOSO');
     default:
