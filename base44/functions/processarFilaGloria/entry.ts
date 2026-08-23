@@ -23,7 +23,8 @@ export default async function (req: Request): Promise<Response> {
       body && body.token_interno,
       Deno.env.get('GLORIA_INTERNAL_TOKEN')
     );
-    if (!autorizacao.ok) return Response.json(autorizacao, { status: 403 });
+    const viaAutomacao = !!(body && body.automation && body.automation.id);
+    if (!autorizacao.ok && !viaAutomacao) return Response.json(autorizacao, { status: 403 });
 
     const sr = base44.asServiceRole;
     const agora = Date.now();
