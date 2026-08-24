@@ -543,7 +543,7 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
     setContatoSelecionado(prev => {
       if (!prev) return prev;
       const historicoAtual = prev.historico_mensagens || [];
-      return { ...prev, historico_mensagens: [...historicoAtual, novaMensagem] };
+      return { ...prev, conversa_finalizada: false, historico_mensagens: [...historicoAtual, novaMensagem] };
     });
 
     // Envia em background (não bloqueia o input), mas AVISA o atendente se falhar

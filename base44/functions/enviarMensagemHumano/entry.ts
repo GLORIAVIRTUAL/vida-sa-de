@@ -171,6 +171,8 @@ Deno.serve(async (req) => {
             ultima_interacao: timestamp,
             total_mensagens: (contato.total_mensagens || 0) + 1,
             atendimento_humano: true,
+            // Responder mantém a conversa ativa (só o botão Finalizar encerra).
+            conversa_finalizada: false,
             atendente_atual: nomeAtendente,
             atendente_id: user.id
           });
