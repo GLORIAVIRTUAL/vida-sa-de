@@ -818,9 +818,9 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
              (contato.atendente_id && contato.atendente_id === emailUsuario);
     }
     if (filtroStatus === 'atendimento') {
-      // Em atendimento = tem atendente humano atribuído e não finalizada
+      // Em atendimento humano (com ou sem atendente atribuído) e não finalizada
       if (contato.conversa_finalizada) return false;
-      return contato.atendimento_humano && contato.atendente_atual;
+      return contato.atendimento_humano === true;
     }
     if (filtroStatus === 'sem_resposta') {
       if (contato.atendimento_humano && contato.atendente_atual) return false;

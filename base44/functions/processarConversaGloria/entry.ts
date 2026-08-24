@@ -62,6 +62,13 @@ export default async function (req: Request): Promise<Response> {
         if (!garantido.ok) throw new Error(garantido.codigo);
         const contato = garantido.contato;
 
+        // Mensagem nova reabre a conversa: se estava finalizada, ela voltaria
+        // para o fim da lista do painel e passaria despercebida.
+        if (contato.conversa_finalizada === true) {
+          await sr.entities.Contato.update(contato.id, { conversa_finalizada: false });
+          contato.conversa_finalizada = false;
+        }
+
         // IA desligada (atendimento manual) ou atendimento humano em andamento:
         // registra a mensagem e não responde.
         if (!IA_ATIVA || contato.atendimento_humano === true) {
