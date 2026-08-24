@@ -947,7 +947,7 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
        </div>
 
       <div className={chatExpandido ? "flex-1 min-h-0" : "lg:col-span-3"}>
-        <Card className={`flex flex-col ${chatExpandido ? "h-full" : "h-[500px]"}`}>
+        <Card className={`flex flex-col ${chatExpandido ? "h-full" : "h-[680px]"}`}>
           {contatoSelecionado ? (
             <>
               <CardHeader className={`border-b py-3 space-y-3 ${alarmeAtivo ? 'bg-gradient-to-r from-yellow-100 to-amber-100 animate-pulse' : 'bg-gradient-to-r from-blue-50 to-sky-50'}`}>
