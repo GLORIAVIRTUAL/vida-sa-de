@@ -47,12 +47,32 @@ export const useContatosQuery = () => {
 
 // Função para renderizar conteúdo de mensagem (texto, imagem, documento, áudio)
 function renderMensagemContent(content, isUser, msgData = {}) {
-  if (!content) return null;
-  
   // Se temos mediaUrl diretamente no objeto da mensagem, usar ela
   // Tratar "undefined" (string) como null
   const mediaUrlFromData = (msgData.mediaUrl && msgData.mediaUrl !== 'undefined') ? msgData.mediaUrl : null;
-  const mediaTypeFromData = (msgData.mediaType && msgData.mediaType !== 'undefined') ? msgData.mediaType : null;
+  const mediaTypeFromData = (msgData.mediaType && msgData.mediaType !== 'undefined' && msgData.mediaType !== 'text') ? msgData.mediaType : null;
+
+  // Mídia sem legenda: renderiza a mídia mesmo com o texto vazio.
+  if (!content) {
+    if (!mediaUrlFromData) return null;
+    if (mediaTypeFromData === 'image') {
+      return (
+        <img src={mediaUrlFromData} alt="Imagem" className="max-w-full rounded-lg max-h-64 object-contain cursor-pointer hover:opacity-90" onClick={() => window.open(mediaUrlFromData, '_blank')} />
+      );
+    }
+    if (mediaTypeFromData === 'audio') {
+      return <audio controls className="max-w-full"><source src={mediaUrlFromData} /></audio>;
+    }
+    return (
+      <a href={mediaUrlFromData} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-3 rounded-lg border bg-gray-50 hover:bg-gray-100 border-gray-200">
+        <span className="text-2xl">📄</span>
+        <div className="flex flex-col">
+          <span className="text-sm font-medium">Arquivo</span>
+          <span className="text-xs opacity-70">Clique para abrir</span>
+        </div>
+      </a>
+    );
+  }
   
   // Detectar URLs de mídia no conteúdo (incluindo URLs longas de storage com query params)
   // Também detecta URLs sem extensão visível mas com parâmetros de storage
