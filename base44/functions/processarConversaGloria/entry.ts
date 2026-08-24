@@ -10,6 +10,8 @@ import { transcreverAudio } from '../../shared/gloriaLlm.ts';
 const LOTE = 5;
 const LOCK_SEGUNDOS = 120;
 const MAX_TENTATIVAS = 3;
+// Glória desligada: todas as mensagens vão para atendimento manual.
+const IA_ATIVA = false;
 
 export default async function (req: Request): Promise<Response> {
   try {
@@ -60,8 +62,12 @@ export default async function (req: Request): Promise<Response> {
         if (!garantido.ok) throw new Error(garantido.codigo);
         const contato = garantido.contato;
 
-        // Atendimento humano em andamento: registra a mensagem e não responde.
-        if (contato.atendimento_humano === true) {
+        // IA desligada (atendimento manual) ou atendimento humano em andamento:
+        // registra a mensagem e não responde.
+        if (!IA_ATIVA || contato.atendimento_humano === true) {
+          if (!IA_ATIVA && contato.atendimento_humano !== true) {
+            await sr.entities.Contato.update(contato.id, { atendimento_humano: true, gloria_estado: 'AGUARDANDO_HUMANO' });
+          }
           await acrescentarHistorico(sr, contato, {
             role: 'user', content: job.texto || '', messageId: job.message_id,
             mediaType: job.media_tipo, mediaUrl: job.media_url
