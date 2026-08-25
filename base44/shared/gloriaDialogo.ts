@@ -272,7 +272,10 @@ function informarPreco(resolvido, categoria) {
   return resposta(
     linhas.join('\n\n') + pendentes + '\n\nQuer que eu veja um horário disponível?',
     'OCIOSO',
-    { orcamento_nomes: blocos.map((b) => b.nome) }
+    {
+      orcamento_nomes: blocos.map((b) => b.nome),
+      orcamento_especialidades: blocos.map((b) => b.especialidade).filter(Boolean)
+    }
   );
 }
 
@@ -469,6 +472,10 @@ export async function processarTurno(sr, { contato, texto, mediaUrl }) {
   if (nomesOrcados.length > 0 && !expirado && (extraido.confirmacao || afirmativo || extraido.intencao === 'AGENDAR')) {
     const esp = await especialidadesDisponiveisCore(sr);
     const disponiveis = esp.especialidades || [];
+    // 1º: especialidade cadastrada no próprio procedimento/exame orçado.
+    const espOrcadas = Array.isArray(dados.orcamento_especialidades) ? dados.orcamento_especialidades : [];
+    const porCadastro = disponiveis.find((e) => espOrcadas.some((x) => normalizarTexto(x) === normalizarTexto(e)));
+    if (porCadastro) return await pedirMedico(sr, porCadastro);
     const alvo = disponiveis.find((e) => nomesOrcados.some((n) => {
       const nn = normalizarTexto(n);
       const ne = normalizarTexto(e);

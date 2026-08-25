@@ -88,7 +88,7 @@ export async function precoPorTermoCore(sr, { termo }) {
           return achado ? { categoria: c.nome, valor: achado.valor } : null;
         })
         .filter(Boolean);
-      if (valores.length > 0) itens.push({ nome: proc.nome, valores });
+      if (valores.length > 0) itens.push({ nome: proc.nome, valores, especialidade: proc.especialidade || '' });
     }
     if (itens.length > 0) return { ok: true, itens };
     return { ok: false };
