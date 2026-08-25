@@ -351,7 +351,12 @@ export async function processarTurno(sr, { contato, texto, mediaUrl, mediaTipo }
     return await perguntarConvenio(sr, resolvido, texto);
   }
 
+  // Primeiro nome do contato, para tratamento pessoal (ignora nomes que são só números).
+  const nomeBruto = String(contato.nome || '').trim();
+  const primeiroNome = /[a-zA-ZÀ-ÿ]{2,}/.test(nomeBruto) ? nomeBruto.split(/\s+/)[0] : '';
+
   const extraido = await extrairIntencao(sr, {
+    nomeContato: primeiroNome,
     texto,
     historico: contato.historico_mensagens,
     estado: estadoAtual,
@@ -631,7 +636,7 @@ export async function processarTurno(sr, { contato, texto, mediaUrl, mediaTipo }
       return resposta(PARA_HUMANO, 'AGUARDANDO_HUMANO');
     }
     case 'SAUDACAO':
-      return resposta('Olá! Sou a Glória, do Centro Vida Saúde. Posso te ajudar a agendar consultas, exames e procedimentos, confirmar ou cancelar atendimentos, passar valores e também com o Cartão Mais Vida Saúde. O que você precisa?', 'OCIOSO');
+      return resposta('Olá' + (primeiroNome ? ', ' + primeiroNome : '') + '! Sou a Glória, do Centro Vida Saúde. Posso te ajudar a agendar consultas, exames e procedimentos, confirmar ou cancelar atendimentos, passar valores e também com o Cartão Mais Vida Saúde. O que você precisa?', 'OCIOSO');
     default: {
       // Agradecimento/despedida encerra a conversa com cordialidade.
       const t = normalizarTexto(texto || '');
