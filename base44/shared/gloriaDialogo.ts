@@ -177,6 +177,15 @@ function reais(valor) {
 
 // Responde "quanto custa...?" usando apenas valores cadastrados no sistema.
 // Pergunta obrigatória no início de todo orçamento.
+function pedirItensOrcamento() {
+  return resposta(
+    'Claro! Me diga quais consultas, exames ou procedimentos você quer orçar (pode mandar vários de uma vez).\n\n' +
+    'Se preferir, envie a foto ou o PDF da requisição médica que eu leio os exames por aqui.',
+    'ORCAMENTO_ITENS',
+    {}
+  );
+}
+
 async function pedirConvenio(sr, extraido, texto) {
   // Só pergunta o convênio se algum item pedido existir no cadastro.
   const resolvido = await resolverBlocos(sr, extraido, texto);
@@ -499,6 +508,19 @@ export async function processarTurno(sr, { contato, texto, mediaUrl, mediaTipo }
       if (!res.ok) return resposta(res.mensagem, 'OCIOSO');
       return resposta('Presença confirmada para ' + dados.rotulo + '. Obrigada!', 'OCIOSO');
     }
+    case 'ORCAMENTO_ITENS': {
+      const resolvido = await resolverBlocos(sr, extraido, texto);
+      if (resolvido.blocos.length === 0) {
+        const tentativas = (dados.tentativas || 0) + 1;
+        if (tentativas >= 3) return resposta(PARA_HUMANO, 'AGUARDANDO_HUMANO');
+        return resposta(
+          'Não localizei esse item no nosso cadastro. Me diga o nome do exame, procedimento ou a especialidade da consulta (ex: "ecocardiograma", "consulta com cardiologista").',
+          'ORCAMENTO_ITENS',
+          { tentativas }
+        );
+      }
+      return await perguntarConvenio(sr, resolvido, texto);
+    }
     case 'PRECO_CONVENIO': {
       const t = normalizarTexto(texto || '');
       // "não tenho convênio", "particular", "sou particular" → Particular.
@@ -581,6 +603,13 @@ export async function processarTurno(sr, { contato, texto, mediaUrl, mediaTipo }
     );
   }
 
+  // Pedido de orçamento em palavras próprias, sem citar o item.
+  if (['orcamento', 'orçamento', 'quanto custa', 'quanto fica', 'qual o valor', 'valores dos exames', 'tabela de preco']
+      .some((k) => txt.includes(k)) &&
+      !['AGENDAR', 'CANCELAR', 'REMARCAR', 'CONFIRMAR', 'ORCAMENTO', 'PRECO'].includes(extraido.intencao)) {
+    return pedirItensOrcamento();
+  }
+
   // Pergunta sobre horário de funcionamento da clínica.
   if (['horario de funcionamento', 'horario da clinica', 'que horas abre', 'que horas fecha', 'abre que horas', 'fecha que horas', 'ate que horas', 'ate qual horario', 'funciona sabado', 'abre sabado', 'atende sabado', 'horario de atendimento']
       .some((k) => txt.includes(k))) {
@@ -610,13 +639,15 @@ export async function processarTurno(sr, { contato, texto, mediaUrl, mediaTipo }
       return await listarAgendamentos(sr, telefone, 'REMARCAR', 'Qual consulta você quer remarcar?');
     case 'CONFIRMAR':
       return await listarAgendamentos(sr, telefone, 'CONFIRMAR', 'Qual consulta você quer confirmar?');
-    case 'ORCAMENTO': {
+    case 'ORCAMENTO':
+    case 'PRECO': {
       const itens = Array.isArray(extraido.itens_orcamento) ? extraido.itens_orcamento : [];
-      if ((itens.length === 0 && !extraido.especialidade) || mediaUrl) return resposta(PARA_HUMANO, 'AGUARDANDO_HUMANO');
-      return await pedirConvenio(sr, extraido, texto);
+      // Pedido genérico ("quero um orçamento de exames"): pergunta os itens.
+      if (itens.length === 0 && !extraido.especialidade) return pedirItensOrcamento();
+      const resolvido = await resolverBlocos(sr, extraido, texto);
+      if (resolvido.blocos.length === 0) return pedirItensOrcamento();
+      return await perguntarConvenio(sr, resolvido, texto);
     }
-    case 'PRECO':
-      return await pedirConvenio(sr, extraido, texto);
     case 'DIAS_ATENDIMENTO': {
       const t = normalizarTexto(texto || '');
       const citado = extraido.medico && normalizarTexto(extraido.medico)
