@@ -205,7 +205,9 @@ export async function garantirContato(sr, telefone, nome) {
     nome: nome || '',
     origem: 'WhatsApp',
     status: 'Novo',
-    atendimento_humano: false,
+    // Primeiro atendimento é sempre humano: a Glória só entra quando o
+    // atendente desativa o modo manual no painel.
+    atendimento_humano: true,
     gloria_estado: 'OCIOSO',
     ultima_interacao: new Date().toISOString()
   });
