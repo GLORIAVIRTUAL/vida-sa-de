@@ -49,6 +49,13 @@ function resposta(texto, estado, dados) {
 
 const PARA_HUMANO = 'Vou chamar uma pessoa da recepção para te ajudar. Em breve alguém responde por aqui.';
 
+const TEXTO_HORARIOS = 'Nosso horário de funcionamento é:\n\n' +
+  '• Segunda a sexta: 7h30 às 18h\n' +
+  '• Sábado: 7h30 às 12h';
+
+const TEXTO_LABORATORIAL = 'Exames laboratoriais não precisam de agendamento! Você pode vir de segunda a sábado, a partir das 7h30, por ordem de chegada.\n\n' +
+  TEXTO_HORARIOS;
+
 // ---------------------------------------------------------------- etapas
 
 async function pedirEspecialidade(sr) {
@@ -269,11 +276,17 @@ function informarPreco(resolvido, categoria) {
   const pendentes = naoEncontrados.length
     ? '\n\nSobre ' + naoEncontrados.join(', ') + ', a recepção confirma o valor para você.'
     : '';
+  // Exames laboratoriais são por ordem de chegada: não há agendamento.
+  const soLaboratorial = blocos.every((b) => b.laboratorial);
+  const fecho = soLaboratorial
+    ? '\n\n' + TEXTO_LABORATORIAL
+    : '\n\nQuer que eu veja um horário disponível?';
   return resposta(
-    linhas.join('\n\n') + pendentes + '\n\nQuer que eu veja um horário disponível?',
+    linhas.join('\n\n') + pendentes + fecho,
     'OCIOSO',
     {
       orcamento_nomes: blocos.map((b) => b.nome),
+      orcamento_laboratorial: soLaboratorial,
       orcamento_especialidades: blocos.map((b) => b.especialidade).filter(Boolean)
     }
   );
@@ -485,6 +498,10 @@ export async function processarTurno(sr, { contato, texto, mediaUrl }) {
   // Acabamos de passar o valor de um exame/procedimento e o cliente aceitou ver
   // horário: agenda o próprio serviço, sem perguntar especialidade de novo.
   const nomesOrcados = Array.isArray(dados.orcamento_nomes) ? dados.orcamento_nomes : [];
+  if (nomesOrcados.length > 0 && dados.orcamento_laboratorial && !expirado &&
+      (extraido.confirmacao || afirmativo || extraido.intencao === 'AGENDAR')) {
+    return resposta(TEXTO_LABORATORIAL + '\n\nÉ só trazer o pedido médico, se tiver. Te espero por aqui!', 'OCIOSO');
+  }
   if (nomesOrcados.length > 0 && !expirado && (extraido.confirmacao || afirmativo || extraido.intencao === 'AGENDAR')) {
     const esp = await especialidadesDisponiveisCore(sr);
     const disponiveis = esp.especialidades || [];
@@ -517,6 +534,18 @@ export async function processarTurno(sr, { contato, texto, mediaUrl }) {
         { assunto_cartao: true }
       );
     }
+  }
+
+  // Pergunta sobre horário de funcionamento da clínica.
+  if (['horario de funcionamento', 'horario da clinica', 'que horas abre', 'que horas fecha', 'abre que horas', 'fecha que horas', 'ate que horas', 'ate qual horario', 'funciona sabado', 'abre sabado', 'atende sabado', 'horario de atendimento']
+      .some((k) => txt.includes(k))) {
+    return resposta(TEXTO_HORARIOS + '\n\nPosso te ajudar com mais alguma coisa?', 'OCIOSO');
+  }
+
+  // Coleta de exames laboratoriais: sem agendamento, por ordem de chegada.
+  if (['exame de sangue', 'exames de sangue', 'exame laboratorial', 'exames laboratoriais', 'laboratorio', 'coleta de sangue', 'hemograma']
+      .some((k) => txt.includes(k)) && ['AGENDAR', 'INFORMACAO', 'OUTRO', 'SAUDACAO'].includes(extraido.intencao)) {
+    return resposta(TEXTO_LABORATORIAL + '\n\nÉ só trazer o pedido médico, se tiver. Te espero por aqui!', 'OCIOSO');
   }
 
   // Estado OCIOSO: nova intenção.

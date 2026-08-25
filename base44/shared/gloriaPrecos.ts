@@ -103,6 +103,7 @@ export async function precoPorTermoCore(sr, { termo }) {
       ok: true,
       itens: encontrados.map((e) => ({
         nome: e.nome,
+        laboratorial: true,
         valores: [{ categoria: 'Particular', valor: e.valor_particular }]
       }))
     };
