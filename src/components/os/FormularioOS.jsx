@@ -52,6 +52,22 @@ const taxasCartao = {
   }
 };
 
+// Taxa (em R$) que o cliente paga sobre a parte lançada no cartão
+const calcularTaxaCartao = (forma, bandeira, parcelas, valorBase) => {
+  if (!bandeira || !valorBase || valorBase <= 0) return 0;
+  const taxaPercentual = forma === 'Cartão Crédito'
+    ? taxasCartao.credito[bandeira]?.taxas?.[Number(parcelas) || 1] || 0
+    : taxasCartao.debito[bandeira]?.taxa || 0;
+  if (taxaPercentual <= 0) return 0;
+  return Math.round((valorBase / (1 - taxaPercentual / 100) - valorBase) * 100) / 100;
+};
+
+// Soma das taxas das partes em cartão dentro de "Múltiplas Formas"
+const calcularTaxaMultiplas = (pagamentos) =>
+  pagamentos
+    .filter(p => ['Cartão Crédito', 'Cartão Débito'].includes(p.forma))
+    .reduce((total, p) => total + calcularTaxaCartao(p.forma, p.bandeira, p.parcelas, parseFloat(p.valor) || 0), 0);
+
 const bandeirasCredito = Object.keys(taxasCartao.credito);
 const bandeirasDebito = Object.keys(taxasCartao.debito);
 
@@ -566,18 +582,11 @@ export default function FormularioOS({
     const valorComDesconto = Math.max(0, dados.valor_total - dados.desconto + (dados.acrescimo || 0));
     let novoJuros = 0;
 
-    if (dados.cobrar_taxa && ['Cartão Crédito', 'Cartão Débito'].includes(dados.forma_pagamento) && dados.bandeira_cartao) {
-      let taxaPercentual = 0;
-
-      if (dados.forma_pagamento === 'Cartão Crédito') {
-        taxaPercentual = taxasCartao.credito[dados.bandeira_cartao]?.taxas?.[dados.parcelas] || 0;
-      } else if (dados.forma_pagamento === 'Cartão Débito') {
-        taxaPercentual = taxasCartao.debito[dados.bandeira_cartao]?.taxa || 0;
-      }
-
-      if (taxaPercentual > 0) {
-        novoJuros = Math.round((valorComDesconto / (1 - taxaPercentual / 100) - valorComDesconto) * 100) / 100;
-      }
+    if (dados.cobrar_taxa && ['Cartão Crédito', 'Cartão Débito'].includes(dados.forma_pagamento)) {
+      novoJuros = calcularTaxaCartao(dados.forma_pagamento, dados.bandeira_cartao, dados.parcelas, valorComDesconto);
+    } else if (dados.cobrar_taxa && dados.forma_pagamento === 'Múltiplas Formas') {
+      // A taxa incide só sobre a parte lançada no cartão
+      novoJuros = Math.round(calcularTaxaMultiplas([pagamento1, pagamento2]) * 100) / 100;
     }
 
     const categoriaNome = categorias?.find(c => c.id === agendamento?.categoria_preco_id)?.nome || '';
@@ -603,7 +612,7 @@ export default function FormularioOS({
       valor_repasse_medico: distribuicao.valorRepasseMedico,
       valor_clinica: distribuicao.valorClinica
     }));
-  }, [dados.valor_total, dados.desconto, dados.acrescimo, dados.cobrar_taxa, dados.forma_pagamento, dados.bandeira_cartao, dados.parcelas, dados.percentual_repasse_aplicado, dados.repasse_fixo_aplicado, dados.valor_repasse_laboratorio, agendamento, categorias]);
+  }, [dados.valor_total, dados.desconto, dados.acrescimo, dados.cobrar_taxa, dados.forma_pagamento, dados.bandeira_cartao, dados.parcelas, pagamento1, pagamento2, dados.percentual_repasse_aplicado, dados.repasse_fixo_aplicado, dados.valor_repasse_laboratorio, agendamento, categorias]);
 
   // Calcula o valor do PIX: se múltiplas formas, usa só a parte PIX; senão o valor final
   const calcularValorPix = () => {
@@ -676,17 +685,13 @@ export default function FormularioOS({
       const valorBasePagamento = dados.valor_total - dados.desconto + (dados.acrescimo || 0);
       let jurosPagamento = 0;
 
-      if (dados.cobrar_taxa && pagamentoCartao && dados.bandeira_cartao) {
-        const taxaPercentual = dados.forma_pagamento === 'Cartão Crédito'
-          ? taxasCartao.credito[dados.bandeira_cartao]?.taxas?.[dados.parcelas] || 0
-          : taxasCartao.debito[dados.bandeira_cartao]?.taxa || 0;
-
-        if (taxaPercentual > 0) {
-          jurosPagamento = Math.round((valorBasePagamento / (1 - taxaPercentual / 100) - valorBasePagamento) * 100) / 100;
-        }
+      if (dados.cobrar_taxa && pagamentoCartao) {
+        jurosPagamento = calcularTaxaCartao(dados.forma_pagamento, dados.bandeira_cartao, dados.parcelas, valorBasePagamento);
+      } else if (dados.cobrar_taxa && dados.forma_pagamento === 'Múltiplas Formas') {
+        jurosPagamento = Math.round(calcularTaxaMultiplas([pagamento1, pagamento2]) * 100) / 100;
       }
 
-      const valorFinalPagamento = Math.round((valorBasePagamento + jurosPagamento) * 100) / 100;
+      let valorFinalPagamento = Math.round((valorBasePagamento + jurosPagamento) * 100) / 100;
       const categoriaNormalizada = normalizeString(categoria?.nome || '');
       const isentoImposto = categoriaNormalizada === 'PARTICULAR' ||
         (categoriaNormalizada.includes('CARTAO') && categoriaNormalizada.includes('MAIS') && categoriaNormalizada.includes('VIDA'));
@@ -717,10 +722,16 @@ export default function FormularioOS({
       let pagamentosDetalhados = [];
       if (dados.forma_pagamento === 'Múltiplas Formas') {
         const montarPagamento = (p) => {
-          const item = { forma: p.forma, valor: parseFloat(p.valor) || 0 };
+          const valorBase = parseFloat(p.valor) || 0;
+          const item = { forma: p.forma, valor: valorBase, valor_base: valorBase };
           if (['Cartão Crédito', 'Cartão Débito'].includes(p.forma)) {
             item.bandeira_cartao = p.bandeira || null;
             item.parcelas = p.forma === 'Cartão Crédito' ? (Number(p.parcelas) || 1) : 1;
+            // Com "cobrar taxa", a maquininha recebe o valor já acrescido da taxa
+            if (dados.cobrar_taxa) {
+              const taxa = calcularTaxaCartao(p.forma, p.bandeira, p.parcelas, valorBase);
+              item.valor = Math.round((valorBase + taxa) * 100) / 100;
+            }
           }
           return item;
         };
@@ -742,16 +753,21 @@ export default function FormularioOS({
         }
 
         // Validar: precisa das duas formas preenchidas e a soma deve bater com o total
-        const somaPagamentos = pagamentosDetalhados.reduce((sum, p) => sum + p.valor, 0);
-        if (pagamentosDetalhados.length < 2 || Math.abs(somaPagamentos - dados.valor_final) > 0.01) {
+        // A soma informada é comparada ao valor sem taxa; a taxa é somada depois
+        const somaPagamentos = pagamentosDetalhados.reduce((sum, p) => sum + (p.valor_base ?? p.valor), 0);
+        if (pagamentosDetalhados.length < 2 || Math.abs(somaPagamentos - valorBasePagamento) > 0.01) {
           toast({
             title: "Formas de pagamento incompletas",
-            description: `Preencha as duas formas de pagamento e certifique-se de que a soma (R$ ${somaPagamentos.toFixed(2)}) seja igual ao total de R$ ${dados.valor_final.toFixed(2)}.`,
+            description: `Preencha as duas formas de pagamento e certifique-se de que a soma (R$ ${somaPagamentos.toFixed(2)}) seja igual ao total de R$ ${valorBasePagamento.toFixed(2)}.`,
             variant: "destructive"
           });
           setSalvando(false);
           return;
         }
+
+        // valor_base é só de controle interno, não vai para a OS
+        pagamentosDetalhados = pagamentosDetalhados.map(({ valor_base, ...resto }) => resto);
+        valorFinalPagamento = Math.round((valorBasePagamento + jurosPagamento) * 100) / 100;
       }
 
       // Parte paga com cartão dentro de "Múltiplas Formas" (enviada à maquininha)
@@ -1242,12 +1258,33 @@ export default function FormularioOS({
                   {/* Total das formas */}
                   {(pagamento1.valor || pagamento2.valor) && (
                     <div className="pt-2 border-t border-purple-300">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-purple-800">Total informado:</span>
-                        <span className="font-bold text-purple-900">
-                          R$ {((parseFloat(pagamento1.valor) || 0) + (parseFloat(pagamento2.valor) || 0)).toFixed(2).replace('.', ',')}
-                        </span>
-                      </div>
+                      {(() => {
+                        const informado = (parseFloat(pagamento1.valor) || 0) + (parseFloat(pagamento2.valor) || 0);
+                        const base = Math.max(0, dados.valor_total - dados.desconto + (dados.acrescimo || 0));
+                        const diferenca = Math.round((base - informado) * 100) / 100;
+                        return (
+                          <>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-purple-800">Total informado (sem taxa):</span>
+                              <span className="font-bold text-purple-900">
+                                R$ {informado.toFixed(2).replace('.', ',')} de R$ {base.toFixed(2).replace('.', ',')}
+                              </span>
+                            </div>
+                            {Math.abs(diferenca) > 0.01 && (
+                              <p className="text-xs text-red-600 mt-1">
+                                {diferenca > 0
+                                  ? `Faltam R$ ${diferenca.toFixed(2).replace('.', ',')} para fechar o total.`
+                                  : `Ultrapassou R$ ${Math.abs(diferenca).toFixed(2).replace('.', ',')} do total.`}
+                              </p>
+                            )}
+                            {dados.cobrar_taxa && dados.juros > 0 && (
+                              <p className="text-xs text-purple-800 mt-1">
+                                Taxa do cartão: + R$ {dados.juros.toFixed(2).replace('.', ',')} (cobrada na parte do cartão)
+                              </p>
+                            )}
+                          </>
+                        );
+                      })()}
                     </div>
                   )}
                 </div>
