@@ -271,7 +271,8 @@ function informarPreco(resolvido, categoria) {
     : '';
   return resposta(
     linhas.join('\n\n') + pendentes + '\n\nQuer que eu veja um horário disponível?',
-    'OCIOSO'
+    'OCIOSO',
+    { orcamento_nomes: blocos.map((b) => b.nome) }
   );
 }
 
@@ -460,6 +461,24 @@ export async function processarTurno(sr, { contato, texto, mediaUrl }) {
     .some((a) => normalizarTexto(texto || '') === a || normalizarTexto(texto || '').startsWith(a + ' '));
   if (dados.medico_id && !expirado && (extraido.confirmacao || afirmativo || extraido.intencao === 'AGENDAR')) {
     return await pedirHorario(sr, dados.especialidade, { id: dados.medico_id, nome: dados.medico_nome });
+  }
+
+  // Acabamos de passar o valor de um exame/procedimento e o cliente aceitou ver
+  // horário: agenda o próprio serviço, sem perguntar especialidade de novo.
+  const nomesOrcados = Array.isArray(dados.orcamento_nomes) ? dados.orcamento_nomes : [];
+  if (nomesOrcados.length > 0 && !expirado && (extraido.confirmacao || afirmativo || extraido.intencao === 'AGENDAR')) {
+    const esp = await especialidadesDisponiveisCore(sr);
+    const disponiveis = esp.especialidades || [];
+    const alvo = disponiveis.find((e) => nomesOrcados.some((n) => {
+      const nn = normalizarTexto(n);
+      const ne = normalizarTexto(e);
+      return nn === ne || nn.includes(ne) || ne.includes(nn);
+    }));
+    if (alvo) return await pedirMedico(sr, alvo);
+    return resposta(
+      'Para agendar ' + nomesOrcados[0] + ' vou chamar alguém da recepção, que confirma o melhor horário com você. Só um instante!',
+      'AGUARDANDO_HUMANO'
+    );
   }
 
   // Pergunta sobre valor/adesão do próprio cartão também cai aqui (não é orçamento
