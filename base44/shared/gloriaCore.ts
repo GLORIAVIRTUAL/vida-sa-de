@@ -641,6 +641,25 @@ export async function createAppointmentCore(sr, entrada) {
       agendamento_id: agendamento.id,
       resultado: { agendamento_id: agendamento.id, data, hora }
     });
+
+    // Notificação visual/sonora no sistema (painel) para agendamentos da Glória.
+    const [ano, mes, dia] = String(data).split('-');
+    await sr.entities.Notification.create({
+      type: 'novo_agendamento',
+      message: (paciente_nome || paciente.nome) + ' — ' + (medico ? medico.nome + ' — ' : '') +
+        dia + '/' + mes + '/' + ano + ' às ' + hora,
+      data: {
+        agendamento_id: agendamento.id,
+        agendado_por,
+        agendado_por_tipo,
+        paciente_nome: paciente_nome || paciente.nome,
+        medico_nome: medico ? medico.nome : null,
+        data_agendamento: data,
+        horario: hora
+      },
+      is_read: false
+    }).catch(() => {});
+
     return ok({ agendamento, idempotente: false });
   } catch (erro) {
     await liberarLock(sr, travado.lock, 'Falha');
