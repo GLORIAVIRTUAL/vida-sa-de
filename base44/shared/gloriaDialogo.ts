@@ -325,6 +325,22 @@ export async function processarTurno(sr, { contato, texto, mediaUrl }) {
   const perguntaCartao = ['cartao mais vida', 'mais vida saude', 'cartao de vcs', 'cartao de voces', 'plano de vcs', 'plano de voces', 'aceitam plano', 'aceita plano', 'tem plano', 'tem cartao', 'cartao do plano']
     .some((k) => txt.includes(k));
 
+  // Continuação do assunto do cartão: "quero mais informações", "quais os
+  // benefícios", "como funciona" — responde com o material cadastrado.
+  const seguirCartao = !!dados.assunto_cartao && !expirado &&
+    ['mais informac', 'informac', 'beneficio', 'como funciona', 'o que inclui', 'o que cobre', 'cobertura', 'detalhes', 'saber mais', 'me explica']
+      .some((k) => txt.includes(k));
+  if (seguirCartao) {
+    const detalhes = await infoCartaoCore(sr, { completo: true });
+    if (detalhes) {
+      return resposta(
+        detalhes + '\n\nQuer que eu chame alguém da recepção para fazer seu cartão?',
+        'OCIOSO',
+        { assunto_cartao: true }
+      );
+    }
+  }
+
   // O cliente mudou de assunto no meio de um fluxo: atende o novo pedido em vez
   // de insistir na etapa anterior.
   const estadosDesviaveis = [
@@ -497,7 +513,8 @@ export async function processarTurno(sr, { contato, texto, mediaUrl }) {
     if (info) {
       return resposta(
         info + '\n\nQuer que eu chame alguém da recepção para fazer seu cartão?',
-        'OCIOSO'
+        'OCIOSO',
+        { assunto_cartao: true }
       );
     }
   }
