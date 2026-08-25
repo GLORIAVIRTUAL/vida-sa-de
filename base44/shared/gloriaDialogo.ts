@@ -67,11 +67,22 @@ async function pedirMedico(sr, especialidade) {
   const medicos = res.medicos || [];
   if (medicos.length === 0) return resposta(PARA_HUMANO, 'AGUARDANDO_HUMANO');
   if (medicos.length === 1) return await pedirHorario(sr, especialidade, medicos[0]);
-  const nomes = medicos.map((m) => m.nome);
+  // Oferece o PRIMEIRO horário livre de cada profissional (sem listar tudo).
+  const sugestoes = [];
+  for (const m of medicos.slice(0, 8)) {
+    const r = await proximosHorariosCore(sr, { medico_id: m.id, maximo: 1 });
+    const s = (r.sugestoes || [])[0];
+    if (s) sugestoes.push({ ...s, medico_id: m.id, medico_nome: m.nome });
+  }
+  if (sugestoes.length === 0) {
+    return resposta('Não encontrei horários livres de ' + especialidade + ' nos próximos dias. Vou pedir para a recepção te ajudar.', 'AGUARDANDO_HUMANO');
+  }
+  const rotulos = sugestoes.map((s) => s.medico_nome + ' — ' + dataBr(s.data, s.hora));
   return resposta(
-    'Com qual profissional de ' + especialidade + ' você prefere?\n\n' + listar(nomes) + '\n\nResponda com o número.',
-    'AGENDAMENTO_MEDICO',
-    { especialidade, opcoes: nomes, medicos: medicos.map((m) => ({ id: m.id, nome: m.nome })) }
+    'Estes são os primeiros horários disponíveis em ' + especialidade + ':\n\n' + listar(rotulos) +
+    '\n\nResponda com o número do horário desejado.',
+    'AGENDAMENTO_SELECAO_OPCAO',
+    { especialidade, opcoes: rotulos, sugestoes }
   );
 }
 
@@ -305,8 +316,24 @@ export async function processarTurno(sr, { contato, texto, mediaUrl }) {
     return resposta(PARA_HUMANO, 'AGUARDANDO_HUMANO');
   }
 
+  // Pergunta sobre o Cartão Mais Vida Saúde: responde com o material cadastrado.
+  const txt = normalizarTexto(texto || '');
+  const perguntaCartao = ['cartao mais vida', 'mais vida saude', 'cartao de vcs', 'cartao de voces', 'plano de vcs', 'plano de voces', 'aceitam plano', 'aceita plano', 'tem plano', 'tem cartao', 'cartao do plano']
+    .some((k) => txt.includes(k));
+
+  // O cliente mudou de assunto no meio de um fluxo: atende o novo pedido em vez
+  // de insistir na etapa anterior.
+  const estadosDesviaveis = [
+    'AGENDAMENTO_ESPECIALIDADE', 'AGENDAMENTO_MEDICO', 'AGENDAMENTO_SELECAO_OPCAO',
+    'AGENDAMENTO_CONFIRMACAO', 'CANCELAMENTO_SELECAO', 'CANCELAMENTO_CONFIRMACAO', 'CONFIRMACAO_CONSULTA'
+  ];
+  const numeroPuro = /^\d+$/.test(String(texto || '').trim());
+  const mudouAssunto = estadosDesviaveis.includes(estadoAtual) && !numeroPuro &&
+    !extraido.confirmacao && !extraido.negativa &&
+    (perguntaCartao || ['PRECO', 'ORCAMENTO', 'DIAS_ATENDIMENTO'].includes(extraido.intencao));
+
   // Etapas em andamento têm prioridade sobre nova classificação de intenção.
-  switch (estadoAtual) {
+  switch (mudouAssunto ? 'OCIOSO' : estadoAtual) {
     case 'AGENDAMENTO_ESPECIALIDADE': {
       const i = escolher(dados.opcoes || [], extraido, texto);
       if (i < 0) return resposta('Não entendi. Responda com o número da especialidade, por favor.', estadoAtual, dados);
@@ -324,8 +351,8 @@ export async function processarTurno(sr, { contato, texto, mediaUrl }) {
       const escolhido = (dados.sugestoes || [])[i];
       if (i < 0 || !escolhido) return resposta('Não entendi. Responda com o número do horário, por favor.', estadoAtual, dados);
       const novos = {
-        medico_id: dados.medico_id,
-        medico_nome: dados.medico_nome,
+        medico_id: escolhido.medico_id || dados.medico_id,
+        medico_nome: escolhido.medico_nome || dados.medico_nome,
         especialidade: dados.especialidade,
         data: escolhido.data,
         hora: escolhido.hora
@@ -435,10 +462,6 @@ export async function processarTurno(sr, { contato, texto, mediaUrl }) {
     return await pedirHorario(sr, dados.especialidade, { id: dados.medico_id, nome: dados.medico_nome });
   }
 
-  // Pergunta sobre o Cartão Mais Vida Saúde: responde com o material cadastrado.
-  const txt = normalizarTexto(texto || '');
-  const perguntaCartao = ['cartao mais vida', 'mais vida saude', 'cartao de vcs', 'cartao de voces', 'plano de vcs', 'plano de voces', 'aceitam plano', 'aceita plano', 'tem plano', 'tem cartao']
-    .some((k) => txt.includes(k));
   if (perguntaCartao && !['AGENDAR', 'CANCELAR', 'REMARCAR', 'CONFIRMAR', 'PRECO', 'ORCAMENTO'].includes(extraido.intencao)) {
     const info = await infoCartaoCore(sr);
     if (info) {
