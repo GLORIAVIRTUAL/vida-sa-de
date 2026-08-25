@@ -462,7 +462,11 @@ export async function processarTurno(sr, { contato, texto, mediaUrl }) {
     return await pedirHorario(sr, dados.especialidade, { id: dados.medico_id, nome: dados.medico_nome });
   }
 
-  if (perguntaCartao && !['AGENDAR', 'CANCELAR', 'REMARCAR', 'CONFIRMAR', 'PRECO', 'ORCAMENTO'].includes(extraido.intencao)) {
+  // Pergunta sobre valor/adesão do próprio cartão também cai aqui (não é orçamento
+  // de exame), desde que nenhum outro serviço tenha sido pedido.
+  const pediuOutroServico = (Array.isArray(extraido.itens_orcamento) ? extraido.itens_orcamento : [])
+    .some((i) => { const n = normalizarTexto(i); return !n.includes('cartao') && !n.includes('plano'); });
+  if (perguntaCartao && !pediuOutroServico && !['AGENDAR', 'CANCELAR', 'REMARCAR', 'CONFIRMAR'].includes(extraido.intencao)) {
     const info = await infoCartaoCore(sr);
     if (info) {
       return resposta(
@@ -474,8 +478,15 @@ export async function processarTurno(sr, { contato, texto, mediaUrl }) {
 
   // Estado OCIOSO: nova intenção.
   switch (extraido.intencao) {
-    case 'AGENDAR':
+    case 'AGENDAR': {
+      // Especialidade já dita na mensagem: vai direto aos horários.
+      if (extraido.especialidade) {
+        const esp = await especialidadesDisponiveisCore(sr);
+        const alvo = (esp.especialidades || []).find((e) => normalizarTexto(e) === normalizarTexto(extraido.especialidade));
+        if (alvo) return await pedirMedico(sr, alvo);
+      }
       return await pedirEspecialidade(sr);
+    }
     case 'CANCELAR':
       return await listarAgendamentos(sr, telefone, 'CANCELAR', 'Qual consulta você quer cancelar?');
     case 'REMARCAR':
