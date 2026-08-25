@@ -611,8 +611,8 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
     try {
       await base44.entities.Contato.update(contatoSelecionado.id, {
         atendimento_humano: novoModo,
-        // Limpar atendente se desativando modo humano
-        ...(novoModo ? {} : { atendente_atual: null, atendente_id: null })
+        // Limpar atendente e liberar a Glória se desativando modo humano
+        ...(novoModo ? {} : { atendente_atual: null, atendente_id: null, gloria_estado: 'OCIOSO', gloria_estado_dados: {} })
       });
       setModoHumano(novoModo);
 

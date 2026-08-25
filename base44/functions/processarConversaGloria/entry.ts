@@ -10,8 +10,9 @@ import { transcreverAudio } from '../../shared/gloriaLlm.ts';
 const LOTE = 5;
 const LOCK_SEGUNDOS = 120;
 const MAX_TENTATIVAS = 3;
-// Glória desligada: todas as mensagens vão para atendimento manual.
-const IA_ATIVA = false;
+// A Glória responde apenas nas conversas onde o atendente desativou o modo
+// humano (atendimento_humano = false). Por padrão os contatos ficam manuais.
+const IA_ATIVA = true;
 
 export default async function (req: Request): Promise<Response> {
   try {
@@ -72,9 +73,6 @@ export default async function (req: Request): Promise<Response> {
         // IA desligada (atendimento manual) ou atendimento humano em andamento:
         // registra a mensagem e não responde.
         if (!IA_ATIVA || contato.atendimento_humano === true) {
-          if (!IA_ATIVA && contato.atendimento_humano !== true) {
-            await sr.entities.Contato.update(contato.id, { atendimento_humano: true, gloria_estado: 'AGUARDANDO_HUMANO' });
-          }
           await acrescentarHistorico(sr, contato, {
             role: 'user', content: job.texto || '', messageId: job.message_id,
             mediaType: job.media_tipo, mediaUrl: job.media_url
@@ -106,6 +104,11 @@ export default async function (req: Request): Promise<Response> {
         }
 
         const contatoAtual = await sr.entities.Contato.get(contato.id);
+        // Atendente devolveu a conversa para a Glória: sai do estado de espera.
+        if (contatoAtual.gloria_estado === 'AGUARDANDO_HUMANO') {
+          contatoAtual.gloria_estado = 'OCIOSO';
+          contatoAtual.gloria_estado_dados = {};
+        }
         const turno = await processarTurno(sr, { contato: contatoAtual, texto, mediaUrl: job.media_url });
 
         if (!turno) {
