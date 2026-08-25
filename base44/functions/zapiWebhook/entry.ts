@@ -125,6 +125,10 @@ export default async function (req: Request): Promise<Response> {
       status: 'Pendente'
     });
 
+    // Acumulador de 5s: dá tempo do cliente mandar várias linhas e a Glória
+    // responder tudo de uma vez (quem chegar depois processa o grupo inteiro).
+    await new Promise((r) => setTimeout(r, 5500));
+
     // Processamento imediato: responde na hora, sem esperar a automação.
     try {
       const tokenInterno = Deno.env.get('GLORIA_INTERNAL_TOKEN');

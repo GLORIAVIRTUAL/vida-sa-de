@@ -10,6 +10,8 @@ import { transcreverAudio } from '../../shared/gloriaLlm.ts';
 const LOTE = 5;
 const LOCK_SEGUNDOS = 120;
 const MAX_TENTATIVAS = 3;
+// Acumulador: só responde 5s após a última mensagem, para agrupar várias linhas.
+const DEBOUNCE_MS = 5000;
 // A Glória responde apenas nas conversas onde o atendente desativou o modo
 // humano (atendimento_humano = false). Por padrão os contatos ficam manuais.
 const IA_ATIVA = true;
@@ -43,10 +45,22 @@ export default async function (req: Request): Promise<Response> {
     let falhas = 0;
     const contatosVistos = new Set();
 
-    for (const job of elegiveis) {
-      // Um job por contato por rodada, preservando a ordem das mensagens.
-      if (contatosVistos.has(job.telefone_canonico)) continue;
-      contatosVistos.add(job.telefone_canonico);
+    for (const bruto of elegiveis) {
+      // Um contato por rodada, preservando a ordem das mensagens.
+      if (contatosVistos.has(bruto.telefone_canonico)) continue;
+      contatosVistos.add(bruto.telefone_canonico);
+
+      // Acumulador: espera DEBOUNCE_MS após a última mensagem do contato para
+      // responder todas as linhas de uma vez.
+      const grupo = pendentes
+        .filter((j) => j.telefone_canonico === bruto.telefone_canonico && j.status === 'Pendente' &&
+          !(j.lock_expira_em && new Date(j.lock_expira_em).getTime() > agora))
+        .sort((a, b) => String(a.created_date).localeCompare(String(b.created_date)));
+      const ultima = grupo[grupo.length - 1] || bruto;
+      if (agora - new Date(ultima.created_date).getTime() < DEBOUNCE_MS) continue;
+
+      const job = ultima;
+      const anteriores = grupo.slice(0, -1);
 
       const token = gerarToken(12);
       await sr.entities.GloriaJob.update(job.id, {
@@ -89,6 +103,26 @@ export default async function (req: Request): Promise<Response> {
         if (!texto && job.media_tipo === 'audio' && job.media_url) {
           texto = await transcreverAudio(sr, { audioUrl: job.media_url });
         }
+
+        // Mensagens anteriores do mesmo contato entram no mesmo turno: ficam no
+        // histórico e o texto delas é lido junto com a última mensagem.
+        const partes = [];
+        for (const antigo of anteriores) {
+          let t = antigo.texto || '';
+          if (!t && antigo.media_tipo === 'audio' && antigo.media_url) {
+            t = await transcreverAudio(sr, { audioUrl: antigo.media_url });
+          }
+          await acrescentarHistorico(sr, contato, {
+            role: 'user', content: t, messageId: antigo.message_id,
+            mediaType: antigo.media_tipo, mediaUrl: antigo.media_url
+          });
+          await sr.entities.GloriaJob.update(antigo.id, {
+            status: 'Ignorado', erro: 'AGRUPADO',
+            lock_token: null, lock_expira_em: null, processado_em: new Date().toISOString()
+          });
+          if (t) partes.push(t);
+        }
+        if (partes.length > 0) texto = partes.concat(texto ? [texto] : []).join('\n');
 
         const registro = await acrescentarHistorico(sr, contato, {
           role: 'user', content: texto, messageId: job.message_id,
