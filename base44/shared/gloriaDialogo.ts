@@ -12,6 +12,7 @@ import { medicoPorNomeCore, diasAtendimentoCore } from './gloriaHorariosMedico.t
 import { precoPorTermoCore, precoConsultaPorEspecialidadeCore, categoriasPrecoCore } from './gloriaPrecos.ts';
 import { extrairIntencao } from './gloriaLlm.ts';
 import { infoCartaoCore } from './gloriaCartao.ts';
+import { resolverRequisicaoArquivo } from './gloriaRequisicao.ts';
 
 const EXPIRA_MINUTOS = 60;
 
@@ -181,6 +182,10 @@ async function pedirConvenio(sr, extraido, texto) {
   const resolvido = await resolverBlocos(sr, extraido, texto);
   if (resolvido.blocos.length === 0) return resposta(PARA_HUMANO, 'AGUARDANDO_HUMANO');
 
+  return await perguntarConvenio(sr, resolvido, texto);
+}
+
+async function perguntarConvenio(sr, resolvido, texto) {
   const nomes = await categoriasPrecoCore(sr);
   const convenios = nomes.filter((n) => normalizarTexto(n) !== 'particular');
 
@@ -259,6 +264,15 @@ function informarPreco(resolvido, categoria) {
   // Termos não localizados só interessam quando nada foi encontrado; se já
   // achamos valores, não confundir o cliente com variações do mesmo pedido.
   const naoEncontrados = [];
+  // Itens da requisição que não existem no cadastro: a clínica não realiza.
+  const naoRealizados = Array.isArray(resolvido.naoRealizados) ? resolvido.naoRealizados.slice() : [];
+  if (blocos.length === 0 && naoRealizados.length > 0) {
+    return resposta(
+      'Verifiquei sua requisição: não realizamos ' + naoRealizados.join(', ') + ' aqui na clínica.\n\n' +
+      'Se quiser, posso chamar alguém da recepção para te orientar.',
+      'OCIOSO'
+    );
+  }
   if (blocos.length === 0) return resposta(PARA_HUMANO, 'AGUARDANDO_HUMANO');
 
   // Mostra só Particular e o convênio informado pelo cliente.
@@ -273,9 +287,12 @@ function informarPreco(resolvido, categoria) {
     linhas.push('*' + b.nome + '*\n' + valores.map((v) => '• ' + v.categoria + ': ' + reais(v.valor)).join('\n'));
   }
   if (linhas.length === 0) return resposta(PARA_HUMANO, 'AGUARDANDO_HUMANO');
-  const pendentes = naoEncontrados.length
+  let pendentes = naoEncontrados.length
     ? '\n\nSobre ' + naoEncontrados.join(', ') + ', a recepção confirma o valor para você.'
     : '';
+  if (naoRealizados.length > 0) {
+    pendentes += '\n\n⚠️ Não realizamos aqui na clínica: ' + naoRealizados.join(', ') + '.';
+  }
   // Exames laboratoriais são por ordem de chegada: não há agendamento.
   const soLaboratorial = blocos.every((b) => b.laboratorial);
   const fecho = soLaboratorial
@@ -314,12 +331,25 @@ async function informarDiasAtendimento(sr, nomeMedico) {
 
 // ---------------------------------------------------------------- turno
 
-export async function processarTurno(sr, { contato, texto, mediaUrl }) {
+export async function processarTurno(sr, { contato, texto, mediaUrl, mediaTipo }) {
   const telefone = normalizarTelefone(contato.telefone_normalizado || contato.telefone);
   const estado = contato.gloria_estado || 'OCIOSO';
   const dados = contato.gloria_estado_dados || {};
   const expirado = contato.gloria_estado_expira_em && new Date(contato.gloria_estado_expira_em).getTime() < Date.now();
   const estadoAtual = expirado ? 'OCIOSO' : estado;
+
+  // Requisição de exames em imagem ou PDF: lê os exames pedidos e orça com os
+  // valores cadastrados. O que não existe no cadastro é informado como não realizado.
+  if (mediaUrl && (mediaTipo === 'image' || mediaTipo === 'document')) {
+    const resolvido = await resolverRequisicaoArquivo(sr, { fileUrl: mediaUrl });
+    if (resolvido.vazio) {
+      return resposta(
+        'Recebi seu arquivo, mas não consegui ler os exames solicitados. Pode enviar uma foto mais nítida do pedido? Se preferir, chamo alguém da recepção.',
+        'OCIOSO'
+      );
+    }
+    return await perguntarConvenio(sr, resolvido, texto);
+  }
 
   const extraido = await extrairIntencao(sr, {
     texto,
@@ -534,6 +564,16 @@ export async function processarTurno(sr, { contato, texto, mediaUrl }) {
         { assunto_cartao: true }
       );
     }
+  }
+
+  // Cliente quer enviar a requisição/pedido de exames: pode mandar por aqui.
+  if (['requisicao', 'pedido de exame', 'pedido do medico', 'pedido medico', 'encaminhamento']
+      .some((k) => txt.includes(k)) &&
+      ['mandar', 'enviar', 'manda', 'envio', 'posso', 'foto', 'pdf', 'anexar'].some((k) => txt.includes(k))) {
+    return resposta(
+      'Pode mandar sim! Envie a foto ou o PDF da requisição aqui mesmo que eu leio os exames e já te passo o orçamento.',
+      'OCIOSO'
+    );
   }
 
   // Pergunta sobre horário de funcionamento da clínica.

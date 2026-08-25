@@ -109,7 +109,7 @@ export default async function (req: Request): Promise<Response> {
           contatoAtual.gloria_estado = 'OCIOSO';
           contatoAtual.gloria_estado_dados = {};
         }
-        const turno = await processarTurno(sr, { contato: contatoAtual, texto, mediaUrl: job.media_url });
+        const turno = await processarTurno(sr, { contato: contatoAtual, texto, mediaUrl: job.media_url, mediaTipo: job.media_tipo });
 
         if (!turno) {
           await sr.entities.GloriaJob.update(job.id, {
