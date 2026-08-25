@@ -87,10 +87,22 @@ export default async function (req: Request): Promise<Response> {
         // IA desligada (atendimento manual) ou atendimento humano em andamento:
         // registra a mensagem e não responde.
         if (!IA_ATIVA || contato.atendimento_humano === true) {
-          await acrescentarHistorico(sr, contato, {
-            role: 'user', content: job.texto || '', messageId: job.message_id,
-            mediaType: job.media_tipo, mediaUrl: job.media_url
-          });
+          // Registra todas as mensagens do grupo, na ordem, mantendo o histórico
+          // local sincronizado (senão a imagem enviada antes do texto se perde).
+          for (const item of grupo) {
+            const gravadoHumano = await acrescentarHistorico(sr, contato, {
+              role: 'user', content: item.texto || '', messageId: item.message_id,
+              mediaType: item.media_tipo, mediaUrl: item.media_url
+            });
+            contato.historico_mensagens = gravadoHumano.historico;
+            contato.total_mensagens = (contato.total_mensagens || 0) + 1;
+            if (item.id !== job.id) {
+              await sr.entities.GloriaJob.update(item.id, {
+                status: 'Ignorado', erro: 'ATENDIMENTO_HUMANO',
+                lock_token: null, lock_expira_em: null, processado_em: new Date().toISOString()
+              });
+            }
+          }
           await sr.entities.GloriaJob.update(job.id, {
             status: 'Ignorado', erro: 'ATENDIMENTO_HUMANO',
             lock_token: null, lock_expira_em: null, processado_em: new Date().toISOString()
@@ -112,10 +124,14 @@ export default async function (req: Request): Promise<Response> {
           if (!t && antigo.media_tipo === 'audio' && antigo.media_url) {
             t = await transcreverAudio(sr, { audioUrl: antigo.media_url });
           }
-          await acrescentarHistorico(sr, contato, {
+          // O histórico local precisa acompanhar cada gravação: sem isso a
+          // mensagem anterior (ex: a imagem enviada antes do texto) é sobrescrita.
+          const gravado = await acrescentarHistorico(sr, contato, {
             role: 'user', content: t, messageId: antigo.message_id,
             mediaType: antigo.media_tipo, mediaUrl: antigo.media_url
           });
+          contato.historico_mensagens = gravado.historico;
+          contato.total_mensagens = (contato.total_mensagens || 0) + 1;
           await sr.entities.GloriaJob.update(antigo.id, {
             status: 'Ignorado', erro: 'AGRUPADO',
             lock_token: null, lock_expira_em: null, processado_em: new Date().toISOString()
