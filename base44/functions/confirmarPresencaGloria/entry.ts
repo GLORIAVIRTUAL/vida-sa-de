@@ -37,8 +37,8 @@ async function gerarLink(base44, req, body) {
     confirmacao_token_hash: hash,
     confirmacao_token_expira_em: expiraEm
   });
-  // Domínio público do app (mesmo usado nos links enviados hoje aos pacientes).
-  const link = 'https://clinica-plus-7629e61a.base44.app/functions/confirmarPresencaGloria?t=' + token;
+  // Domínio público deste app (a origem interna da função não é acessível ao paciente).
+  const link = 'https://gloria-clinica-padrao-ed1bd7ea.base44.app/functions/confirmarPresencaGloria?t=' + token;
   return Response.json({ ok: true, url: link, expira_em: expiraEm });
 }
 
