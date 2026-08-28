@@ -55,10 +55,48 @@ Deno.serve(async (req) => {
           throw new Error(result.message || result.error?.message || `HTTP ${response.status}`);
         }
 
+        const timestamp = new Date().toISOString();
+
         await base44.asServiceRole.entities.ScheduledNotification.update(notification.id, {
           status: 'sent',
-          sent_at: new Date().toISOString()
+          sent_at: timestamp
         });
+
+        // Registrar no log e no histórico do contato para aparecer na conversa
+        await base44.asServiceRole.entities.NotificationLog.create({
+          tipo_canal: 'whatsapp',
+          api_message_id: result.zapiMessageId || result.messageId || result.id || null,
+          telefone_destino: telefone,
+          mensagem_enviada: notification.mensagem,
+          agendamento_id: notification.agendamento_id || null,
+          status_entrega: 'enviado',
+          timestamp_envio: timestamp
+        });
+
+        try {
+          const telSem55 = telefone.startsWith('55') ? telefone.slice(2) : telefone;
+          const contatos = await base44.asServiceRole.entities.Contato.filter({ telefone });
+          const contato = contatos?.[0]
+            || (await base44.asServiceRole.entities.Contato.filter({ telefone: telSem55 }))?.[0];
+          if (contato) {
+            const historico = contato.historico_mensagens || [];
+            historico.push({
+              role: 'assistant',
+              content: `📢 [Notificação agendada]\n${notification.mensagem}`,
+              timestamp,
+              humano: true
+            });
+            await base44.asServiceRole.entities.Contato.update(contato.id, {
+              historico_mensagens: historico,
+              ultima_resposta: notification.mensagem,
+              ultima_interacao: timestamp,
+              atendimento_humano: true,
+              conversa_finalizada: false
+            });
+          }
+        } catch (histError) {
+          console.error('⚠️ Erro ao registrar no histórico do contato:', histError.message);
+        }
 
         processedCount++;
       } catch (error) {
