@@ -101,6 +101,22 @@ export default async function (req: Request): Promise<Response> {
       }
     }
 
+    // Tipos sem arquivo (contato, localização, enquete): registra como texto para
+    // o atendente ver que algo chegou.
+    if (!texto && !mediaUrl) {
+      const contatoVcard = payload.contact || payload.vcard || payload.contactMessage;
+      const local = payload.location || payload.locationMessage;
+      if (contatoVcard) {
+        texto = '[Contato recebido] ' + String(contatoVcard.displayName || contatoVcard.name || contatoVcard.phones || '').slice(0, 200);
+      } else if (local) {
+        texto = '[Localização recebida] ' + [local.address, local.latitude, local.longitude].filter(Boolean).join(' ');
+      } else if (payload.poll || payload.pollMessage) {
+        texto = '[Enquete recebida]';
+      } else if (payload.reaction || payload.reactionMessage) {
+        texto = '[Reação] ' + String((payload.reaction || payload.reactionMessage).value || '');
+      }
+    }
+
     if (!texto && !mediaUrl) {
       // Nada reconhecido: guarda o payload para investigação em vez de descartar.
       try {
