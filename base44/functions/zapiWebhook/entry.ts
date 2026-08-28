@@ -131,26 +131,9 @@ export default async function (req: Request): Promise<Response> {
       return Response.json({ message: 'Mensagem sem conteúdo' });
     }
 
-    // Upload permanente: a URL da Z-API expira.
-    if (mediaUrl) {
-      try {
-        const resposta = await fetch(mediaUrl, { redirect: 'follow' });
-        if (resposta.ok) {
-          const blob = await resposta.blob();
-          if (blob.size > 0) {
-            const ext = { image: 'jpg', document: 'pdf', audio: 'ogg', video: 'mp4' }[mediaTipo] || 'bin';
-            const mime = { image: 'image/jpeg', document: 'application/pdf', audio: 'audio/ogg', video: 'video/mp4' }[mediaTipo] || blob.type;
-            const arquivo = new File([blob], 'whatsapp_' + messageId + '.' + ext, { type: mime });
-            const enviado = await sr.integrations.Core.UploadFile({ file: arquivo });
-            if (enviado?.file_url) mediaUrl = enviado.file_url;
-          }
-        }
-      } catch (erroUpload) {
-        console.warn('zapiWebhook: falha no upload da mídia', erroUpload && erroUpload.message);
-      }
-    }
-
-    await sr.entities.GloriaJob.create({
+    // Registra a mensagem primeiro, já com a URL da Z-API: se o upload da mídia
+    // falhar (arquivos grandes, ex: 16 MB), o envio não se perde.
+    const job = await sr.entities.GloriaJob.create({
       chave_evento: chaveEvento,
       correlation_id: gerarToken(8),
       canal: 'whatsapp',
@@ -162,6 +145,28 @@ export default async function (req: Request): Promise<Response> {
       media_url: mediaUrl,
       status: 'Pendente'
     });
+
+    // Upload permanente: a URL da Z-API expira.
+    if (mediaUrl) {
+      try {
+        const resposta = await fetch(mediaUrl, { redirect: 'follow' });
+        if (resposta.ok) {
+          const blob = await resposta.blob();
+          if (blob.size > 0) {
+            const ext = { image: 'jpg', document: 'pdf', audio: 'ogg', video: 'mp4' }[mediaTipo] || 'bin';
+            const mime = { image: 'image/jpeg', document: 'application/pdf', audio: 'audio/ogg', video: 'video/mp4' }[mediaTipo] || blob.type;
+            const arquivo = new File([blob], 'whatsapp_' + messageId + '.' + ext, { type: mime });
+            const enviado = await sr.integrations.Core.UploadFile({ file: arquivo });
+            if (enviado?.file_url) {
+              mediaUrl = enviado.file_url;
+              await sr.entities.GloriaJob.update(job.id, { media_url: mediaUrl });
+            }
+          }
+        }
+      } catch (erroUpload) {
+        console.warn('zapiWebhook: falha no upload da mídia', erroUpload && erroUpload.message);
+      }
+    }
 
     // Acumulador de 5s: dá tempo do cliente mandar várias linhas e a Glória
     // responder tudo de uma vez (quem chegar depois processa o grupo inteiro).
