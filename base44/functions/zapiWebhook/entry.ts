@@ -70,26 +70,48 @@ export default async function (req: Request): Promise<Response> {
     }
 
     // Texto e mídia.
-    let texto = String(payload.text?.message || payload.body || payload.message || '').trim();
+    let texto = String(payload.text?.message || payload.body || payload.message?.text || (typeof payload.message === 'string' ? payload.message : '') || '').trim();
     let mediaTipo = null;
     let mediaUrl = null;
-    if (payload.image) {
-      mediaTipo = 'image';
-      mediaUrl = payload.image.imageUrl || payload.image.url;
-      texto = texto || String(payload.image.caption || '');
-    } else if (payload.document) {
-      mediaTipo = 'document';
-      mediaUrl = payload.document.documentUrl || payload.document.url;
-    } else if (payload.audio) {
-      mediaTipo = 'audio';
-      mediaUrl = payload.audio.audioUrl || payload.audio.url;
-    } else if (payload.video) {
-      mediaTipo = 'video';
-      mediaUrl = payload.video.videoUrl || payload.video.url;
-      texto = texto || String(payload.video.caption || '');
+
+    // Blocos de mídia conhecidos da Z-API. Alguns envios (encaminhados, figurinhas,
+    // documentos com legenda) chegam com nomes diferentes, então varremos todos.
+    const blocos = [
+      ['image', payload.image],
+      ['document', payload.document],
+      ['audio', payload.audio],
+      ['video', payload.video],
+      ['image', payload.sticker],
+      ['image', payload.photo],
+      ['document', payload.documentMessage],
+      ['audio', payload.ptt || payload.audioMessage],
+      ['video', payload.videoMessage],
+      ['image', payload.imageMessage]
+    ];
+    for (const [tipo, bloco] of blocos) {
+      if (!bloco || typeof bloco !== 'object') continue;
+      const url = bloco.imageUrl || bloco.documentUrl || bloco.audioUrl || bloco.videoUrl ||
+        bloco.stickerUrl || bloco.url || bloco.fileUrl || bloco.mediaUrl ||
+        Object.values(bloco).find((v) => typeof v === 'string' && v.startsWith('http'));
+      if (url) {
+        mediaTipo = tipo;
+        mediaUrl = String(url);
+        texto = texto || String(bloco.caption || bloco.fileName || bloco.title || '');
+        break;
+      }
     }
 
     if (!texto && !mediaUrl) {
+      // Nada reconhecido: guarda o payload para investigação em vez de descartar.
+      try {
+        await sr.entities.WebhookLog.create({
+          endpoint: 'zapiWebhook:conteudo_nao_reconhecido',
+          method: 'POST',
+          body: JSON.stringify(payload).slice(0, 4000),
+          response_sent: 'Mensagem sem conteúdo',
+          status: 'error'
+        });
+      } catch (_) { /* log é auxiliar */ }
       return Response.json({ message: 'Mensagem sem conteúdo' });
     }
 
