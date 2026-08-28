@@ -127,38 +127,24 @@ Deno.serve(async (req) => {
             const nomeMedico = medico?.nome || 'profissional';
             const primeiroNome = paciente.nome?.split(' ')[0] || 'Paciente';
 
-            // Formatar data para exibição
+            // Formatar data para exibição (ex: 26 de agosto)
+            const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+                'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
             const [ano, mes, dia] = dataAmanha.split('-');
-            const dataFormatada = `${dia}/${mes}/${ano}`;
+            const dataFormatada = `${Number(dia)} de ${MESES[Number(mes) - 1]}`;
 
-            // Link de confirmação de uso único (72h). Se falhar, mantém a confirmação por texto.
-            let linkConfirmacao = '';
-            try {
-                const respLink = await base44.functions.invoke('confirmarPresencaGloria', {
-                    acao: 'gerar_link',
-                    agendamento_id: agendamento.id,
-                    token_interno: Deno.env.get('GLORIA_INTERNAL_TOKEN')
-                });
-                const dadosLink = respLink?.data || respLink;
-                if (dadosLink?.ok && dadosLink.url) linkConfirmacao = dadosLink.url;
-            } catch (erroLink) {
-                console.error('⚠️ Erro ao gerar link de confirmação:', erroLink.message);
-            }
+            const nomeMedicoFormatado = nomeMedico.startsWith('Dr') ? nomeMedico : `Dr(a). ${nomeMedico}`;
+            const procedimentoTexto = agendamento.tipo_servico || 'Consulta';
 
-            const blocoConfirmacao = linkConfirmacao
-                ? `✅ *Confirme sua presença* clicando aqui:\n${linkConfirmacao}\n\nSe precisar reagendar, é só responder esta mensagem.\n\n`
-                : `Responda *SIM* para confirmar sua presença ou entre em contato caso precise reagendar.\n\n`;
-
-            // Montar mensagem
-            const mensagem = `Olá, ${primeiroNome}! 😊\n\n` +
-                `Passando para lembrar da sua consulta *amanhã (${dataFormatada})* às *${agendamento.horario}* ` +
-                `com ${nomeMedico}.\n\n` +
-                `📍 *Centro Vida Saúde*\n` +
-                `Tristão Monteiro, 580 – Bairro Zona Nova, Tramandaí/RS – CEP: 95590-000 (próximo ao fórum)\n\n` +
-                `📌 *Localização:* https://www.google.com/maps/place/29%C2%B059'49.5%22S+50%C2%B008'34.3%22W/@-29.997081,-50.1428653\n\n` +
-                `Por favor, chegue com *10 minutos de antecedência*.\n\n` +
-                blocoConfirmacao +
-                `Até amanhã! 🙏`;
+            // Mesmo modelo usado nas notificações manuais (Lembrete de Consulta), sem link.
+            const mensagem = `Olá ${primeiroNome}, aqui é a Glória do Centro Vida Saúde! 🏥\n\n` +
+                `Passando para lembrar da sua consulta:\n\n` +
+                `👨‍⚕️ Profissional: ${nomeMedicoFormatado}\n` +
+                `📋 Procedimento: ${procedimentoTexto}\n` +
+                `📆 Data: ${dataFormatada}\n` +
+                `🕐 Horário: ${agendamento.horario}\n\n` +
+                `✅ *Responda SIM para confirmar sua presença*\n\n` +
+                `Por favor, chegue com 10 minutos de antecedência. Aguardamos você! 😊`;
 
             // Formatar telefone
             let telefone = paciente.telefone.replace(/\D/g, '');
