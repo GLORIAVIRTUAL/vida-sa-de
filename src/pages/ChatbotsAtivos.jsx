@@ -28,6 +28,7 @@ import TransferirConversaModal from '../components/gloria/TransferirConversaModa
 import { motivosColunas, motivoInteresseMap, classificarMotivo } from '../components/gloria/pipelineMotivos';
 import EspecialidadesTags from '../components/gloria/EspecialidadesTags';
 import AvatarContato from '../components/gloria/AvatarContato';
+import { ehConfirmacaoDeLembrete } from '../components/gloria/pendenciaConversa';
 import RelatorioChat from './RelatorioChat';
 
 export const useContatosQuery = () => {
@@ -707,6 +708,8 @@ function ChatTab({ contatoInicial, onContatoSelecionado }) {
     const ultimaMensagem = historico.length > 0 ? historico[historico.length - 1] : null;
 
     if (ultimaMensagem) {
+      // Confirmação de lembrete automático não é pendência de atendimento.
+      if (ehConfirmacaoDeLembrete(historico)) return false;
       return ultimaMensagem.role === 'user';
     }
 

@@ -18,7 +18,8 @@ const normalizar = (texto) => String(texto || '')
 export const ehLembreteConfirmacao = (mensagem) => {
   if (!mensagem || mensagem.role !== 'assistant') return false;
   const texto = normalizar(mensagem.content);
-  return texto.includes('responda sim para confirmar') ||
+  return texto.includes('lembrete automatico') ||
+    texto.includes('responda sim para confirmar') ||
     texto.includes('lembrar da sua consulta') ||
     texto.includes('lembrete da sua consulta') ||
     texto.includes('lembrar do seu agendamento');
