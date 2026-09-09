@@ -1,0 +1,39 @@
+{
+  "name": "Auditoria de Repasses em M\u00e9dicos",
+  "description": "Registra altera\u00e7\u00f5es nos valores de repasse dos m\u00e9dicos, com data, hora, usu\u00e1rio e valores anteriores e novos.",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "entity",
+      "events": [
+        "create",
+        "update",
+        "delete"
+      ],
+      "entity_name": "Medico"
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "auditoria_de_repasses_em_m_dicos",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "run_function": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "auditarAlteracaoRepasse",
+            "args": {}
+          },
+          "then": "end"
+        }
+      }
+    ]
+  },
+  "x-base44-migrated-from-automation": {
+    "legacy_payload_function": "auditarAlteracaoRepasse"
+  }
+}
