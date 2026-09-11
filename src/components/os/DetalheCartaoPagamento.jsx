@@ -1,6 +1,7 @@
 import React from 'react';
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MAX_PARCELAS_CARTAO } from "./parcelasCartao";
 
 // Campos obrigatórios da maquininha (bandeira e parcelas) para uma forma de pagamento com cartão
 export default function DetalheCartaoPagamento({ pagamento, onChange, taxasCartao }) {
@@ -33,7 +34,7 @@ export default function DetalheCartaoPagamento({ pagamento, onChange, taxasCarta
           >
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
-              {Array.from({ length: 12 }, (_, i) => i + 1).map(p => {
+              {Array.from({ length: MAX_PARCELAS_CARTAO }, (_, i) => i + 1).map(p => {
                 const taxa = pagamento.bandeira && taxasCartao.credito[pagamento.bandeira]?.taxas?.[p];
                 return (
                   <SelectItem key={p} value={String(p)}>

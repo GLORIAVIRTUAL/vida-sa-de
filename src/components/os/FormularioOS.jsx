@@ -19,12 +19,21 @@ import ModalQrCodePix from "./ModalQrCodePix";
 import ModalAguardandoCartao from "./ModalAguardandoCartao";
 import InputNumero from "@/components/shared/InputNumero";
 import DetalheCartaoPagamento from "./DetalheCartaoPagamento";
+import { MAX_PARCELAS_CARTAO } from "./parcelasCartao";
 
 const formasPagamento = ["Dinheiro", "Cartão Débito", "Cartão Crédito", "PIX", "PIX Turmas", "Transferência", "Convênio", "Múltiplas Formas"];
 
-// Taxas padronizadas (Grupo 1 e Grupo 2)
-const taxasGrupo1 = { 1: 3.64, 2: 4.62, 3: 5.54, 4: 6.19, 5: 7.04, 6: 7.89, 7: 8.94, 8: 9.89, 9: 10.84, 10: 11.49, 11: 12.19, 12: 12.89 };
-const taxasGrupo2 = { 1: 4.64, 2: 5.62, 3: 6.54, 4: 7.19, 5: 8.04, 6: 8.89, 7: 9.94, 8: 10.89, 9: 11.84, 10: 12.49, 11: 13.19, 12: 13.89 };
+// Taxas padronizadas conforme tabela da maquininha (Grupo 1 e Grupo 2)
+const taxasGrupo1 = {
+  1: 3.64, 2: 4.62, 3: 5.54, 4: 6.19, 5: 7.04, 6: 7.89, 7: 8.94,
+  8: 9.59, 9: 10.29, 10: 10.99, 11: 11.69, 12: 12.29, 13: 13.49, 14: 13.99,
+  15: 14.99, 16: 15.59, 17: 15.99, 18: 16.59, 19: 17.99, 20: 18.49, 21: 18.99
+};
+const taxasGrupo2 = {
+  1: 4.64, 2: 5.62, 3: 6.54, 4: 7.19, 5: 8.04, 6: 8.89, 7: 9.94,
+  8: 10.59, 9: 11.29, 10: 11.99, 11: 12.69, 12: 13.29, 13: 14.49, 14: 14.99,
+  15: 15.99, 16: 16.59, 17: 16.99, 18: 17.59, 19: 18.99, 20: 19.49, 21: 19.99
+};
 
 const taxasCartao = {
   credito: {
@@ -46,8 +55,8 @@ const taxasCartao = {
     'MAIS': { label: 'Mais', taxas: taxasGrupo2 }
   },
   debito: {
-    'VISA_ELECTRON': { label: 'Visa Débito', taxa: 1.10 },
-    'MAESTRO': { label: 'Mastercard Débito / Maestro', taxa: 1.10 },
+    'VISA_ELECTRON': { label: 'Visa Débito', taxa: 0.99 },
+    'MAESTRO': { label: 'Mastercard Débito / Maestro', taxa: 0.99 },
     'ELO_DEBITO': { label: 'Elo Débito', taxa: 1.98 }
   }
 };
@@ -1143,7 +1152,7 @@ export default function FormularioOS({
                     >
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        {Array.from({ length: 12 }, (_, i) => i + 1).map(p => {
+                        {Array.from({ length: MAX_PARCELAS_CARTAO }, (_, i) => i + 1).map(p => {
                           const taxa = dados.bandeira_cartao && taxasCartao.credito[dados.bandeira_cartao]?.taxas?.[p];
                           return (
                             <SelectItem key={p} value={String(p)}>
