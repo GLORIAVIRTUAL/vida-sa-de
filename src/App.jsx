@@ -5,7 +5,12 @@ import { queryClientInstance } from '@/lib/query-client'
 import VisualEditAgent from '@/lib/VisualEditAgent'
 import NavigationTracker from '@/lib/NavigationTracker'
 import { pagesConfig } from './pages.config'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import ProtectedRoute from '@/components/ProtectedRoute';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
