@@ -82,7 +82,7 @@ async function primeiroHorario(sr, medico, contexto) {
     const hora = r.ok && (r.available_slots || []).slice().sort().find((h) => !contexto.hora || h >= contexto.hora);
     return hora ? { data: contexto.data, hora } : null;
   }
-  const r = await proximosHorariosCore(sr, { medico_id: medico.id, maximo: 1, duracao_minutos: contexto.duracao_minutos });
+  const r = await proximosHorariosCore(sr, { medico_id: medico.id, maximo: 1, duracao_minutos: contexto.duracao_minutos, hora_minima: contexto.hora });
   return (r.sugestoes || [])[0] || null;
 }
 
@@ -486,6 +486,9 @@ export async function processarTurno(sr, { contato, texto, mediaUrl, mediaTipo }
       return pedirHorario(sr, dados.especialidade, m, dados);
     }
     case 'AGENDAMENTO_SELECAO_OPCAO': {
+      if (validarHora(extraido.hora) && !extraido.data && !dados.data && dados.sugestoes?.[0]) {
+        dados.data = dados.sugestoes[0].data;
+      }
       if (extraido.medico && normalizarTexto(extraido.medico) !== normalizarTexto(anteriores.medico || anteriores.medico_nome)) {
         if (dados.acao === 'REMARCAR') return proporNovaConsulta(dados);
         return iniciarAgendamento(sr, dados);

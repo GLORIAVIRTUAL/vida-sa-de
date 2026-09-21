@@ -459,7 +459,7 @@ export async function getAvailableSlotsCore(sr, { medico_id, data, duracao_minut
 }
 
 // Próximos horários livres a partir de hoje (limite de dias e de sugestões).
-export async function proximosHorariosCore(sr, { medico_id, dias = 21, maximo = 6, duracao_minutos }) {
+export async function proximosHorariosCore(sr, { medico_id, dias = 21, maximo = 6, duracao_minutos, hora_minima }) {
   const sugestoes = [];
   const base = hojeLocal();
   const [a, m, d] = base.split('-').map(Number);
@@ -469,6 +469,7 @@ export async function proximosHorariosCore(sr, { medico_id, dias = 21, maximo = 
     const res = await getAvailableSlotsCore(sr, { medico_id, data, duracao_minutos });
     if (res.ok && Array.isArray(res.available_slots)) {
       for (const hora of res.available_slots) {
+        if (hora_minima && hora < hora_minima) continue;
         if (sugestoes.length >= maximo) break;
         sugestoes.push({ data, hora });
       }
