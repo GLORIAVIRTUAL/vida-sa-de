@@ -459,7 +459,7 @@ export async function getAvailableSlotsCore(sr, { medico_id, data, duracao_minut
 }
 
 // Próximos horários livres a partir de hoje (limite de dias e de sugestões).
-export async function proximosHorariosCore(sr, { medico_id, dias = 21, maximo = 6, duracao_minutos }) {
+export async function proximosHorariosCore(sr, { medico_id, dias = 21, maximo = 6, duracao_minutos, hora_minima }) {
   const sugestoes = [];
   const base = hojeLocal();
   const [a, m, d] = base.split('-').map(Number);
@@ -469,6 +469,7 @@ export async function proximosHorariosCore(sr, { medico_id, dias = 21, maximo = 
     const res = await getAvailableSlotsCore(sr, { medico_id, data, duracao_minutos });
     if (res.ok && Array.isArray(res.available_slots)) {
       for (const hora of res.available_slots) {
+        if (hora_minima && hora < hora_minima) continue;
         if (sugestoes.length >= maximo) break;
         sugestoes.push({ data, hora });
       }
@@ -533,7 +534,8 @@ export async function createAppointmentCore(sr, entrada) {
   const {
     chave_idempotencia, medico_id, data, hora, paciente_id, paciente_nome,
     tipo_servico = 'Consulta', categoria_preco_id, duracao_minutos, valor_total, valor_final,
-    procedimento_id, observacoes, agendado_por = 'Glória', agendado_por_tipo = 'chatbot', telefone_canonico
+    procedimento_id, observacoes, agendado_por = 'Glória', agendado_por_tipo = 'chatbot', telefone_canonico,
+    reserva_sem_cadastro = false
   } = entrada || {};
 
   if (!chave_idempotencia) return erroSeguro('CHAVE_OBRIGATORIA', 'chave_idempotencia é obrigatória.');
@@ -544,11 +546,13 @@ export async function createAppointmentCore(sr, entrada) {
   }
   if (!validarData(data)) return erroSeguro('DATA_INVALIDA', 'Data inválida.');
   if (!validarHora(hora)) return erroSeguro('HORA_INVALIDA', 'Horário inválido.');
-  if (!paciente_id) return erroSeguro('PACIENTE_OBRIGATORIO', 'Paciente não identificado.');
+  const reserva = !paciente_id && reserva_sem_cadastro && agendado_por_tipo === 'chatbot' &&
+    normalizarTelefone(telefone_canonico) && /^[\p{L}][\p{L}'’-]*(?:\s+[\p{L}][\p{L}'’-]*)+$/u.test(String(paciente_nome || '').trim());
+  if (!paciente_id && !reserva) return erroSeguro('PACIENTE_OBRIGATORIO', 'Paciente não identificado.');
 
   const medico = medico_id ? await sr.entities.Medico.get(medico_id) : null;
   if (medico_id && !medico) return erroSeguro('MEDICO_NAO_ENCONTRADO', 'Médico não encontrado.');
-  const paciente = await sr.entities.Paciente.get(paciente_id);
+  const paciente = paciente_id ? await sr.entities.Paciente.get(paciente_id) : { nome: paciente_nome };
   if (!paciente) return erroSeguro('PACIENTE_NAO_ENCONTRADO', 'Paciente não encontrado.');
 
   const idsAgenda = medico ? await idsDaAgenda(sr, medico) : [];
@@ -592,7 +596,8 @@ export async function createAppointmentCore(sr, entrada) {
     }
 
     const agendamento = await sr.entities.Agendamento.create({
-      paciente_id,
+      paciente_id: paciente_id || undefined,
+      is_reserva: !!reserva,
       paciente_nome: paciente_nome || paciente.nome,
       medico_id: medico_id || undefined,
       data_agendamento: data,
@@ -734,7 +739,8 @@ export async function rescheduleAppointmentCore(sr, { chave_idempotencia, agenda
     procedimento_id: antigo.procedimento_id,
     valor_total: antigo.valor_total,
     valor_final: antigo.valor_final,
-    telefone_canonico
+    telefone_canonico,
+    reserva_sem_cadastro: antigo.is_reserva === true
   });
   if (!criacao.ok) {
     // Rollback: a consulta antiga continua ativa.
@@ -747,10 +753,10 @@ export async function rescheduleAppointmentCore(sr, { chave_idempotencia, agenda
     agendamento_id: antigo.id,
     telefone_canonico,
     motivo: 'Remarcado para ' + nova_data + ' ' + nova_hora
-  });
+  }).catch(() => erroSeguro('ERRO_CANCELAMENTO', 'Não foi possível confirmar o cancelamento anterior.'));
   if (!cancelamento.ok) {
     await sr.entities.GloriaOperacao.update(operacao.id, { status: 'Falha', erro: cancelamento.codigo });
-    return erroSeguro('REMARCACAO_PARCIAL', 'Nova consulta criada, mas a anterior não pôde ser cancelada. A recepção vai revisar.');
+    return erroSeguro('REMARCACAO_PARCIAL', 'A nova consulta foi criada, mas não consegui confirmar o cancelamento da anterior. A recepção vai revisar.');
   }
   await sr.entities.GloriaOperacao.update(operacao.id, {
     status: 'Concluida',
