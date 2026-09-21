@@ -66,6 +66,17 @@ test('agendamento preserva médico, data e nome e oferece só o primeiro horári
   assert.equal(r.estado, 'CANCELAMENTO_CONFIRMACAO');
   await f.turn('Sim', { confirmacao: true }); assert.equal(f.tables.Agendamento[0].status, 'Cancelado');
 });
+test('horário sem data respeita a preferência e correção mantém a data oferecida', async () => {
+  const f = fixture();
+  let r = await f.turn('Quero Ana às 10h', { intencao: 'AGENDAR', medico: 'Ana Silva', hora: '10:00' });
+  assert.equal(r.dados.sugestoes.length, 1);
+  assert.ok(r.dados.sugestoes[0].hora >= '10:00');
+  const offered = r.dados.sugestoes[0].data;
+  r = await f.turn('Às 11h', { hora: '11:00' });
+  assert.equal(r.dados.sugestoes[0].data, offered);
+  assert.ok(r.dados.sugestoes[0].hora >= '11:00');
+});
+
 test('remarcação cria antes de cancelar e mantém vínculo', async () => {
   const f = fixture({ patients: [{ id: 'p1', nome: 'Maria Souza', telefone: phone }], appointments: [{ id: 'old', medico_id: 'm1', paciente_id: 'p1', paciente_nome: 'Maria Souza', data_agendamento: day, horario: '09:00', status: 'Agendado' }] });
   await f.turn('Remarcar para 20/10/2099', { intencao: 'REMARCAR', data: day });
