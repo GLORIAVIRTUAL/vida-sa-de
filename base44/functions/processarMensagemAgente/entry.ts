@@ -1,9 +1,17 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
+import { retomarConversaGloria } from '../../shared/gloriaRetomada.ts';
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     let { phoneNumber, messageText, senderName, pacienteId, mediaType, mediaUrl, messageId } = await req.json();
+    // O painel retoma a última mensagem com messageId nulo. Essa rota não
+    // pode voltar ao prompt legado nem pedir CPF após liberar a Glória.
+    if (!messageId) {
+      const user = await base44.auth.me().catch(() => null);
+      if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      return Response.json(await retomarConversaGloria(base44.asServiceRole, phoneNumber));
+    }
     console.log('📨 Processando:', { phoneNumber, messageText: (messageText || '').substring(0, 100), mediaType, mediaUrl: mediaUrl ? mediaUrl.substring(0, 80) : null, messageId });
 
     if ((!mediaUrl || mediaType === 'text') && messageText) {
