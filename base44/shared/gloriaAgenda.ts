@@ -33,7 +33,14 @@ export async function medicosPorEspecialidadeCore(sr, { especialidade }) {
   const alvo = normalizarTexto(especialidade);
   if (!alvo) return erroSeguro('ESPECIALIDADE_OBRIGATORIA', 'Informe a especialidade.');
   const medicos = await listarMedicosAtivos(sr);
-  const compativeis = medicos.filter((m) => especialidadesDoMedico(m).some((e) => normalizarTexto(e) === alvo));
+  const compativeis = medicos.filter((m) => {
+    const nome = normalizarTexto(m.nome);
+    // Agendas de exames podem ter especialidade legada de clínico geral.
+    // Continuam disponíveis quando o cliente procura o próprio exame.
+    const servico = /^(exames?|holter(?: 24\s*h)?|mapa(?: 24\s*h)?)$/.test(nome);
+    if (servico && !alvo.includes(nome) && !nome.includes(alvo)) return false;
+    return especialidadesDoMedico(m).some((e) => normalizarTexto(e) === alvo);
+  });
   const porAgenda = new Map();
   for (const m of compativeis) {
     const chave = m.agenda_compartilhada_id || 'medico:' + m.id;
