@@ -809,8 +809,16 @@ async function precoDoProcedimento(sr, procedimento_id, categoria_id) {
 }
 
 // Relação determinística entre consulta e médico/especialidade.
-export async function precoConsultaCore(sr, { medico_id, especialidade }) {
-  const cat = await categoriaParticular(sr);
+export async function precoConsultaCore(sr, { medico_id, especialidade, convenio }) {
+  let cat;
+  if (convenio) {
+    const categorias = await sr.entities.CategoriaPreco.filter({ status: 'Ativo' });
+    const candidatas = categorias.filter(c => normalizarTexto(c.nome) === normalizarTexto(convenio));
+    if (candidatas.length !== 1) return erroSeguro('CATEGORIA_AMBIGUA', 'Convênio não identificado com segurança.');
+    cat = ok({ categoria: candidatas[0] });
+  } else {
+    cat = await categoriaParticular(sr);
+  }
   if (!cat.ok) return cat;
   let esp = especialidade;
   if (!esp && medico_id) {

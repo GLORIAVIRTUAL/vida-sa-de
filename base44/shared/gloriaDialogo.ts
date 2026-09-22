@@ -4,13 +4,14 @@
 import {
   normalizarTelefone, normalizarTexto, hojeLocal,
   buscarPacientesPorTelefone, proximosHorariosCore, getAvailableSlotsCore, validarData, validarHora,
-  createAppointmentCore, cancelAppointmentCore, confirmAppointmentCore, rescheduleAppointmentCore
+  createAppointmentCore, cancelAppointmentCore, confirmAppointmentCore, rescheduleAppointmentCore, precoConsultaCore
 } from './gloriaCore.ts';
 import { especialidadesDisponiveisCore, medicosPorEspecialidadeCore } from './gloriaAgenda.ts';
 import { medicoPorNomeCore } from './gloriaHorariosMedico.ts';
 import { precoPorTermoCore, precoConsultaPorEspecialidadeCore, categoriasPrecoCore } from './gloriaPrecos.ts';
 import { extrairIntencao } from './gloriaLlm.ts';
 import { infoCartaoCore } from './gloriaCartao.ts';
+import { enderecoClinica, perguntaEndereco } from './gloriaInstitucional.ts';
 import { resolverRequisicaoArquivo } from './gloriaRequisicao.ts';
 
 const EXPIRA_MINUTOS = 60;
@@ -344,13 +345,16 @@ function informarPreco(resolvido, categoria, contexto = {}) {
   const soLaboratorial = blocos.every((b) => b.laboratorial);
   const fecho = soLaboratorial
     ? '\n\n' + TEXTO_LABORATORIAL
-    : '\n\nQuer que eu veja um horário disponível?';
+    : contexto.ultimo_agendamento
+      ? '\n\nEsse é o valor da tabela consultada; não alterei seu agendamento.'
+      : '\n\nQuer que eu veja um horário disponível?';
   return resposta(
     linhas.join('\n\n') + pendentes + fecho,
     'OCIOSO',
     {
       ...contexto,
       convenio: categoria,
+      resolvido,
       orcamento_nomes: blocos.map((b) => b.nome),
       orcamento_laboratorial: soLaboratorial,
       orcamento_especialidades: blocos.map((b) => b.especialidade).filter(Boolean)
@@ -378,6 +382,13 @@ export async function processarTurno(sr, { contato, texto, mediaUrl, mediaTipo }
       (/\b(laudos?|resultados?)\b/.test(txt) && /\b(exames?|meu|minha|saiu|pronto|buscar|retirar)\b/.test(txt)) ||
       /\b(falar|conversar)\b.*\b(humano|pessoa|atendente|recepcao)\b/.test(txt)) {
     return resposta(PARA_HUMANO, 'AGUARDANDO_HUMANO');
+  }
+
+  // Informação simples não depende da classificação nem implica aceitar adesão.
+  if (perguntaEndereco(texto)) {
+    const endereco = await enderecoClinica(sr);
+    if (endereco) return resposta(endereco, estadoAtual, { ...(expirado ? {} : dados), assunto_cartao: false });
+    return resposta('Não encontrei o endereço no cadastro. ' + PARA_HUMANO, 'AGUARDANDO_HUMANO');
   }
 
   // Primeiro nome do contato, para tratamento pessoal (ignora nomes que são só números).
@@ -450,8 +461,26 @@ export async function processarTurno(sr, { contato, texto, mediaUrl, mediaTipo }
   }
 
 
-  const perguntaCartao = ['cartao mais vida', 'mais vida saude', 'cartao de vcs', 'cartao de voces', 'plano de vcs', 'plano de voces', 'aceitam plano', 'aceita plano', 'tem plano', 'tem cartao', 'cartao do plano']
+  const mencionaCartao = ['cartao mais vida', 'mais vida saude', 'cartao de vcs', 'cartao de voces', 'plano de vcs', 'plano de voces', 'aceitam plano', 'aceita plano', 'tem plano', 'tem cartao', 'cartao do plano']
     .some((k) => txt.includes(k));
+  const precoDoCartao = /\b(valor|preco|custa|fica)\s+(o |do |de um |um )?(cartao|plano)\b/.test(txt) || /\b(mensalidade|anuidade|beneficios|como funciona)\b/.test(txt);
+  const contextoServico = !!(dados.resolvido?.blocos?.length || dados.ultimo_agendamento || dados.especialidade);
+  const precoComCartao = mencionaCartao && !precoDoCartao &&
+    (/\b(consulta|exame|procedimento)\b/.test(txt) ||
+      (contextoServico && /\b(pelo|pela|com|no|na|e o|e pelo|quanto|valor|preco)\b/.test(txt)));
+  const perguntaCartao = mencionaCartao && !precoComCartao;
+
+  // Comparar a tabela do mesmo serviço nunca significa contratar um cartão.
+  if (precoComCartao && estadoAtual === 'OCIOSO') {
+    const especialidade = extraido.especialidade || dados.ultimo_agendamento?.especialidade || dados.especialidade;
+    const termos = (extraido.itens_orcamento || []).filter(i => !/cartao|plano/.test(normalizarTexto(i)));
+    let resolvido = dados.resolvido;
+    if (extraido.especialidade || termos.length || !resolvido?.blocos?.length) {
+      resolvido = await resolverBlocos(sr, { ...extraido, especialidade, itens_orcamento: termos }, texto);
+    }
+    if (!resolvido?.blocos?.length) return pedirItensOrcamento(dados);
+    return perguntarConvenio(sr, resolvido, texto, { ...dados, assunto_cartao: false });
+  }
 
   // Continuação do assunto do cartão: "quero mais informações", "quais os
   // benefícios", "como funciona" — responde com o material cadastrado.
@@ -580,6 +609,10 @@ export async function processarTurno(sr, { contato, texto, mediaUrl, mediaTipo }
       if (!extraido.confirmacao) return resposta('Posso confirmar esse horário?', estadoAtual, dados);
       const remarcacao = dados.acao === 'REMARCAR';
       if (remarcacao && !(await agendamentosDoTelefone(sr, telefone)).some((a) => a.id === dados.agendamento_id)) return resposta(PARA_HUMANO, 'AGUARDANDO_HUMANO');
+      const preco = remarcacao ? null : await precoConsultaCore(sr, {
+        medico_id: dados.medico_id, especialidade: dados.especialidade, convenio: dados.convenio
+      });
+      if (!remarcacao && !preco.ok) return resposta('Não consegui confirmar o valor cadastrado dessa consulta. ' + PARA_HUMANO, 'AGUARDANDO_HUMANO');
       const res = remarcacao ? await rescheduleAppointmentCore(sr, {
         chave_idempotencia: 'REMARCAR:' + dados.agendamento_id + ':' + dados.data + ':' + dados.hora,
         agendamento_id: dados.agendamento_id, nova_data: dados.data, nova_hora: dados.hora,
@@ -588,7 +621,9 @@ export async function processarTurno(sr, { contato, texto, mediaUrl, mediaTipo }
         chave_idempotencia: 'AGENDAR:' + telefone + ':' + (dados.paciente_id || normalizarTexto(dados.paciente_nome)) + ':' + dados.medico_id + ':' + dados.data + ':' + dados.hora,
         medico_id: dados.medico_id, data: dados.data, hora: dados.hora,
         paciente_id: dados.paciente_id, paciente_nome: dados.paciente_nome,
-        telefone_canonico: telefone, reserva_sem_cadastro: !dados.paciente_id
+        telefone_canonico: telefone, reserva_sem_cadastro: !dados.paciente_id,
+        categoria_preco_id: preco.categoria_id, procedimento_id: preco.procedimento.id,
+        valor_total: preco.valor, valor_final: preco.valor
       });
       if (!res.ok) {
         if (res.codigo === 'REMARCACAO_PARCIAL') return resposta(res.mensagem + ' ' + PARA_HUMANO, 'AGUARDANDO_HUMANO');
@@ -596,7 +631,11 @@ export async function processarTurno(sr, { contato, texto, mediaUrl, mediaTipo }
         return resposta('Não consegui concluir agora. ' + PARA_HUMANO, 'AGUARDANDO_HUMANO');
       }
       return resposta('Prontinho! Sua consulta com ' + dados.medico_nome + ' está ' + (remarcacao ? 'remarcada' : 'agendada') +
-        ' para ' + dataBr(dados.data, dados.hora) + '.\n\nChegue com 10 minutos de antecedência. Até logo!', 'OCIOSO');
+        ' para ' + dataBr(dados.data, dados.hora) + '.\n\nChegue com 10 minutos de antecedência. Até logo!', 'OCIOSO', {
+          ultimo_agendamento: { id: res.agendamento.id, especialidade: dados.especialidade,
+            medico_nome: dados.medico_nome, data: dados.data, hora: dados.hora },
+          convenio: dados.convenio
+        });
     }
     case 'CANCELAMENTO_SELECAO': {
       const i = escolher(dados.opcoes || [], extraido, texto);
@@ -754,8 +793,12 @@ export async function processarTurno(sr, { contato, texto, mediaUrl, mediaTipo }
     case 'PRECO': {
       const itens = Array.isArray(extraido.itens_orcamento) ? extraido.itens_orcamento : [];
       // Pedido genérico ("quero um orçamento de exames"): pergunta os itens.
-      if (itens.length === 0 && !extraido.especialidade) return pedirItensOrcamento(dados);
-      const resolvido = await resolverBlocos(sr, extraido, texto);
+      const especialidade = extraido.especialidade || (itens.length === 0 ? dados.ultimo_agendamento?.especialidade : null);
+      if (itens.length === 0 && !especialidade) {
+        if (dados.resolvido?.blocos?.length) return perguntarConvenio(sr, dados.resolvido, texto, dados);
+        return pedirItensOrcamento(dados);
+      }
+      const resolvido = await resolverBlocos(sr, { ...extraido, especialidade }, texto);
       if (resolvido.blocos.length === 0) return pedirItensOrcamento(dados);
       return await perguntarConvenio(sr, resolvido, texto, dados);
     }

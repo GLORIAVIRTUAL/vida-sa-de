@@ -58,6 +58,7 @@ export async function extrairIntencao(sr, { texto, historico, estado, opcoes_ofe
     'Não calcule valores, não invente horários e não afirme disponibilidade.',
     'Classifique pedidos de resultados ou laudos de exames como RESULTADO_EXAME, em qualquer etapa.',
     'Use ADERIR_CARTAO apenas para intenção de comprar, aderir ou fazer o Cartão Mais Vida Saúde; dúvidas e benefícios são INFORMACAO.',
+    'Quanto custa a consulta pelo cartão, e pelo cartão, e quanto fica com o convênio são PRECO do serviço anterior, NÃO adesão ou preço do cartão. Já marquei informa agendamento concluído, não é pedido para agendar novamente.',
     'FALAR_COM_HUMANO exige pedido explícito para falar com uma pessoa. Agendar, remarcar ou cancelar continuam com a Glória.',
     'Extraia apenas campos informados pelo cliente, sem confundir médico com paciente. Não extraia CPF.',
     'Preserve o contexto para interpretar respostas curtas. Não repita como novos os campos de mensagens anteriores. Em uma aceitação sem correções, devolva apenas intencao e confirmacao, com os demais campos nulos.',
