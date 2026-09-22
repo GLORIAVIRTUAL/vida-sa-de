@@ -90,6 +90,17 @@ async function pedirMedico(sr, especialidade, contexto = {}) {
   const res = await medicosPorEspecialidadeCore(sr, { especialidade });
   const medicos = res.medicos || [];
   if (!medicos.length) return resposta(PARA_HUMANO, 'AGUARDANDO_HUMANO');
+  if (contexto.primeiro_disponivel && !contexto.medico) {
+    const candidatos = [];
+    for (const m of medicos) {
+      const horario = await primeiroHorario(sr, m, contexto);
+      if (horario) candidatos.push({ medico: m, horario });
+    }
+    candidatos.sort((a, b) => (a.horario.data + a.horario.hora).localeCompare(b.horario.data + b.horario.hora));
+    if (!candidatos.length) return resposta('Não encontrei horário disponível para essa especialidade nesse período. Você tem outra data em mente?',
+      'AGENDAMENTO_ESPECIALIDADE', { ...contexto, especialidade });
+    return pedirHorario(sr, especialidade, candidatos[0].medico, { ...contexto, primeiro_disponivel: false });
+  }
   if (contexto.medico) {
     const busca = await medicoPorNomeCore(sr, { nome: contexto.medico });
     const candidatos = medicos.filter((m) => (busca.medicos || []).some((b) => b.id === m.id));
@@ -223,6 +234,8 @@ async function perguntarConvenio(sr, resolvido, texto, contexto = {}) {
   const citado = convenios.find((c) => t.includes(normalizarTexto(c)));
   if (citado) return informarPreco(resolvido, citado, contexto);
   if (t.includes('particular')) return informarPreco(resolvido, 'Particular', contexto);
+  const salvo = nomes.find((c) => normalizarTexto(c) === normalizarTexto(contexto.convenio || ''));
+  if (salvo) return informarPreco(resolvido, salvo, contexto);
   if (convenios.length === 0) return informarPreco(resolvido, 'Particular', contexto);
   const opcoes = ['Não tenho convênio (Particular)'].concat(convenios);
   return resposta(
@@ -316,6 +329,11 @@ function informarPreco(resolvido, categoria, contexto = {}) {
     linhas.push('*' + b.nome + '*\n' + valores.map((v) => '• ' + v.categoria + ': ' + reais(v.valor)).join('\n'));
   }
   if (linhas.length === 0) return resposta(PARA_HUMANO, 'AGUARDANDO_HUMANO');
+  if (contexto.retorno_agendamento) {
+    const retorno = contexto.retorno_agendamento;
+    return resposta(linhas.join('\n\n') + '\n\n' + retorno.texto, retorno.estado,
+      { ...retorno.dados, convenio: categoria });
+  }
   let pendentes = naoEncontrados.length
     ? '\n\nSobre ' + naoEncontrados.join(', ') + ', a recepção confirma o valor para você.'
     : '';
@@ -469,6 +487,43 @@ export async function processarTurno(sr, { contato, texto, mediaUrl, mediaTipo }
       opcoes: [], sugestoes: [] };
     if (dados.acao === 'REMARCAR') return proporNovaConsulta(contexto);
     return iniciarAgendamento(sr, contexto);
+  }
+
+  // Perguntas simultâneas sobre disponibilidade e preço não se perdem na
+  // etapa de escolha do médico. Os valores continuam vindo do cadastro.
+  const querPrimeiro = /\b(proxim[oa]s?|primeir[oa]s?)\b.*\b(disponiv|horario|vaga)/.test(txt) ||
+    /\b(qualquer medico|quem tiver|mais cedo)\b/.test(txt);
+  const querPrecoConsulta = /\b(valor|preco|quanto custa|quanto fica)\b/.test(txt) || extraido.intencao === 'PRECO';
+  const emAgendamento = estadoAtual.startsWith('AGENDAMENTO_');
+  if ((emAgendamento || extraido.intencao === 'AGENDAR') && dados.especialidade &&
+      (querPrimeiro || querPrecoConsulta) && !perguntaCartao && !/\b(exame|exames|procedimento|procedimentos)\b/.test(txt) && !extraido.negativa && !dados.nova_consulta) {
+    let retorno = { estado: estadoAtual, dados, texto: 'Com qual profissional você prefere consultar?' };
+    const mudouMedico = extraido.medico && normalizarTexto(extraido.medico) !== normalizarTexto(anteriores.medico || anteriores.medico_nome);
+    const mudouPaciente = estadoAtual === 'AGENDAMENTO_CONFIRMACAO' && extraido.nome && normalizarTexto(extraido.nome) !== normalizarTexto(dados.paciente_nome);
+    if (dados.acao === 'REMARCAR' && (mudouMedico || mudouPaciente)) return proporNovaConsulta(dados);
+    if (mudouMedico || !emAgendamento) {
+      retorno = await iniciarAgendamento(sr, { ...dados, primeiro_disponivel: querPrimeiro });
+    } else if ((extraido.data || extraido.hora) && dados.medico_id) {
+      const contexto = { ...dados, data: dados.data || dados.sugestoes?.[0]?.data };
+      retorno = await pedirHorario(sr, dados.especialidade, { id: dados.medico_id, nome: dados.medico_nome }, contexto);
+    } else if (mudouPaciente) {
+      retorno = await seguirParaIdentificacao(sr, telefone, { ...dados, paciente_id: undefined, paciente_nome: undefined });
+    } else if (querPrimeiro) {
+      const contexto = { ...dados, medico: dados.medico || dados.medico_nome, primeiro_disponivel: true };
+      retorno = await iniciarAgendamento(sr, contexto);
+    } else if (estadoAtual === 'AGENDAMENTO_SELECAO_OPCAO' && dados.sugestoes?.[0]) {
+      const h = dados.sugestoes[0];
+      retorno.texto = 'Sobre a consulta com ' + dados.medico_nome + ' em ' + dataBr(h.data, h.hora) + ': pode ser?';
+    } else if (estadoAtual === 'AGENDAMENTO_CONFIRMACAO') {
+      retorno = confirmar(dados, { id: dados.paciente_id, nome: dados.paciente_nome });
+    }
+    if (!querPrecoConsulta) return retorno;
+    const res = await precoConsultaPorEspecialidadeCore(sr, { especialidade: dados.especialidade });
+    if (!res.ok) return resposta('Não localizei o valor dessa consulta no cadastro. ' + retorno.texto, retorno.estado, retorno.dados);
+    const preco = await perguntarConvenio(sr, { blocos: res.itens }, texto,
+      { ...retorno.dados, retorno_agendamento: retorno });
+    if (querPrimeiro && preco.estado === 'PRECO_CONVENIO') preco.texto = retorno.texto.replace(' Pode ser?', '') + '\n\n' + preco.texto;
+    return preco;
   }
 
   // Etapas em andamento têm prioridade sobre nova classificação de intenção.

@@ -44,6 +44,13 @@ function historicoMinimo(historico) {
 }
 
 export async function extrairIntencao(sr, { texto, historico, estado, opcoes_oferecidas, dataHoje, nomeContato }) {
+  // Aceitações curtas não contêm novos dados. Não deixe o modelo copiar
+  // médico/data do histórico e transformar uma confirmação em nova busca.
+  const curto = String(texto || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase().trim().replace(/[.!]+$/g, '').trim();
+  if (['sim', 'pode', 'pode ser', 'pode marcar', 'pode confirmar', 'confirmo', 'ok', 'combinado', 'isso', 'certo'].includes(curto)) {
+    return { intencao: 'OUTRO', confirmacao: true };
+  }
   const prompt = [
     'Você extrai dados estruturados de mensagens de WhatsApp de uma clínica.',
     nomeContato ? 'Nome do cliente (chame-o assim): ' + limparTexto(nomeContato) : '',
@@ -53,7 +60,7 @@ export async function extrairIntencao(sr, { texto, historico, estado, opcoes_ofe
     'Use ADERIR_CARTAO apenas para intenção de comprar, aderir ou fazer o Cartão Mais Vida Saúde; dúvidas e benefícios são INFORMACAO.',
     'FALAR_COM_HUMANO exige pedido explícito para falar com uma pessoa. Agendar, remarcar ou cancelar continuam com a Glória.',
     'Extraia apenas campos informados pelo cliente, sem confundir médico com paciente. Não extraia CPF.',
-    'Preserve o contexto para interpretar respostas curtas. Não repita como novos os campos de mensagens anteriores.',
+    'Preserve o contexto para interpretar respostas curtas. Não repita como novos os campos de mensagens anteriores. Em uma aceitação sem correções, devolva apenas intencao e confirmacao, com os demais campos nulos.',
     'Em remarcação, data e hora são o NOVO horário desejado, não a data da consulta antiga citada para identificá-la.',
     'confirmacao é true para aceitação natural da proposta atual (pode ser, quero, combinado); não é autorização se houver dúvida ou mudança de dados.',
     'Data de hoje: ' + (dataHoje || ''),

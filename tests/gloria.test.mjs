@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { processarTurno } from '../base44/shared/gloriaDialogo.ts';
 import { infoCartaoCore } from '../base44/shared/gloriaCartao.ts';
+import { retomarConversaGloria } from '../base44/shared/gloriaRetomada.ts';
 import { createAppointmentCore, rescheduleAppointmentCore } from '../base44/shared/gloriaCore.ts';
 
 const phone = '5551999991234';
@@ -13,7 +14,10 @@ function fixture({ patients = [], appointments = [], info = 'CARTÃO MAIS VIDA S
     Medico: [{ id: 'm1', nome: 'Ana Silva', especialidade: 'Cardiologia', status: 'Ativo', tempo_consulta_minutos: 30,
       horarios_atendimento: [ { data_especifica: day, horario_inicio: '09:00', horario_fim: '12:00' },
         ...Array.from({ length: 7 }, (_, dia_semana) => ({ dia_semana, horario_inicio: '09:00', horario_fim: '12:00' })) ] }],
-    Paciente: patients, Agendamento: appointments, GloriaOperacao: [], Notification: [], ChatbotConfig: [{ ativo: true, informacoes_institucionais: info }]
+    Paciente: patients, Agendamento: appointments, GloriaOperacao: [], Notification: [], ChatbotConfig: [{ ativo: true, informacoes_institucionais: info }],
+    Contato: [], CategoriaPreco: [{ id: 'part', nome: 'Particular', status: 'Ativo' }],
+    Procedimento: [{ id: 'consulta', nome: 'Consulta Cardiologia', especialidade: 'Cardiologia', status: 'Ativo' }],
+    TabelaPreco: [{ procedimento_id: 'consulta', categoria_id: 'part', valor: 150 }], Exame: []
   };
   let extraction = {};
   const writes = [];
@@ -39,6 +43,128 @@ test('resultado interrompe identificação e não acessa laudos', async () => {
   const f = fixture(); f.contact.gloria_estado = 'IDENTIFICACAO_NOME';
   const r = await f.turn('Quero meu laudo de exame', { intencao: 'RESULTADO_EXAME' }, { mediaUrl: 'https://example.invalid/laudo.pdf', mediaTipo: 'document' });
   assert.equal(r.estado, 'AGUARDANDO_HUMANO'); assert.doesNotMatch(r.texto, /CPF/i);
+});
+
+test('pode e sim avançam mesmo se a IA repetir campos do histórico', async () => {
+  const f = fixture();
+  await f.turn('Ana em 20/10/2099 para Maria Souza', { intencao: 'AGENDAR', medico: 'Ana Silva', data: day, nome: 'Maria Souza' });
+  const repetidos = { intencao: 'AGENDAR', medico: 'Dra. Ana', data: day, hora: '09:00', especialidade: 'Clínico Geral' };
+  const r = await f.turn('pode', repetidos);
+  assert.equal(r.estado, 'AGENDAMENTO_CONFIRMACAO');
+  assert.equal(r.dados.medico_nome, 'Ana Silva');
+  assert.equal((await f.turn('sim', repetidos)).estado, 'OCIOSO');
+  assert.equal(f.tables.Agendamento.length, 1);
+});
+
+test('próximo disponível e preço usam especialidade sem exigir nome de médico', async () => {
+  const f = fixture();
+  f.tables.Medico.push({ ...f.tables.Medico[0], id: 'm2', nome: 'Bianca Souza', horarios_atendimento: [{ data_especifica: day, horario_inicio: '08:00', horario_fim: '09:00' }] });
+  f.tables.Medico.push({ ...f.tables.Medico[0], id: 'exam', nome: 'EXAMES' }, { ...f.tables.Medico[0], id: 'holter', nome: 'HOLTER' });
+  let r = await f.turn('Quero cardiologista em 20/10/2099', { intencao: 'AGENDAR', especialidade: 'Cardiologia', data: day });
+  assert.doesNotMatch(r.texto, /EXAMES|HOLTER/);
+  r = await f.turn('qual o proximos disponivel? e qual o valor da consulta?', { intencao: 'OUTRO' });
+  assert.equal(r.dados.medico_id, 'm2');
+  assert.equal(r.dados.sugestoes.length, 1);
+  assert.match(r.texto, /08:00/); assert.match(r.texto, /150,00/);
+  assert.equal(r.estado, 'AGENDAMENTO_SELECAO_OPCAO');
+  assert.equal((await f.turn('pode')).estado, 'IDENTIFICACAO_NOME');
+});
+
+test('preço com convênio volta à proposta sem perder médico ou confirmação', async () => {
+  const f = fixture();
+  f.tables.CategoriaPreco.push({ id: 'cv', nome: 'Mais Vida', status: 'Ativo' });
+  f.tables.TabelaPreco.push({ procedimento_id: 'consulta', categoria_id: 'cv', valor: 90 });
+  await f.turn('Ana em 20/10/2099 para Maria Souza', { intencao: 'AGENDAR', medico: 'Ana Silva', data: day, nome: 'Maria Souza' });
+  let r = await f.turn('qual o valor da consulta?', { intencao: 'OUTRO' });
+  assert.equal(r.estado, 'PRECO_CONVENIO');
+  r = await f.turn('Mais Vida');
+  assert.match(r.texto, /90,00/);
+  assert.equal(r.estado, 'AGENDAMENTO_SELECAO_OPCAO');
+  assert.equal((await f.turn('pode')).estado, 'AGENDAMENTO_CONFIRMACAO');
+});
+
+test('primeira mensagem pode pedir primeiro horário e preço da especialidade', async () => {
+  const f = fixture();
+  f.tables.Medico.push({ ...f.tables.Medico[0], id: 'm2', nome: 'Bianca Souza', horarios_atendimento: [{ data_especifica: day, horario_inicio: '08:00', horario_fim: '09:00' }] });
+  const r = await f.turn('Quero o primeiro horário disponível de cardiologia e o valor', { intencao: 'AGENDAR', especialidade: 'Cardiologia', data: day });
+  assert.equal(r.estado, 'AGENDAMENTO_SELECAO_OPCAO'); assert.equal(r.dados.medico_id, 'm2');
+  assert.match(r.texto, /150,00/);
+});
+
+test('próximo horário preserva o médico escolhido mesmo com outro mais cedo', async () => {
+  const f = fixture();
+  f.tables.Medico.push({ ...f.tables.Medico[0], id: 'm2', nome: 'Bianca Souza', horarios_atendimento: [{ data_especifica: day, horario_inicio: '08:00', horario_fim: '09:00' }] });
+  await f.turn('Agendar Ana', { intencao: 'AGENDAR', medico: 'Ana Silva', data: day });
+  const r = await f.turn('qual o próximo disponível e o valor?');
+  assert.equal(r.dados.medico_id, 'm1'); assert.equal(r.dados.sugestoes[0].data, day);
+  assert.match(r.texto, /09:00/); assert.match(r.texto, /150,00/);
+});
+
+test('preço reaproveita convênio informado e cartão não vira preço da consulta', async () => {
+  const f = fixture();
+  f.tables.CategoriaPreco.push({ id: 'cv', nome: 'Mais Vida', status: 'Ativo' });
+  f.tables.TabelaPreco.push({ procedimento_id: 'consulta', categoria_id: 'cv', valor: 90 });
+  await f.turn('Agendar Ana', { intencao: 'AGENDAR', medico: 'Ana Silva', data: day });
+  f.contact.gloria_estado_dados.convenio = 'Mais Vida';
+  const r = await f.turn('qual o valor da consulta?');
+  assert.equal(r.estado, 'AGENDAMENTO_SELECAO_OPCAO'); assert.match(r.texto, /90,00/);
+  const cartao = await f.turn('qual o valor do cartão mais vida saúde?', { intencao: 'PRECO' });
+  assert.ok(cartao.texto.includes(f.info.trim()));
+});
+
+test('aceitação com mudança de horário não confirma a proposta antiga', async () => {
+  const f = fixture();
+  await f.turn('Agendar Ana', { intencao: 'AGENDAR', medico: 'Ana Silva', data: day, nome: 'Maria Souza' });
+  const r = await f.turn('sim, mas às 10h', { confirmacao: true, hora: '10:00' });
+  assert.equal(r.estado, 'AGENDAMENTO_SELECAO_OPCAO'); assert.equal(r.dados.sugestoes[0].hora, '10:00');
+  assert.equal(f.tables.Agendamento.length, 0);
+});
+
+test('trocar médico ou horário junto com preço refaz a proposta antes de confirmar', async () => {
+  const f = fixture();
+  f.tables.Medico.push({ ...f.tables.Medico[0], id: 'm2', nome: 'Bianca Souza' });
+  await f.turn('Agendar Ana', { intencao: 'AGENDAR', medico: 'Ana Silva', data: day, nome: 'Maria Souza' });
+  await f.turn('pode');
+  let r = await f.turn('Quero Bianca, qual o preço?', { medico: 'Bianca Souza', intencao: 'PRECO' });
+  assert.equal(r.estado, 'AGENDAMENTO_SELECAO_OPCAO'); assert.equal(r.dados.medico_id, 'm2');
+  await f.turn('pode');
+  r = await f.turn('às 10h qual o valor?', { hora: '10:00', intencao: 'PRECO' });
+  assert.equal(r.estado, 'AGENDAMENTO_SELECAO_OPCAO'); assert.equal(r.dados.sugestoes[0].hora, '10:00');
+  assert.equal(f.tables.Agendamento.length, 0);
+});
+
+test('retomada descarta resposta quando outra mensagem atualiza a conversa', async () => {
+  const f = fixture();
+  f.tables.Contato.push({ ...f.contact, id: 'c1', atendimento_humano: false,
+    historico_mensagens: [{ role: 'user', content: 'bom dia' }] });
+  f.sr.integrations.Core.InvokeLLM = async () => {
+    f.tables.Contato[0].historico_mensagens.push({ role: 'user', content: 'quero agendar', messageId: 'nova' });
+    f.tables.Contato[0].gloria_estado = 'AGENDAMENTO_MEDICO';
+    return { intencao: 'SAUDACAO' };
+  };
+  assert.equal((await retomarConversaGloria(f.sr, phone)).resposta, null);
+  assert.equal(f.tables.Contato[0].gloria_estado, 'AGENDAMENTO_MEDICO');
+  assert.equal(f.tables.Contato[0].historico_mensagens.length, 2);
+});
+
+test('retomada do painel usa diálogo atual, grava estado e não duplica resposta', async () => {
+  const f = fixture();
+  f.sr.integrations.Core.InvokeLLM = async () => ({ intencao: 'SAUDACAO' });
+  f.tables.Contato.push({ ...f.contact, id: 'c1', nome: 'Thiago Cavalcanti', atendimento_humano: false,
+    historico_mensagens: [{ role: 'user', content: 'bom dia', messageId: 'msg1' }] });
+  const r = await retomarConversaGloria(f.sr, phone);
+  assert.match(r.resposta, /Sou a Glória/); assert.doesNotMatch(r.resposta, /atendente virtual/i);
+  assert.equal(f.tables.Contato[0].historico_mensagens.length, 2);
+  assert.equal(f.tables.Contato[0].gloria_estado, 'OCIOSO');
+  assert.equal((await retomarConversaGloria(f.sr, phone)).resposta, null);
+});
+
+test('retomada em modo humano não responde nem altera histórico', async () => {
+  const f = fixture();
+  f.tables.Contato.push({ ...f.contact, id: 'c1', atendimento_humano: true,
+    historico_mensagens: [{ role: 'user', content: 'bom dia' }] });
+  assert.equal((await retomarConversaGloria(f.sr, phone)).resposta, null);
+  assert.equal(f.writes.length, 0);
 });
 test('pedido explícito de humano funciona durante orçamento', async () => {
   const f = fixture(); f.contact.gloria_estado = 'PRECO_CONVENIO';
