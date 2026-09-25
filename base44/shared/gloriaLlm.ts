@@ -14,9 +14,13 @@ const ESQUEMA_EXTRACAO = {
       type: 'string',
       enum: [
         'SAUDACAO', 'AGENDAR', 'CANCELAR', 'REMARCAR', 'CONFIRMAR', 'PRECO',
-        'ORCAMENTO', 'RESULTADO_EXAME', 'ADERIR_CARTAO', 'DIAS_ATENDIMENTO', 'INFORMACAO', 'FALAR_COM_HUMANO', 'OUTRO'
+        'ORCAMENTO', 'RESULTADO_EXAME', 'ADERIR_CARTAO', 'PRECO_CARTAO', 'DIAS_ATENDIMENTO', 'HORARIO_CLINICA',
+        'ENDERECO', 'EXAME_LABORATORIAL', 'ENVIAR_PEDIDO', 'DESPEDIDA', 'INFORMACAO', 'FALAR_COM_HUMANO', 'OUTRO'
       ],
-      description: 'Use DIAS_ATENDIMENTO quando o cliente pergunta em que dias ou horários um profissional atende na clínica'
+      description: 'DIAS_ATENDIMENTO: dias/horários de um profissional. HORARIO_CLINICA: horário de funcionamento da clínica. ' +
+        'ENDERECO: endereço ou localização. PRECO_CARTAO: valor, planos ou benefícios do próprio Cartão Mais Vida (não o preço de uma consulta pelo cartão). ' +
+        'EXAME_LABORATORIAL: como fazer exame de sangue/laboratorial (não o preço). ENVIAR_PEDIDO: pergunta se pode mandar a requisição médica. ' +
+        'DESPEDIDA: agradecimento ou despedida sem novo pedido.'
     },
     confirmacao: { type: 'boolean', description: 'Cliente confirmou explicitamente (sim, confirmo, pode marcar)' },
     negativa: { type: 'boolean', description: 'Cliente negou ou recusou explicitamente' },

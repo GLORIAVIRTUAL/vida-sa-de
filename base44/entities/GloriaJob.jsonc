@@ -137,6 +137,27 @@
       ],
       "format": "date-time",
       "description": "Quando o job foi conclu\u00eddo"
+    },
+    "estado_anterior": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Etapa da conversa antes desta mensagem"
+    },
+    "estado_novo": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Etapa da conversa depois da resposta"
+    },
+    "interpretacao": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "O que a IA entendeu da mensagem (inten\u00e7\u00e3o, sim/n\u00e3o e campos extra\u00eddos)"
     }
   },
   "required": [

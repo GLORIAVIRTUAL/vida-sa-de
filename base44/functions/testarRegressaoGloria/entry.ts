@@ -84,6 +84,25 @@ export default async function(req) {
     contato.gloria_estado_dados = { especialidade: 'Clínico Geral', medico_id: 'regressao-medico', medico_nome: 'Médico Teste Glória', paciente_nome: 'Paciente Teste Sem Preço', data: dia, hora: '09:00', convenio: 'Não cadastrado' };
     r = await turno('sim');
     check('preço ausente não cria agendamento sem valor', r.estado === 'AGUARDANDO_HUMANO' && tabelas.Agendamento.length === 2);
+    // Perguntas paralelas no meio de uma etapa respondem e mantêm a proposta aberta.
+    const proposta = { especialidade: 'Clínico Geral', medico_id: 'regressao-medico', medico_nome: 'Médico Teste Glória', data: dia,
+      opcoes: ['20/10/2099 às 09:30'], sugestoes: [{ data: dia, hora: '09:30' }] };
+    contato.gloria_estado = 'AGENDAMENTO_SELECAO_OPCAO'; contato.gloria_estado_dados = { ...proposta };
+    const leitura = {};
+    extracao = { intencao: 'ENDERECO' };
+    r = await processarTurno(sr, { contato, texto: 'onde vocês ficam?', registro: leitura });
+    check('endereço no meio da oferta mantém a proposta', r.estado === 'AGENDAMENTO_SELECAO_OPCAO' && r.texto.includes('Rua Teste') && r.texto.includes('09:30'));
+    check('interpretação fica registrada', leitura.intencao === 'ENDERECO' && leitura.estado_anterior === 'AGENDAMENTO_SELECAO_OPCAO');
+    r = await turno('e como funciona o cartão mais vida?', { intencao: 'PRECO_CARTAO' });
+    check('dúvida do cartão no meio da oferta mantém a proposta', r.estado === 'AGENDAMENTO_SELECAO_OPCAO' && r.texto.includes('24,90') && r.texto.includes('09:30') && !r.dados.assunto_cartao);
+    r = await turno('sim', { confirmacao: true });
+    check('sim depois da dúvida confirma o horário, não a adesão', r.estado !== 'AGUARDANDO_HUMANO' && r.dados.hora === '09:30');
+    contato.gloria_estado = 'AGENDAMENTO_SELECAO_OPCAO'; contato.gloria_estado_dados = { ...proposta };
+    r = await turno('vocês abrem sábado?', { intencao: 'HORARIO_CLINICA' });
+    check('horário da clínica pela intenção mantém a proposta', r.estado === 'AGENDAMENTO_SELECAO_OPCAO' && r.texto.includes('09:30'));
+    contato.gloria_estado = 'OCIOSO'; contato.gloria_estado_dados = { tentativas_entendimento: 1 };
+    r = await turno('quero agendar', { intencao: 'AGENDAR' });
+    check('mensagem entendida zera tentativas', !r.dados.tentativas_entendimento);
     contato.atendimento_humano = true;
     check('atendimento humano continua sem resposta automática', await turno('qual o endereço?') === null);
     if (persistir) check('valores confirmados por leitura após salvar', persistidos.length === 2 && persistidos[0].valor_total === 150 && persistidos[1].valor_total === 100);

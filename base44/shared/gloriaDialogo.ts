@@ -159,6 +159,36 @@ function confirmar(dados, paciente) {
     'AGENDAMENTO_CONFIRMACAO', { ...dados, paciente_id: paciente.id, paciente_nome: paciente.nome });
 }
 
+// Texto que retoma a etapa aberta depois de responder uma pergunta paralela.
+function retomadaEtapa(estado, dados) {
+  switch (estado) {
+    case 'AGENDAMENTO_ESPECIALIDADE': return 'Voltando ao agendamento: para qual especialidade você quer agendar?';
+    case 'AGENDAMENTO_MEDICO': return 'Voltando ao agendamento: com qual profissional você prefere consultar?';
+    case 'AGENDAMENTO_SELECAO_OPCAO': return dados.sugestoes?.length === 1
+      ? 'Sobre a consulta com ' + dados.medico_nome + ' em ' + dataBr(dados.sugestoes[0].data, dados.sugestoes[0].hora) + ': esse horário funciona para você?'
+      : 'Voltando ao agendamento: qual data você prefere?';
+    case 'IDENTIFICACAO_NOME':
+    case 'IDENTIFICACAO_CPF': return 'Para finalizar o agendamento, me diga o nome completo de quem vai consultar.';
+    case 'AGENDAMENTO_CONFIRMACAO': return dados.nova_consulta
+      ? 'Posso buscar uma nova consulta mantendo a antiga?'
+      : confirmar(dados, { id: dados.paciente_id, nome: dados.paciente_nome }).texto;
+    case 'CANCELAMENTO_SELECAO': return 'Voltando: de qual consulta estamos falando? Pode me dizer o profissional ou a data.';
+    case 'CANCELAMENTO_CONFIRMACAO': return dados.acao === 'REMARCAR'
+      ? 'Posso buscar um novo horário para a consulta de ' + dados.rotulo + ', mantendo a antiga até confirmar a remarcação?'
+      : 'Sobre a consulta de ' + dados.rotulo + ': posso cancelar?';
+    case 'CONFIRMACAO_CONSULTA': return 'Posso confirmar sua presença em ' + dados.rotulo + '?';
+    case 'ORCAMENTO_ITENS': return 'Voltando ao orçamento: quais consultas, exames ou procedimentos você quer orçar?';
+    case 'PRECO_CONVENIO': return 'Voltando ao orçamento: você tem algum convênio da clínica? Se não tiver, é só dizer particular.';
+    default: return '';
+  }
+}
+
+// Responde a pergunta sem sair da etapa: a proposta aberta continua valendo.
+function perguntaParalela(textoResposta, estado, dados, fecho = '') {
+  const volta = retomadaEtapa(estado, dados) || fecho;
+  return resposta(textoResposta + (volta ? '\n\n' + volta : ''), estado, dados);
+}
+
 function proporNovaConsulta(dados) {
   return resposta('A remarcação mantém o paciente e o profissional da consulta original. Posso buscar uma nova consulta com os dados que você informou, mantendo a antiga?',
     'AGENDAMENTO_CONFIRMACAO', { ...dados, nova_consulta: true, acao: undefined, agendamento_id: undefined,
@@ -369,26 +399,20 @@ async function informarDiasAtendimento(sr, nomeMedico, contexto = {}) {
 
 // ---------------------------------------------------------------- turno
 
-export async function processarTurno(sr, { contato, texto, mediaUrl, mediaTipo }) {
+export async function processarTurno(sr, { contato, texto, mediaUrl, mediaTipo, registro }) {
   if (contato.atendimento_humano === true || contato.gloria_estado === 'AGUARDANDO_HUMANO') return null;
   const telefone = normalizarTelefone(contato.telefone_normalizado || contato.telefone);
   const estado = contato.gloria_estado || 'OCIOSO';
   let dados = contato.gloria_estado_dados || {};
   const expirado = contato.gloria_estado_expira_em && new Date(contato.gloria_estado_expira_em).getTime() < Date.now();
   const estadoAtual = expirado ? 'OCIOSO' : estado;
+  if (registro) registro.estado_anterior = estadoAtual;
 
   const txt = normalizarTexto(texto || '');
   if (estadoAtual === 'RESULTADO_EXAME_CPF' ||
       (/\b(laudos?|resultados?)\b/.test(txt) && /\b(exames?|meu|minha|saiu|pronto|buscar|retirar)\b/.test(txt)) ||
       /\b(falar|conversar)\b.*\b(humano|pessoa|atendente|recepcao)\b/.test(txt)) {
     return resposta(PARA_HUMANO, 'AGUARDANDO_HUMANO');
-  }
-
-  // Informação simples não depende da classificação nem implica aceitar adesão.
-  if (perguntaEndereco(texto)) {
-    const endereco = await enderecoClinica(sr);
-    if (endereco) return resposta(endereco, estadoAtual, { ...(expirado ? {} : dados), assunto_cartao: false });
-    return resposta('Não encontrei o endereço no cadastro. ' + PARA_HUMANO, 'AGUARDANDO_HUMANO');
   }
 
   // Primeiro nome do contato, para tratamento pessoal (ignora nomes que são só números).
@@ -403,9 +427,21 @@ export async function processarTurno(sr, { contato, texto, mediaUrl, mediaTipo }
     opcoes_oferecidas: dados.opcoes,
     dataHoje: hojeLocal()
   });
+  if (registro) Object.assign(registro, {
+    intencao: extraido.intencao, confirmacao: !!extraido.confirmacao, negativa: !!extraido.negativa,
+    campos: { especialidade: extraido.especialidade || null, medico: extraido.medico || null, data: extraido.data || null,
+      hora: extraido.hora || null, opcao: extraido.opcao ?? null, itens: extraido.itens_orcamento || [] }
+  });
 
   if (['FALAR_COM_HUMANO', 'RESULTADO_EXAME'].includes(extraido.intencao)) {
     return resposta(PARA_HUMANO, 'AGUARDANDO_HUMANO');
+  }
+
+  // Endereço é informação simples: não depende de etapa nem implica aceitar adesão.
+  if (extraido.intencao === 'ENDERECO' || perguntaEndereco(texto)) {
+    const endereco = await enderecoClinica(sr);
+    if (!endereco) return resposta('Não encontrei o endereço no cadastro. ' + PARA_HUMANO, 'AGUARDANDO_HUMANO');
+    return perguntaParalela(endereco, estadoAtual, { ...(expirado ? {} : dados), assunto_cartao: false });
   }
 
   // Pergunta sobre o Cartão Mais Vida Saúde: responde com o material cadastrado.
@@ -417,6 +453,8 @@ export async function processarTurno(sr, { contato, texto, mediaUrl, mediaTipo }
   // Campos explícitos complementam o contexto; ausência nunca apaga o que já sabemos.
   const anteriores = expirado ? {} : dados;
   dados = { ...anteriores };
+  // Mensagem compreendida zera a contagem de "não entendi".
+  if (extraido.intencao !== 'OUTRO' || extraido.confirmacao || extraido.negativa) delete dados.tentativas_entendimento;
   for (const campo of ['nome', 'medico', 'especialidade']) if (extraido[campo]) dados[campo] = extraido[campo];
   if (validarData(extraido.data)) dados.data = extraido.data;
   if (validarHora(extraido.hora)) dados.hora = extraido.hora;
@@ -432,19 +470,10 @@ export async function processarTurno(sr, { contato, texto, mediaUrl, mediaTipo }
   }
 
   // Pergunta sobre horário de funcionamento da clínica.
-  if (['horario de funcionamento', 'horario da clinica', 'que horas abre', 'que horas fecha', 'abre que horas', 'fecha que horas', 'ate que horas', 'ate qual horario', 'funciona sabado', 'abre sabado', 'atende sabado', 'horario de atendimento']
-      .some((k) => txt.includes(k))) {
-    let retomada = 'Pode me dizer como posso ajudar.';
-    if (estadoAtual === 'CANCELAMENTO_CONFIRMACAO') retomada = dados.acao === 'REMARCAR'
-      ? 'Posso buscar um novo horário para a consulta de ' + dados.rotulo + ', mantendo a antiga até confirmar a remarcação?'
-      : 'Sobre a consulta de ' + dados.rotulo + ': posso cancelar?';
-    if (estadoAtual === 'CONFIRMACAO_CONSULTA') retomada = 'Posso confirmar sua presença em ' + dados.rotulo + '?';
-    if (estadoAtual === 'AGENDAMENTO_CONFIRMACAO') retomada = dados.nova_consulta
-      ? 'Posso buscar uma nova consulta mantendo a antiga?'
-      : confirmar(dados, { id: dados.paciente_id, nome: dados.paciente_nome }).texto;
-    if (estadoAtual === 'AGENDAMENTO_SELECAO_OPCAO' && dados.sugestoes?.length === 1) retomada =
-      'Sobre a consulta com ' + dados.medico_nome + ' em ' + dataBr(dados.sugestoes[0].data, dados.sugestoes[0].hora) + ': esse horário funciona para você?';
-    return resposta(TEXTO_HORARIOS + '\n\n' + retomada, estadoAtual, dados);
+  if (extraido.intencao === 'HORARIO_CLINICA' ||
+      ['horario de funcionamento', 'horario da clinica', 'que horas abre', 'que horas fecha', 'abre que horas', 'fecha que horas', 'ate que horas', 'ate qual horario', 'funciona sabado', 'abre sabado', 'atende sabado', 'horario de atendimento']
+        .some((k) => txt.includes(k))) {
+    return perguntaParalela(TEXTO_HORARIOS, estadoAtual, anteriores, 'Pode me dizer como posso ajudar.');
   }
 
   // Requisição de exames em imagem ou PDF: lê os exames pedidos e orça com os
@@ -465,10 +494,10 @@ export async function processarTurno(sr, { contato, texto, mediaUrl, mediaTipo }
     .some((k) => txt.includes(k));
   const precoDoCartao = /\b(valor|preco|custa|fica)\s+(o |do |de um |um )?(cartao|plano)\b/.test(txt) || /\b(mensalidade|anuidade|beneficios|como funciona)\b/.test(txt);
   const contextoServico = !!(dados.resolvido?.blocos?.length || dados.ultimo_agendamento || dados.especialidade);
-  const precoComCartao = mencionaCartao && !precoDoCartao &&
+  const precoComCartao = mencionaCartao && extraido.intencao !== 'PRECO_CARTAO' && !precoDoCartao &&
     (/\b(consulta|exame|procedimento)\b/.test(txt) ||
       (contextoServico && /\b(pelo|pela|com|no|na|e o|e pelo|quanto|valor|preco)\b/.test(txt)));
-  const perguntaCartao = mencionaCartao && !precoComCartao;
+  const perguntaCartao = (mencionaCartao || extraido.intencao === 'PRECO_CARTAO') && !precoComCartao;
 
   // Comparar a tabela do mesmo serviço nunca significa contratar um cartão.
   if (precoComCartao && estadoAtual === 'OCIOSO') {
@@ -508,6 +537,15 @@ export async function processarTurno(sr, { contato, texto, mediaUrl, mediaTipo }
   const mudouAssunto = estadosDesviaveis.includes(estadoAtual) && !numeroPuro &&
     !extraido.confirmacao && !extraido.negativa &&
     (perguntaCartao || ['PRECO', 'ORCAMENTO', 'DIAS_ATENDIMENTO'].includes(extraido.intencao));
+
+  // Dúvida sobre o cartão no meio de uma etapa: responde e mantém a proposta.
+  // "sim" em seguida continua valendo para a proposta, não para adesão.
+  if (perguntaCartao && estadosDesviaveis.includes(estadoAtual) && !extraido.confirmacao && !extraido.negativa &&
+      !['AGENDAR', 'CANCELAR', 'REMARCAR', 'CONFIRMAR'].includes(extraido.intencao)) {
+    const info = await infoCartaoCore(sr);
+    if (info) return perguntaParalela(info + '\n\nSe quiser fazer o cartão, é só me avisar depois.', estadoAtual,
+      { ...anteriores, assunto_cartao: false });
+  }
 
   if (extraido.especialidade && anteriores.especialidade &&
       normalizarTexto(extraido.especialidade) !== normalizarTexto(anteriores.especialidade) &&
@@ -755,9 +793,10 @@ export async function processarTurno(sr, { contato, texto, mediaUrl, mediaTipo }
   }
 
   // Cliente quer enviar a requisição/pedido de exames: pode mandar por aqui.
-  if (['requisicao', 'pedido de exame', 'pedido do medico', 'pedido medico', 'encaminhamento']
-      .some((k) => txt.includes(k)) &&
-      ['mandar', 'enviar', 'manda', 'envio', 'posso', 'foto', 'pdf', 'anexar'].some((k) => txt.includes(k))) {
+  if (extraido.intencao === 'ENVIAR_PEDIDO' ||
+      (['requisicao', 'pedido de exame', 'pedido do medico', 'pedido medico', 'encaminhamento']
+        .some((k) => txt.includes(k)) &&
+      ['mandar', 'enviar', 'manda', 'envio', 'posso', 'foto', 'pdf', 'anexar'].some((k) => txt.includes(k)))) {
     return resposta(
       'Pode mandar sim! Envie a foto ou o PDF da requisição aqui mesmo que eu leio os exames e já te passo o orçamento.',
       'OCIOSO'
@@ -772,8 +811,9 @@ export async function processarTurno(sr, { contato, texto, mediaUrl, mediaTipo }
   }
 
   // Coleta de exames laboratoriais: sem agendamento, por ordem de chegada.
-  if (['exame de sangue', 'exames de sangue', 'exame laboratorial', 'exames laboratoriais', 'laboratorio', 'coleta de sangue', 'hemograma']
-      .some((k) => txt.includes(k)) && ['AGENDAR', 'INFORMACAO', 'OUTRO', 'SAUDACAO'].includes(extraido.intencao)) {
+  if (extraido.intencao === 'EXAME_LABORATORIAL' ||
+      (['exame de sangue', 'exames de sangue', 'exame laboratorial', 'exames laboratoriais', 'laboratorio', 'coleta de sangue', 'hemograma']
+        .some((k) => txt.includes(k)) && ['AGENDAR', 'INFORMACAO', 'OUTRO', 'SAUDACAO'].includes(extraido.intencao))) {
     return resposta(TEXTO_LABORATORIAL + '\n\nÉ só trazer o pedido médico, se tiver. Te espero por aqui!', 'OCIOSO');
   }
 
@@ -826,7 +866,7 @@ export async function processarTurno(sr, { contato, texto, mediaUrl, mediaTipo }
       // Agradecimento/despedida encerra a conversa com cordialidade.
       const t = normalizarTexto(texto || '');
       const despedida = ['obrigado', 'obrigada', 'obg', 'valeu', 'tchau', 'ate logo', 'ate mais', 'boa noite', 'bom dia'];
-      if (t.length <= 40 && despedida.some((d) => t.includes(d))) {
+      if (extraido.intencao === 'DESPEDIDA' || (t.length <= 40 && despedida.some((d) => t.includes(d)))) {
         return resposta('Eu que agradeço! Qualquer coisa, estou por aqui. Boa sorte e até logo! 😊', 'OCIOSO');
       }
       if ((dados.tentativas_entendimento || 0) >= 2 || dados.busca_agendamento) return resposta(PARA_HUMANO, 'AGUARDANDO_HUMANO');

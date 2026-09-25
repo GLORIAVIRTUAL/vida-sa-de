@@ -159,11 +159,13 @@ export default async function (req: Request): Promise<Response> {
           contatoAtual.gloria_estado = 'OCIOSO';
           contatoAtual.gloria_estado_dados = {};
         }
-        const turno = await processarTurno(sr, { contato: contatoAtual, texto, mediaUrl: job.media_url, mediaTipo: job.media_tipo });
+        const leitura = {};
+        const turno = await processarTurno(sr, { contato: contatoAtual, texto, mediaUrl: job.media_url, mediaTipo: job.media_tipo, registro: leitura });
 
         if (!turno) {
           await sr.entities.GloriaJob.update(job.id, {
             status: 'Ignorado', erro: 'AGUARDANDO_HUMANO',
+            estado_anterior: leitura.estado_anterior || null, estado_novo: null, interpretacao: leitura,
             lock_token: null, lock_expira_em: null, processado_em: new Date().toISOString()
           });
           ignorados++;
@@ -183,6 +185,9 @@ export default async function (req: Request): Promise<Response> {
         await sr.entities.GloriaJob.update(job.id, {
           status: 'ProntoParaEnvio',
           resposta_texto: turno.texto,
+          estado_anterior: leitura.estado_anterior || null,
+          estado_novo: turno.estado,
+          interpretacao: leitura,
           erro: null,
           lock_token: null,
           lock_expira_em: null
