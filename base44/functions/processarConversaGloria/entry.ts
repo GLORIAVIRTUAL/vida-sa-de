@@ -203,6 +203,16 @@ export default async function (req: Request): Promise<Response> {
           lock_token: null,
           lock_expira_em: null
         });
+        // Falha definitiva: a conversa vai para a recepção em vez de ficar sem resposta.
+        if (esgotou) {
+          const contatos = await sr.entities.Contato.filter({ telefone_normalizado: job.telefone_canonico });
+          for (const c of contatos) {
+            await sr.entities.Contato.update(c.id, {
+              atendimento_humano: true, gloria_estado: 'AGUARDANDO_HUMANO',
+              gloria_estado_dados: { motivo_transferencia: 'Falha no processamento da Glória' }
+            });
+          }
+        }
         console.error('processarConversaGloria: falha no job', job.id, erro && erro.message);
         falhas++;
       }
