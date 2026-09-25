@@ -25,7 +25,8 @@ export default function LeituraJobItem({ job }) {
         {(campos.itens || []).length > 0 && <Badge variant="outline">Itens: {campos.itens.join(', ')}</Badge>}
       </div>
       {job.resposta_texto && <p className="text-sm whitespace-pre-wrap text-gray-700 bg-gray-50 rounded p-2"><span className="text-gray-500">Glória: </span>{job.resposta_texto}</p>}
-      {job.erro && job.erro !== 'AGUARDANDO_HUMANO' && <p className="text-xs text-red-600">Erro: {job.erro}</p>}
+      {['AGUARDANDO_HUMANO', 'ATENDIMENTO_HUMANO'].includes(job.erro) && <p className="text-xs text-amber-700">Conversa com atendente humano — a Glória não respondeu.</p>}
+      {job.erro && !['AGUARDANDO_HUMANO', 'ATENDIMENTO_HUMANO'].includes(job.erro) && <p className="text-xs text-red-600">Erro: {job.erro}</p>}
     </div>
   );
 }
