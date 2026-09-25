@@ -103,6 +103,10 @@ export default async function(req) {
     contato.gloria_estado = 'OCIOSO'; contato.gloria_estado_dados = { tentativas_entendimento: 1 };
     r = await turno('quero agendar', { intencao: 'AGENDAR' });
     check('mensagem entendida zera tentativas', !r.dados.tentativas_entendimento);
+    // Especialidade que não existe no cadastro não substitui a do agendamento em andamento.
+    contato.gloria_estado = 'AGENDAMENTO_SELECAO_OPCAO'; contato.gloria_estado_dados = { ...proposta };
+    r = await turno('e com astrologia?', { intencao: 'AGENDAR', especialidade: 'Astrologia' });
+    check('especialidade inexistente é ignorada', r.dados.especialidade === 'Clínico Geral');
     contato.atendimento_humano = true;
     check('atendimento humano continua sem resposta automática', await turno('qual o endereço?') === null);
     if (persistir) check('valores confirmados por leitura após salvar', persistidos.length === 2 && persistidos[0].valor_total === 150 && persistidos[1].valor_total === 100);

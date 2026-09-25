@@ -455,7 +455,15 @@ export async function processarTurno(sr, { contato, texto, mediaUrl, mediaTipo, 
   dados = { ...anteriores };
   // Mensagem compreendida zera a contagem de "não entendi".
   if (extraido.intencao !== 'OUTRO' || extraido.confirmacao || extraido.negativa) delete dados.tentativas_entendimento;
-  for (const campo of ['nome', 'medico', 'especialidade']) if (extraido[campo]) dados[campo] = extraido[campo];
+  // Especialidade só entra no contexto se existir no cadastro (com o nome cadastrado).
+  let especialidadeValida = null;
+  if (extraido.especialidade) {
+    const esp = await especialidadesDisponiveisCore(sr);
+    especialidadeValida = (esp.especialidades || []).find((e) => normalizarTexto(e) === normalizarTexto(extraido.especialidade)) || null;
+  }
+  if (registro?.campos) registro.campos.especialidade_no_cadastro = especialidadeValida;
+  for (const campo of ['nome', 'medico']) if (extraido[campo]) dados[campo] = extraido[campo];
+  if (especialidadeValida) dados.especialidade = especialidadeValida;
   if (validarData(extraido.data)) dados.data = extraido.data;
   if (validarHora(extraido.hora)) dados.hora = extraido.hora;
 
@@ -547,8 +555,8 @@ export async function processarTurno(sr, { contato, texto, mediaUrl, mediaTipo, 
       { ...anteriores, assunto_cartao: false });
   }
 
-  if (extraido.especialidade && anteriores.especialidade &&
-      normalizarTexto(extraido.especialidade) !== normalizarTexto(anteriores.especialidade) &&
+  if (especialidadeValida && anteriores.especialidade &&
+      normalizarTexto(especialidadeValida) !== normalizarTexto(anteriores.especialidade) &&
       (estadoAtual.startsWith('AGENDAMENTO_') || estadoAtual.startsWith('IDENTIFICACAO_'))) {
     const contexto = { ...dados, medico: extraido.medico || undefined, medico_id: undefined, medico_nome: undefined,
       opcoes: [], sugestoes: [] };

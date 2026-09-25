@@ -16,6 +16,7 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import Assistente from './pages/Assistente';
 import DocumentacaoIA from './pages/DocumentacaoIA';
+import LeituraGloria from './pages/LeituraGloria';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -70,6 +71,11 @@ const AuthenticatedApp = () => {
       <Route path="/DocumentacaoIA" element={
         <LayoutWrapper currentPageName="DocumentacaoIA">
           <DocumentacaoIA />
+        </LayoutWrapper>
+      } />
+      <Route path="/LeituraGloria" element={
+        <LayoutWrapper currentPageName="LeituraGloria">
+          <LeituraGloria />
         </LayoutWrapper>
       } />
       <Route path="/Assistente" element={

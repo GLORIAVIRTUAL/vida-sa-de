@@ -129,6 +129,7 @@ function MainLayout({ children, currentPageName, currentUser, onUserUpdate }) {
 
 
   const menuSistemaBase = [
+  { name: "Leitura da Glória", page: "LeituraGloria", icon: MessageSquare, roles: ["admin"] },
   { name: "Logs de Webhook", page: "WebhookLogs", icon: Activity, roles: ["admin"] },
   { name: "Debug Usuário", page: "Debug", icon: Activity, roles: ["admin"] },
   { name: "Diagnóstico Dados", page: "Diagnostico", icon: Wrench, roles: ["admin"] },
